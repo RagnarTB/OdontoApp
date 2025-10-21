@@ -15,43 +15,91 @@
         </section>
         <section class="content">
             <div class="container-fluid">
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                </div>
+
                 <div class="card card-primary">
                     <div class="card-header">
                         <h3 class="card-title">Datos del Paciente</h3>
                     </div>
-                    <form th:action="@{/pacientes/guardar}" th:object="${paciente}" method="post">
+                    <form th:action="@{/pacientes/guardar}" th:object="${pacienteDTO}" method="post">
                         <input type="hidden" th:field="*{id}" />
                         <div class="card-body">
-                            <div class="form-group">
-                                <label for="dni">DNI</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="dni" th:field="*{dni}"
-                                        placeholder="Ingrese DNI y presione Buscar">
-                                    <div class="input-group-append">
-                                        <button class="btn btn-outline-secondary" type="button"
-                                            id="btn-buscar-dni">Buscar en Reniec</button>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="dni">DNI</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" th:field="*{dni}"
+                                                placeholder="Ingrese DNI y presione Buscar">
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary" type="button"
+                                                    id="btn-buscar-dni" th:disabled="*{id != null}">Buscar en
+                                                    Reniec</button>
+                                            </div>
+                                        </div>
+                                        <small id="dni-error" class="form-text text-danger"></small>
+                                        <p th:if="${#fields.hasErrors('dni')}" class="text-danger" th:errors="*{dni}">
+                                        </p>
                                     </div>
                                 </div>
-                                <small id="dni-error" class="form-text text-danger"></small>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="nombreCompleto">Nombre Completo</label>
+                                        <input type="text" class="form-control" th:field="*{nombreCompleto}">
+                                        <p th:if="${#fields.hasErrors('nombreCompleto')}" class="text-danger"
+                                            th:errors="*{nombreCompleto}"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="email">Email</label>
+                                        <input type="email" class="form-control" th:field="*{email}"
+                                            placeholder="correo@ejemplo.com">
+                                        <p th:if="${#fields.hasErrors('email')}" class="text-danger"
+                                            th:errors="*{email}"></p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="telefono">Teléfono</label>
+                                        <input type="text" class="form-control" th:field="*{telefono}"
+                                            placeholder="987654321">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="fechaNacimiento">Fecha de Nacimiento</label>
+                                        <input type="date" class="form-control" th:field="*{fechaNacimiento}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="direccion">Dirección</label>
+                                        <input type="text" class="form-control" th:field="*{direccion}">
+                                    </div>
+                                </div>
                             </div>
                             <div class="form-group">
-                                <label for="nombreCompleto">Nombre Completo</label>
-                                <input type="text" class="form-control" id="nombreCompleto" th:field="*{nombreCompleto}"
-                                    readonly>
+                                <label for="alergias">Alergias Conocidas</label>
+                                <textarea class="form-control" th:field="*{alergias}" rows="3"
+                                    placeholder="Ej: Penicilina, AINES..."></textarea>
                             </div>
                             <div class="form-group">
-                                <label for="email">Email</label>
-                                <input type="email" class="form-control" id="email" th:field="*{email}"
-                                    placeholder="correo@ejemplo.com">
-                            </div>
-                            <div class="form-group">
-                                <label for="telefono">Teléfono</label>
-                                <input type="text" class="form-control" id="telefono" th:field="*{telefono}"
-                                    placeholder="987654321">
+                                <label for="antecedentesMedicos">Antecedentes Médicos Relevantes</label>
+                                <textarea class="form-control" th:field="*{antecedentesMedicos}" rows="3"
+                                    placeholder="Ej: Hipertensión, Diabetes, Asma..."></textarea>
                             </div>
                         </div>
                         <div class="card-footer">
-                            <button type="submit" class="btn btn-primary">Guardar</button>
+                            <button type="submit" class="btn btn-primary">Guardar Paciente</button>
                             <a th:href="@{/pacientes}" class="btn btn-secondary">Cancelar</a>
                         </div>
                     </form>
@@ -66,53 +114,36 @@
                     const dni = dniInput.value;
                     const nombreCompletoInput = document.getElementById('nombreCompleto');
                     const dniError = document.getElementById('dni-error');
-                    const self = this; // Guardar referencia al botón
-
-                    dniError.textContent = ''; // Limpiar error previo
-                    nombreCompletoInput.value = ''; // Limpiar nombre previo
-
-                    if (!/^\d{8}$/.test(dni)) { // Validar que sean 8 dígitos numéricos
+                    const self = this;
+                    dniError.textContent = '';
+                    if (!/^\d{8}$/.test(dni)) {
                         dniError.textContent = 'El DNI debe contener exactamente 8 dígitos numéricos.';
                         return;
                     }
-
-                    // Feedback de carga
                     self.textContent = 'Buscando...';
                     self.disabled = true;
-                    dniInput.readOnly = true; // Bloquear DNI durante la búsqueda
+                    dniInput.readOnly = true;
 
                     fetch('/api/reniec/' + dni)
                         .then(response => {
                             if (!response.ok) {
-                                // Leer el cuerpo del error como texto
-                                return response.text().then(text => {
-                                    // Intentar parsear como JSON si es posible, si no, usar el texto crudo
-                                    try {
-                                        const errorJson = JSON.parse(text);
-                                        throw new Error(errorJson.message || errorJson.error || 'DNI no encontrado o ya registrado.');
-                                    } catch (e) {
-                                        throw new Error(text || 'DNI no encontrado o ya registrado.');
-                                    }
+                                return response.json().then(errorData => {
+                                    throw new Error(errorData.error || 'DNI no encontrado o ya registrado.');
                                 });
                             }
                             return response.json();
                         })
                         .then(data => {
-                            // --- CORRECCIÓN AQUÍ ---
-                            // Accedemos al campo 'nombreCompleto' de nuestro DTO mapeado
                             if (data && data.nombreCompleto) {
                                 nombreCompletoInput.value = data.nombreCompleto;
                             } else {
-                                // Si la API devuelve éxito pero sin el campo esperado
                                 throw new Error('La respuesta de la API no contiene el nombre completo.');
                             }
                         })
                         .catch(error => {
                             dniError.textContent = error.message;
-                            nombreCompletoInput.value = ''; // Limpiar por si acaso
                         })
                         .finally(() => {
-                            // Restaurar el botón y el input DNI
                             self.textContent = 'Buscar en Reniec';
                             self.disabled = false;
                             dniInput.readOnly = false;

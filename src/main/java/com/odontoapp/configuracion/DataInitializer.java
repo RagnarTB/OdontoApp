@@ -22,22 +22,26 @@ public class DataInitializer implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
-    private final PermisoRepository permisoRepository; // Añadido
+    private final PermisoRepository permisoRepository;
 
     public DataInitializer(UsuarioRepository usuarioRepository, RolRepository rolRepository,
             PasswordEncoder passwordEncoder, PermisoRepository permisoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
-        this.permisoRepository = permisoRepository; // Añadido
+        this.permisoRepository = permisoRepository;
     }
 
     @Override
     public void run(String... args) throws Exception {
-        // --- NUEVA SECCIÓN: CREAR PERMISOS ---
-        List<String> modulos = Arrays.asList("USUARIOS", "ROLES", "PACIENTES", "CITAS", "SERVICIOS", "FACTURACION",
-                "INVENTARIO", "REPORTES", "CONFIGURACION");
-        List<String> acciones = Arrays.asList("VER_LISTA", "VER_DETALLE", "CREAR", "EDITAR", "ELIMINAR");
+        // --- CREAR PERMISOS BASE ---
+        List<String> modulos = Arrays.asList(
+                "USUARIOS", "ROLES", "PACIENTES", "CITAS",
+                "SERVICIOS", "FACTURACION", "INVENTARIO",
+                "REPORTES", "CONFIGURACION");
+
+        List<String> acciones = Arrays.asList(
+                "VER_LISTA", "VER_DETALLE", "CREAR", "EDITAR", "ELIMINAR");
 
         for (String modulo : modulos) {
             for (String accion : acciones) {
@@ -50,7 +54,7 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        // Crear rol de ADMIN si no existe
+        // --- CREAR ROL ADMIN ---
         Rol adminRol = rolRepository.findByNombre("ADMIN").orElseGet(() -> {
             Rol nuevoRol = new Rol();
             nuevoRol.setNombre("ADMIN");
@@ -59,7 +63,26 @@ public class DataInitializer implements CommandLineRunner {
             return rolRepository.save(nuevoRol);
         });
 
-        // Crear usuario administrador si no existe
+        // --- NUEVO BLOQUE: CREAR ROL PACIENTE ---
+        rolRepository.findByNombre("PACIENTE").orElseGet(() -> {
+            Rol pacienteRol = new Rol();
+            pacienteRol.setNombre("PACIENTE");
+
+            // Aquí se podrían asignar permisos específicos si existen:
+            // Ejemplo:
+            // Set<Permiso> permisosPaciente = new HashSet<>();
+            // permisosPaciente.add(permisoRepository.findByModuloAndAccion("CITAS",
+            // "VER_LISTA").get());
+            // permisosPaciente.add(permisoRepository.findByModuloAndAccion("CITAS",
+            // "CREAR").get());
+            // pacienteRol.setPermisos(permisosPaciente);
+
+            // Por ahora lo dejamos sin permisos
+            return rolRepository.save(pacienteRol);
+        });
+        // --- FIN BLOQUE PACIENTE ---
+
+        // --- CREAR USUARIO ADMINISTRADOR SI NO EXISTE ---
         if (usuarioRepository.findByEmail("admin@odontoapp.com").isEmpty()) {
             Usuario admin = new Usuario();
             admin.setNombreCompleto("Administrador del Sistema");

@@ -36,4 +36,8 @@ public class Paciente {
     private String antecedentesMedicos;
 
     private boolean eliminado = false; // <-- Columna para el Soft Delete
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true) // Si se borra el paciente, se borra su usuario
+    @JoinColumn(name = "usuario_id", referencedColumnName = "id")
+    private Usuario usuario;
 }

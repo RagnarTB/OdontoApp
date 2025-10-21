@@ -19,4 +19,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // --- MÉTODO PARA BÚSQUEDA Y PAGINACIÓN ---
     @Query("SELECT u FROM Usuario u WHERE u.nombreCompleto LIKE %:keyword% OR u.email LIKE %:keyword%")
     Page<Usuario> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    Optional<Usuario> findByVerificationToken(String verificationToken);
 }

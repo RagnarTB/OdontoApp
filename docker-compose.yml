@@ -14,7 +14,7 @@ services:
     # Healthcheck CORREGIDO para verificar que la BD esté lista
     healthcheck:
       # CORRECCIÓN: Se quitó el espacio después de "-p"
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpassword" ]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-pleonardo" ]
       interval: 10s
       timeout: 5s
       retries: 5

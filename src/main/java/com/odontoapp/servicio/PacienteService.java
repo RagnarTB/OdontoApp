@@ -1,13 +1,15 @@
 package com.odontoapp.servicio;
 
+import com.odontoapp.dto.PacienteDTO; // Importar DTO
 import com.odontoapp.entidad.Paciente;
-import java.util.List;
+import org.springframework.data.domain.Page; // Importar Page
+import org.springframework.data.domain.Pageable; // Importar Pageable
 import java.util.Optional;
 
 public interface PacienteService {
-    Paciente guardarPaciente(Paciente paciente);
+    void guardarPaciente(PacienteDTO pacienteDTO); // Modificado
 
-    List<Paciente> listarTodosLosPacientes();
+    Page<Paciente> listarTodosLosPacientes(String keyword, Pageable pageable); // Modificado
 
     Optional<Paciente> buscarPorId(Long id);
 

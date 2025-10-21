@@ -11,20 +11,39 @@
                         <h1>Gestión de Pacientes</h1>
                     </div>
                     <div class="col-sm-6">
-                        <a th:href="@{/pacientes/nuevo}" class="btn btn-primary float-sm-right">
-                            <i class="fas fa-user-plus"></i> Nuevo Paciente
-                        </a>
+                        <a th:href="@{/pacientes/nuevo}" class="btn btn-primary float-sm-right"><i
+                                class="fas fa-user-plus"></i> Nuevo Paciente</a>
                     </div>
                 </div>
             </div>
         </section>
         <section class="content">
             <div class="container-fluid">
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${success}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                </div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                </div>
+
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Listado de Pacientes</h3>
+                        <div class="card-tools">
+                            <form th:action="@{/pacientes}" method="get" class="form-inline">
+                                <input type="text" name="keyword" class="form-control form-control-sm"
+                                    placeholder="Buscar DNI, Nombre o Email..." th:value="${keyword}"
+                                    style="width: 300px;">
+                                <button type="submit" class="btn btn-sm btn-default ml-2"><i
+                                        class="fas fa-search"></i></button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0">
                         <table class="table table-bordered table-hover">
                             <thead>
                                 <tr>
@@ -32,25 +51,48 @@
                                     <th>Nombre Completo</th>
                                     <th>Email</th>
                                     <th>Teléfono</th>
-                                    <th>Acciones</th>
+                                    <th style="width: 160px;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr th:each="paciente : ${pacientes}">
+                                <tr th:each="paciente : ${paginaPacientes.content}">
                                     <td th:text="${paciente.dni}"></td>
                                     <td th:text="${paciente.nombreCompleto}"></td>
                                     <td th:text="${paciente.email}"></td>
                                     <td th:text="${paciente.telefono}"></td>
                                     <td>
-                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
+                                        <a href="#" class="btn btn-sm btn-info" title="Ver Historial"><i
+                                                class="fas fa-eye"></i></a>
                                         <a th:href="@{/pacientes/editar/{id}(id=${paciente.id})}"
-                                            class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                                            class="btn btn-sm btn-warning" title="Editar"><i
+                                                class="fas fa-edit"></i></a>
                                         <a th:href="@{/pacientes/eliminar/{id}(id=${paciente.id})}"
-                                            class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+                                            class="btn btn-sm btn-danger" title="Eliminar"><i
+                                                class="fas fa-trash"></i></a>
                                     </td>
+                                </tr>
+                                <tr th:if="${paginaPacientes.empty}">
+                                    <td colspan="5" class="text-center text-muted">No se encontraron pacientes.</td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div class="card-footer clearfix" th:if="${paginaPacientes.totalPages > 0}">
+                        <ul class="pagination pagination-sm m-0 float-right">
+                            <li class="page-item" th:classappend="${paginaPacientes.first} ? 'disabled' : ''">
+                                <a class="page-link"
+                                    th:href="@{/pacientes(page=${paginaPacientes.number - 1}, keyword=${keyword})}">&laquo;</a>
+                            </li>
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaPacientes.totalPages - 1)}"
+                                th:classappend="${i == paginaPacientes.number} ? 'active' : ''">
+                                <a class="page-link" th:href="@{/pacientes(page=${i}, keyword=${keyword})}"
+                                    th:text="${i + 1}"></a>
+                            </li>
+                            <li class="page-item" th:classappend="${paginaPacientes.last} ? 'disabled' : ''">
+                                <a class="page-link"
+                                    th:href="@{/pacientes(page=${paginaPacientes.number + 1}, keyword=${keyword})}">&raquo;</a>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>

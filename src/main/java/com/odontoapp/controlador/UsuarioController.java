@@ -84,9 +84,8 @@ public class UsuarioController {
         usuarioService.guardarUsuario(usuarioDTO);
         return "redirect:/usuarios";
     }
-    // ... (métodos listarUsuarios, mostrarFormularioNuevoUsuario, guardarUsuario)
 
-    // Muestra el formulario para editar un usuario existente
+    // Muestra el formulario para editar un usuario existentes
     @GetMapping("/usuarios/editar/{id}")
     public String mostrarFormularioEditarUsuario(@PathVariable Long id, Model model) {
         Optional<Usuario> usuarioOpt = usuarioService.buscarPorId(id);
