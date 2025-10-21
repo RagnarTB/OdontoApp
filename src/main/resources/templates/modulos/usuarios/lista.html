@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{layout/base :: layout(titulo='Gestión de Usuarios', contenido=~{::#contenido-principal})}">
+
+<body>
+    <div id="contenido-principal">
+
+        <!-- ENCABEZADO -->
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Gestión de Usuarios</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/usuarios/nuevo}" class="btn btn-primary float-sm-right">
+                            <i class="fas fa-user-plus"></i> Nuevo Usuario
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <section class="content">
+            <div class="container-fluid">
+
+                <!-- ALERTAS DE ÉXITO / ERROR -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${success}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <!-- TARJETA DE LISTADO -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Listado de Usuarios Registrados</h3>
+                        <div class="card-tools">
+                            <form th:action="@{/usuarios}" method="get" class="form-inline">
+                                <input type="text" name="keyword" class="form-control"
+                                    placeholder="Buscar por nombre o email..." th:value="${keyword}">
+                                <button type="submit" class="btn btn-default">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Email</th>
+                                    <th>Roles</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="usuario : ${paginaUsuarios.content}">
+                                    <td th:text="${usuario.id}"></td>
+                                    <td th:text="${usuario.nombreCompleto}"></td>
+                                    <td th:text="${usuario.email}"></td>
+                                    <td>
+                                        <span th:each="rol, iterStat : ${usuario.roles}"
+                                            th:text="${rol.nombre} + (${!iterStat.last} ? ', ' : '')"
+                                            class="badge badge-info mr-1"></span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${usuario.estaActivo}" class="badge badge-success">Activo</span>
+                                        <span th:unless="${usuario.estaActivo}"
+                                            class="badge badge-danger">Inactivo</span>
+                                        <div th:if="${usuario.fechaBloqueo != null}">
+                                            <span class="badge badge-warning">Bloqueado</span>
+                                            <a th:href="@{/usuarios/desbloquear/{id}(id=${usuario.id})}"
+                                                class="btn btn-xs btn-outline-info ml-1" title="Desbloquear">
+                                                <i class="fas fa-key"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
+                                            class="btn btn-sm btn-warning" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a th:href="@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}"
+                                            class="btn btn-sm"
+                                            th:classappend="${usuario.estaActivo ? 'btn-secondary' : 'btn-success'}"
+                                            th:title="${usuario.estaActivo ? 'Desactivar' : 'Activar'}">
+                                            <i
+                                                th:class="${usuario.estaActivo ? 'fas fa-lock' : 'fas fa-lock-open'}"></i>
+                                        </a>
+                                        <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
+                                            class="btn btn-sm btn-danger" title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- PAGINACIÓN -->
+                    <div class="card-footer clearfix">
+                        <ul class="pagination pagination-sm m-0 float-right">
+                            <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled' : ''">
+                                <a class="page-link"
+                                    th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, keyword=${keyword})}">&laquo;</a>
+                            </li>
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaUsuarios.totalPages - 1)}"
+                                th:classappend="${i == paginaUsuarios.number} ? 'active' : ''">
+                                <a class="page-link" th:href="@{/usuarios(page=${i}, keyword=${keyword})}"
+                                    th:text="${i + 1}"></a>
+                            </li>
+                            <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled' : ''">
+                                <a class="page-link"
+                                    th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, keyword=${keyword})}">&raquo;</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </div>
+</body>
+
+</html>

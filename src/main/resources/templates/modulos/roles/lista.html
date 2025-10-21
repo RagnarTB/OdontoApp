@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{layout/base :: layout(titulo='Gestión de Roles', contenido=~{::#contenido-principal})}">
+
+<body>
+    <div id="contenido-principal">
+
+        <!-- Encabezado -->
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Gestión de Roles</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/roles/nuevo}" class="btn btn-primary float-sm-right">
+                            <i class="fas fa-plus"></i> Nuevo Rol
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contenido principal -->
+        <section class="content">
+            <div class="container-fluid">
+
+                <!-- ALERTAS -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${success}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <!-- Tarjeta -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Listado de Roles</h3>
+
+                        <div class="card-tools">
+                            <!-- BUSCADOR -->
+                            <form th:action="@{/roles}" method="get" class="form-inline">
+                                <input type="text" name="keyword" class="form-control form-control-sm"
+                                    placeholder="Buscar por nombre..." th:value="${keyword}">
+                                <button type="submit" class="btn btn-sm btn-default ml-2">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tabla -->
+                    <div class="card-body">
+                        <table class="table table-bordered table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Estado</th>
+                                    <th style="width: 160px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="rol : ${paginaRoles.content}">
+                                    <td th:text="${rol.id}"></td>
+                                    <td th:text="${rol.nombre}"></td>
+                                    <td>
+                                        <span th:if="${rol.estaActivo}" class="badge badge-success">Activo</span>
+                                        <span th:unless="${rol.estaActivo}" class="badge badge-danger">Inactivo</span>
+                                    </td>
+                                    <td>
+                                        <a th:href="@{/roles/editar/{id}(id=${rol.id})}" class="btn btn-sm btn-warning"
+                                            title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+
+                                        <a th:href="@{/roles/cambiar-estado/{id}(id=${rol.id})}" class="btn btn-sm"
+                                            th:classappend="${rol.estaActivo ? 'btn-secondary' : 'btn-success'}"
+                                            th:title="${rol.estaActivo ? 'Desactivar' : 'Activar'}">
+                                            <i th:class="${rol.estaActivo ? 'fas fa-lock' : 'fas fa-lock-open'}"></i>
+                                        </a>
+
+                                        <a th:href="@{/roles/eliminar/{id}(id=${rol.id})}" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('¿Seguro que deseas eliminar este rol?');"
+                                            title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr th:if="${paginaRoles.content.size() == 0}">
+                                    <td colspan="4" class="text-center text-muted">No se encontraron roles.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    <div class="card-footer clearfix">
+                        <ul class="pagination pagination-sm m-0 float-right">
+                            <li class="page-item" th:classappend="${paginaRoles.first} ? 'disabled' : ''">
+                                <a class="page-link"
+                                    th:href="@{/roles(page=${paginaRoles.number - 1}, keyword=${keyword})}">&laquo;</a>
+                            </li>
+
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaRoles.totalPages - 1)}"
+                                th:classappend="${i == paginaRoles.number} ? 'active' : ''">
+                                <a class="page-link" th:href="@{/roles(page=${i}, keyword=${keyword})}"
+                                    th:text="${i + 1}"></a>
+                            </li>
+
+                            <li class="page-item" th:classappend="${paginaRoles.last} ? 'disabled' : ''">
+                                <a class="page-link"
+                                    th:href="@{/roles(page=${paginaRoles.number + 1}, keyword=${keyword})}">&raquo;</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+
+</html>

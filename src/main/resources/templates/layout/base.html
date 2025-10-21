@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" th:fragment="layout(titulo, contenido)">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'OdontoApp | ' + ${titulo}">OdontoApp</title>
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" th:href="@{/adminlte/plugins/fontawesome-free/css/all.min.css}">
+    <!-- Theme style -->
+    <link rel="stylesheet" th:href="@{/adminlte/dist/css/adminlte.min.css}">
+</head>
+
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <!-- Header -->
+        <div th:replace="~{layout/fragmentos :: header}"></div>
+        <!-- Sidebar -->
+        <div th:replace="~{layout/fragmentos :: sidebar}"></div>
+
+        <!-- Contenido Principal -->
+        <div class="content-wrapper">
+            <!-- Aquí se insertará el contenido que nos pasen -->
+            <div th:replace="${contenido}"></div>
+        </div>
+
+        <!-- Footer -->
+        <div th:replace="~{layout/fragmentos :: footer}"></div>
+    </div>
+    <!-- SCRIPTS -->
+    <!-- jQuery -->
+    <script th:src="@{/adminlte/plugins/jquery/jquery.min.js}"></script>
+    <!-- Bootstrap 4 -->
+    <script th:src="@{/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
+    <!-- AdminLTE App -->
+    <script th:src="@{/adminlte/dist/js/adminlte.min.js}"></script>
+</body>
+
+</html>

@@ -1,0 +1,41 @@
+services:
+  # Servicio de la base de datos MySQL
+  mysql-db:
+    image: mysql:8.0
+    container_name: odontoapp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: odontoapp_db
+      MYSQL_ROOT_PASSWORD: leonardo
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # Healthcheck CORREGIDO para verificar que la BD esté lista
+    healthcheck:
+      # CORRECCIÓN: Se quitó el espacio después de "-p"
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpassword" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Servicio de la aplicación Spring Boot
+  odontoapp-backend:
+    container_name: odontoapp-backend
+    build: .
+    restart: on-failure
+    depends_on:
+      mysql-db:
+        # Ahora sí esperará a que el healthcheck sea exitoso
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/odontoapp_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: leonardo
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
+
+volumes:
+  mysql_data:

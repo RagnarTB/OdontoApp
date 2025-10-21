@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{layout/base :: layout(titulo='Formulario de Paciente', contenido=~{::#contenido-principal})}">
+
+<body>
+    <div id="contenido-principal">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Formulario de Paciente</h1>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="content">
+            <div class="container-fluid">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Datos del Paciente</h3>
+                    </div>
+                    <form th:action="@{/pacientes/guardar}" th:object="${paciente}" method="post">
+                        <input type="hidden" th:field="*{id}" />
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="dni">DNI</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="dni" th:field="*{dni}"
+                                        placeholder="Ingrese DNI y presione Buscar">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button"
+                                            id="btn-buscar-dni">Buscar en Reniec</button>
+                                    </div>
+                                </div>
+                                <small id="dni-error" class="form-text text-danger"></small>
+                            </div>
+                            <div class="form-group">
+                                <label for="nombreCompleto">Nombre Completo</label>
+                                <input type="text" class="form-control" id="nombreCompleto" th:field="*{nombreCompleto}"
+                                    readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" class="form-control" id="email" th:field="*{email}"
+                                    placeholder="correo@ejemplo.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="telefono">Teléfono</label>
+                                <input type="text" class="form-control" id="telefono" th:field="*{telefono}"
+                                    placeholder="987654321">
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                            <a th:href="@{/pacientes}" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', function () {
+                document.getElementById('btn-buscar-dni').addEventListener('click', function () {
+                    const dniInput = document.getElementById('dni');
+                    const dni = dniInput.value;
+                    const nombreCompletoInput = document.getElementById('nombreCompleto');
+                    const dniError = document.getElementById('dni-error');
+                    const self = this; // Guardar referencia al botón
+
+                    dniError.textContent = ''; // Limpiar error previo
+                    nombreCompletoInput.value = ''; // Limpiar nombre previo
+
+                    if (!/^\d{8}$/.test(dni)) { // Validar que sean 8 dígitos numéricos
+                        dniError.textContent = 'El DNI debe contener exactamente 8 dígitos numéricos.';
+                        return;
+                    }
+
+                    // Feedback de carga
+                    self.textContent = 'Buscando...';
+                    self.disabled = true;
+                    dniInput.readOnly = true; // Bloquear DNI durante la búsqueda
+
+                    fetch('/api/reniec/' + dni)
+                        .then(response => {
+                            if (!response.ok) {
+                                // Leer el cuerpo del error como texto
+                                return response.text().then(text => {
+                                    // Intentar parsear como JSON si es posible, si no, usar el texto crudo
+                                    try {
+                                        const errorJson = JSON.parse(text);
+                                        throw new Error(errorJson.message || errorJson.error || 'DNI no encontrado o ya registrado.');
+                                    } catch (e) {
+                                        throw new Error(text || 'DNI no encontrado o ya registrado.');
+                                    }
+                                });
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            // --- CORRECCIÓN AQUÍ ---
+                            // Accedemos al campo 'nombreCompleto' de nuestro DTO mapeado
+                            if (data && data.nombreCompleto) {
+                                nombreCompletoInput.value = data.nombreCompleto;
+                            } else {
+                                // Si la API devuelve éxito pero sin el campo esperado
+                                throw new Error('La respuesta de la API no contiene el nombre completo.');
+                            }
+                        })
+                        .catch(error => {
+                            dniError.textContent = error.message;
+                            nombreCompletoInput.value = ''; // Limpiar por si acaso
+                        })
+                        .finally(() => {
+                            // Restaurar el botón y el input DNI
+                            self.textContent = 'Buscar en Reniec';
+                            self.disabled = false;
+                            dniInput.readOnly = false;
+                        });
+                });
+            });
+        </script>
+    </div>
+</body>
+
+</html>

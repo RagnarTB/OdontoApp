@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{layout/base :: layout(titulo='Gestión de Pacientes', contenido=~{::#contenido-principal})}">
+
+<body>
+    <div id="contenido-principal">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Gestión de Pacientes</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/pacientes/nuevo}" class="btn btn-primary float-sm-right">
+                            <i class="fas fa-user-plus"></i> Nuevo Paciente
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="content">
+            <div class="container-fluid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Listado de Pacientes</h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>DNI</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Email</th>
+                                    <th>Teléfono</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="paciente : ${pacientes}">
+                                    <td th:text="${paciente.dni}"></td>
+                                    <td th:text="${paciente.nombreCompleto}"></td>
+                                    <td th:text="${paciente.email}"></td>
+                                    <td th:text="${paciente.telefono}"></td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
+                                        <a th:href="@{/pacientes/editar/{id}(id=${paciente.id})}"
+                                            class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                                        <a th:href="@{/pacientes/eliminar/{id}(id=${paciente.id})}"
+                                            class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+
+</html>
