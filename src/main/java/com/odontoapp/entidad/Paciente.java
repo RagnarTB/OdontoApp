@@ -1,17 +1,21 @@
 package com.odontoapp.entidad;
 
-import jakarta.persistence.*;
-import lombok.Data;
+import java.time.LocalDate;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-import java.time.LocalDate;
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @Data
+@EqualsAndHashCode(callSuper = true, exclude = { "usuario" }) // Excluir relaciones
+@ToString(callSuper = true, exclude = { "usuario" }) // Excluir relaciones
 @Entity
 @Table(name = "pacientes")
-@SQLDelete(sql = "UPDATE pacientes SET eliminado = true WHERE id = ?") // <-- Soft Delete
-@Where(clause = "eliminado = false") // <-- Siempre filtra los eliminados
-public class Paciente {
+@SQLDelete(sql = "UPDATE pacientes SET eliminado = true WHERE id = ?")
+@Where(clause = "eliminado = false")
+public class Paciente extends EntidadAuditable { // <-- Extiende EntidadAuditable
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,15 +33,15 @@ public class Paciente {
     private LocalDate fechaNacimiento;
     private String direccion;
 
-    @Lob // Para textos largos
+    @Lob
     private String alergias;
 
     @Lob
     private String antecedentesMedicos;
 
-    private boolean eliminado = false; // <-- Columna para el Soft Delete
+    private boolean eliminado = false; // Mantenemos esta explícitamente
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true) // Si se borra el paciente, se borra su usuario
-    @JoinColumn(name = "usuario_id", referencedColumnName = "id")
+    @OneToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JoinColumn(name = "usuario_id", referencedColumnName = "id", unique = true)
     private Usuario usuario;
 }

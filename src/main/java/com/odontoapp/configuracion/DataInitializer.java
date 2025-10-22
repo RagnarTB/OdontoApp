@@ -80,9 +80,7 @@ public class DataInitializer implements CommandLineRunner {
             // Por ahora lo dejamos sin permisos
             return rolRepository.save(pacienteRol);
         });
-        // --- FIN BLOQUE PACIENTE ---
-
-        // --- CREAR USUARIO ADMINISTRADOR SI NO EXISTE ---
+       
         if (usuarioRepository.findByEmail("admin@odontoapp.com").isEmpty()) {
             Usuario admin = new Usuario();
             admin.setNombreCompleto("Administrador del Sistema");

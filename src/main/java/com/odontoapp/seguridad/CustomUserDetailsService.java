@@ -1,10 +1,10 @@
 package com.odontoapp.seguridad;
 
-import com.odontoapp.entidad.Permiso;
-import com.odontoapp.entidad.Rol;
-import com.odontoapp.entidad.Usuario;
-import com.odontoapp.repositorio.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.GrantedAuthority;
@@ -14,12 +14,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import com.odontoapp.servicio.UsuarioService; // Asegúrate de importar tu servicio
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+
+import com.odontoapp.entidad.Permiso;
+import com.odontoapp.entidad.Rol; // Asegúrate de importar tu servicio
+import com.odontoapp.entidad.Usuario;
+import com.odontoapp.repositorio.UsuarioRepository;
+import com.odontoapp.servicio.UsuarioService;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -40,6 +40,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         Usuario usuario = usuarioRepository.findByEmailWithRolesAndPermissions(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con email: " + email));
 
+        // --- VALIDACIÓN DE BLOQUEO TEMPORAL ---
         if (usuario.getFechaBloqueo() != null) {
             if (LocalDateTime.now().isBefore(usuario.getFechaBloqueo().plusMinutes(TIEMPO_BLOQUEO_MINUTOS))) {
                 throw new LockedException("La cuenta está bloqueada temporalmente.");
@@ -49,14 +50,24 @@ public class CustomUserDetailsService implements UserDetailsService {
             }
         }
 
+        // --- VALIDACIÓN DE ACTIVACIÓN DE USUARIO ---
         if (!usuario.isEstaActivo()) {
             throw new DisabledException("El usuario está inactivo.");
         }
 
+        // NUEVA VALIDACIÓN: Debe tener al menos UN rol activo
+        boolean tieneRolActivo = usuario.getRoles().stream()
+                .anyMatch(Rol::isEstaActivo);
+
+        if (!tieneRolActivo) {
+            throw new DisabledException("El usuario no tiene roles activos. Contacte al administrador.");
+        }
+
+        // --- CREACIÓN DE DETALLES DE USUARIO (Spring Security) ---
         return new User(
                 usuario.getEmail(),
                 usuario.getPassword(),
-                getAuthorities(usuario.getRoles()) // Usamos el nuevo método
+                getAuthorities(usuario.getRoles()) // Usa el método para obtener permisos y roles
         );
     }
 

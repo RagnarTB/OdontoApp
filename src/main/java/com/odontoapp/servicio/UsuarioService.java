@@ -1,10 +1,12 @@
 package com.odontoapp.servicio;
 
-import com.odontoapp.dto.UsuarioDTO;
-import com.odontoapp.entidad.Usuario;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import java.util.Optional;
+
+import com.odontoapp.dto.UsuarioDTO;
+import com.odontoapp.entidad.Usuario;
 
 public interface UsuarioService {
     void guardarUsuario(UsuarioDTO usuarioDTO);
@@ -21,4 +23,6 @@ public interface UsuarioService {
     void procesarLoginFallido(String email);
 
     void resetearIntentosFallidos(String email);
+
+    void cambiarEstadoUsuario(Long id, boolean activar) throws UnsupportedOperationException, IllegalStateException;
 }

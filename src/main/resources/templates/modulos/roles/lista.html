@@ -1,11 +1,9 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org"
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
     th:replace="~{layout/base :: layout(titulo='Gestión de Roles', contenido=~{::#contenido-principal})}">
 
 <body>
     <div id="contenido-principal">
-
-        <!-- Encabezado -->
         <section class="content-header">
             <div class="container-fluid">
                 <div class="row mb-2">
@@ -13,7 +11,8 @@
                         <h1>Gestión de Roles</h1>
                     </div>
                     <div class="col-sm-6">
-                        <a th:href="@{/roles/nuevo}" class="btn btn-primary float-sm-right">
+                        <a th:href="@{/roles/nuevo}" class="btn btn-primary float-sm-right"
+                            sec:authorize="hasAuthority('CREAR_ROLES')">
                             <i class="fas fa-plus"></i> Nuevo Rol
                         </a>
                     </div>
@@ -21,32 +20,24 @@
             </div>
         </section>
 
-        <!-- Contenido principal -->
         <section class="content">
             <div class="container-fluid">
-
-                <!-- ALERTAS -->
                 <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
                     <span th:text="${success}"></span>
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-
                 <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
                     <span th:text="${error}"></span>
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-
-                <!-- Tarjeta -->
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Listado de Roles</h3>
-
                         <div class="card-tools">
-                            <!-- BUSCADOR -->
                             <form th:action="@{/roles}" method="get" class="form-inline">
                                 <input type="text" name="keyword" class="form-control form-control-sm"
                                     placeholder="Buscar por nombre..." th:value="${keyword}">
@@ -57,8 +48,7 @@
                         </div>
                     </div>
 
-                    <!-- Tabla -->
-                    <div class="card-body">
+                    <div class="card-body p-0">
                         <table class="table table-bordered table-hover table-striped">
                             <thead>
                                 <tr>
@@ -74,48 +64,50 @@
                                     <td th:text="${rol.nombre}"></td>
                                     <td>
                                         <span th:if="${rol.estaActivo}" class="badge badge-success">Activo</span>
-                                        <span th:unless="${rol.estaActivo}" class="badge badge-danger">Inactivo</span>
+                                        <span th:unless="${rol.estaActivo}"
+                                            class="badge badge-secondary">Inactivo</span>
                                     </td>
                                     <td>
                                         <a th:href="@{/roles/editar/{id}(id=${rol.id})}" class="btn btn-sm btn-warning"
-                                            title="Editar">
+                                            title="Editar Rol y Permisos" sec:authorize="hasAuthority('EDITAR_ROLES')">
                                             <i class="fas fa-edit"></i>
                                         </a>
-
-                                        <a th:href="@{/roles/cambiar-estado/{id}(id=${rol.id})}" class="btn btn-sm"
+                                        <a th:if="${rol.nombre != 'ADMIN' and rol.nombre != 'PACIENTE'}"
+                                            th:href="@{/roles/cambiar-estado/{id}(id=${rol.id})}" class="btn btn-sm"
                                             th:classappend="${rol.estaActivo ? 'btn-secondary' : 'btn-success'}"
-                                            th:title="${rol.estaActivo ? 'Desactivar' : 'Activar'}">
-                                            <i th:class="${rol.estaActivo ? 'fas fa-lock' : 'fas fa-lock-open'}"></i>
+                                            th:title="${rol.estaActivo ? 'Desactivar Rol' : 'Activar Rol'}"
+                                            sec:authorize="hasAuthority('EDITAR_ROLES')">
+                                            <i
+                                                th:class="${rol.estaActivo ? 'fas fa-toggle-off' : 'fas fa-toggle-on'}"></i>
                                         </a>
-
-                                        <a th:href="@{/roles/eliminar/{id}(id=${rol.id})}" class="btn btn-sm btn-danger"
-                                            onclick="return confirm('¿Seguro que deseas eliminar este rol?');"
-                                            title="Eliminar">
+                                        <a th:if="${rol.nombre != 'ADMIN' and rol.nombre != 'PACIENTE'}"
+                                            th:href="@{/roles/eliminar/{id}(id=${rol.id})}"
+                                            class="btn btn-sm btn-danger"
+                                            onclick="return confirm('¿Está seguro de que desea eliminar lógicamente este rol? Solo es posible si no tiene usuarios asignados.');"
+                                            title="Eliminar Rol (Lógico)"
+                                            sec:authorize="hasAuthority('ELIMINAR_ROLES')">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </td>
                                 </tr>
-                                <tr th:if="${paginaRoles.content.size() == 0}">
+                                <tr th:if="${paginaRoles.empty}">
                                     <td colspan="4" class="text-center text-muted">No se encontraron roles.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Paginación -->
-                    <div class="card-footer clearfix">
+                    <div class="card-footer clearfix" th:if="${paginaRoles.totalPages > 0}">
                         <ul class="pagination pagination-sm m-0 float-right">
                             <li class="page-item" th:classappend="${paginaRoles.first} ? 'disabled' : ''">
                                 <a class="page-link"
                                     th:href="@{/roles(page=${paginaRoles.number - 1}, keyword=${keyword})}">&laquo;</a>
                             </li>
-
                             <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaRoles.totalPages - 1)}"
                                 th:classappend="${i == paginaRoles.number} ? 'active' : ''">
                                 <a class="page-link" th:href="@{/roles(page=${i}, keyword=${keyword})}"
                                     th:text="${i + 1}"></a>
                             </li>
-
                             <li class="page-item" th:classappend="${paginaRoles.last} ? 'disabled' : ''">
                                 <a class="page-link"
                                     th:href="@{/roles(page=${paginaRoles.number + 1}, keyword=${keyword})}">&raquo;</a>

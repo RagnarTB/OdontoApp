@@ -21,4 +21,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Page<Usuario> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     Optional<Usuario> findByVerificationToken(String verificationToken);
+
+    // --- NUEVO MÉTODO ---
+    @Query("SELECT u FROM Usuario u WHERE u.email = :email") // Ignora el @Where global
+    Optional<Usuario> findByEmailIgnorandoSoftDelete(@Param("email") String email);
 }

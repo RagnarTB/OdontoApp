@@ -104,10 +104,14 @@ public class RolController {
     @GetMapping("/roles/eliminar/{id}")
     public String eliminarRol(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            rolService.eliminarRol(id);
-            redirectAttributes.addFlashAttribute("success", "Rol eliminado con éxito.");
+            rolService.eliminarRol(id); // Llama al método que hace soft delete
+            redirectAttributes.addFlashAttribute("success", "Rol eliminado lógicamente con éxito."); // <-- Mensaje
+                                                                                                     // actualizado
         } catch (UnsupportedOperationException | DataIntegrityViolationException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al intentar eliminar lógicamente el rol.");
+            System.err.println("Error al eliminar (soft delete) rol: " + e.getMessage());
         }
         return "redirect:/roles";
     }

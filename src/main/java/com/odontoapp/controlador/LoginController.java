@@ -11,10 +11,8 @@ public class LoginController {
         return "publico/login";
     }
 
-    // Controlador para el dashboard (CORREGIDO)
     @GetMapping({ "/", "/dashboard" })
     public String verDashboard() {
-        // Simplemente devuelve el nombre del archivo de la plantilla del contenido
         return "dashboard";
     }
 }

@@ -1,11 +1,9 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org"
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
     th:replace="~{layout/base :: layout(titulo='Gestión de Usuarios', contenido=~{::#contenido-principal})}">
 
 <body>
     <div id="contenido-principal">
-
-        <!-- ENCABEZADO -->
         <section class="content-header">
             <div class="container-fluid">
                 <div class="row mb-2">
@@ -13,7 +11,8 @@
                         <h1>Gestión de Usuarios</h1>
                     </div>
                     <div class="col-sm-6">
-                        <a th:href="@{/usuarios/nuevo}" class="btn btn-primary float-sm-right">
+                        <a th:href="@{/usuarios/nuevo}" class="btn btn-primary float-sm-right"
+                            sec:authorize="hasAuthority('CREAR_USUARIOS')">
                             <i class="fas fa-user-plus"></i> Nuevo Usuario
                         </a>
                     </div>
@@ -21,11 +20,9 @@
             </div>
         </section>
 
-        <!-- CONTENIDO PRINCIPAL -->
         <section class="content">
             <div class="container-fluid">
 
-                <!-- ALERTAS DE ÉXITO / ERROR -->
                 <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
                     <span th:text="${success}"></span>
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -38,24 +35,22 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-
-                <!-- TARJETA DE LISTADO -->
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Listado de Usuarios Registrados</h3>
                         <div class="card-tools">
                             <form th:action="@{/usuarios}" method="get" class="form-inline">
-                                <input type="text" name="keyword" class="form-control"
+                                <input type="text" name="keyword" class="form-control form-control-sm"
                                     placeholder="Buscar por nombre o email..." th:value="${keyword}">
-                                <button type="submit" class="btn btn-default">
+                                <button type="submit" class="btn btn-sm btn-default ml-2">
                                     <i class="fas fa-search"></i>
                                 </button>
                             </form>
                         </div>
                     </div>
 
-                    <div class="card-body">
-                        <table class="table table-bordered table-hover">
+                    <div class="card-body p-0">
+                        <table class="table table-bordered table-hover table-striped">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -63,7 +58,7 @@
                                     <th>Email</th>
                                     <th>Roles</th>
                                     <th>Estado</th>
-                                    <th>Acciones</th>
+                                    <th style="width: 180px;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -79,39 +74,48 @@
                                     <td>
                                         <span th:if="${usuario.estaActivo}" class="badge badge-success">Activo</span>
                                         <span th:unless="${usuario.estaActivo}"
-                                            class="badge badge-danger">Inactivo</span>
-                                        <div th:if="${usuario.fechaBloqueo != null}">
-                                            <span class="badge badge-warning">Bloqueado</span>
-                                            <a th:href="@{/usuarios/desbloquear/{id}(id=${usuario.id})}"
-                                                class="btn btn-xs btn-outline-info ml-1" title="Desbloquear">
-                                                <i class="fas fa-key"></i>
-                                            </a>
-                                        </div>
+                                            class="badge badge-secondary">Inactivo</span>
+                                        <span th:if="${usuario.fechaBloqueo != null}"
+                                            class="badge badge-warning ml-1">Bloqueado</span>
                                     </td>
                                     <td>
                                         <a th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
-                                            class="btn btn-sm btn-warning" title="Editar">
+                                            class="btn btn-sm btn-warning" title="Editar Usuario"
+                                            sec:authorize="hasAuthority('EDITAR_USUARIOS')">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <a th:href="@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}"
                                             class="btn btn-sm"
                                             th:classappend="${usuario.estaActivo ? 'btn-secondary' : 'btn-success'}"
-                                            th:title="${usuario.estaActivo ? 'Desactivar' : 'Activar'}">
+                                            th:title="${usuario.estaActivo ? 'Desactivar Usuario' : 'Activar Usuario'}"
+                                            sec:authorize="hasAuthority('EDITAR_USUARIOS')"
+                                            th:if="${usuario.email != 'admin@odontoapp.com' and #authentication.name != usuario.email}">
                                             <i
-                                                th:class="${usuario.estaActivo ? 'fas fa-lock' : 'fas fa-lock-open'}"></i>
+                                                th:class="${usuario.estaActivo ? 'fas fa-toggle-off' : 'fas fa-toggle-on'}"></i>
                                         </a>
                                         <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
-                                            class="btn btn-sm btn-danger" title="Eliminar">
+                                            class="btn btn-sm btn-danger" title="Eliminar Usuario (Lógico)"
+                                            onclick="return confirm('¿Está seguro de que desea eliminar lógicamente este usuario? Esta acción no se puede deshacer fácilmente.');"
+                                            sec:authorize="hasAuthority('ELIMINAR_USUARIOS')"
+                                            th:if="${usuario.email != 'admin@odontoapp.com'}">
                                             <i class="fas fa-trash"></i>
                                         </a>
+                                        <a th:if="${usuario.fechaBloqueo != null}"
+                                            th:href="@{/usuarios/desbloquear/{id}(id=${usuario.id})}"
+                                            class="btn btn-sm btn-outline-info ml-1" title="Desbloquear Usuario"
+                                            sec:authorize="hasAuthority('EDITAR_USUARIOS')">
+                                            <i class="fas fa-key"></i>
+                                        </a>
                                     </td>
+                                </tr>
+                                <tr th:if="${paginaUsuarios.empty}">
+                                    <td colspan="6" class="text-center text-muted">No se encontraron usuarios.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- PAGINACIÓN -->
-                    <div class="card-footer clearfix">
+                    <div class="card-footer clearfix" th:if="${paginaUsuarios.totalPages > 0}">
                         <ul class="pagination pagination-sm m-0 float-right">
                             <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled' : ''">
                                 <a class="page-link"
@@ -128,11 +132,9 @@
                             </li>
                         </ul>
                     </div>
-
                 </div>
             </div>
         </section>
-
     </div>
 </body>
 
