@@ -106,52 +106,9 @@
                 </div>
             </div>
         </section>
-
-        <script th:inline="javascript">
-            document.addEventListener('DOMContentLoaded', function () {
-                document.getElementById('btn-buscar-dni').addEventListener('click', function () {
-                    const dniInput = document.getElementById('dni');
-                    const dni = dniInput.value;
-                    const nombreCompletoInput = document.getElementById('nombreCompleto');
-                    const dniError = document.getElementById('dni-error');
-                    const self = this;
-                    dniError.textContent = '';
-                    if (!/^\d{8}$/.test(dni)) {
-                        dniError.textContent = 'El DNI debe contener exactamente 8 dígitos numéricos.';
-                        return;
-                    }
-                    self.textContent = 'Buscando...';
-                    self.disabled = true;
-                    dniInput.readOnly = true;
-
-                    fetch('/api/reniec/' + dni)
-                        .then(response => {
-                            if (!response.ok) {
-                                return response.json().then(errorData => {
-                                    throw new Error(errorData.error || 'DNI no encontrado o ya registrado.');
-                                });
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            if (data && data.nombreCompleto) {
-                                nombreCompletoInput.value = data.nombreCompleto;
-                            } else {
-                                throw new Error('La respuesta de la API no contiene el nombre completo.');
-                            }
-                        })
-                        .catch(error => {
-                            dniError.textContent = error.message;
-                        })
-                        .finally(() => {
-                            self.textContent = 'Buscar en Reniec';
-                            self.disabled = false;
-                            dniInput.readOnly = false;
-                        });
-                });
-            });
-        </script>
+        <script th:src="@{/js/paciente-form.js}"></script>
     </div>
+
 </body>
 
 </html>

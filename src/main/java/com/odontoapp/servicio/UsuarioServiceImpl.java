@@ -1,14 +1,5 @@
 package com.odontoapp.servicio;
 
-import com.odontoapp.dto.UsuarioDTO;
-import com.odontoapp.entidad.Rol;
-import com.odontoapp.entidad.Usuario;
-import com.odontoapp.repositorio.RolRepository;
-import com.odontoapp.repositorio.UsuarioRepository;
-
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +7,14 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.odontoapp.dto.UsuarioDTO;
+import com.odontoapp.entidad.Rol;
+import com.odontoapp.entidad.Usuario;
+import com.odontoapp.repositorio.RolRepository;
+import com.odontoapp.repositorio.UsuarioRepository;
 
 @Service
 public class UsuarioServiceImpl implements UsuarioService {
@@ -32,30 +31,44 @@ public class UsuarioServiceImpl implements UsuarioService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    // Añade este método privado
+    private void validarComplejidadPassword(String password) {
+        if (password == null || password.isEmpty()) {
+            // No validar si está vacío (puede ser una edición sin cambio de contraseña)
+            return;
+        }
+        if (password.length() < 8) {
+            throw new IllegalArgumentException("La contraseña debe tener al menos 8 caracteres.");
+        }
+        // Añadir más reglas aquí si es necesario (regex, etc.)
+    }
+
     @Override
     public void guardarUsuario(UsuarioDTO usuarioDTO) {
         Usuario usuario;
-        // Si el DTO tiene un ID, significa que estamos EDITANDO
-        if (usuarioDTO.getId() != null) {
+        boolean esNuevo = usuarioDTO.getId() == null;
+
+        if (!esNuevo) {
             usuario = usuarioRepository.findById(usuarioDTO.getId())
                     .orElseThrow(
                             () -> new IllegalStateException("Usuario no encontrado con ID: " + usuarioDTO.getId()));
         } else {
-            // Si no tiene ID, es un usuario NUEVO
             usuario = new Usuario();
-            // La contraseña es obligatoria solo para usuarios nuevos
+            // Contraseña obligatoria solo para nuevos
             if (usuarioDTO.getPassword() == null || usuarioDTO.getPassword().isEmpty()) {
                 throw new IllegalArgumentException("La contraseña es obligatoria para nuevos usuarios.");
             }
         }
 
-        usuario.setNombreCompleto(usuarioDTO.getNombreCompleto());
-        usuario.setEmail(usuarioDTO.getEmail());
-
-        // Solo actualizamos la contraseña si se proporcionó una nueva
+        // Validar complejidad ANTES de codificar y guardar (si se proporcionó
+        // contraseña)
         if (usuarioDTO.getPassword() != null && !usuarioDTO.getPassword().isEmpty()) {
+            validarComplejidadPassword(usuarioDTO.getPassword()); // <-- LLAMADA AL MÉTODO
             usuario.setPassword(passwordEncoder.encode(usuarioDTO.getPassword()));
         }
+
+        usuario.setNombreCompleto(usuarioDTO.getNombreCompleto());
+        usuario.setEmail(usuarioDTO.getEmail());
 
         List<Rol> roles = rolRepository.findAllById(usuarioDTO.getRoles());
         usuario.setRoles(new HashSet<>(roles));

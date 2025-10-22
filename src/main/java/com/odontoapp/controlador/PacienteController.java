@@ -1,12 +1,7 @@
 package com.odontoapp.controlador;
 
-import com.odontoapp.dto.PacienteDTO;
-import com.odontoapp.dto.ReniecResponseDTO;
-import com.odontoapp.entidad.Paciente;
-import com.odontoapp.servicio.PacienteService;
-import com.odontoapp.servicio.ReniecService;
-
-import jakarta.validation.Valid;
+import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -16,13 +11,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Map;
-import java.util.Optional;
-
+import com.odontoapp.dto.PacienteDTO;
+import com.odontoapp.dto.ReniecResponseDTO;
+import com.odontoapp.entidad.Paciente;
 import com.odontoapp.repositorio.PacienteRepository;
+import com.odontoapp.servicio.PacienteService;
+import com.odontoapp.servicio.ReniecService;
+
+import jakarta.validation.Valid;
 
 @Controller
 public class PacienteController {
@@ -119,11 +123,24 @@ public class PacienteController {
             return ResponseEntity.badRequest().body(Map.of("error", "El DNI ya se encuentra registrado."));
         }
 
+        // En PacienteController, dentro de consultarReniec
         ReniecResponseDTO response = reniecService.consultarDni(dni);
-        if (response != null && response.getNombreCompleto() != null) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(404).body(Map.of("error", "DNI no encontrado. Verifique el número."));
+        System.out.println(">>> ReniecService devolvió: " + response);
+
+        if (response != null) {
+            String nombreCalculado = response.getNombreCompleto(); // Llama al getter modificado
+            System.out.println(">>> DTO.getNombreCompleto() devuelve: " + nombreCalculado);
+
+            if (nombreCalculado != null) {
+                // Crear un objeto simple para enviar solo el nombre
+                Map<String, String> resultadoJson = Map.of("nombreCompleto", nombreCalculado);
+                return ResponseEntity.ok(resultadoJson); // Devolver el Map
+            }
         }
+
+        // Si response es null o nombreCalculado es null
+        return ResponseEntity.status(404).body(
+                Map.of("error", "DNI no encontrado o datos incompletos. Verifique el número."));
     }
+
 }
