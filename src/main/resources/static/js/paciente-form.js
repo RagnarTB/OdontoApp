@@ -1,91 +1,116 @@
+// Archivo: C:\proyectos\nuevo\odontoapp\src\main\resources\static\js\paciente-form.js
+
 document.addEventListener('DOMContentLoaded', function () {
-    const btnBuscarDni = document.getElementById('btn-buscar-dni');
 
-    if (btnBuscarDni) { // Asegurarse de que el botón existe en la página
+    // Identifica el botón de búsqueda. Puede ser btn-buscar-dni (admin) o btn-buscar-reniec-registro (self-service)
+    const btnBuscarDni = document.getElementById('btn-buscar-dni') || document.getElementById('btn-buscar-reniec-registro');
+
+    if (btnBuscarDni) {
         btnBuscarDni.addEventListener('click', function () {
-            const dniInput = document.getElementById('dni');
-            const dni = dniInput.value;
+            const numeroDocumentoInput = document.getElementById('numeroDocumento');
+            const tipoDocumentoSelect = document.getElementById('tipoDocumentoId');
             const nombreCompletoInput = document.getElementById('nombreCompleto');
-            const dniError = document.getElementById('dni-error');
-            const self = this; // Guardar referencia al botón
+            const errorSpan = document.getElementById('doc-error');
 
-            dniError.textContent = ''; // Limpiar errores
+            const numDoc = numeroDocumentoInput.value.trim();
+            const tipoDocId = tipoDocumentoSelect.value;
+            const tipoDocNombre = tipoDocumentoSelect.options[tipoDocumentoSelect.selectedIndex].text.trim().toUpperCase();
 
-            // Validación básica de formato DNI
-            if (!/^\d{8}$/.test(dni)) {
-                dniError.textContent = 'El DNI debe contener exactamente 8 dígitos numéricos.';
+            errorSpan.textContent = '';
+            nombreCompletoInput.value = '';
+
+            // 🔹 Validación inicial
+            if (!numDoc || !tipoDocId) {
+                errorSpan.textContent = 'Seleccione el tipo y escriba el número de documento.';
                 return;
             }
 
-            // Deshabilitar botón y campo DNI durante la búsqueda
+            // 🔹 Validación: Solo DNI
+            if (tipoDocNombre !== 'DOCUMENTO NACIONAL DE IDENTIDAD' && tipoDocNombre !== 'DNI') {
+                errorSpan.textContent = 'La búsqueda automática solo está disponible para DNI.';
+                nombreCompletoInput.readOnly = false;
+                return;
+            }
+
+            // 🔹 Validación: Formato DNI
+            if (!/^\d{8}$/.test(numDoc)) {
+                errorSpan.textContent = 'El DNI debe contener exactamente 8 dígitos numéricos.';
+                return;
+            }
+
+            // 🔸 Iniciar búsqueda
+            const self = this;
+            const originalText = self.textContent;
             self.textContent = 'Buscando...';
             self.disabled = true;
-            dniInput.readOnly = true;
 
-            fetch('/api/reniec/' + dni)
+            // Deshabilitar edición
+            numeroDocumentoInput.readOnly = true;
+            nombreCompletoInput.readOnly = true;
+
+            errorSpan.classList.remove('text-success');
+            errorSpan.classList.add('text-danger');
+            errorSpan.textContent = 'Buscando en RENIEC...';
+
+            // 🔹 Llamada a la API (fetch nativo)
+            fetch(`/api/reniec?numDoc=${encodeURIComponent(numDoc)}&tipoDocId=${encodeURIComponent(tipoDocId)}`)
                 .then(response => {
-                    // ... (manejo de errores de respuesta como antes) ...
                     if (!response.ok) {
                         return response.json().then(errorData => {
+                            // 🔥 DETECCIÓN DE RESTABLECIMIENTO (409)
+                            if (response.status === 409 && errorData.restaurar) {
+                                throw {
+                                    isRestorable: true,
+                                    message: errorData.error,
+                                    pacienteId: errorData.pacienteId
+                                };
+                            }
                             throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
-                        }).catch(() => {
-                            throw new Error(`Error ${response.status}: ${response.statusText}`);
+                        }).catch(e => {
+                            throw (e.isRestorable ? e : new Error(`Error ${response.status}: ${response.statusText}`));
                         });
                     }
                     return response.json();
                 })
                 .then(data => {
-                    // *** LÓGICA MEJORADA ***
-                    let nombreEncontrado = null;
+                    let nombreEncontrado = data && data.nombreCompleto ? data.nombreCompleto.trim() : null;
 
-                    // 1. Prioridad: Usar nombreCompleto si existe y no está vacío
-                    if (data && data.nombreCompleto && data.nombreCompleto.trim() !== '') {
-                        nombreEncontrado = data.nombreCompleto.trim();
-                    }
-                    // 2. Fallback: Construir desde partes si nombreCompleto falta pero las partes existen
-                    else if (data && data.nombres && data.apellidoPaterno) {
-                        let partes = [
-                            data.apellidoPaterno.trim(),
-                            data.apellidoMaterno ? data.apellidoMaterno.trim() : null, // Manejar apellido materno opcional
-                            data.nombres.trim()
-                        ];
-                        // Filtrar partes nulas/vacías y unir con espacio
-                        nombreEncontrado = partes.filter(p => p && p !== '').join(' ').replace(/\s+/g, ' ');
-                    }
-
-                    // Asignar si se encontró/construyó un nombre
                     if (nombreEncontrado) {
                         nombreCompletoInput.value = nombreEncontrado;
+                        nombreCompletoInput.readOnly = true;
+                        errorSpan.textContent = 'Datos cargados con éxito.';
+                        errorSpan.classList.remove('text-danger');
+                        errorSpan.classList.add('text-success');
                     } else {
-                        // Si ni nombreCompleto ni las partes necesarias existen
-                        dniError.textContent = 'DNI encontrado, pero no se recuperaron datos de nombre.';
-                        console.warn("Respuesta API Reniec incompleta:", data);
+                        errorSpan.textContent = 'DNI encontrado, pero no se recuperaron datos de nombre.';
+                        nombreCompletoInput.readOnly = false;
                     }
-                    // *** FIN LÓGICA MEJORADA ***
                 })
                 .catch(error => {
-                    // ... (manejo de errores de fetch como antes) ...
-                    dniError.textContent = error.message;
-                    console.error("Error en fetch API Reniec:", error);
+                    if (error.isRestorable) {
+                        // Lógica para el ADMIN/RECEPCIÓN: Solicitar restablecimiento
+                        const confirmar = window.confirm(`El paciente está eliminado. ¿Desea restablecerlo (ID: ${error.pacienteId}) y continuar con la edición?`);
+                        if (confirmar) {
+                            window.location.href = `/pacientes/restablecer/${error.pacienteId}`;
+                            return;
+                        }
+                    }
+
+                    errorSpan.textContent = error.message || 'Error desconocido al consultar Reniec.';
+                    errorSpan.classList.remove('text-success');
+                    errorSpan.classList.add('text-danger');
+                    nombreCompletoInput.readOnly = false;
                 })
                 .finally(() => {
-                    // ... (re-habilitar botón/campo como antes) ...
-                    self.textContent = 'Buscar en Reniec';
+                    self.textContent = originalText;
                     const idInput = document.querySelector('input[name="id"]');
                     if (!idInput || !idInput.value) {
                         self.disabled = false;
-                        dniInput.readOnly = false;
+                        numeroDocumentoInput.readOnly = false;
                     }
                 });
         });
     }
-
-    // Deshabilitar botón de búsqueda si ya hay un ID (estamos editando)
-    const idInput = document.querySelector('input[name="id"]');
-    if (idInput && idInput.value && btnBuscarDni) {
-        btnBuscarDni.disabled = true;
-        const dniInput = document.getElementById('dni');
-        if (dniInput) dniInput.readOnly = true;
-    }
-
 });
+
+// Nota: Eliminar el <script> inline de modulos/pacientes/formulario.html y registro-formulario.html

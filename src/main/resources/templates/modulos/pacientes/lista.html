@@ -37,7 +37,7 @@
                         <div class="card-tools">
                             <form th:action="@{/pacientes}" method="get" class="form-inline">
                                 <input type="text" name="keyword" class="form-control form-control-sm"
-                                    placeholder="Buscar DNI, Nombre o Email..." th:value="${keyword}"
+                                    placeholder="Buscar Doc., Nombre o Email..." th:value="${keyword}"
                                     style="width: 300px;">
                                 <button type="submit" class="btn btn-sm btn-default ml-2"><i
                                         class="fas fa-search"></i></button>
@@ -48,7 +48,7 @@
                         <table class="table table-bordered table-hover table-striped">
                             <thead>
                                 <tr>
-                                    <th>DNI</th>
+                                    <th>Documento</th>
                                     <th>Nombre Completo</th>
                                     <th>Email</th>
                                     <th>Teléfono</th>
@@ -57,7 +57,11 @@
                             </thead>
                             <tbody>
                                 <tr th:each="paciente : ${paginaPacientes.content}">
-                                    <td th:text="${paciente.dni}"></td>
+                                    <td>
+                                        <b th:text="${paciente.numeroDocumento}"></b><br>
+                                        <small class="text-muted"
+                                            th:text="${'(' + paciente.tipoDocumento.codigo + ')'}"></small>
+                                    </td>
                                     <td th:text="${paciente.nombreCompleto}"></td>
                                     <td th:text="${paciente.email}"></td>
                                     <td th:text="${paciente.telefono}"></td>
@@ -85,21 +89,6 @@
                         </table>
                     </div>
                     <div class="card-footer clearfix" th:if="${paginaPacientes.totalPages > 0}">
-                        <ul class="pagination pagination-sm m-0 float-right">
-                            <li class="page-item" th:classappend="${paginaPacientes.first} ? 'disabled' : ''">
-                                <a class="page-link"
-                                    th:href="@{/pacientes(page=${paginaPacientes.number - 1}, keyword=${keyword})}">&laquo;</a>
-                            </li>
-                            <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaPacientes.totalPages - 1)}"
-                                th:classappend="${i == paginaPacientes.number} ? 'active' : ''">
-                                <a class="page-link" th:href="@{/pacientes(page=${i}, keyword=${keyword})}"
-                                    th:text="${i + 1}"></a>
-                            </li>
-                            <li class="page-item" th:classappend="${paginaPacientes.last} ? 'disabled' : ''">
-                                <a class="page-link"
-                                    th:href="@{/pacientes(page=${paginaPacientes.number + 1}, keyword=${keyword})}">&raquo;</a>
-                            </li>
-                        </ul>
                     </div>
                 </div>
             </div>

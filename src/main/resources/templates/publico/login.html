@@ -5,14 +5,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>OdontoApp | Iniciar Sesión</title>
-
-    <!-- Estilos de AdminLTE -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <link rel="stylesheet" th:href="@{/adminlte/plugins/fontawesome-free/css/all.min.css}">
     <link rel="stylesheet" th:href="@{/adminlte/dist/css/adminlte.min.css}">
-
-    <!-- Estilos Personalizados -->
     <style>
         .login-page {
             display: flex;
@@ -20,11 +16,14 @@
             padding: 0;
             margin: 0;
             overflow: hidden;
+            /* Usar grid o flex para división 50/50 */
         }
 
         .info-panel {
             flex: 1;
-            background: url('https://placehold.co/1000x1200/00A86B/FFFFFF?text=Imagen+Clinica') no-repeat center center;
+            /* Ajustado para que ocupe la mitad */
+            background: url('/adminlte/dist/img/dentist-chair.jpg') no-repeat center center;
+            /* Usar una imagen local */
             background-size: cover;
             color: white;
             display: flex;
@@ -35,8 +34,31 @@
             padding: 40px;
         }
 
+        /* Media query para ocultar el panel en móviles */
+        @media (max-width: 768px) {
+            .info-panel {
+                display: none !important;
+            }
+        }
+
         .info-panel h1 {
             font-weight: 700;
+        }
+
+        .image-container {
+            max-width: 80%;
+            /* Contenedor para la imagen de la clinica */
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 6px;
         }
 
         .login-panel {
@@ -50,163 +72,97 @@
         .login-box {
             width: 400px;
         }
+
+        /* Ajustar el logo y el texto descriptivo */
+        .header-content {
+            margin-bottom: 30px;
+            text-align: center;
+        }
     </style>
 </head>
 
 <body class="login-page">
-
-    <!-- Panel Izquierdo -->
-    <div class="info-panel d-none d-md-flex">
-        <div>
-            <img th:src="@{/adminlte/dist/img/AdminLTELogo.png}" alt="OdontoApp Logo"
-                style="width:100px; margin-bottom: 20px;">
-            <h1>OdontoApp</h1>
-            <hr style="border-color: rgba(255,255,255,0.5); width: 50%;">
-            <h4>Gestión integral de tu clínica</h4>
-            <ul class="list-unstyled mt-3">
-                <li><i class="fas fa-check-circle"></i> Gestión segura de pacientes</li>
-                <li><i class="fas fa-calendar-alt"></i> Control de citas y calendario</li>
-                <li><i class="fas fa-file-invoice-dollar"></i> Facturación y punto de venta</li>
-                <li><i class="fas fa-boxes"></i> Gestión de inventario</li>
-            </ul>
+    <div class="info-panel d-none d-md-flex" style="background-color: #00A86B;">
+        <div class="header-content"> <img th:src="@{/adminlte/dist/img/AdminLTELogo.png}" alt="OdontoApp Logo"
+                style="width: 60px; margin-bottom: 10px;">
+            <h1 style="font-size: 2.5rem; margin: 0;">ODONTOAPP</h1>
+            <p style="font-size: 1.2rem; margin-top: 5px;">Sistema de Gestión Dental</p>
+            <div class="image-container" style="max-width: 400px; padding: 0;"> </div>
+            <div style="background: rgba(255, 255, 255, 0.2); padding: 15px; border-radius: 5px; margin-top: 20px;">
+                <ul class="list-unstyled text-left" style="font-size: 0.95rem; line-height: 1.6;">
+                </ul>
+            </div>
         </div>
     </div>
-
-    <!-- Panel Derecho -->
     <div class="login-panel">
         <div class="login-box">
             <div class="card card-outline card-primary">
-                <div class="card-header text-center">
-                    <a href="#" class="h1"><b>Odonto</b>App</a>
-                </div>
+                <div class="card-header text-center"> <a href="#" class="h1"><b>Iniciar Sesión</b></a> </div>
                 <div class="card-body">
-                    <!-- Pestañas -->
                     <ul class="nav nav-pills nav-justified mb-3" id="pills-tab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="pills-personal-tab" data-toggle="pill"
-                                data-target="#pills-personal" type="button" role="tab">
-                                Personal Clínica
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="pills-paciente-tab" data-toggle="pill"
-                                data-target="#pills-paciente" type="button" role="tab">
-                                Pacientes
-                            </button>
-                        </li>
+                        <li class="nav-item" role="presentation"> <button class="nav-link active"
+                                id="pills-personal-tab" data-toggle="pill" data-target="#pills-personal" type="button"
+                                role="tab"> Personal Clínica </button> </li>
+                        <li class="nav-item" role="presentation"> <button class="nav-link" id="pills-paciente-tab"
+                                data-toggle="pill" data-target="#pills-paciente" type="button" role="tab"> Pacientes
+                            </button> </li>
                     </ul>
-
                     <div class="tab-content" id="pills-tabContent">
-
-                        <!-- LOGIN PERSONAL -->
                         <div class="tab-pane fade show active" id="pills-personal" role="tabpanel">
                             <form th:action="@{/login}" method="post">
-                                <p class="login-box-msg">Inicia sesión para continuar</p>
-
-                                <!-- 🔹 NUEVO BLOQUE DE ALERTAS COMPLETO -->
+                                <p class="login-box-msg">Accede a tu cuenta para gestionar tu clínica dental</p>
                                 <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show"
-                                    role="alert">
-                                    <div th:if="${session.SPRING_SECURITY_LAST_EXCEPTION != null}">
-                                        <span
-                                            th:if="${session.SPRING_SECURITY_LAST_EXCEPTION.message == 'Bad credentials'}">
-                                            Email o contraseña incorrectos.
-                                        </span>
-                                        <span
-                                            th:if="${session.SPRING_SECURITY_LAST_EXCEPTION.message == 'La cuenta está bloqueada temporalmente.'}">
-                                            Tu cuenta ha sido bloqueada por demasiados intentos fallidos. Intenta de
-                                            nuevo en 15 minutos.
-                                        </span>
-                                        <span
-                                            th:if="${session.SPRING_SECURITY_LAST_EXCEPTION.message == 'El usuario está inactivo.'}">
-                                            Esta cuenta de usuario ha sido desactivada.
-                                        </span>
-                                        <span
-                                            th:if="${session.SPRING_SECURITY_LAST_EXCEPTION.message == 'El usuario no tiene roles activos. Contacte al administrador.'}">
-                                            El usuario no tiene roles activos. Contacte al administrador.
-                                        </span>
-                                        <span
-                                            th:unless="${session.SPRING_SECURITY_LAST_EXCEPTION.message == 'Bad credentials' or
-                                                         session.SPRING_SECURITY_LAST_EXCEPTION.message == 'La cuenta está bloqueada temporalmente.' or
-                                                         session.SPRING_SECURITY_LAST_EXCEPTION.message == 'El usuario está inactivo.' or
-                                                         session.SPRING_SECURITY_LAST_EXCEPTION.message == 'El usuario no tiene roles activos. Contacte al administrador.'}"
-                                            th:text="${session.SPRING_SECURITY_LAST_EXCEPTION.message}">
-                                            Error desconocido.
-                                        </span>
-                                    </div>
-                                    <div th:unless="${session.SPRING_SECURITY_LAST_EXCEPTION != null}">
-                                        Error al iniciar sesión. Verifica tus credenciales.
-                                    </div>
-                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
+                                    role="alert"> </div>
+                                <div th:if="${param.logout}" class="alert alert-info"> Has cerrado sesión correctamente.
                                 </div>
-
-                                <div th:if="${param.logout}" class="alert alert-info">
-                                    Has cerrado sesión correctamente.
+                                <div th:if="${success}" class="alert alert-success"> <span th:text="${success}"></span>
                                 </div>
-                                <!-- 🔹 FIN BLOQUE DE ALERTAS -->
-
-                                <div class="input-group mb-3">
-                                    <input type="email" class="form-control" placeholder="Email" name="username"
-                                        required>
+                                <div class="input-group mb-3"> <input type="email" class="form-control"
+                                        placeholder="Email" name="username" required>
                                     <div class="input-group-append">
                                         <div class="input-group-text"><span class="fas fa-envelope"></span></div>
                                     </div>
                                 </div>
-
-                                <div class="input-group mb-3">
-                                    <input type="password" class="form-control" placeholder="Contraseña" name="password"
-                                        required>
+                                <div class="input-group mb-3"> <input type="password" class="form-control"
+                                        placeholder="Contraseña" name="password" required>
                                     <div class="input-group-append">
                                         <div class="input-group-text"><span class="fas fa-lock"></span></div>
                                     </div>
                                 </div>
-
                                 <div class="row">
-                                    <div class="col-12">
-                                        <button type="submit" class="btn btn-primary btn-block">
-                                            Iniciar Sesión
-                                        </button>
-                                    </div>
+                                    <div class="col-12"> <button type="submit" class="btn btn-primary btn-block">
+                                            Iniciar Sesión </button> </div>
                                 </div>
                             </form>
                         </div>
-
-                        <!-- LOGIN PACIENTE -->
                         <div class="tab-pane fade" id="pills-paciente" role="tabpanel">
-                            <form action="#" method="post">
-                                <p class="login-box-msg">Ingresa con tu DNI</p>
-                                <div class="input-group mb-3">
-                                    <input type="text" class="form-control" placeholder="DNI" required>
+                            <form th:action="@{/login}" method="post">
+                                <p class="login-box-msg">Ingresa con tu Email</p>
+                                <div class="input-group mb-3"> <input type="email" class="form-control"
+                                        placeholder="Email" name="username" required>
                                     <div class="input-group-append">
-                                        <div class="input-group-text"><span class="fas fa-id-card"></span></div>
+                                        <div class="input-group-text"><span class="fas fa-envelope"></span></div>
                                     </div>
                                 </div>
-                                <div class="input-group mb-3">
-                                    <input type="password" class="form-control" placeholder="Contraseña" required>
+                                <div class="input-group mb-3"> <input type="password" class="form-control"
+                                        placeholder="Contraseña" name="password" required>
                                     <div class="input-group-append">
                                         <div class="input-group-text"><span class="fas fa-lock"></span></div>
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-12">
-                                        <button type="submit" class="btn btn-success btn-block">
-                                            Ingresar
-                                        </button>
-                                    </div>
+                                    <div class="col-12"> <button type="submit" class="btn btn-success btn-block">
+                                            Ingresar </button> </div>
                                 </div>
                             </form>
-                            <p class="mt-3 mb-1 text-center">
-                                <a th:href="@{/registro}">¿No tienes cuenta? Regístrate aquí</a>
-                            </p>
+                            <p class="mt-3 mb-1 text-center"> <a th:href="@{/registro}">¿No tienes cuenta? Regístrate
+                                    aquí</a> </p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Scripts -->
     <script th:src="@{/adminlte/plugins/jquery/jquery.min.js}"></script>
     <script th:src="@{/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
     <script th:src="@{/adminlte/dist/js/adminlte.min.js}"></script>

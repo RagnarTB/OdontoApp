@@ -1,3 +1,4 @@
+// Archivo: C:\proyectos\nuevo\odontoapp\src\main\java\com\odontoapp\servicio\ReniecService.java
 package com.odontoapp.servicio;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -19,33 +20,47 @@ public class ReniecService {
 
     private final RestTemplate restTemplate;
 
-    // Inyectamos el token desde application.properties (lo añadiremos después)
-    @Value("${api.decolecta.token}")
+    // 🔥 Modificado para usar un DNI de ejemplo si no hay token (solo en
+    // desarrollo)
+    @Value("${api.decolecta.token:dummy_token}")
     private String apiToken;
 
     public ReniecService(RestTemplateBuilder restTemplateBuilder) {
         this.restTemplate = restTemplateBuilder.build();
     }
 
+    // 🔥 MODIFICADO: Renombrado a consultarDni
     public ReniecResponseDTO consultarDni(String dni) {
+
+        // Simulación si no hay token real o es solo "dummy_token"
+        if ("dummy_token".equals(apiToken)) {
+            System.out.println(">>> Modo Demo: Usando datos de prueba para DNI.");
+            if ("12345678".equals(dni)) {
+                ReniecResponseDTO demo = new ReniecResponseDTO();
+                demo.setNombres("JUAN CARLOS");
+                demo.setApellidoPaterno("PEREZ");
+                demo.setApellidoMaterno("LOPEZ");
+                demo.setDni(dni);
+                return demo;
+            }
+            return null;
+        }
+
         String url = "https://api.decolecta.com/v1/reniec/dni?numero=" + dni;
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + apiToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
-
         try {
             ResponseEntity<ReniecResponseDTO> response = restTemplate.exchange(url, HttpMethod.GET, entity,
                     ReniecResponseDTO.class);
-            // Pequeña validación extra: asegúrate de que el cuerpo no sea nulo
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 return response.getBody();
             } else {
                 System.err.println("Error: Respuesta exitosa pero cuerpo vacío de API Reniec para DNI: " + dni);
-                return null; // O lanzar una excepción personalizada
+                return null;
             }
 
         } catch (HttpClientErrorException e) {
-            // Errores 4xx (Cliente)
             if (e.getStatusCode().value() == 404) {
                 System.err.println("API Reniec: DNI no encontrado: " + dni);
             } else if (e.getStatusCode().value() == 401) {
@@ -54,21 +69,17 @@ public class ReniecService {
                 System.err.println("Error del cliente al consultar API Reniec (" + e.getStatusCode() + "): "
                         + e.getResponseBodyAsString());
             }
-            return null; // Devuelve null o lanza excepción específica
+            return null;
         } catch (HttpServerErrorException e) {
-            // Errores 5xx (Servidor de la API)
             System.err.println(
                     "Error del servidor de API Reniec (" + e.getStatusCode() + "): " + e.getResponseBodyAsString());
-            return null; // O lanzar excepción
+            return null;
         } catch (ResourceAccessException e) {
-            // Errores de conexión (Timeout, DNS, etc.)
             System.err.println("Error de conexión al consultar API Reniec: " + e.getMessage());
-            return null; // O lanzar excepción
+            return null;
         } catch (Exception e) {
-            // Otros errores inesperados
             System.err.println("Error inesperado al consultar API Reniec: " + e.getMessage());
-            // Considera loggear el stack trace completo: e.printStackTrace();
-            return null; // O lanzar excepción
+            return null;
         }
     }
 }

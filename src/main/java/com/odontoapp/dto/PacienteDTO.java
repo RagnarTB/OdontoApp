@@ -1,7 +1,9 @@
+// Archivo: C:\proyectos\nuevo\odontoapp\src\main\java\com\odontoapp\dto\PacienteDTO.java
 package com.odontoapp.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import java.time.LocalDate;
@@ -10,14 +12,18 @@ import java.time.LocalDate;
 public class PacienteDTO {
     private Long id;
 
-    @NotEmpty(message = "El DNI no puede estar vacío")
-    @Size(min = 8, max = 8, message = "El DNI debe tener 8 dígitos")
-    private String dni;
+    @NotNull(message = "El tipo de documento es obligatorio")
+    private Long tipoDocumentoId; // Nuevo
+
+    @NotEmpty(message = "El número de documento no puede estar vacío")
+    @Size(min = 8, max = 20, message = "El documento debe tener entre 8 y 20 caracteres")
+    private String numeroDocumento; // Reemplaza dni
 
     @NotEmpty(message = "El nombre no puede estar vacío")
     private String nombreCompleto;
 
     @Email(message = "Debe ser un email válido")
+    @NotEmpty(message = "El email no puede estar vacío")
     private String email;
 
     private String telefono;

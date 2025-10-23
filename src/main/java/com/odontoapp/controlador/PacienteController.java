@@ -1,3 +1,4 @@
+// Archivo: C:\proyectos\nuevo\odontoapp\src\main\java\com\odontoapp\controlador\PacienteController.java
 package com.odontoapp.controlador;
 
 import java.util.Map;
@@ -22,7 +23,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.odontoapp.dto.PacienteDTO;
 import com.odontoapp.dto.ReniecResponseDTO;
 import com.odontoapp.entidad.Paciente;
+import com.odontoapp.entidad.TipoDocumento;
 import com.odontoapp.repositorio.PacienteRepository;
+import com.odontoapp.repositorio.TipoDocumentoRepository; // NUEVO
 import com.odontoapp.servicio.PacienteService;
 import com.odontoapp.servicio.ReniecService;
 
@@ -34,12 +37,14 @@ public class PacienteController {
     private final PacienteService pacienteService;
     private final ReniecService reniecService;
     private final PacienteRepository pacienteRepository;
+    private final TipoDocumentoRepository tipoDocumentoRepository; // NUEVO
 
     public PacienteController(PacienteService pacienteService, ReniecService reniecService,
-            PacienteRepository pacienteRepository) {
+            PacienteRepository pacienteRepository, TipoDocumentoRepository tipoDocumentoRepository) {
         this.pacienteService = pacienteService;
         this.reniecService = reniecService;
         this.pacienteRepository = pacienteRepository;
+        this.tipoDocumentoRepository = tipoDocumentoRepository;
     }
 
     @GetMapping("/pacientes")
@@ -57,28 +62,28 @@ public class PacienteController {
     @GetMapping("/pacientes/nuevo")
     public String mostrarFormularioNuevo(Model model) {
         model.addAttribute("pacienteDTO", new PacienteDTO());
+        model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // NUEVO
         return "modulos/pacientes/formulario";
     }
 
     @PostMapping("/pacientes/guardar")
     public String guardarPaciente(@Valid @ModelAttribute("pacienteDTO") PacienteDTO pacienteDTO,
             BindingResult result,
+            Model model, // Necesario para recargar lista de tipos de documento
             RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
+            model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // Recargar tipos de doc
             return "modulos/pacientes/formulario";
         }
         try {
             pacienteService.guardarPaciente(pacienteDTO);
             redirectAttributes.addFlashAttribute("success", "Paciente guardado con éxito.");
         } catch (DataIntegrityViolationException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
-            if (pacienteDTO.getId() != null) {
-                return "redirect:/pacientes/editar/" + pacienteDTO.getId();
-            } else {
-                return "redirect:/pacientes/nuevo";
-            }
+            model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // Recargar tipos de doc
+            model.addAttribute("error", e.getMessage());
+            return "modulos/pacientes/formulario"; // Regresar al formulario con el error
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Ocurrió un error inesperado.");
+            redirectAttributes.addFlashAttribute("error", "Ocurrió un error inesperado al guardar el paciente.");
             return "redirect:/pacientes/nuevo";
         }
         return "redirect:/pacientes";
@@ -89,7 +94,8 @@ public class PacienteController {
         return pacienteService.buscarPorId(id).map(paciente -> {
             PacienteDTO dto = new PacienteDTO();
             dto.setId(paciente.getId());
-            dto.setDni(paciente.getDni());
+            dto.setTipoDocumentoId(paciente.getTipoDocumento().getId()); // MODIFICADO
+            dto.setNumeroDocumento(paciente.getNumeroDocumento()); // MODIFICADO
             dto.setNombreCompleto(paciente.getNombreCompleto());
             dto.setEmail(paciente.getEmail());
             dto.setTelefono(paciente.getTelefono());
@@ -99,6 +105,7 @@ public class PacienteController {
             dto.setAntecedentesMedicos(paciente.getAntecedentesMedicos());
 
             model.addAttribute("pacienteDTO", dto);
+            model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // NUEVO
             return "modulos/pacientes/formulario";
         }).orElse("redirect:/pacientes");
     }
@@ -109,38 +116,65 @@ public class PacienteController {
             pacienteService.eliminarPaciente(id);
             redirectAttributes.addFlashAttribute("success", "Paciente eliminado con éxito (desactivado).");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error al eliminar el paciente.");
+            redirectAttributes.addFlashAttribute("error", "Error al eliminar el paciente: " + e.getMessage());
         }
         return "redirect:/pacientes";
     }
 
-    @GetMapping("/api/reniec/{dni}")
+    // 🔥 MODIFICADO: Ahora recibe número y tipo de documento ID
+    @GetMapping("/api/reniec")
     @ResponseBody
-    public ResponseEntity<?> consultarReniec(@PathVariable String dni) {
-        // --- VALIDACIÓN MEJORADA (IGNORA SOFT DELETE) ---
-        Optional<Paciente> pacienteExistente = pacienteRepository.findByDniIgnorandoSoftDelete(dni);
-        if (pacienteExistente.isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "El DNI ya se encuentra registrado."));
+    public ResponseEntity<?> consultarReniec(@RequestParam("numDoc") String numDoc,
+            @RequestParam("tipoDocId") Long tipoDocId) {
+
+        // 1. Validar que el tipo de documento sea DNI (código 1 o el que definas)
+        TipoDocumento tipoDocumento = tipoDocumentoRepository.findById(tipoDocId).orElse(null);
+        if (tipoDocumento == null || !"DNI".equals(tipoDocumento.getCodigo())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "La consulta Reniec solo está disponible para DNI."));
         }
 
-        // En PacienteController, dentro de consultarReniec
-        ReniecResponseDTO response = reniecService.consultarDni(dni);
-        System.out.println(">>> ReniecService devolvió: " + response);
+        // 2. Buscar si ya existe (ignorando soft delete)
+        Optional<Paciente> pacienteExistente = pacienteRepository.findByNumeroTipoDocumentoIgnorandoSoftDelete(numDoc,
+                tipoDocId);
 
-        if (response != null) {
-            String nombreCalculado = response.getNombreCompleto(); // Llama al getter modificado
-            System.out.println(">>> DTO.getNombreCompleto() devuelve: " + nombreCalculado);
-
-            if (nombreCalculado != null) {
-                // Crear un objeto simple para enviar solo el nombre
-                Map<String, String> resultadoJson = Map.of("nombreCompleto", nombreCalculado);
-                return ResponseEntity.ok(resultadoJson); // Devolver el Map
+        if (pacienteExistente.isPresent()) {
+            Paciente paciente = pacienteExistente.get();
+            // 🔥 REGLA CLAVE: Si está eliminado, alertar al frontend para ofrecer
+            // restauración
+            if (paciente.isEliminado()) {
+                return ResponseEntity.status(409).body(
+                        Map.of("error", "El paciente existe, pero está eliminado lógicamente.",
+                                "restaurar", true,
+                                "pacienteId", paciente.getId())); // Devolver ID para restablecer
+            } else {
+                // Si existe y NO está eliminado, es un duplicado activo
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "El documento ya se encuentra registrado y está activo."));
             }
         }
 
-        // Si response es null o nombreCalculado es null
+        // 3. Consultar Reniec (si no hay duplicado)
+        ReniecResponseDTO response = reniecService.consultarDni(numDoc);
+        if (response != null && response.getNombreCompleto() != null) {
+            String nombreCalculado = response.getNombreCompleto();
+            Map<String, String> resultadoJson = Map.of("nombreCompleto", nombreCalculado);
+            return ResponseEntity.ok(resultadoJson);
+        }
+
         return ResponseEntity.status(404).body(
                 Map.of("error", "DNI no encontrado o datos incompletos. Verifique el número."));
+    }
+
+    @GetMapping("/pacientes/restablecer/{id}")
+    public String restablecerPaciente(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            pacienteService.restablecerPaciente(id);
+            redirectAttributes.addFlashAttribute("success", "Paciente restablecido y activado con éxito.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al restablecer el paciente: " + e.getMessage());
+        }
+        return "redirect:/pacientes";
     }
 
 }

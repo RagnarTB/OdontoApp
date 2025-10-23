@@ -1,3 +1,4 @@
+// Archivo: C:\proyectos\nuevo\odontoapp\src\main\java\com\odontoapp\configuracion\DataInitializer.java
 package com.odontoapp.configuracion;
 
 import java.util.Arrays;
@@ -11,9 +12,11 @@ import org.springframework.stereotype.Component;
 
 import com.odontoapp.entidad.Permiso;
 import com.odontoapp.entidad.Rol;
+import com.odontoapp.entidad.TipoDocumento; // NUEVO
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.repositorio.PermisoRepository;
 import com.odontoapp.repositorio.RolRepository;
+import com.odontoapp.repositorio.TipoDocumentoRepository; // NUEVO
 import com.odontoapp.repositorio.UsuarioRepository;
 
 @Component
@@ -23,17 +26,26 @@ public class DataInitializer implements CommandLineRunner {
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
     private final PermisoRepository permisoRepository;
+    private final TipoDocumentoRepository tipoDocumentoRepository; // NUEVO
 
     public DataInitializer(UsuarioRepository usuarioRepository, RolRepository rolRepository,
-            PasswordEncoder passwordEncoder, PermisoRepository permisoRepository) {
+            PasswordEncoder passwordEncoder, PermisoRepository permisoRepository,
+            TipoDocumentoRepository tipoDocumentoRepository) { // NUEVO
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
         this.permisoRepository = permisoRepository;
+        this.tipoDocumentoRepository = tipoDocumentoRepository; // NUEVO
     }
 
     @Override
     public void run(String... args) throws Exception {
+
+        // 🔥 --- CREAR TIPOS DE DOCUMENTO BASE ---
+        crearTipoDocumento("DNI", "DNI", true);
+        crearTipoDocumento("RUC", "RUC", false);
+        crearTipoDocumento("Carnet de Extranjería", "C.E.", false);
+
         // --- CREAR PERMISOS BASE ---
         List<String> modulos = Arrays.asList(
                 "USUARIOS", "ROLES", "PACIENTES", "CITAS",
@@ -42,7 +54,6 @@ public class DataInitializer implements CommandLineRunner {
 
         List<String> acciones = Arrays.asList(
                 "VER_LISTA", "VER_DETALLE", "CREAR", "EDITAR", "ELIMINAR");
-
         for (String modulo : modulos) {
             for (String accion : acciones) {
                 permisoRepository.findByModuloAndAccion(modulo, accion).orElseGet(() -> {
@@ -54,33 +65,22 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        // --- CREAR ROL ADMIN ---
+        // 🔥 --- CREAR ROLES ADICIONALES ---
+        crearRolSiNoExiste("PACIENTE",
+                permisoRepository.findByModuloAndAccion("CITAS", "VER_LISTA").map(Set::of).orElse(Set.of()));
+        crearRolSiNoExiste("ODONTOLOGO", new HashSet<>(permisoRepository.findAll())); // Por ahora todos los permisos
+        crearRolSiNoExiste("RECEPCIONISTA", new HashSet<>(permisoRepository.findAll())); // Por ahora todos los permisos
+        crearRolSiNoExiste("ALMACEN", new HashSet<>(permisoRepository.findAll())); // Por ahora todos los permisos
+
+        // --- CREAR ROL ADMIN (asegura todos los permisos) ---
         Rol adminRol = rolRepository.findByNombre("ADMIN").orElseGet(() -> {
             Rol nuevoRol = new Rol();
             nuevoRol.setNombre("ADMIN");
-            // Asignar todos los permisos al rol ADMIN
             nuevoRol.setPermisos(new HashSet<>(permisoRepository.findAll()));
             return rolRepository.save(nuevoRol);
         });
 
-        // --- NUEVO BLOQUE: CREAR ROL PACIENTE ---
-        rolRepository.findByNombre("PACIENTE").orElseGet(() -> {
-            Rol pacienteRol = new Rol();
-            pacienteRol.setNombre("PACIENTE");
-
-            // Aquí se podrían asignar permisos específicos si existen:
-            // Ejemplo:
-            // Set<Permiso> permisosPaciente = new HashSet<>();
-            // permisosPaciente.add(permisoRepository.findByModuloAndAccion("CITAS",
-            // "VER_LISTA").get());
-            // permisosPaciente.add(permisoRepository.findByModuloAndAccion("CITAS",
-            // "CREAR").get());
-            // pacienteRol.setPermisos(permisosPaciente);
-
-            // Por ahora lo dejamos sin permisos
-            return rolRepository.save(pacienteRol);
-        });
-       
+        // --- CREAR USUARIO ADMIN ---
         if (usuarioRepository.findByEmail("admin@odontoapp.com").isEmpty()) {
             Usuario admin = new Usuario();
             admin.setNombreCompleto("Administrador del Sistema");
@@ -92,5 +92,25 @@ public class DataInitializer implements CommandLineRunner {
             usuarioRepository.save(admin);
             System.out.println(">>> Usuario administrador creado con éxito!");
         }
+    }
+
+    // Métodos helper para reducir duplicidad
+    private TipoDocumento crearTipoDocumento(String nombre, String codigo, boolean esNacional) {
+        return tipoDocumentoRepository.findByCodigo(codigo).orElseGet(() -> {
+            TipoDocumento nuevo = new TipoDocumento();
+            nuevo.setNombre(nombre);
+            nuevo.setCodigo(codigo);
+            nuevo.setEsNacional(esNacional);
+            return tipoDocumentoRepository.save(nuevo);
+        });
+    }
+
+    private Rol crearRolSiNoExiste(String nombre, Set<Permiso> permisos) {
+        return rolRepository.findByNombre(nombre).orElseGet(() -> {
+            Rol nuevoRol = new Rol();
+            nuevoRol.setNombre(nombre);
+            nuevoRol.setPermisos(permisos);
+            return rolRepository.save(nuevoRol);
+        });
     }
 }

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -26,12 +27,14 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
     private static final int MAX_INTENTOS_FALLIDOS = 5;
+    private final EmailService emailService;
 
-    public UsuarioServiceImpl(UsuarioRepository usuarioRepository, RolRepository rolRepository,
-            PasswordEncoder passwordEncoder) {
-        this.usuarioRepository = usuarioRepository;
-        this.rolRepository = rolRepository;
+    public UsuarioServiceImpl(EmailService emailService, PasswordEncoder passwordEncoder, RolRepository rolRepository,
+            UsuarioRepository usuarioRepository) {
+        this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
+        this.rolRepository = rolRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     // Añade este método privado
@@ -46,67 +49,87 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    @Transactional // 🔥 Asegura que toda la operación sea atómica
+    @Transactional // Asegura que toda la operación sea atómica
     public void guardarUsuario(UsuarioDTO usuarioDTO) {
         Usuario usuario;
         boolean esNuevo = usuarioDTO.getId() == null;
         String emailNuevo = usuarioDTO.getEmail();
+        String emailOriginal = null;
+        boolean emailCambiado = false;
 
-        // --- 🔍 NUEVA VALIDACIÓN DE EMAIL IGNORANDO SOFT DELETE ---
+        // --- 🔍 VALIDACIÓN DE EMAIL Y RECUPERACIÓN ---
         Optional<Usuario> existenteConEmail = usuarioRepository.findByEmailIgnorandoSoftDelete(emailNuevo);
+
+        if (!esNuevo) {
+            usuario = usuarioRepository.findById(usuarioDTO.getId())
+                    .orElseThrow(
+                            () -> new IllegalStateException("Usuario no encontrado con ID: " + usuarioDTO.getId()));
+
+            emailOriginal = usuario.getEmail();
+            if (!emailNuevo.equals(emailOriginal)) {
+                emailCambiado = true;
+            }
+        } else {
+            usuario = new Usuario();
+        }
+
+        // 1. Validar duplicidad
         if (existenteConEmail.isPresent()) {
-            // Si el email existe Y (es un usuario nuevo O es un usuario diferente al que
-            // estamos editando)
             if (esNuevo || !existenteConEmail.get().getId().equals(usuarioDTO.getId())) {
                 throw new DataIntegrityViolationException(
                         "El email '" + emailNuevo + "' ya se encuentra registrado en el sistema " +
                                 "(puede estar inactivo o eliminado).");
             }
         }
-        // --- FIN NUEVA VALIDACIÓN ---
 
-        if (!esNuevo) { // 🔄 EDICIÓN
-            usuario = usuarioRepository.findById(usuarioDTO.getId())
-                    .orElseThrow(
-                            () -> new IllegalStateException("Usuario no encontrado con ID: " + usuarioDTO.getId()));
+        // 2. Reglas de ADMIN PRINCIPAL
+        if (emailOriginal != null && "admin@odontoapp.com".equals(emailOriginal) && emailCambiado) {
+            throw new IllegalArgumentException("No se puede cambiar el email del administrador principal.");
+        }
 
-            // 🚫 No permitir cambiar email del admin principal
-            if ("admin@odontoapp.com".equals(usuario.getEmail())
-                    && !emailNuevo.equals("admin@odontoapp.com")) {
-                throw new IllegalArgumentException("No se puede cambiar el email del administrador principal.");
-            }
+        // 3. DATOS GENERALES
+        usuario.setNombreCompleto(usuarioDTO.getNombreCompleto());
+        usuario.setEmail(emailNuevo);
 
-        } else { // 🆕 NUEVO
-            usuario = new Usuario();
-            usuario.setEstaActivo(true); // Usuarios creados por admin nacen activos
-
-            // Contraseña obligatoria solo para nuevos
+        // 4. LÓGICA DE CONTRASEÑA
+        if (esNuevo) {
             if (usuarioDTO.getPassword() == null || usuarioDTO.getPassword().isEmpty()) {
                 throw new IllegalArgumentException("La contraseña es obligatoria para nuevos usuarios.");
             }
             validarComplejidadPassword(usuarioDTO.getPassword());
             usuario.setPassword(passwordEncoder.encode(usuarioDTO.getPassword()));
+            usuario.setEstaActivo(true); // Usuarios creados por admin nacen activos, pero el Admin los inactiva si usa
+                                         // el flujo del paciente
         }
 
-        // --- DATOS GENERALES ---
-        usuario.setNombreCompleto(usuarioDTO.getNombreCompleto());
-        usuario.setEmail(emailNuevo); // usar la variable validada
+        // 5. 🔥 CORRECCIÓN: INACTIVAR Y ENVIAR TOKEN si el email cambió
+        if (emailCambiado) {
+            usuario.setEstaActivo(false);
+            usuario.setVerificationToken(UUID.randomUUID().toString());
 
-        // --- VALIDACIÓN: No quitar rol ADMIN al admin principal ---
+            Usuario usuarioGuardado = usuarioRepository.save(usuario);
+
+            // Reutilizamos el flujo de activación de Admin, asumiendo que es personal
+            emailService.enviarEmailActivacionAdmin(
+                    usuarioGuardado.getEmail(),
+                    usuarioGuardado.getNombreCompleto(),
+                    usuarioGuardado.getVerificationToken());
+        }
+
+        // 6. VALIDACIÓN DE ROL y ASIGNACIÓN (sin cambios)
         boolean esAdminPrincipal = "admin@odontoapp.com".equals(usuario.getEmail());
         Rol rolAdmin = rolRepository.findByNombre("ADMIN").orElse(null);
         boolean intentaQuitarRolAdmin = (rolAdmin != null && !usuarioDTO.getRoles().contains(rolAdmin.getId()));
-
         if (esAdminPrincipal && intentaQuitarRolAdmin) {
             throw new IllegalArgumentException("No se puede quitar el rol ADMIN al administrador principal.");
         }
-
-        // --- ASIGNAR ROLES ---
         List<Rol> roles = rolRepository.findAllById(usuarioDTO.getRoles());
         usuario.setRoles(new HashSet<>(roles));
 
-        // --- GUARDAR ---
-        usuarioRepository.save(usuario);
+        // Guardar (si no se guardó ya por el cambio de email)
+        if (!emailCambiado) {
+            usuarioRepository.save(usuario);
+        }
     }
 
     @Override

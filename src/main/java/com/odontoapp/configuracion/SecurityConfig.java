@@ -29,9 +29,11 @@ public class SecurityConfig {
                 http
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .requestMatchers("/login", "/adminlte/**", "/css/**", "/js/**",
-                                                                "/activar-cuenta",
-                                                                "/establecer-password", "/resultado-activacion") // Añadir
-                                                                                                                 // /resultado-activacion
+                                                                "/activar-cuenta", "/establecer-password",
+                                                                "/resultado-activacion", "/registro/**", // <<-- ESTO ES
+                                                                                                         // LO NUEVO
+                                                                "/api/reniec") // Añadir
+                                                                               // /resultado-activacion
                                                 .permitAll()
                                                 // ¡IMPORTANTE! Añade aquí las URLs del panel de pacientes si necesitan
                                                 // autenticación
