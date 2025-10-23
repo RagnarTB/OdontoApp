@@ -13,3 +13,17 @@ luego:
  SHOW DATABASES;
 USE odontoapp_db;
 SHOW TABLES;
+exit para salir
+
+
+codigos git
+
+
+para añadir el archivo o todo
+
+git add .     añades todo
+git add nombre_archivo   solo el archivo
+git commit -m "descripcion"
+git push origin master   //solamente usalo si es que todo esta cuadrado
+
+git status 
