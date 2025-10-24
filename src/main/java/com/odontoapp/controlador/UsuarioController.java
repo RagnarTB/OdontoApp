@@ -65,35 +65,65 @@ public class UsuarioController {
         return "modulos/usuarios/formulario";
     }
 
-    // Procesa el guardado de un nuevo usuario
     @PostMapping("/usuarios/guardar")
     public String guardarUsuario(@Valid @ModelAttribute("usuario") UsuarioDTO usuarioDTO,
             BindingResult result,
-            Model model, // Añadir Model
-            RedirectAttributes redirectAttributes) { // Añadir RedirectAttributes
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        // 1. Validación del DTO (campos vacíos, formato email, etc.)
         if (result.hasErrors()) {
-            cargarRolesActivos(model); // Recargar roles si hay errores de DTO
-            model.addAttribute("usuario", usuarioDTO); // Devolver el DTO con errores
+            cargarRolesActivos(model);
+            model.addAttribute("usuario", usuarioDTO);
+            // El error #fields.hasErrors('*') se mostrará automáticamente en la vista
             return "modulos/usuarios/formulario";
         }
 
+        // 2. Intentar guardar y manejar excepciones del servicio
         try {
             usuarioService.guardarUsuario(usuarioDTO);
             redirectAttributes.addFlashAttribute("success", "Usuario guardado con éxito.");
             return "redirect:/usuarios";
-        } catch (IllegalArgumentException | DataIntegrityViolationException e) {
-            // Capturar errores de lógica de negocio o BD (email duplicado, etc.)
+
+        } catch (DataIntegrityViolationException e) {
+            cargarRolesActivos(model);
+            model.addAttribute("usuario", usuarioDTO); // Devolver datos al formulario
+
+            String mensajeServicio = e.getMessage();
+
+            // Verificar si es nuestro mensaje personalizado para restaurar
+            if (mensajeServicio != null && mensajeServicio.startsWith("EMAIL_ELIMINADO:")) {
+                try {
+                    String[] parts = mensajeServicio.split(":");
+                    Long idUsuarioEliminado = Long.parseLong(parts[1]);
+                    String emailEliminado = parts[2];
+                    model.addAttribute("errorRestauracion", // Atributo específico para la vista
+                            "El email '" + emailEliminado + "' pertenece a un usuario eliminado.");
+                    model.addAttribute("idUsuarioParaRestaurar", idUsuarioEliminado); // Pasar ID a la vista
+                } catch (Exception parseEx) {
+                    // Si el formato del mensaje es inesperado
+                    model.addAttribute("errorValidacion", "El email ya existe (usuario eliminado, error al procesar).");
+                }
+            } else {
+                // Si es otro DataIntegrityViolationException (email activo, u otro constraint)
+                // Usamos el mensaje de la excepción que ya viene formateado desde el servicio
+                model.addAttribute("errorValidacion",
+                        mensajeServicio != null ? mensajeServicio : "Error de integridad de datos.");
+            }
+            return "modulos/usuarios/formulario"; // Volver al formulario
+
+        } catch (IllegalArgumentException e) { // Ej: Quitar rol ADMIN
             cargarRolesActivos(model);
             model.addAttribute("usuario", usuarioDTO);
-            model.addAttribute("errorValidacion", e.getMessage()); // Pasar mensaje de error específico
+            model.addAttribute("errorValidacion", e.getMessage());
             return "modulos/usuarios/formulario";
-        } catch (Exception e) {
-            // Capturar otros errores inesperados
+
+        } catch (Exception e) { // Otros errores inesperados
             cargarRolesActivos(model);
             model.addAttribute("usuario", usuarioDTO);
-            model.addAttribute("errorValidacion", "Ocurrió un error inesperado al guardar el usuario.");
-            System.err.println("Error al guardar usuario: " + e.getMessage()); // Loggear el error real
-            e.printStackTrace(); // Imprimir stack trace para depuración
+            model.addAttribute("errorValidacion", "Ocurrió un error inesperado. Contacte al administrador.");
+            System.err.println("Error INESPERADO al guardar usuario: " + e.getMessage());
+            e.printStackTrace(); // Log completo para el desarrollador
             return "modulos/usuarios/formulario";
         }
     }
@@ -211,6 +241,23 @@ public class UsuarioController {
                 .filter(Rol::isEstaActivo) // Asegúrate que Rol tenga el getter isEstaActivo()
                 .collect(Collectors.toList());
         model.addAttribute("listaRoles", rolesActivos);
+    }
+
+    @GetMapping("/usuarios/restablecer/{id}")
+    public String restablecerUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            usuarioService.restablecerUsuario(id);
+            redirectAttributes.addFlashAttribute("success",
+                    "Usuario restablecido con éxito. Se ha enviado un email con una nueva contraseña temporal.");
+        } catch (IllegalStateException | UnsupportedOperationException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Error inesperado al restablecer el usuario: " + e.getMessage());
+            System.err.println("Error al restablecer usuario: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return "redirect:/usuarios"; // O redirigir al formulario de edición si prefieres
     }
 
 } // Fin de la clase

@@ -15,6 +15,18 @@
         </section>
         <section class="content">
             <div class="container-fluid">
+                <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger alert-dismissible fade show"
+                    role="alert">
+                    <strong><i class="icon fas fa-ban"></i> Error de Validación:</strong> Por favor, corrige los campos
+                    marcados.
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                </div>
+                <div th:if="${errorValidacion}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong><i class="icon fas fa-ban"></i> Error:</strong> <span th:text="${errorValidacion}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                </div>
                 <div class="card card-primary">
                     <div class="card-header">
                         <h3 class="card-title">Datos del Rol</h3>

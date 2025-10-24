@@ -16,16 +16,6 @@
 
         <section class="content">
             <div class="container-fluid">
-
-                <!-- ALERTA DE ERROR -->
-                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <span th:text="${error}"></span>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-
-                <!-- CARD PRINCIPAL -->
                 <div class="card card-primary">
                     <div class="card-header">
                         <h3 class="card-title">Datos del Paciente</h3>
@@ -35,18 +25,44 @@
                         <input type="hidden" th:field="*{id}" />
 
                         <div class="card-body">
-                            <!-- FILA 1 -->
+                            <div th:if="${#fields.hasErrors('*')}"
+                                class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong><i class="icon fas fa-ban"></i> Error de Validación:</strong> Por favor, corrige
+                                los campos marcados.
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                            </div>
+
+                            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong><i class="icon fas fa-ban"></i> Error:</strong> <span th:text="${error}"></span>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+
+                            <div th:if="${errorRestauracion}" class="alert alert-warning alert-dismissible fade show"
+                                role="alert">
+                                <strong><i class="icon fas fa-exclamation-triangle"></i> Atención:</strong>
+                                <span th:text="${errorRestauracion}"></span>
+                                <span th:if="${idUsuarioParaRestaurar}"
+                                    th:text="' Por favor, gestione este email desde el módulo de Usuarios.'"></span>
+
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="tipoDocumentoId">Tipo Documento</label>
-                                        <select class="form-control" th:field="*{tipoDocumentoId}" id="tipoDocumentoId">
+                                        <select class="form-control" th:field="*{tipoDocumentoId}" id="tipoDocumentoId"
+                                            th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">
                                             <option value="">Seleccione...</option>
                                             <option th:each="tipo : ${tiposDocumento}" th:value="${tipo.id}"
                                                 th:text="${tipo.nombre}"></option>
                                         </select>
-                                        <p th:if="${#fields.hasErrors('tipoDocumentoId')}" class="text-danger"
-                                            th:errors="*{tipoDocumentoId}"></p>
+                                        <div th:if="${#fields.hasErrors('tipoDocumentoId')}" class="invalid-feedback"
+                                            th:errors="*{tipoDocumentoId}"></div>
                                     </div>
                                 </div>
 
@@ -55,15 +71,16 @@
                                         <label for="numeroDocumento">Número Documento</label>
                                         <div class="input-group">
                                             <input type="text" class="form-control" th:field="*{numeroDocumento}"
-                                                id="numeroDocumento" placeholder="Número de Documento">
+                                                id="numeroDocumento" placeholder="Número de Documento"
+                                                th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
                                             <div class="input-group-append">
                                                 <button class="btn btn-outline-secondary" type="button"
                                                     id="btn-buscar-dni" th:disabled="*{id != null}">Buscar</button>
                                             </div>
                                         </div>
                                         <small id="doc-error" class="form-text text-danger"></small>
-                                        <p th:if="${#fields.hasErrors('numeroDocumento')}" class="text-danger"
-                                            th:errors="*{numeroDocumento}"></p>
+                                        <div th:if="${#fields.hasErrors('numeroDocumento')}"
+                                            class="invalid-feedback d-block" th:errors="*{numeroDocumento}"></div>
                                     </div>
                                 </div>
 
@@ -71,22 +88,23 @@
                                     <div class="form-group">
                                         <label for="nombreCompleto">Nombre Completo</label>
                                         <input type="text" class="form-control" th:field="*{nombreCompleto}"
-                                            id="nombreCompleto">
-                                        <p th:if="${#fields.hasErrors('nombreCompleto')}" class="text-danger"
-                                            th:errors="*{nombreCompleto}"></p>
+                                            id="nombreCompleto"
+                                            th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
+                                            th:errors="*{nombreCompleto}"></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- FILA 2 -->
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="email">Email</label>
                                         <input type="email" class="form-control" th:field="*{email}"
-                                            placeholder="correo@ejemplo.com">
-                                        <p th:if="${#fields.hasErrors('email')}" class="text-danger"
-                                            th:errors="*{email}"></p>
+                                            placeholder="correo@ejemplo.com"
+                                            th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback"
+                                            th:errors="*{email}"></div>
                                     </div>
                                 </div>
 
@@ -99,7 +117,6 @@
                                 </div>
                             </div>
 
-                            <!-- FILA 3 -->
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -107,7 +124,6 @@
                                         <input type="date" class="form-control" th:field="*{fechaNacimiento}">
                                     </div>
                                 </div>
-
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="direccion">Dirección</label>
@@ -115,21 +131,18 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- CAMPOS EXTRA -->
                             <div class="form-group">
                                 <label for="alergias">Alergias Conocidas</label>
                                 <textarea class="form-control" th:field="*{alergias}" rows="3"
                                     placeholder="Ej: Penicilina, AINES..."></textarea>
                             </div>
-
                             <div class="form-group">
                                 <label for="antecedentesMedicos">Antecedentes Médicos Relevantes</label>
                                 <textarea class="form-control" th:field="*{antecedentesMedicos}" rows="3"
                                     placeholder="Ej: Hipertensión, Diabetes, Asma..."></textarea>
                             </div>
-                        </div>
 
+                        </div>
                         <div class="card-footer">
                             <button type="submit" class="btn btn-primary">Guardar Paciente</button>
                             <a th:href="@{/pacientes}" class="btn btn-secondary">Cancelar</a>
@@ -139,7 +152,6 @@
             </div>
         </section>
 
-        <!-- JS EXTERNO -->
         <script th:src="@{/js/paciente-form.js}"></script>
     </div>
 </body>

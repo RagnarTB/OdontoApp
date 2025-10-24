@@ -1,9 +1,11 @@
+// Archivo: src/main/java/com/odontoapp/dto/UsuarioDTO.java
 package com.odontoapp.dto;
+
+import java.util.List;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
-import java.util.List;
 
 @Data
 public class UsuarioDTO {
@@ -16,10 +18,8 @@ public class UsuarioDTO {
     @Email
     private String email;
 
-    // La contraseña ya no es @NotEmpty aquí. La validaremos en el servicio.
-    private String password;
+    // ELIMINADO: private String password;
 
-    // ¡NUEVO! Validación para roles.
     @NotEmpty(message = "Debe seleccionar al menos un rol")
     private List<Long> roles;
 }

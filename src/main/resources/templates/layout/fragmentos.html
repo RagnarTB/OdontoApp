@@ -14,7 +14,9 @@
 
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
-                <a class="nav-link" th:href="@{/logout}" role="button">
+                <form th:action="@{/logout}" method="post" id="logoutForm"></form>
+
+                <a class="nav-link" href="#" role="button" onclick="document.getElementById('logoutForm').submit();">
                     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                 </a>
             </li>

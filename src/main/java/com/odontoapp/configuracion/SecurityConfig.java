@@ -30,29 +30,25 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .requestMatchers("/login", "/adminlte/**", "/css/**", "/js/**",
                                                                 "/activar-cuenta", "/establecer-password",
-                                                                "/resultado-activacion", "/registro/**", // <<-- ESTO ES
-                                                                                                         // LO NUEVO
-                                                                "/api/reniec") // Añadir
-                                                                               // /resultado-activacion
+                                                                "/resultado-activacion", "/registro/**",
+                                                                "/api/reniec")
                                                 .permitAll()
-                                                // ¡IMPORTANTE! Añade aquí las URLs del panel de pacientes si necesitan
-                                                // autenticación
-                                                // .requestMatchers("/paciente/**").hasAuthority("PACIENTE") // Ejemplo
+                                                .requestMatchers("/cambiar-password-obligatorio").authenticated() // 🔥
+                                                                                                                  // NUEVA
+                                                                                                                  // LÍNEA
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form
                                                 .loginPage("/login")
                                                 .loginProcessingUrl("/login")
-                                                // --- LÍNEA MODIFICADA ---
-                                                // .defaultSuccessUrl("/dashboard", true) // <-- Elimina o comenta esta
-                                                // línea
-                                                .successHandler(customAuthenticationSuccessHandler) // <-- Usa el
-                                                                                                    // handler
-                                                                                                    // personalizado
+                                                .successHandler(customAuthenticationSuccessHandler)
                                                 .failureUrl("/login?error=true")
                                                 .permitAll())
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessUrl("/login?logout")
+                                                .invalidateHttpSession(true)
+                                                .clearAuthentication(true)
+                                                .deleteCookies("JSESSIONID")
                                                 .permitAll());
                 return http.build();
         }

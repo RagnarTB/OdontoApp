@@ -65,36 +65,64 @@ public class PacienteServiceImpl implements PacienteService {
     @Transactional
     public void guardarPaciente(PacienteDTO pacienteDTO) {
 
-        // 1️⃣ VALIDACIONES DE DOCUMENTO Y EMAIL (MISMO BLOQUE BASE)
+        // 1️⃣ VALIDACIÓN DE DOCUMENTO
         validarUnicidadDocumento(pacienteDTO.getNumeroDocumento(), pacienteDTO.getTipoDocumentoId(),
                 pacienteDTO.getId());
 
+        // 2️⃣ VALIDACIÓN MEJORADA DE EMAIL
         if (pacienteDTO.getEmail() != null && !pacienteDTO.getEmail().isEmpty()) {
-            Optional<Paciente> existentePorEmail = pacienteRepository.findByEmail(pacienteDTO.getEmail());
-            if (existentePorEmail.isPresent()
-                    && (pacienteDTO.getId() == null || !existentePorEmail.get().getId().equals(pacienteDTO.getId()))) {
-                throw new DataIntegrityViolationException(
-                        "El Email '" + pacienteDTO.getEmail() + "' ya está en uso por otro paciente activo.");
+
+            Optional<Usuario> existenteConEmailOpt = usuarioRepository
+                    .findByEmailIgnorandoSoftDelete(pacienteDTO.getEmail());
+
+            if (existenteConEmailOpt.isPresent()) {
+                Usuario usuarioExistente = existenteConEmailOpt.get();
+                Long idPacienteActual = pacienteDTO.getId();
+
+                // Comprobar si el email encontrado pertenece al PACIENTE que estamos editando
+                boolean emailPerteneceAPacienteActual = false;
+                if (idPacienteActual != null) {
+                    Optional<Paciente> pacienteActualOpt = pacienteRepository.findById(idPacienteActual);
+                    if (pacienteActualOpt.isPresent() && pacienteActualOpt.get().getUsuario() != null) {
+                        emailPerteneceAPacienteActual = pacienteActualOpt.get().getUsuario().getId()
+                                .equals(usuarioExistente.getId());
+                    }
+                }
+
+                // Si el email existe y NO pertenece al paciente que estamos editando...
+                if (!emailPerteneceAPacienteActual) {
+                    if (usuarioExistente.isEliminado()) {
+                        // Email pertenece a usuario eliminado
+                        throw new DataIntegrityViolationException(
+                                "EMAIL_ELIMINADO:" + usuarioExistente.getId() + ":" + pacienteDTO.getEmail());
+                    } else {
+                        // Email pertenece a otro usuario activo (sea paciente o personal)
+                        throw new DataIntegrityViolationException(
+                                "El email '" + pacienteDTO.getEmail()
+                                        + "' ya está en uso por otro usuario del sistema.");
+                    }
+                }
+                // Si el email existe PERO pertenece al paciente actual, no hay problema.
             }
 
-            Optional<Usuario> usuarioConEmail = usuarioRepository.findByEmail(pacienteDTO.getEmail());
-            if (usuarioConEmail.isPresent()) {
-                if (pacienteDTO.getId() == null ||
-                        !usuarioConEmail.get().getId().equals(
-                                pacienteRepository.findById(pacienteDTO.getId())
-                                        .map(p -> p.getUsuario() != null ? p.getUsuario().getId() : null)
-                                        .orElse(null))) {
-                    throw new DataIntegrityViolationException(
-                            "El email '" + pacienteDTO.getEmail() + "' ya está en uso por otro usuario del sistema.");
-                }
+            // Comprobación adicional (por si acaso) de la tabla Paciente
+            Optional<Paciente> existentePorEmailPaciente = pacienteRepository
+                    .findByEmailIgnorandoSoftDelete(pacienteDTO.getEmail());
+            if (existentePorEmailPaciente.isPresent()
+                    && (pacienteDTO.getId() == null
+                            || !existentePorEmailPaciente.get().getId().equals(pacienteDTO.getId()))) {
+                throw new DataIntegrityViolationException(
+                        "El Email '" + pacienteDTO.getEmail()
+                                + "' ya está en uso por otro paciente (activo o inactivo).");
             }
         }
 
-        // 2️⃣ PREPARACIÓN DE ENTIDADES
+        // 3️⃣ PREPARACIÓN DE ENTIDADES
         Paciente paciente;
         boolean esNuevo = pacienteDTO.getId() == null;
         Usuario usuarioPaciente = null;
         boolean emailCambiado = false;
+        boolean enviarEmailActivacion = false; // Flag para enviar email
 
         TipoDocumento tipoDocumento = tipoDocumentoRepository.findById(pacienteDTO.getTipoDocumentoId())
                 .orElseThrow(() -> new IllegalStateException("Tipo de documento no encontrado."));
@@ -108,13 +136,13 @@ public class PacienteServiceImpl implements PacienteService {
             usuarioPaciente = new Usuario();
             usuarioPaciente.setEmail(pacienteDTO.getEmail());
             usuarioPaciente.setNombreCompleto(pacienteDTO.getNombreCompleto());
-            usuarioPaciente.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-            usuarioPaciente.setEstaActivo(false);
+            usuarioPaciente.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Pass temporal
+            usuarioPaciente.setEstaActivo(false); // Inactivo hasta que se active por email
             usuarioPaciente.setVerificationToken(UUID.randomUUID().toString());
             usuarioPaciente.setRoles(Set.of(rolPaciente));
 
-            // 🔥 Ahora dejamos que la cascada del Paciente persista al Usuario
-            paciente.setUsuario(usuarioPaciente);
+            paciente.setUsuario(usuarioPaciente); // El save del paciente persistirá al usuario
+            enviarEmailActivacion = true; // Marcar para enviar email
 
         } else {
             // ✳️ EDICIÓN DE PACIENTE EXISTENTE
@@ -123,27 +151,38 @@ public class PacienteServiceImpl implements PacienteService {
 
             if (paciente.getUsuario() != null) {
                 usuarioPaciente = paciente.getUsuario();
+                // Comprobar si el email cambió
                 if (!usuarioPaciente.getEmail().equals(pacienteDTO.getEmail())) {
                     emailCambiado = true;
+                    enviarEmailActivacion = true; // Marcar para enviar re-verificación
                 }
-            }
-        }
-
-        // 3️⃣ ACTUALIZAR USUARIO ASOCIADO (INCLUIDO CASO DE EMAIL CAMBIADO)
-        if (usuarioPaciente != null) {
-            usuarioPaciente.setNombreCompleto(pacienteDTO.getNombreCompleto());
-            usuarioPaciente.setEmail(pacienteDTO.getEmail());
-
-            if (emailCambiado) {
+            } else {
+                // Caso raro: Paciente existe pero no tiene usuario. Creamos uno.
+                Rol rolPaciente = rolRepository.findByNombre("PACIENTE")
+                        .orElseThrow(
+                                () -> new IllegalStateException("El rol 'PACIENTE' no se encuentra en el sistema."));
+                usuarioPaciente = new Usuario();
+                usuarioPaciente.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
                 usuarioPaciente.setEstaActivo(false);
-                usuarioPaciente.setVerificationToken(UUID.randomUUID().toString());
+                paciente.setUsuario(usuarioPaciente);
+                enviarEmailActivacion = true;
             }
-
-            // Se guarda explícitamente para asegurar consistencia antes del paciente
-            usuarioRepository.save(usuarioPaciente);
         }
 
-        // 4️⃣ ACTUALIZAR DATOS DEL PACIENTE
+        // 4️⃣ ACTUALIZAR USUARIO ASOCIADO (siempre se actualiza nombre/email)
+        usuarioPaciente.setNombreCompleto(pacienteDTO.getNombreCompleto());
+        usuarioPaciente.setEmail(pacienteDTO.getEmail());
+
+        if (emailCambiado) { // Si el email cambió, forzar re-activación
+            usuarioPaciente.setEstaActivo(false);
+            usuarioPaciente.setVerificationToken(UUID.randomUUID().toString());
+        }
+
+        // El usuario se guardará por cascada al guardar el paciente
+        // usuarioRepository.save(usuarioPaciente); // No es necesario si
+        // CascadeType.PERSIST/MERGE está en Paciente.usuario
+
+        // 5️⃣ ACTUALIZAR DATOS DEL PACIENTE
         paciente.setNumeroDocumento(pacienteDTO.getNumeroDocumento());
         paciente.setTipoDocumento(tipoDocumento);
         paciente.setNombreCompleto(pacienteDTO.getNombreCompleto());
@@ -154,11 +193,11 @@ public class PacienteServiceImpl implements PacienteService {
         paciente.setAlergias(pacienteDTO.getAlergias());
         paciente.setAntecedentesMedicos(pacienteDTO.getAntecedentesMedicos());
 
-        Paciente pacienteGuardado = pacienteRepository.save(paciente);
+        Paciente pacienteGuardado = pacienteRepository.save(paciente); // Esto guarda paciente Y usuario
 
-        // 5️⃣ ENVIAR EMAIL DE ACTIVACIÓN O RE-VERIFICACIÓN
-        if (esNuevo || emailCambiado) {
-            emailService.enviarEmailActivacionAdmin(
+        // 6️⃣ ENVIAR EMAIL DE ACTIVACIÓN O RE-VERIFICACIÓN
+        if (enviarEmailActivacion && pacienteGuardado.getUsuario().getVerificationToken() != null) {
+            emailService.enviarEmailActivacionAdmin( // Usa el flujo de activación (establecer contraseña)
                     pacienteGuardado.getEmail(),
                     pacienteGuardado.getNombreCompleto(),
                     pacienteGuardado.getUsuario().getVerificationToken());
@@ -170,20 +209,35 @@ public class PacienteServiceImpl implements PacienteService {
     @Transactional
     public Usuario crearUsuarioTemporalParaRegistro(String email) {
 
-        Optional<Usuario> usuarioExistente = usuarioRepository.findByEmailIgnorandoSoftDelete(email);
-        if (usuarioExistente.isPresent() && !usuarioExistente.get().isEliminado()) {
-            throw new IllegalStateException(
-                    "El email ya está en uso. Si no recuerdas tu clave, contacta al administrador.");
+        Optional<Usuario> usuarioExistenteOpt = usuarioRepository.findByEmailIgnorandoSoftDelete(email);
+
+        if (usuarioExistenteOpt.isPresent()) {
+            Usuario usuarioExistente = usuarioExistenteOpt.get();
+
+            if (usuarioExistente.isEliminado()) {
+                // Email pertenece a una cuenta eliminada → controlador decidirá si restaurar
+                throw new IllegalStateException(
+                        "EMAIL_ELIMINADO_REGISTRO:" + email // Mensaje especial para el controlador
+                );
+            } else {
+                // Email pertenece a cuenta activa o inactiva
+                throw new IllegalStateException(
+                        "El email ya está registrado en el sistema. Si olvidaste tu contraseña, contáctanos.");
+            }
         }
 
+        // --- Si no existe, proceder a crear el usuario temporal ---
         Rol rolPaciente = rolRepository.findByNombre("PACIENTE")
                 .orElseThrow(() -> new IllegalStateException("El rol 'PACIENTE' no se encuentra en el sistema."));
+
         Usuario usuarioTemp = new Usuario();
         usuarioTemp.setEmail(email);
-        usuarioTemp.setNombreCompleto("Paciente Pendiente");
-        usuarioTemp.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-        usuarioTemp.setEstaActivo(false); // INACTIVO hasta completar el formulario final
-        usuarioTemp.setVerificationToken(UUID.randomUUID().toString());
+        usuarioTemp.setNombreCompleto("Paciente Pendiente"); // Temporal hasta completar datos
+        usuarioTemp.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Password inválida hasta
+                                                                                       // registro final
+        usuarioTemp.setEstaActivo(false); // INACTIVO hasta completar el registro
+        usuarioTemp.setVerificationToken(UUID.randomUUID().toString()); // Token para el siguiente paso (formulario
+                                                                        // datos)
         usuarioTemp.setRoles(Set.of(rolPaciente));
 
         return usuarioRepository.save(usuarioTemp);
@@ -248,45 +302,74 @@ public class PacienteServiceImpl implements PacienteService {
     @Override
     @Transactional
     public void eliminarPaciente(Long id) {
-        Optional<Paciente> pacienteOpt = pacienteRepository.findById(id);
-        if (pacienteOpt.isEmpty()) {
-            throw new IllegalStateException("Paciente no encontrado para eliminar con ID: " + id);
+        // Buscar paciente (ignorando soft delete para asegurar que lo encontramos
+        // aunque ya esté marcado)
+        Paciente paciente = pacienteRepository.findByIdIgnorandoSoftDelete(id)
+                .orElseThrow(() -> new IllegalStateException("Paciente no encontrado para eliminar con ID: " + id));
+
+        // Si ya está eliminado, no hacer nada más
+        if (paciente.isEliminado()) {
+            System.out.println(">>> Paciente con ID " + id + " ya estaba eliminado lógicamente.");
+            return;
         }
 
-        Paciente paciente = pacienteOpt.get();
-        Long usuarioId = (paciente.getUsuario() != null) ? paciente.getUsuario().getId() : null;
+        Usuario usuarioAsociado = paciente.getUsuario();
+        Long usuarioId = (usuarioAsociado != null) ? usuarioAsociado.getId() : null;
 
-        // 1. Ejecutar el Soft Delete del Paciente
-        // Esto ejecuta la @SQLDelete y establece paciente.eliminado = true en la base
-        // de datos
-        pacienteRepository.deleteById(id);
+        // 1. Intentar Soft Delete del Usuario asociado PRIMERO (si existe y SOLO es
+        // Paciente)
+        if (usuarioAsociado != null && !usuarioAsociado.isEliminado()) {
+            // Verificar si el usuario SOLO tiene el rol PACIENTE
+            boolean soloEsPaciente = usuarioAsociado.getRoles().stream()
+                    .allMatch(rol -> "PACIENTE".equals(rol.getNombre()))
+                    && usuarioAsociado.getRoles().size() == 1;
 
-        // 2. Desactivar el usuario asociado (si existe)
-        if (usuarioId != null) {
-            try {
-                // Usamos el servicio de usuario con estado forzado (false)
-                // Se debe obtener el usuario por separado para evitar el conflicto de estado de
-                // persistencia
-                Usuario usuarioParaDesactivar = usuarioRepository.findById(usuarioId)
-                        .orElseThrow(() -> new IllegalStateException(
-                                "Usuario asociado no encontrado para desactivar (ID: " + usuarioId + ")"));
-
-                // Si el usuario no está ya eliminado (para no modificar su estado eliminado)
-                if (!usuarioParaDesactivar.isEliminado()) {
-                    usuarioService.cambiarEstadoUsuario(usuarioId, false);
-                    System.out.println(">>> Usuario asociado " + paciente.getUsuario().getEmail()
-                            + " desactivado por eliminación de paciente.");
+            if (soloEsPaciente) {
+                try {
+                    // Aplicar soft delete al usuario (activa @SQLDelete de Usuario)
+                    usuarioRepository.deleteById(usuarioId);
+                    System.out.println(">>> Usuario asociado " + usuarioAsociado.getEmail()
+                            + " eliminado (soft delete) por eliminación de paciente.");
+                } catch (Exception e) {
+                    // Si falla eliminar el usuario, detenemos la operación para evitar
+                    // inconsistencias.
+                    System.err.println("Error Crítico: No se pudo eliminar (soft delete) el usuario asociado "
+                            + usuarioAsociado.getEmail() + ". Cancelando eliminación del paciente. Error: "
+                            + e.getMessage());
+                    // Podrías lanzar una excepción personalizada o DataIntegrityViolationException
+                    throw new RuntimeException("No se pudo eliminar el usuario asociado. Operación cancelada.", e);
                 }
-
-            } catch (Exception e) {
-                // En este punto, el paciente ya está marcado como eliminado. Si falla
-                // desactivar el usuario,
-                // solo se registra la advertencia, pero no se revierte la eliminación del
-                // paciente.
-                System.err.println("Error al desactivar usuario asociado al paciente " + id + ": " + e.getMessage());
+            } else {
+                // Si el usuario tiene otros roles (es personal), NO lo eliminamos, solo lo
+                // desactivamos.
+                try {
+                    if (usuarioAsociado.isEstaActivo()) { // Solo desactivar si está activo
+                        usuarioService.cambiarEstadoUsuario(usuarioId, false);
+                        System.out.println(">>> Usuario asociado " + usuarioAsociado.getEmail()
+                                + " (personal) desactivado por eliminación de paciente.");
+                    }
+                } catch (Exception e) {
+                    System.err.println("Advertencia: No se pudo desactivar el usuario (personal) asociado al paciente "
+                            + id + ": " + e.getMessage());
+                    // Continuamos, ya que el paciente se eliminará de todas formas.
+                }
             }
+        } else if (usuarioAsociado != null && usuarioAsociado.isEliminado()) {
+            System.out.println(
+                    ">>> Usuario asociado " + usuarioAsociado.getEmail() + " ya estaba eliminado lógicamente.");
         } else {
-            System.out.println(">>> Paciente " + id + " no tenía usuario asociado.");
+            System.out.println(">>> Paciente " + id + " no tenía usuario asociado o ya fue procesado.");
+        }
+
+        // 2. Ejecutar el Soft Delete del Paciente DESPUÉS del usuario (si aplica)
+        try {
+            pacienteRepository.deleteById(id); // Activa @SQLDelete de Paciente
+            System.out.println(">>> Paciente con ID " + id + " eliminado (soft delete) con éxito.");
+        } catch (Exception e) {
+            // Si llega aquí, es un error inesperado al marcar el paciente como eliminado.
+            System.err.println("Error Crítico al intentar soft delete del paciente " + id + ": " + e.getMessage());
+            // Considera relanzar para que la transacción haga rollback
+            throw new RuntimeException("Error al marcar el paciente como eliminado.", e);
         }
     }
 

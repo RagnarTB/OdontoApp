@@ -69,24 +69,55 @@ public class PacienteController {
     @PostMapping("/pacientes/guardar")
     public String guardarPaciente(@Valid @ModelAttribute("pacienteDTO") PacienteDTO pacienteDTO,
             BindingResult result,
-            Model model, // Necesario para recargar lista de tipos de documento
+            Model model,
             RedirectAttributes redirectAttributes) {
+
+        // 1. Validación del DTO
         if (result.hasErrors()) {
-            model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // Recargar tipos de doc
+            model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll());
             return "modulos/pacientes/formulario";
         }
+
+        // 2. Intentar guardar
         try {
             pacienteService.guardarPaciente(pacienteDTO);
             redirectAttributes.addFlashAttribute("success", "Paciente guardado con éxito.");
+            return "redirect:/pacientes";
+
         } catch (DataIntegrityViolationException e) {
-            model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // Recargar tipos de doc
-            model.addAttribute("error", e.getMessage());
+            model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll());
+            model.addAttribute("pacienteDTO", pacienteDTO); // Devolver datos al formulario
+
+            String mensajeServicio = e.getMessage();
+
+            // Verificar si es nuestro mensaje personalizado para restaurar
+            if (mensajeServicio != null && mensajeServicio.startsWith("EMAIL_ELIMINADO:")) {
+                try {
+                    String[] parts = mensajeServicio.split(":");
+                    Long idUsuarioEliminado = Long.parseLong(parts[1]);
+                    String emailEliminado = parts[2];
+                    model.addAttribute("errorRestauracion", // Atributo específico para la vista
+                            "El email '" + emailEliminado + "' pertenece a un usuario eliminado.");
+                    model.addAttribute("idUsuarioParaRestaurar", idUsuarioEliminado); // Pasar ID a la vista
+                } catch (Exception parseEx) {
+                    model.addAttribute("error", "El email ya existe (usuario eliminado, error al procesar).");
+                }
+            } else {
+                // Otro error (duplicado de DNI, email activo, etc.)
+                model.addAttribute("error",
+                        mensajeServicio != null ? mensajeServicio : "Error de integridad de datos.");
+            }
             return "modulos/pacientes/formulario"; // Regresar al formulario con el error
+
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Ocurrió un error inesperado al guardar el paciente.");
-            return "redirect:/pacientes/nuevo";
+            // Otros errores inesperados
+            model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll());
+            model.addAttribute("pacienteDTO", pacienteDTO);
+            model.addAttribute("error", "Ocurrió un error inesperado al guardar el paciente.");
+            System.err.println("Error INESPERADO al guardar paciente: " + e.getMessage());
+            e.printStackTrace();
+            return "modulos/pacientes/formulario";
         }
-        return "redirect:/pacientes";
     }
 
     @GetMapping("/pacientes/editar/{id}")

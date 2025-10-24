@@ -15,4 +15,9 @@ public class LoginController {
     public String verDashboard() {
         return "dashboard";
     }
+
+    @GetMapping("/logout")
+    public String cerrarSesion() {
+        return "publico/login";
+    }
 }

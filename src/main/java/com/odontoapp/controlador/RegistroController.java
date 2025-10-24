@@ -1,14 +1,7 @@
 // Archivo: C:\proyectos\nuevo\odontoapp\src\main\java\com\odontoapp\controlador\RegistroController.java
 package com.odontoapp.controlador;
 
-import com.odontoapp.dto.RegistroPacienteDTO;
-import com.odontoapp.entidad.Usuario;
-import com.odontoapp.repositorio.TipoDocumentoRepository;
-import com.odontoapp.repositorio.UsuarioRepository;
-import com.odontoapp.servicio.EmailService;
-import com.odontoapp.servicio.PacienteService;
-
-import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -18,7 +11,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Optional;
+import com.odontoapp.dto.RegistroPacienteDTO;
+import com.odontoapp.entidad.Usuario;
+import com.odontoapp.repositorio.TipoDocumentoRepository;
+import com.odontoapp.repositorio.UsuarioRepository;
+import com.odontoapp.servicio.EmailService;
+import com.odontoapp.servicio.PacienteService;
+
+import jakarta.validation.Valid;
 
 @Controller
 public class RegistroController {
@@ -44,23 +44,34 @@ public class RegistroController {
     @PostMapping("/registro/enviar-link")
     public String enviarLinkVerificacion(@RequestParam("email") String email, RedirectAttributes redirectAttributes) {
 
-        Optional<Usuario> usuarioExistente = usuarioRepository.findByEmailIgnorandoSoftDelete(email);
-        if (usuarioExistente.isPresent() && usuarioExistente.get().isEstaActivo()
-                && !usuarioExistente.get().isEliminado()) {
-            redirectAttributes.addFlashAttribute("error", "Ya existe una cuenta activa con este email.");
-            return "redirect:/registro";
-        }
-
         try {
             Usuario usuarioTemp = pacienteService.crearUsuarioTemporalParaRegistro(email);
-            emailService.enviarEmailActivacion(usuarioTemp.getEmail(), usuarioTemp.getNombreCompleto(),
+            emailService.enviarEmailActivacion(usuarioTemp.getEmail(), usuarioTemp.getNombreCompleto(), // Usar nombre
+                                                                                                        // temporal
                     usuarioTemp.getVerificationToken());
+            return "redirect:/registro/confirmacion";
+
         } catch (IllegalStateException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            String mensaje = e.getMessage();
+            // --- MANEJO MEJORADO DEL ERROR DE DUPLICADO ---
+            if (mensaje != null && mensaje.startsWith("EMAIL_ELIMINADO_REGISTRO:")) {
+                String emailEliminado = mensaje.split(":")[1];
+                redirectAttributes.addFlashAttribute("error",
+                        "El email '" + emailEliminado
+                                + "' pertenece a una cuenta que fue eliminada. Por favor, contacta con la clínica para recuperarla.");
+            } else {
+                // Otro error (ej. email ya en uso por cuenta activa)
+                redirectAttributes.addFlashAttribute("error", mensaje);
+            }
+            // --- FIN MANEJO MEJORADO ---
+            return "redirect:/registro"; // Volver al formulario de email
+        } catch (Exception e) {
+            // Otros errores inesperados
+            redirectAttributes.addFlashAttribute("error", "Ocurrió un error inesperado al procesar tu solicitud.");
+            System.err.println("Error en enviarLinkVerificacion: " + e.getMessage());
+            e.printStackTrace();
             return "redirect:/registro";
         }
-
-        return "redirect:/registro/confirmacion";
     }
 
     @GetMapping("/registro/confirmacion")
@@ -96,33 +107,52 @@ public class RegistroController {
             Model model,
             RedirectAttributes redirectAttributes) {
 
-        // Validaciones de Contraseña (las hacemos aquí porque el DTO extiende
-        // PacienteDTO y no UsuarioDTO)
-        if (!password.equals(confirmPassword)) {
-            result.rejectValue("global", "error.global", "Las contraseñas no coinciden.");
-        }
-        if (password.length() < 8) {
-            result.rejectValue("global", "error.global", "La contraseña debe tener al menos 8 caracteres.");
+        // ✅ Validación de contraseña robusta
+        String errorValidacion = com.odontoapp.util.PasswordUtil.validarPasswordRobusta(password);
+        if (errorValidacion != null) {
+            model.addAttribute("error", errorValidacion);
+            cargarDatosFormulario(model, registroDTO, token);
+            return "publico/registro-formulario";
         }
 
+        // ❌ Validación de coincidencia
+        if (!password.equals(confirmPassword)) {
+            model.addAttribute("error", "Las contraseñas no coinciden.");
+            cargarDatosFormulario(model, registroDTO, token);
+            return "publico/registro-formulario";
+        }
+
+        // ❗ Validación de DTO
         if (result.hasErrors()) {
             cargarDatosFormulario(model, registroDTO, token);
             return "publico/registro-formulario";
         }
+
+        // --- Fin Validaciones ---
 
         try {
             pacienteService.completarRegistroPaciente(registroDTO, token, password);
             redirectAttributes.addFlashAttribute("success",
                     "¡Tu cuenta ha sido registrada y activada! Ya puedes iniciar sesión.");
             return "redirect:/login";
+
         } catch (IllegalStateException e) {
-            // Error de token inválido o ya activo
+            // Token inválido, expirado o paciente ya activo
             redirectAttributes.addFlashAttribute("mensajeError", e.getMessage());
             return "redirect:/resultado-activacion?error=true";
-        } catch (Exception e) {
-            // Error de duplicidad DNI, email, etc.
+
+        } catch (DataIntegrityViolationException e) {
+            // 🔥 Manejo Mejorado → error claro de duplicidad (DNI o Email)
             model.addAttribute("error", e.getMessage());
             cargarDatosFormulario(model, registroDTO, token);
+            return "publico/registro-formulario";
+
+        } catch (Exception e) {
+            // Error inesperado
+            model.addAttribute("error", "Ocurrió un error inesperado al completar el registro.");
+            cargarDatosFormulario(model, registroDTO, token);
+            System.err.println("Error inesperado en completarRegistro: " + e.getMessage());
+            e.printStackTrace();
             return "publico/registro-formulario";
         }
     }

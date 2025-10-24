@@ -73,18 +73,6 @@
             border-radius: 8px;
         }
 
-        .form-text {
-            font-size: 0.9rem;
-        }
-
-        .text-center a {
-            color: #0056b3;
-        }
-
-        .text-center a:hover {
-            text-decoration: underline;
-        }
-
         .input-group-append button {
             border-radius: 0 8px 8px 0;
         }
@@ -101,18 +89,24 @@
             <div class="card-body">
                 <p class="login-box-msg">Completa tus datos para finalizar tu registro</p>
 
-                <!-- Mensaje de error -->
-                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <span th:text="${error}"></span>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-
                 <form th:action="@{/registro/completar}" th:object="${pacienteDTO}" method="post">
 
-                    <div th:if="${#fields.hasAnyErrors()}" class="alert alert-danger">
+                    <!-- Mensaje de error general (excepciones o validaciones manuales) -->
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong><i class="fas fa-ban"></i> Error:</strong> <span th:text="${error}"></span>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <!-- Errores de validación de campos -->
+                    <div th:if="${#fields.hasAnyErrors()}" class="alert alert-danger alert-dismissible fade show"
+                        role="alert">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Error de Validación:</strong>
                         Por favor corrige los errores indicados.
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
                     </div>
 
                     <input type="hidden" name="token" th:value="${token}" />
@@ -142,18 +136,24 @@
                             <label>Número Documento</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" th:field="*{numeroDocumento}"
-                                    placeholder="Número de Documento">
+                                    placeholder="Número de Documento"
+                                    th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
                                 <div class="input-group-append">
                                     <button class="btn btn-outline-secondary" type="button"
                                         id="btn-buscar-reniec-registro">Buscar</button>
                                 </div>
                             </div>
                             <small id="doc-error" class="form-text text-danger"></small>
+                            <div th:if="${#fields.hasErrors('numeroDocumento')}" class="invalid-feedback d-block"
+                                th:errors="*{numeroDocumento}"></div>
                         </div>
 
                         <div class="col-md-4">
                             <label>Nombre Completo</label>
-                            <input type="text" class="form-control" th:field="*{nombreCompleto}">
+                            <input type="text" class="form-control" th:field="*{nombreCompleto}"
+                                th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
+                            <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback d-block"
+                                th:errors="*{nombreCompleto}"></div>
                         </div>
                     </div>
 
@@ -215,19 +215,51 @@
     <script th:src="@{/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
 
     <script>
-        // === Validación de contraseñas ===
+        // === Validación de contraseñas MEJORADA ===
         document.querySelector('form').addEventListener('submit', function (event) {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             const errorElement = document.getElementById('passwordErrorJS');
+            const ESPECIALES = '!@#$%&*';
+
             errorElement.textContent = '';
+
+            if (password.length < 8) {
+                errorElement.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+                event.preventDefault();
+                return;
+            }
+
+            const tieneMayuscula = /[A-Z]/.test(password);
+            const tieneMinuscula = /[a-z]/.test(password);
+            const tieneNumero = /[0-9]/.test(password);
+            const tieneEspecial = new RegExp(`[${ESPECIALES.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}]`).test(password);
+
+            if (!tieneMayuscula) {
+                errorElement.textContent = 'La contraseña debe contener al menos una letra mayúscula.';
+                event.preventDefault();
+                return;
+            }
+            if (!tieneMinuscula) {
+                errorElement.textContent = 'La contraseña debe contener al menos una letra minúscula.';
+                event.preventDefault();
+                return;
+            }
+            if (!tieneNumero) {
+                errorElement.textContent = 'La contraseña debe contener al menos un número.';
+                event.preventDefault();
+                return;
+            }
+            if (!tieneEspecial) {
+                errorElement.textContent = 'La contraseña debe contener al menos un carácter especial (!@#$%&*).';
+                event.preventDefault();
+                return;
+            }
 
             if (password !== confirmPassword) {
                 errorElement.textContent = 'Las contraseñas no coinciden.';
                 event.preventDefault();
-            } else if (password.length < 8) {
-                errorElement.textContent = 'La contraseña debe tener al menos 8 caracteres.';
-                event.preventDefault();
+                return;
             }
         });
 

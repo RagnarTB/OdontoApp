@@ -25,4 +25,6 @@ public interface UsuarioService {
     void resetearIntentosFallidos(String email);
 
     void cambiarEstadoUsuario(Long id, boolean activar) throws UnsupportedOperationException, IllegalStateException;
+
+    void restablecerUsuario(Long id);
 }

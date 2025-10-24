@@ -1,14 +1,27 @@
 // Archivo: C:\proyectos\nuevo\odontoapp\src\main\java\com\odontoapp\entidad\Usuario.java
 package com.odontoapp.entidad;
 
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.Set;
+
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import java.time.LocalDateTime;
-import java.util.Set;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
 
 @Data
 @EqualsAndHashCode(callSuper = true, exclude = { "roles", "paciente" }) // Excluir colecciones/relaciones
@@ -50,4 +63,10 @@ public class Usuario extends EntidadAuditable { // Extiende EntidadAuditable
     // --- Campos Soft Delete ---
     private boolean eliminado = false;
     private LocalDateTime fechaEliminacion;
+
+    @Column(name = "debe_actualizar_password")
+private boolean debeActualizarPassword = false;
+
+@Column(name = "password_temporal")
+private String passwordTemporal;
 }

@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Service;
 import com.odontoapp.dto.UsuarioDTO;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.entidad.Usuario;
+import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 
@@ -28,107 +28,120 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private static final int MAX_INTENTOS_FALLIDOS = 5;
     private final EmailService emailService;
+    private final PacienteRepository pacienteRepository;
 
     public UsuarioServiceImpl(EmailService emailService, PasswordEncoder passwordEncoder, RolRepository rolRepository,
-            UsuarioRepository usuarioRepository) {
+            UsuarioRepository usuarioRepository, PacienteRepository pacienteRepository) {
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
         this.rolRepository = rolRepository;
         this.usuarioRepository = usuarioRepository;
-    }
+        this.pacienteRepository = pacienteRepository;
 
-    // Añade este método privado
-    private void validarComplejidadPassword(String password) {
-        if (password == null || password.isEmpty()) {
-            return; // No validar si está vacío
-        }
-        if (password.length() < 8) {
-            throw new IllegalArgumentException("La contraseña debe tener al menos 8 caracteres.");
-        }
-        // Añadir más reglas aquí si es necesario (regex, etc.)
     }
 
     @Override
-    @Transactional // Asegura que toda la operación sea atómica
+    @Transactional
     public void guardarUsuario(UsuarioDTO usuarioDTO) {
         Usuario usuario;
         boolean esNuevo = usuarioDTO.getId() == null;
         String emailNuevo = usuarioDTO.getEmail();
         String emailOriginal = null;
-        boolean emailCambiado = false;
 
-        // --- 🔍 VALIDACIÓN DE EMAIL Y RECUPERACIÓN ---
-        Optional<Usuario> existenteConEmail = usuarioRepository.findByEmailIgnorandoSoftDelete(emailNuevo);
+        // --- 1. VALIDACIÓN PREVIA DE EMAIL ---
+        Optional<Usuario> existenteConEmailOpt = usuarioRepository.findByEmailIgnorandoSoftDelete(emailNuevo);
 
-        if (!esNuevo) {
+        if (esNuevo) {
+            // Creando: Verificar si el email ya existe (activo o eliminado)
+            if (existenteConEmailOpt.isPresent()) {
+                Usuario usuarioExistente = existenteConEmailOpt.get();
+                if (usuarioExistente.isEliminado()) {
+                    throw new DataIntegrityViolationException( // Lanzar excepción específica para restaurar
+                            "EMAIL_ELIMINADO:" + usuarioExistente.getId() + ":" + emailNuevo);
+                } else {
+                    throw new DataIntegrityViolationException( // Lanzar excepción para email activo
+                            "El email '" + emailNuevo + "' ya está en uso por otro usuario activo.");
+                }
+            }
+            // Si no existe, preparamos el nuevo usuario
+            usuario = new Usuario();
+
+        } else {
+            // Editando: Obtener usuario existente y verificar si el email cambió
             usuario = usuarioRepository.findById(usuarioDTO.getId())
                     .orElseThrow(
                             () -> new IllegalStateException("Usuario no encontrado con ID: " + usuarioDTO.getId()));
-
             emailOriginal = usuario.getEmail();
+
             if (!emailNuevo.equals(emailOriginal)) {
-                emailCambiado = true;
+                // El email cambió, verificar si el NUEVO email ya existe (activo o eliminado)
+                if (existenteConEmailOpt.isPresent()) {
+                    Usuario usuarioConNuevoEmail = existenteConEmailOpt.get();
+                    if (usuarioConNuevoEmail.isEliminado()) {
+                        throw new DataIntegrityViolationException( // Lanzar para restaurar
+                                "EMAIL_ELIMINADO:" + usuarioConNuevoEmail.getId() + ":" + emailNuevo);
+                    } else {
+                        throw new DataIntegrityViolationException( // Lanzar para email activo
+                                "El email '" + emailNuevo + "' ya está en uso por otro usuario activo.");
+                    }
+                }
+                // Validar si se intenta cambiar el email del admin principal
+                if ("admin@odontoapp.com".equals(emailOriginal)) {
+                    throw new IllegalArgumentException("No se puede cambiar el email del administrador principal.");
+                }
             }
-        } else {
-            usuario = new Usuario();
         }
 
-        // 1. Validar duplicidad
-        if (existenteConEmail.isPresent()) {
-            if (esNuevo || !existenteConEmail.get().getId().equals(usuarioDTO.getId())) {
-                throw new DataIntegrityViolationException(
-                        "El email '" + emailNuevo + "' ya se encuentra registrado en el sistema " +
-                                "(puede estar inactivo o eliminado).");
-            }
-        }
-
-        // 2. Reglas de ADMIN PRINCIPAL
-        if (emailOriginal != null && "admin@odontoapp.com".equals(emailOriginal) && emailCambiado) {
-            throw new IllegalArgumentException("No se puede cambiar el email del administrador principal.");
-        }
-
-        // 3. DATOS GENERALES
+        // --- 2. SI PASÓ LA VALIDACIÓN, PROCEDER A ACTUALIZAR/CREAR ---
         usuario.setNombreCompleto(usuarioDTO.getNombreCompleto());
         usuario.setEmail(emailNuevo);
 
-        // 4. LÓGICA DE CONTRASEÑA
+        boolean enviarEmailTemporal = false;
+        // Lógica de contraseña temporal (solo para nuevos)
         if (esNuevo) {
-            if (usuarioDTO.getPassword() == null || usuarioDTO.getPassword().isEmpty()) {
-                throw new IllegalArgumentException("La contraseña es obligatoria para nuevos usuarios.");
-            }
-            validarComplejidadPassword(usuarioDTO.getPassword());
-            usuario.setPassword(passwordEncoder.encode(usuarioDTO.getPassword()));
-            usuario.setEstaActivo(true); // Usuarios creados por admin nacen activos, pero el Admin los inactiva si usa
-                                         // el flujo del paciente
+            String passwordTemporal = com.odontoapp.util.PasswordUtil.generarPasswordAleatoria();
+            usuario.setPasswordTemporal(passwordTemporal);
+            usuario.setPassword(passwordEncoder.encode(passwordTemporal));
+            usuario.setDebeActualizarPassword(true);
+            usuario.setEstaActivo(true);
+            enviarEmailTemporal = true;
         }
+        // NOTA: No cambiamos contraseña al editar desde aquí.
 
-        // 5. 🔥 CORRECCIÓN: INACTIVAR Y ENVIAR TOKEN si el email cambió
-        if (emailCambiado) {
-            usuario.setEstaActivo(false);
-            usuario.setVerificationToken(UUID.randomUUID().toString());
-
-            Usuario usuarioGuardado = usuarioRepository.save(usuario);
-
-            // Reutilizamos el flujo de activación de Admin, asumiendo que es personal
-            emailService.enviarEmailActivacionAdmin(
-                    usuarioGuardado.getEmail(),
-                    usuarioGuardado.getNombreCompleto(),
-                    usuarioGuardado.getVerificationToken());
-        }
-
-        // 6. VALIDACIÓN DE ROL y ASIGNACIÓN (sin cambios)
+        // Roles (validación de quitar rol admin)
         boolean esAdminPrincipal = "admin@odontoapp.com".equals(usuario.getEmail());
         Rol rolAdmin = rolRepository.findByNombre("ADMIN").orElse(null);
-        boolean intentaQuitarRolAdmin = (rolAdmin != null && !usuarioDTO.getRoles().contains(rolAdmin.getId()));
+        boolean intentaQuitarRolAdmin = (!esNuevo && rolAdmin != null
+                && !usuarioDTO.getRoles().contains(rolAdmin.getId()));
         if (esAdminPrincipal && intentaQuitarRolAdmin) {
             throw new IllegalArgumentException("No se puede quitar el rol ADMIN al administrador principal.");
         }
         List<Rol> roles = rolRepository.findAllById(usuarioDTO.getRoles());
         usuario.setRoles(new HashSet<>(roles));
 
-        // Guardar (si no se guardó ya por el cambio de email)
-        if (!emailCambiado) {
-            usuarioRepository.save(usuario);
+        // --- 3. GUARDAR ---
+        Usuario usuarioGuardado;
+        try {
+            usuarioGuardado = usuarioRepository.save(usuario);
+        } catch (DataIntegrityViolationException e) {
+            // Si AÚN ASÍ ocurre un error de duplicado (puede pasar por concurrencia),
+            // lo relanzamos con un mensaje más genérico pero claro.
+            throw new DataIntegrityViolationException("Error al guardar: El email '" + emailNuevo + "' ya existe.", e);
+        }
+
+        // --- 4. ENVIAR EMAIL (SOLO SI ES NUEVO) ---
+        if (enviarEmailTemporal && usuarioGuardado.getPasswordTemporal() != null) {
+            try {
+                emailService.enviarPasswordTemporal(
+                        usuarioGuardado.getEmail(),
+                        usuarioGuardado.getNombreCompleto(),
+                        usuarioGuardado.getPasswordTemporal());
+            } catch (Exception e) {
+                System.err.println("Error al enviar email con contraseña temporal para " + usuarioGuardado.getEmail()
+                        + ": " + e.getMessage());
+                // Considera añadir un flash attribute de advertencia para el admin
+                // No relanzamos la excepción para no deshacer el guardado del usuario
+            }
         }
     }
 
@@ -150,21 +163,52 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public void eliminarUsuario(Long id) {
+        // Buscar usuario (ignorando soft delete para asegurar que lo encontramos)
+        // Necesitaríamos un método findByIdIgnorandoSoftDelete en UsuarioRepository si
+        // quisiéramos encontrar uno ya eliminado.
+        // Por ahora, asumimos que solo eliminamos usuarios no eliminados previamente.
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Usuario no encontrado con ID: " + id));
 
+        // Si ya está eliminado, no hacer nada más
+        if (usuario.isEliminado()) {
+            System.out.println(">>> Usuario " + usuario.getEmail() + " ya estaba eliminado lógicamente.");
+            return;
+        }
+
+        // Regla: No eliminar admin principal
         if ("admin@odontoapp.com".equals(usuario.getEmail())) {
             throw new UnsupportedOperationException("No se puede eliminar al administrador principal.");
         }
 
-        // Validar si el usuario está asociado a un Paciente ACTIVO
+        // 1. Soft delete del Paciente asociado PRIMERO (si existe y no está eliminado)
         if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
-            throw new DataIntegrityViolationException(
-                    "No se puede eliminar un usuario asociado a un paciente activo. Elimine primero el paciente.");
+            Long pacienteId = usuario.getPaciente().getId();
+            try {
+                pacienteRepository.deleteById(pacienteId); // Activa @SQLDelete de Paciente
+                System.out.println(
+                        ">>> Paciente asociado " + pacienteId + " eliminado (soft delete) por cascada desde usuario.");
+            } catch (Exception e) {
+                System.err.println("Error Crítico: No se pudo eliminar (soft delete) el paciente asociado " + pacienteId
+                        + ". Cancelando eliminación del usuario. Error: " + e.getMessage());
+                // Detener la operación si falla eliminar el paciente dependiente.
+                throw new RuntimeException("No se pudo eliminar el paciente asociado. Operación cancelada.", e);
+            }
+        } else if (usuario.getPaciente() != null && usuario.getPaciente().isEliminado()) {
+            System.out.println(">>> Paciente asociado ya estaba eliminado lógicamente.");
         }
 
-        // Llama al deleteById que activará @SQLDelete
-        usuarioRepository.deleteById(id);
+        // 2. Soft delete del Usuario DESPUÉS del paciente (si aplica)
+        try {
+            usuarioRepository.deleteById(id); // Activa @SQLDelete de Usuario
+            System.out.println(">>> Usuario " + usuario.getEmail() + " eliminado (soft delete) con éxito.");
+        } catch (Exception e) {
+            // Si llega aquí, es un error inesperado al marcar el usuario como eliminado.
+            System.err.println(
+                    "Error Crítico al intentar soft delete del usuario " + usuario.getEmail() + ": " + e.getMessage());
+            // Relanzar para que la transacción haga rollback
+            throw new RuntimeException("Error al marcar el usuario como eliminado.", e);
+        }
     }
 
     @Override
@@ -217,6 +261,47 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setIntentosFallidos(0);
             usuario.setFechaBloqueo(null);
             usuarioRepository.save(usuario);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void restablecerUsuario(Long id) {
+        Usuario usuario = usuarioRepository.findByIdIgnorandoSoftDelete(id)
+                .orElseThrow(() -> new IllegalStateException("Usuario no encontrado con ID: " + id));
+
+        if (!usuario.isEliminado()) {
+            throw new IllegalStateException("El usuario con email " + usuario.getEmail() + " no está eliminado.");
+        }
+
+        // Restablecer estado
+        usuario.setEliminado(false);
+        usuario.setFechaEliminacion(null);
+        usuario.setEstaActivo(true); // Reactivarlo
+        usuario.setIntentosFallidos(0);
+        usuario.setFechaBloqueo(null);
+
+        // Generar nueva contraseña temporal y forzar cambio
+        String passwordTemporal = com.odontoapp.util.PasswordUtil.generarPasswordAleatoria();
+        usuario.setPasswordTemporal(passwordTemporal);
+        usuario.setPassword(passwordEncoder.encode(passwordTemporal));
+        usuario.setDebeActualizarPassword(true);
+
+        usuarioRepository.save(usuario);
+
+        // Enviar email con la nueva contraseña temporal
+        try {
+            emailService.enviarPasswordTemporal(
+                    usuario.getEmail(),
+                    usuario.getNombreCompleto(),
+                    passwordTemporal);
+        } catch (Exception e) {
+            System.err.println("Error al enviar email con nueva contraseña temporal durante restauración para "
+                    + usuario.getEmail() + ": " + e.getMessage());
+            // Considera cómo notificar este fallo (ej. mensaje flash adicional)
+            throw new RuntimeException(
+                    "Usuario restablecido, pero ocurrió un error al enviar el email con la nueva contraseña temporal.",
+                    e);
         }
     }
 

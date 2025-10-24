@@ -1,13 +1,8 @@
 package com.odontoapp.controlador;
 
-import com.odontoapp.dto.RolDTO;
-import com.odontoapp.entidad.Permiso;
-import com.odontoapp.entidad.Rol;
-import com.odontoapp.entidad.Usuario;
-import com.odontoapp.repositorio.PermisoRepository;
-import com.odontoapp.servicio.RolService;
-
-import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -16,15 +11,20 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.odontoapp.dto.RolDTO;
+import com.odontoapp.entidad.Permiso;
+import com.odontoapp.entidad.Rol;
+import com.odontoapp.repositorio.PermisoRepository;
+import com.odontoapp.servicio.RolService;
 
-import org.springframework.boot.context.properties.bind.DefaultValue;
+import jakarta.validation.Valid;
 
 @Controller
 public class RolController {
@@ -60,27 +60,38 @@ public class RolController {
     @PostMapping("/roles/guardar")
     public String guardarRol(@Valid @ModelAttribute("rol") RolDTO rolDTO,
             BindingResult result,
-            Model model,
+            Model model, // Usar Model para errores en el formulario
             RedirectAttributes redirectAttributes) {
+
+        // Validación del DTO
         if (result.hasErrors()) {
-            model.addAttribute("rol", rolDTO);
-            cargarPermisos(model);
+            cargarPermisos(model); // Recargar permisos necesarios para la vista
+            model.addAttribute("rol", rolDTO); // Devolver DTO con errores
+            // Los errores de campo se mostrarán automáticamente por Thymeleaf
             return "modulos/roles/formulario";
         }
 
         try {
             rolService.guardarRol(rolDTO);
             redirectAttributes.addFlashAttribute("success", "Rol guardado con éxito.");
-        } catch (DataIntegrityViolationException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
-            if (rolDTO.getId() != null) {
-                return "redirect:/roles/editar/" + rolDTO.getId();
-            } else {
-                return "redirect:/roles/nuevo";
-            }
-        }
+            return "redirect:/roles"; // Redirigir a la lista si todo OK
 
-        return "redirect:/roles";
+        } catch (DataIntegrityViolationException e) {
+            // Error de duplicado u otro error de integridad capturado del servicio
+            cargarPermisos(model);
+            model.addAttribute("rol", rolDTO); // Devolver datos al formulario
+            model.addAttribute("errorValidacion", e.getMessage()); // Pasar el mensaje de error a la vista
+            return "modulos/roles/formulario"; // Volver al formulario
+
+        } catch (Exception e) {
+            // Otros errores inesperados
+            cargarPermisos(model);
+            model.addAttribute("rol", rolDTO);
+            model.addAttribute("errorValidacion", "Ocurrió un error inesperado al guardar el rol.");
+            System.err.println("Error inesperado al guardar rol: " + e.getMessage());
+            e.printStackTrace();
+            return "modulos/roles/formulario";
+        }
     }
 
     @GetMapping("/roles/editar/{id}")
