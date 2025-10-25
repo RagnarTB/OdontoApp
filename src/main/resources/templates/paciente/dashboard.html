@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+    th:replace="{layout/base :: layout(titulo='Mi Dashboard', contenido={::#contenido-principal})}">
+
+<body>
+    <div id="contenido-principal">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Mi Portal de Paciente</h1>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Bienvenido, <span
+                                th:text="${usuarioLogueado.nombreCompleto}">Paciente</span></h3>
+                    </div>
+                    <div class="card-body">
+                        Aquí podrás ver tus próximas citas, historial y más.
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+
+</html>

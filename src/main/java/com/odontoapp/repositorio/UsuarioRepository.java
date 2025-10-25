@@ -31,4 +31,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // --- NUEVO MÉTODO ---
     @Query("SELECT u FROM Usuario u WHERE u.id = :id") // Ignora @Where
     Optional<Usuario> findByIdIgnorandoSoftDelete(@Param("id") Long id);
+
+    @Query("SELECT u FROM Usuario u WHERE u.numeroDocumento = :numDoc AND u.tipoDocumento.id = :tipoDocId")
+    Optional<Usuario> findByNumeroDocumentoAndTipoDocumentoIdIgnorandoSoftDelete(
+            @Param("numDoc") String numDoc, @Param("tipoDocId") Long tipoDocId);
 }

@@ -24,6 +24,7 @@ import com.odontoapp.dto.UsuarioDTO;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.repositorio.RolRepository;
+import com.odontoapp.repositorio.TipoDocumentoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.servicio.UsuarioService;
 
@@ -35,12 +36,14 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
+    private final TipoDocumentoRepository tipoDocumentoRepository;
 
     public UsuarioController(UsuarioService usuarioService, UsuarioRepository usuarioRepository,
-            RolRepository rolRepository) {
+            RolRepository rolRepository, TipoDocumentoRepository tipoDocumentoRepository) {
         this.usuarioService = usuarioService;
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
+        this.tipoDocumentoRepository = tipoDocumentoRepository;
     }
 
     // Muestra la lista de usuarios
@@ -61,7 +64,8 @@ public class UsuarioController {
     public String mostrarFormularioNuevoUsuario(Model model) {
         UsuarioDTO usuario = new UsuarioDTO();
         model.addAttribute("usuario", usuario);
-        cargarRolesActivos(model); // Usar método helper
+        cargarRolesActivos(model);
+        model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // Añadir tipos doc
         return "modulos/usuarios/formulario";
     }
 
@@ -137,15 +141,25 @@ public class UsuarioController {
             Usuario usuario = usuarioOpt.get();
             UsuarioDTO usuarioDTO = new UsuarioDTO();
             usuarioDTO.setId(usuario.getId());
+            // --- Mapear nuevos campos ---
+            if (usuario.getTipoDocumento() != null) {
+                usuarioDTO.setTipoDocumentoId(usuario.getTipoDocumento().getId());
+            }
+            usuarioDTO.setNumeroDocumento(usuario.getNumeroDocumento());
             usuarioDTO.setNombreCompleto(usuario.getNombreCompleto());
             usuarioDTO.setEmail(usuario.getEmail());
-            // *** NO SE PASA LA CONTRASEÑA ***
+            usuarioDTO.setTelefono(usuario.getTelefono());
+            usuarioDTO.setFechaNacimiento(usuario.getFechaNacimiento());
+            usuarioDTO.setDireccion(usuario.getDireccion());
+            // --- Fin mapeo nuevos campos ---
+
             usuarioDTO.setRoles(usuario.getRoles().stream()
                     .map(Rol::getId)
                     .collect(Collectors.toList()));
 
             model.addAttribute("usuario", usuarioDTO);
-            cargarRolesActivos(model); // Usar método helper
+            cargarRolesActivos(model);
+            model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // Añadir tipos doc
             return "modulos/usuarios/formulario";
         }
         redirectAttributes.addFlashAttribute("error", "Usuario no encontrado.");
@@ -239,6 +253,7 @@ public class UsuarioController {
         List<Rol> rolesActivos = rolRepository.findAll()
                 .stream()
                 .filter(Rol::isEstaActivo) // Asegúrate que Rol tenga el getter isEstaActivo()
+                .filter(rol -> !"PACIENTE".equals(rol.getNombre()) && !"ODONTOLOGO".equals(rol.getNombre()))
                 .collect(Collectors.toList());
         model.addAttribute("listaRoles", rolesActivos);
     }

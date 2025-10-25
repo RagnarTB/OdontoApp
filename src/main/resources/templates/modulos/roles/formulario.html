@@ -13,38 +13,42 @@
                 </div>
             </div>
         </section>
+
         <section class="content">
             <div class="container-fluid">
-                <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger alert-dismissible fade show"
-                    role="alert">
-                    <strong><i class="icon fas fa-ban"></i> Error de Validación:</strong> Por favor, corrige los campos
-                    marcados.
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                            aria-hidden="true">&times;</span></button>
-                </div>
-                <div th:if="${errorValidacion}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong><i class="icon fas fa-ban"></i> Error:</strong> <span th:text="${errorValidacion}"></span>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                            aria-hidden="true">&times;</span></button>
-                </div>
                 <div class="card card-primary">
                     <div class="card-header">
                         <h3 class="card-title">Datos del Rol</h3>
                     </div>
                     <form th:action="@{/roles/guardar}" th:object="${rol}" method="post">
-                        <input type="hidden" th:field="*{id}" />
                         <div class="card-body">
+                            <div th:if="${#fields.hasErrors('*')}"
+                                class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong><i class="icon fas fa-ban"></i> Error de Validación:</strong> Por favor, corrige
+                                los campos
+                                marcados.
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                            </div>
+                            <div th:if="${errorValidacion}" class="alert alert-danger alert-dismissible fade show"
+                                role="alert">
+                                <strong><i class="icon fas fa-ban"></i> Error:</strong> <span
+                                    th:text="${errorValidacion}"></span>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                            </div>
                             <div class="form-group">
                                 <label for="nombre">Nombre del Rol</label>
                                 <input type="text" class="form-control" id="nombre" th:field="*{nombre}"
-                                    placeholder="Ej: RECEPCIONISTA">
-                                <p th:if="${#fields.hasErrors('nombre')}" class="text-danger" th:errors="*{nombre}"></p>
+                                    placeholder="Ej: RECEPCIONISTA"
+                                    th:classappend="${#fields.hasErrors('nombre')} ? 'is-invalid' : ''">
+                                <div th:if="${#fields.hasErrors('nombre')}" class="invalid-feedback"
+                                    th:errors="*{nombre}"></div>
                             </div>
 
                             <div class="form-group">
                                 <label>Permisos</label>
                                 <div class="row">
-                                    <!-- BUCLE SIMPLIFICADO -->
                                     <div class="col-md-4" th:each="entry : ${permisosAgrupados}">
                                         <h5>Módulo: <span th:text="${entry.key}"></span></h5>
                                         <div class="form-check" th:each="permiso : ${entry.value}">
@@ -54,8 +58,11 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div th:if="${#fields.hasErrors('permisos')}" class="invalid-feedback d-block"
+                                    th:errors="*{permisos}"></div>
                             </div>
                         </div>
+
                         <div class="card-footer">
                             <button type="submit" class="btn btn-primary">Guardar Rol</button>
                             <a th:href="@{/roles}" class="btn btn-secondary">Cancelar</a>

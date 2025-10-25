@@ -25,12 +25,15 @@
                         <input type="hidden" th:field="*{id}" />
 
                         <div class="card-body">
+
+                            <!-- ✅ VALIDACIONES -->
                             <div th:if="${#fields.hasErrors('*')}"
                                 class="alert alert-danger alert-dismissible fade show" role="alert">
                                 <strong><i class="icon fas fa-ban"></i> Error de Validación:</strong> Por favor, corrige
                                 los campos marcados.
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                                        aria-hidden="true">&times;</span></button>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
                             </div>
 
                             <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -40,17 +43,26 @@
                                 </button>
                             </div>
 
+                            <!-- ✅ BLOQUE DE RESTAURACIÓN IMPLEMENTADO -->
                             <div th:if="${errorRestauracion}" class="alert alert-warning alert-dismissible fade show"
                                 role="alert">
                                 <strong><i class="icon fas fa-exclamation-triangle"></i> Atención:</strong>
-                                <span th:text="${errorRestauracion}"></span>
-                                <span th:if="${idUsuarioParaRestaurar}"
-                                    th:text="' Por favor, gestione este email desde el módulo de Usuarios.'"></span>
+                                <span th:text="${errorRestauracion}"></span>.
+                                <strong>¿Desea restablecer esta cuenta?</strong>
+
+                                <a th:if="${idUsuarioParaRestaurar}"
+                                    th:href="@{/usuarios/restablecer/{id}(id=${idUsuarioParaRestaurar})}"
+                                    class="btn btn-sm btn-success ml-2"
+                                    onclick="return confirm('¿Estás seguro de restablecer esta cuenta de usuario/paciente? Se enviará una nueva contraseña temporal a su email.');">
+                                    <i class="fas fa-undo"></i> Sí, Restablecer Cuenta
+                                </a>
 
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
+
+                            <!-- ✅ FORMULARIO PACIENTE -->
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
@@ -131,11 +143,13 @@
                                     </div>
                                 </div>
                             </div>
+
                             <div class="form-group">
                                 <label for="alergias">Alergias Conocidas</label>
                                 <textarea class="form-control" th:field="*{alergias}" rows="3"
                                     placeholder="Ej: Penicilina, AINES..."></textarea>
                             </div>
+
                             <div class="form-group">
                                 <label for="antecedentesMedicos">Antecedentes Médicos Relevantes</label>
                                 <textarea class="form-control" th:field="*{antecedentesMedicos}" rows="3"
@@ -143,10 +157,12 @@
                             </div>
 
                         </div>
+
                         <div class="card-footer">
                             <button type="submit" class="btn btn-primary">Guardar Paciente</button>
                             <a th:href="@{/pacientes}" class="btn btn-secondary">Cancelar</a>
                         </div>
+
                     </form>
                 </div>
             </div>

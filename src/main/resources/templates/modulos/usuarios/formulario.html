@@ -4,8 +4,7 @@
 
 <body>
     <div id="contenido-principal">
-        <section class="content-header">
-        </section>
+        <section class="content-header"></section>
 
         <section class="content">
             <div class="container-fluid">
@@ -16,6 +15,8 @@
 
                     <form th:action="@{/usuarios/guardar}" th:object="${usuario}" method="post">
                         <div class="card-body">
+
+                            <!-- ALERTA DE VALIDACIÓN GENERAL -->
                             <div th:if="${#fields.hasErrors('*')}"
                                 class="alert alert-danger alert-dismissible fade show" role="alert">
                                 <strong><i class="icon fas fa-ban"></i> Error de Validación:</strong>
@@ -25,6 +26,7 @@
                                 </button>
                             </div>
 
+                            <!-- ALERTA DE ERROR CUSTOM -->
                             <div th:if="${errorValidacion}" class="alert alert-danger alert-dismissible fade show"
                                 role="alert">
                                 <strong><i class="icon fas fa-ban"></i> Error:</strong>
@@ -34,40 +36,105 @@
                                 </button>
                             </div>
 
+                            <!-- ALERTA DE RESTAURACIÓN DE CUENTA -->
                             <div th:if="${errorRestauracion}" class="alert alert-warning alert-dismissible fade show"
                                 role="alert">
                                 <strong><i class="icon fas fa-exclamation-triangle"></i> Atención:</strong>
                                 <span th:text="${errorRestauracion}"></span>
 
+                                <strong> ¿Desea restablecer esta cuenta?</strong>
+
                                 <a th:if="${idUsuarioParaRestaurar}"
                                     th:href="@{/usuarios/restablecer/{id}(id=${idUsuarioParaRestaurar})}"
                                     class="btn btn-sm btn-success ml-2"
                                     onclick="return confirm('¿Estás seguro de restablecer este usuario? Se enviará una nueva contraseña temporal a su email.');">
-                                    <i class="fas fa-undo"></i> Restablecer Usuario
+                                    <i class="fas fa-undo"></i> Sí, Restablecer Usuario
                                 </a>
 
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
-                            <div class="form-group">
-                                <label for="nombreCompleto">Nombre Completo</label>
-                                <input type="text" class="form-control" id="nombreCompleto" th:field="*{nombreCompleto}"
-                                    placeholder="Ingrese el nombre completo"
-                                    th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
-                                <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
-                                    th:errors="*{nombreCompleto}"></div>
+
+                            <!-- PRIMERA FILA: TIPO DOC - NUM DOC - NOMBRE -->
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="tipoDocumentoId">Tipo Documento</label>
+                                        <select class="form-control" th:field="*{tipoDocumentoId}" id="tipoDocumentoId"
+                                            th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">
+                                            <option value="">Seleccione...</option>
+                                            <option th:each="tipo : ${tiposDocumento}" th:value="${tipo.id}"
+                                                th:text="${tipo.nombre}"></option>
+                                        </select>
+                                        <div th:if="${#fields.hasErrors('tipoDocumentoId')}" class="invalid-feedback"
+                                            th:errors="*{tipoDocumentoId}"></div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="numeroDocumento">Número Documento</label>
+                                        <input type="text" class="form-control" th:field="*{numeroDocumento}"
+                                            id="numeroDocumento" placeholder="Número de Documento"
+                                            th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('numeroDocumento')}"
+                                            class="invalid-feedback d-block" th:errors="*{numeroDocumento}"></div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="nombreCompleto">Nombre Completo</label>
+                                        <input type="text" class="form-control" id="nombreCompleto"
+                                            th:field="*{nombreCompleto}" placeholder="Ingrese el nombre completo"
+                                            th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
+                                            th:errors="*{nombreCompleto}"></div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="form-group">
-                                <label for="email">Email</label>
-                                <input type="email" class="form-control" id="email" th:field="*{email}"
-                                    placeholder="Ingrese el email"
-                                    th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
-                                <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback"
-                                    th:errors="*{email}"></div>
+                            <!-- SEGUNDA FILA: EMAIL - TELÉFONO -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="email">Email</label>
+                                        <input type="email" class="form-control" id="email" th:field="*{email}"
+                                            placeholder="Ingrese el email"
+                                            th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback"
+                                            th:errors="*{email}"></div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="telefono">Teléfono</label>
+                                        <input type="text" class="form-control" th:field="*{telefono}"
+                                            placeholder="987654321">
+                                    </div>
+                                </div>
                             </div>
 
+                            <!-- TERCERA FILA: FECHA NAC - DIRECCIÓN -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="fechaNacimiento">Fecha de Nacimiento</label>
+                                        <input type="date" class="form-control" th:field="*{fechaNacimiento}">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="direccion">Dirección</label>
+                                        <input type="text" class="form-control" th:field="*{direccion}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ROLES -->
                             <div class="form-group">
                                 <label>Roles</label>
                                 <div th:each="rol : ${listaRoles}" class="form-check">
@@ -81,6 +148,7 @@
                                     th:errors="*{roles}"></div>
                             </div>
                         </div>
+
                         <div class="card-footer">
                             <button type="submit" class="btn btn-primary">Guardar Usuario</button>
                             <a th:href="@{/usuarios}" class="btn btn-secondary">Cancelar</a>

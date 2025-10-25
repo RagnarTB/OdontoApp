@@ -1,6 +1,7 @@
 // Archivo: C:\proyectos\nuevo\odontoapp\src\main\java\com\odontoapp\entidad\Usuario.java
 package com.odontoapp.entidad;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -17,6 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
@@ -64,9 +66,22 @@ public class Usuario extends EntidadAuditable { // Extiende EntidadAuditable
     private boolean eliminado = false;
     private LocalDateTime fechaEliminacion;
 
-    @Column(name = "debe_actualizar_password")
-private boolean debeActualizarPassword = false;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tipo_documento_id") // Puede ser nullable si no es obligatorio para todos
+    private TipoDocumento tipoDocumento;
 
-@Column(name = "password_temporal")
-private String passwordTemporal;
+    @Column(length = 20, name = "numero_documento") // Puede necesitar unique constraint si es clave
+    private String numeroDocumento;
+
+    private String telefono;
+
+    private LocalDate fechaNacimiento;
+
+    private String direccion;
+
+    @Column(name = "debe_actualizar_password")
+    private boolean debeActualizarPassword = false;
+
+    @Column(name = "password_temporal")
+    private String passwordTemporal;
 }

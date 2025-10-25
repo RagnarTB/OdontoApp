@@ -1,15 +1,24 @@
-// Archivo: src/main/java/com/odontoapp/dto/UsuarioDTO.java
 package com.odontoapp.dto;
 
+import java.time.LocalDate; // Importar
 import java.util.List;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull; // Importar
+import jakarta.validation.constraints.Size; // Importar
 import lombok.Data;
 
 @Data
 public class UsuarioDTO {
     private Long id;
+
+    @NotNull(message = "El tipo de documento es obligatorio") // Nuevo
+    private Long tipoDocumentoId; // Nuevo
+
+    @NotEmpty(message = "El número de documento no puede estar vacío") // Nuevo
+    @Size(min = 8, max = 20, message = "El documento debe tener entre 8 y 20 caracteres") // Nuevo
+    private String numeroDocumento; // Nuevo
 
     @NotEmpty(message = "El nombre no puede estar vacío")
     private String nombreCompleto;
@@ -18,7 +27,9 @@ public class UsuarioDTO {
     @Email
     private String email;
 
-    // ELIMINADO: private String password;
+    private String telefono; // Nuevo
+    private LocalDate fechaNacimiento; // Nuevo
+    private String direccion; // Nuevo
 
     @NotEmpty(message = "Debe seleccionar al menos un rol")
     private List<Long> roles;

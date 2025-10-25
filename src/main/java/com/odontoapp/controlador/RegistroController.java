@@ -143,9 +143,22 @@ public class RegistroController {
 
         } catch (DataIntegrityViolationException e) {
             // 🔥 Manejo Mejorado → error claro de duplicidad (DNI o Email)
-            model.addAttribute("error", e.getMessage());
+            String mensajeErrorAmigable;
+            String constraintViolation = e.getMessage(); // O busca en e.getCause().getMessage() si es necesario
+
+            if (constraintViolation != null && constraintViolation.contains("usuarios.UKkfsp0s1tflm1cwlj8idhqsad0")) {
+                mensajeErrorAmigable = "El email '" + registroDTO.getEmail()
+                        + "' ya se encuentra registrado en el sistema.";
+            } else if (constraintViolation != null && constraintViolation.contains("pacientes_unique")) {
+                mensajeErrorAmigable = "El número de documento ya se encuentra registrado.";
+            } else {
+                mensajeErrorAmigable = "Error de datos duplicados. Verifica el email y el número de documento."; // Mensaje
+                                                                                                                 // genérico
+            }
+
+            model.addAttribute("error", mensajeErrorAmigable); // Usa el mensaje amigable
             cargarDatosFormulario(model, registroDTO, token);
-            return "publico/registro-formulario";
+            return "publico/registro-formulario"; //
 
         } catch (Exception e) {
             // Error inesperado

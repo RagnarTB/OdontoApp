@@ -16,8 +16,9 @@ public class LoginController {
         return "dashboard";
     }
 
-    @GetMapping("/logout")
-    public String cerrarSesion() {
-        return "publico/login";
+    @GetMapping("/paciente/dashboard")
+    public String verDashboardPaciente() {
+        return "paciente/dashboard";
     }
+
 }

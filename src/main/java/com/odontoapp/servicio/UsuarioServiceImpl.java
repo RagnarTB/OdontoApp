@@ -13,9 +13,11 @@ import org.springframework.stereotype.Service;
 
 import com.odontoapp.dto.UsuarioDTO;
 import com.odontoapp.entidad.Rol;
+import com.odontoapp.entidad.TipoDocumento;
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.RolRepository;
+import com.odontoapp.repositorio.TipoDocumentoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 
 import jakarta.transaction.Transactional;
@@ -29,75 +31,97 @@ public class UsuarioServiceImpl implements UsuarioService {
     private static final int MAX_INTENTOS_FALLIDOS = 5;
     private final EmailService emailService;
     private final PacienteRepository pacienteRepository;
+    private final TipoDocumentoRepository tipoDocumentoRepository;
 
-    public UsuarioServiceImpl(EmailService emailService, PasswordEncoder passwordEncoder, RolRepository rolRepository,
-            UsuarioRepository usuarioRepository, PacienteRepository pacienteRepository) {
+    public UsuarioServiceImpl(EmailService emailService, PacienteRepository pacienteRepository,
+            PasswordEncoder passwordEncoder, RolRepository rolRepository,
+            TipoDocumentoRepository tipoDocumentoRepository, UsuarioRepository usuarioRepository) {
         this.emailService = emailService;
+        this.pacienteRepository = pacienteRepository;
         this.passwordEncoder = passwordEncoder;
         this.rolRepository = rolRepository;
+        this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.usuarioRepository = usuarioRepository;
-        this.pacienteRepository = pacienteRepository;
-
     }
 
     @Override
     @Transactional
     public void guardarUsuario(UsuarioDTO usuarioDTO) {
+
         Usuario usuario;
         boolean esNuevo = usuarioDTO.getId() == null;
         String emailNuevo = usuarioDTO.getEmail();
         String emailOriginal = null;
 
-        // --- 1. VALIDACIÓN PREVIA DE EMAIL ---
+        // --- 1. VALIDACIÓN PREVIA DE DOCUMENTO ---
+        validarUnicidadDocumentoUsuario(
+                usuarioDTO.getNumeroDocumento(),
+                usuarioDTO.getTipoDocumentoId(),
+                usuarioDTO.getId());
+
+        // --- 2. VALIDACIÓN PREVIA DE EMAIL ---
         Optional<Usuario> existenteConEmailOpt = usuarioRepository.findByEmailIgnorandoSoftDelete(emailNuevo);
 
         if (esNuevo) {
-            // Creando: Verificar si el email ya existe (activo o eliminado)
             if (existenteConEmailOpt.isPresent()) {
                 Usuario usuarioExistente = existenteConEmailOpt.get();
                 if (usuarioExistente.isEliminado()) {
-                    throw new DataIntegrityViolationException( // Lanzar excepción específica para restaurar
+                    throw new DataIntegrityViolationException(
                             "EMAIL_ELIMINADO:" + usuarioExistente.getId() + ":" + emailNuevo);
                 } else {
-                    throw new DataIntegrityViolationException( // Lanzar excepción para email activo
+                    throw new DataIntegrityViolationException(
                             "El email '" + emailNuevo + "' ya está en uso por otro usuario activo.");
                 }
             }
-            // Si no existe, preparamos el nuevo usuario
             usuario = new Usuario();
 
         } else {
-            // Editando: Obtener usuario existente y verificar si el email cambió
             usuario = usuarioRepository.findById(usuarioDTO.getId())
                     .orElseThrow(
                             () -> new IllegalStateException("Usuario no encontrado con ID: " + usuarioDTO.getId()));
+
             emailOriginal = usuario.getEmail();
 
             if (!emailNuevo.equals(emailOriginal)) {
-                // El email cambió, verificar si el NUEVO email ya existe (activo o eliminado)
                 if (existenteConEmailOpt.isPresent()) {
                     Usuario usuarioConNuevoEmail = existenteConEmailOpt.get();
                     if (usuarioConNuevoEmail.isEliminado()) {
-                        throw new DataIntegrityViolationException( // Lanzar para restaurar
+                        throw new DataIntegrityViolationException(
                                 "EMAIL_ELIMINADO:" + usuarioConNuevoEmail.getId() + ":" + emailNuevo);
                     } else {
-                        throw new DataIntegrityViolationException( // Lanzar para email activo
+                        throw new DataIntegrityViolationException(
                                 "El email '" + emailNuevo + "' ya está en uso por otro usuario activo.");
                     }
                 }
-                // Validar si se intenta cambiar el email del admin principal
+
                 if ("admin@odontoapp.com".equals(emailOriginal)) {
                     throw new IllegalArgumentException("No se puede cambiar el email del administrador principal.");
                 }
             }
         }
 
-        // --- 2. SI PASÓ LA VALIDACIÓN, PROCEDER A ACTUALIZAR/CREAR ---
+        // --- 3. OBTENER TIPO DE DOCUMENTO ---
+        TipoDocumento tipoDocumento = null;
+        if (usuarioDTO.getTipoDocumentoId() != null) {
+            tipoDocumento = tipoDocumentoRepository.findById(usuarioDTO.getTipoDocumentoId())
+                    .orElseThrow(() -> new IllegalStateException("Tipo de documento no encontrado."));
+        }
+
+        // --- 4. ACTUALIZAR CAMPOS ---
         usuario.setNombreCompleto(usuarioDTO.getNombreCompleto());
         usuario.setEmail(emailNuevo);
 
+        // -- Nuevos campos de usuario --
+        usuario.setTipoDocumento(tipoDocumento);
+        usuario.setNumeroDocumento(usuarioDTO.getNumeroDocumento());
+        usuario.setTelefono(usuarioDTO.getTelefono());
+        usuario.setFechaNacimiento(usuarioDTO.getFechaNacimiento());
+        usuario.setDireccion(usuarioDTO.getDireccion());
+        // -- Fin nuevos campos --
+
         boolean enviarEmailTemporal = false;
-        // Lógica de contraseña temporal (solo para nuevos)
+
+        // --- Contraseña SOLO si es nuevo ---
         if (esNuevo) {
             String passwordTemporal = com.odontoapp.util.PasswordUtil.generarPasswordAleatoria();
             usuario.setPasswordTemporal(passwordTemporal);
@@ -106,30 +130,31 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setEstaActivo(true);
             enviarEmailTemporal = true;
         }
-        // NOTA: No cambiamos contraseña al editar desde aquí.
 
-        // Roles (validación de quitar rol admin)
+        // --- Roles y protección del admin principal ---
         boolean esAdminPrincipal = "admin@odontoapp.com".equals(usuario.getEmail());
         Rol rolAdmin = rolRepository.findByNombre("ADMIN").orElse(null);
+
         boolean intentaQuitarRolAdmin = (!esNuevo && rolAdmin != null
                 && !usuarioDTO.getRoles().contains(rolAdmin.getId()));
+
         if (esAdminPrincipal && intentaQuitarRolAdmin) {
             throw new IllegalArgumentException("No se puede quitar el rol ADMIN al administrador principal.");
         }
+
         List<Rol> roles = rolRepository.findAllById(usuarioDTO.getRoles());
         usuario.setRoles(new HashSet<>(roles));
 
-        // --- 3. GUARDAR ---
+        // --- 5. GUARDAR ---
         Usuario usuarioGuardado;
         try {
             usuarioGuardado = usuarioRepository.save(usuario);
         } catch (DataIntegrityViolationException e) {
-            // Si AÚN ASÍ ocurre un error de duplicado (puede pasar por concurrencia),
-            // lo relanzamos con un mensaje más genérico pero claro.
-            throw new DataIntegrityViolationException("Error al guardar: El email '" + emailNuevo + "' ya existe.", e);
+            throw new DataIntegrityViolationException(
+                    "Error al guardar: El email '" + emailNuevo + "' ya existe.", e);
         }
 
-        // --- 4. ENVIAR EMAIL (SOLO SI ES NUEVO) ---
+        // --- 6. Enviar email con contraseña temporal ---
         if (enviarEmailTemporal && usuarioGuardado.getPasswordTemporal() != null) {
             try {
                 emailService.enviarPasswordTemporal(
@@ -137,10 +162,8 @@ public class UsuarioServiceImpl implements UsuarioService {
                         usuarioGuardado.getNombreCompleto(),
                         usuarioGuardado.getPasswordTemporal());
             } catch (Exception e) {
-                System.err.println("Error al enviar email con contraseña temporal para " + usuarioGuardado.getEmail()
-                        + ": " + e.getMessage());
-                // Considera añadir un flash attribute de advertencia para el admin
-                // No relanzamos la excepción para no deshacer el guardado del usuario
+                System.err.println("Error al enviar email con contraseña temporal para " +
+                        usuarioGuardado.getEmail() + ": " + e.getMessage());
             }
         }
     }
@@ -274,6 +297,18 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new IllegalStateException("El usuario con email " + usuario.getEmail() + " no está eliminado.");
         }
 
+        if (usuario.getRoles() == null || usuario.getRoles().isEmpty()) {
+            throw new IllegalStateException("El usuario no tiene roles asignados. Asigne roles antes de restablecer.");
+        }
+
+        boolean tieneAlMenosUnRolValido = usuario.getRoles().stream()
+                .anyMatch(rol -> rol.isEstaActivo() && !rol.isEliminado());
+
+        if (!tieneAlMenosUnRolValido) {
+            throw new IllegalStateException(
+                    "Todos los roles asignados al usuario están inactivos o eliminados. Actualice los roles del usuario antes de restablecer la cuenta.");
+        }
+
         // Restablecer estado
         usuario.setEliminado(false);
         usuario.setFechaEliminacion(null);
@@ -302,6 +337,30 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new RuntimeException(
                     "Usuario restablecido, pero ocurrió un error al enviar el email con la nueva contraseña temporal.",
                     e);
+        }
+    }
+
+    private void validarUnicidadDocumentoUsuario(String numeroDocumento, Long tipoDocumentoId, Long idUsuarioExcluir) {
+        if (numeroDocumento == null || numeroDocumento.trim().isEmpty() || tipoDocumentoId == null) {
+            // No validar si no se proporcionan ambos datos (o hacerlo obligatorio si
+            // aplica)
+            return;
+        }
+        // Necesitas un método en UsuarioRepository para buscar por tipo y número
+        // ignorando soft delete
+        // Ejemplo: findByNumeroDocumentoAndTipoDocumentoIdIgnorandoSoftDelete
+        Optional<Usuario> existentePorDoc = usuarioRepository
+                .findByNumeroDocumentoAndTipoDocumentoIdIgnorandoSoftDelete(numeroDocumento, tipoDocumentoId); // Necesitas
+                                                                                                               // crear
+                                                                                                               // este
+                                                                                                               // método
+
+        if (existentePorDoc.isPresent()
+                && (idUsuarioExcluir == null || !existentePorDoc.get().getId().equals(idUsuarioExcluir))) {
+            TipoDocumento tipoDoc = tipoDocumentoRepository.findById(tipoDocumentoId).orElse(new TipoDocumento());
+            throw new DataIntegrityViolationException(
+                    "El documento '" + tipoDoc.getCodigo() + " " + numeroDocumento
+                            + "' ya está registrado para otro usuario.");
         }
     }
 
