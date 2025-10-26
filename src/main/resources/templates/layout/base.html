@@ -39,6 +39,9 @@
     <script th:src="@{/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
     <!-- AdminLTE App -->
     <script th:src="@{/adminlte/dist/js/adminlte.min.js}"></script>
+
+    <!-- instruccion para thymeleaf -->
+    <th:block th:replace="${scripts} ?: ~{}"></th:block>
 </body>
 
 </html>

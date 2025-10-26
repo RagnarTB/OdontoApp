@@ -85,6 +85,20 @@
                             <p>Pacientes</p>
                         </a>
                     </li>
+
+                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_SERVICIOS')">
+                        <a th:href="@{/servicios}" class="nav-link">
+                            <i class="nav-icon fas fa-clipboard-list"></i>
+                            <p>Servicios</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_INVENTARIO')">
+                        <a th:href="@{/insumos}" class="nav-link">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>Stock e Insumos</p>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </div>

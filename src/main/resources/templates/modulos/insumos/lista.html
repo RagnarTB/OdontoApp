@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+    th:replace="~{layout/base :: layout(titulo='Control de Stock e Insumos', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
+
+<body>
+    <div id="contenido-principal">
+
+        <style>
+            .stock-progress-bar {
+                height: 6px;
+                background-color: #e9ecef;
+                border-radius: 3px;
+            }
+
+            .stock-progress-bar>div {
+                height: 100%;
+                border-radius: 3px;
+                transition: width 0.3s ease-in-out;
+            }
+
+            .table .badge {
+                font-size: 0.75rem;
+                padding: 0.4em 0.7em;
+            }
+        </style>
+
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Control de Stock e Insumos</h1>
+                        <p class="text-muted">Gestiona el inventario de tu clínica dental</p>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/insumos/nuevo}" class="btn btn-primary float-sm-right shadow-sm"
+                            sec:authorize="hasAuthority('CREAR_INVENTARIO')">
+                            <i class="fas fa-plus mr-2"></i> Nuevo Artículo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert"
+                    th:text="${success}"></div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert"
+                    th:text="${error}"></div>
+
+                <div class="card card-warning card-outline shadow-sm"
+                    th:if="${alertasStockBajo != null && !alertasStockBajo.isEmpty()}">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-2"></i> Alertas de Stock Bajo
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center"
+                                th:each="alerta : ${alertasStockBajo}">
+                                <div>
+                                    <b th:text="${alerta.nombre}"></b>
+                                    <small class="d-block text-muted"
+                                        th:text="'Stock actual: ' + ${alerta.stockActual.toPlainString()} + ' | Mínimo: ' + ${alerta.stockMinimo.toPlainString()}"></small>
+                                </div>
+                                <span class="badge badge-danger">Crítico</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card card-primary card-outline card-outline-tabs shadow-sm">
+                    <div class="card-header p-0 border-bottom-0">
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li class="nav-item"><a class="nav-link active" data-toggle="pill" href="#tab-inventario"
+                                    role="tab">Inventario</a></li>
+                            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#tab-movimientos"
+                                    role="tab">Movimientos</a></li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="tab-inventario" role="tabpanel">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Artículo</th>
+                                            <th>Categoría</th>
+                                            <th style="width: 15%;">Stock</th>
+                                            <th class="text-center">Estado</th>
+                                            <th>Ubicación</th>
+                                            <th>Vencimiento</th>
+                                            <th style="width: 160px;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="insumo : ${paginaInsumos.content}">
+                                            <td><b th:text="${insumo.nombre}"></b><br><small class="text-muted"
+                                                    th:text="${insumo.marca}"></small></td>
+                                            <td th:text="${insumo.categoria.nombre}"></td>
+                                            <td
+                                                th:with="porcentaje=${insumo.stockMinimo.doubleValue() > 0 ? (insumo.stockActual.doubleValue() / (insumo.stockMinimo.doubleValue() * 2)) * 100 : 100}, color=${insumo.stockActual.compareTo(insumo.stockMinimo) <= 0 ? '#dc3545' : '#28a745'}">
+                                                <span
+                                                    th:text="${insumo.stockActual.toPlainString()} + ' ' + ${insumo.unidadMedida.abreviatura}"></span>
+                                                <div class="stock-progress-bar mt-1">
+                                                    <div
+                                                        th:style="'width:' + ${T(java.lang.Math).min(100.0, porcentaje)} + '%; background-color:' + ${color}">
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted"
+                                                    th:text="'Mín: ' + ${insumo.stockMinimo.toPlainString()}"></small>
+                                            </td>
+                                            <td class="text-center"><span class="badge"
+                                                    th:classappend="${insumo.stockActual.compareTo(insumo.stockMinimo) <= 0 ? 'badge-danger' : 'badge-success'}"
+                                                    th:text="${insumo.stockActual.compareTo(insumo.stockMinimo) <= 0 ? 'Crítico' : 'Normal'}"></span>
+                                            </td>
+                                            <td th:text="${insumo.ubicacion}"></td>
+                                            <td><span th:if="${insumo.fechaVencimiento}"
+                                                    th:text="${#temporals.format(insumo.fechaVencimiento, 'dd/MM/yyyy')}"></span><span
+                                                    th:unless="${insumo.fechaVencimiento}" class="text-muted">N/A</span>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-primary" data-toggle="modal"
+                                                    data-target="#modal-nuevo-movimiento"
+                                                    th:attr="data-insumo-id=${insumo.id}, data-insumo-nombre=${insumo.nombre}"
+                                                    title="Registrar Movimiento"><i
+                                                        class="fas fa-plus-circle"></i></button>
+                                                <button type="button" class="btn btn-sm btn-info btn-historial"
+                                                    th:attr="data-insumo-id=${insumo.id}, data-insumo-nombre=${insumo.nombre}"
+                                                    title="Ver Historial"><i class="fas fa-history"></i></button>
+                                                <a th:href="@{/insumos/editar/{id}(id=${insumo.id})}"
+                                                    class="btn btn-sm btn-warning" title="Editar"><i
+                                                        class="fas fa-edit"></i></a>
+                                                <a th:href="@{/insumos/eliminar/{id}(id=${insumo.id})}"
+                                                    class="btn btn-sm btn-danger" title="Eliminar"
+                                                    onclick="return confirm('¿Está seguro?');"><i
+                                                        class="fas fa-trash"></i></a>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${paginaInsumos.empty}">
+                                            <td colspan="7" class="text-center text-muted">No se encontraron artículos.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade" id="tab-movimientos" role="tabpanel">
+                                <h5 id="historial-titulo">Historial de Movimientos</h5>
+                                <p id="historial-placeholder" class="text-muted">Selecciona un artículo y haz clic en el
+                                    botón <i class="fas fa-history"></i> para ver su historial.</p>
+                                <div id="historial-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="modal fade" id="modal-nuevo-movimiento" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Registrar Movimiento para <b id="modal-insumo-nombre">Artículo</b></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div id="modal-form-content">
+                        <div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-scripts" th:fragment="scripts">
+            <script>
+                $(document).ready(function () {
+                    $('#modal-nuevo-movimiento').on('show.bs.modal', function (event) {
+                        var button = $(event.relatedTarget);
+                        var insumoId = button.data('insumo-id');
+                        var insumoNombre = button.data('insumo-nombre');
+                        var modal = $(this);
+                        modal.find('#modal-insumo-nombre').text(insumoNombre);
+                        var modalContent = modal.find('#modal-form-content');
+                        var url = '/inventario/movimientos/nuevo/' + insumoId;
+                        modalContent.html('<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Cargando...</p></div>');
+                        modalContent.load(url, function (response, status, xhr) {
+                            if (status == "error") {
+                                modalContent.html('<div class="alert alert-danger m-3">Error al cargar el formulario.</div>');
+                            }
+                        });
+                    });
+
+                    $('.btn-historial').on('click', function () {
+                        var insumoId = $(this).data('insumo-id');
+                        var insumoNombre = $(this).data('insumo-nombre');
+                        $('#historial-titulo').html('Historial de Movimientos para: <b class="text-primary">' + insumoNombre + '</b>');
+                        $('#historial-placeholder').hide();
+                        var historialContainer = $('#historial-container');
+                        var url = '/inventario/movimientos/historial/' + insumoId;
+                        historialContainer.html('<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>');
+                        historialContainer.load(url, function (response, status, xhr) {
+                            if (status == "error") {
+                                historialContainer.html('<div class="alert alert-danger">Error al cargar el historial.</div>');
+                            }
+                        });
+                        $('.nav-tabs a[href="#tab-movimientos"]').tab('show');
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</body>
+
+</html>

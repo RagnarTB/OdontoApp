@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+    th:replace="~{layout/base :: layout(titulo='Formulario de Artículo', contenido=~{::#contenido-principal})}">
+
+<body>
+    <div id="contenido-principal">
+
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 th:if="${insumoDTO.id == null}">Nuevo Artículo de Inventario</h1>
+                        <h1 th:unless="${insumoDTO.id == null}">Editar Artículo</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/insumos}" class="btn btn-outline-secondary float-sm-right">
+                            <i class="fas fa-arrow-left mr-2"></i> Volver al Inventario
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="card card-primary card-outline shadow-sm">
+                    <div class="card-header">
+                        <h3 class="card-title">Información del Artículo</h3>
+                    </div>
+                    <form th:action="@{/insumos/guardar}" th:object="${insumoDTO}" method="post">
+                        <input type="hidden" th:field="*{id}" />
+
+                        <div class="card-body">
+                            <div th:if="${error}" class="alert alert-danger" role="alert" th:text="${error}"></div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="codigo">Código / SKU</label>
+                                        <input type="text" class="form-control" id="codigo" th:field="*{codigo}"
+                                            placeholder="Ej: ANES-LIDO-01" required>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('codigo')}"
+                                            th:errors="*{codigo}"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="nombre">Nombre del Artículo</label>
+                                        <input type="text" class="form-control" id="nombre" th:field="*{nombre}"
+                                            placeholder="Ej: Anestesia Lidocaína 2%" required>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('nombre')}"
+                                            th:errors="*{nombre}"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="categoriaId">Categoría</label>
+                                        <select class="form-control" id="categoriaId" th:field="*{categoriaId}"
+                                            required>
+                                            <option value="">-- Seleccione una categoría --</option>
+                                            <option th:each="cat : ${categorias}" th:value="${cat.id}"
+                                                th:text="${cat.nombre}"></option>
+                                        </select>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('categoriaId')}"
+                                            th:errors="*{categoriaId}"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="unidadMedidaId">Unidad de Medida</label>
+                                        <select class="form-control" id="unidadMedidaId" th:field="*{unidadMedidaId}"
+                                            required>
+                                            <option value="">-- Seleccione una unidad --</option>
+                                            <option th:each="um : ${unidadesMedida}" th:value="${um.id}"
+                                                th:text="${um.nombre + ' (' + um.abreviatura + ')'}"></option>
+                                        </select>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('unidadMedidaId')}"
+                                            th:errors="*{unidadMedidaId}"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="marca">Marca (Opcional)</label>
+                                        <input type="text" class="form-control" id="marca" th:field="*{marca}"
+                                            placeholder="Ej: Laboratorio XYZ">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="stockMinimo">Stock Mínimo de Alerta</label>
+                                        <input type="number" step="1" class="form-control" id="stockMinimo"
+                                            th:field="*{stockMinimo}" placeholder="Ej: 10" required>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('stockMinimo')}"
+                                            th:errors="*{stockMinimo}"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="precioUnitario">Precio Unitario (S/.)</label>
+                                        <input type="number" step="0.01" class="form-control" id="precioUnitario"
+                                            th:field="*{precioUnitario}" placeholder="Ej: 5.50" required>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('precioUnitario')}"
+                                            th:errors="*{precioUnitario}"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="ubicacion">Ubicación en Almacén (Opcional)</label>
+                                        <input type="text" class="form-control" id="ubicacion" th:field="*{ubicacion}"
+                                            placeholder="Ej: Estante A - Repisa 2">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="lote">Lote (Opcional)</label>
+                                        <input type="text" class="form-control" id="lote" th:field="*{lote}"
+                                            placeholder="Ej: L2025A-001">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="fechaVencimiento">Fecha de Vencimiento (Opcional)</label>
+                                        <input type="date" class="form-control" id="fechaVencimiento"
+                                            th:field="*{fechaVencimiento}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="descripcion">Descripción (Opcional)</label>
+                                <textarea class="form-control" id="descripcion" th:field="*{descripcion}" rows="3"
+                                    placeholder="Añada detalles adicionales sobre el artículo..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary shadow-sm">
+                                <i class="fas fa-save mr-2"></i> Guardar Artículo
+                            </button>
+                            <a th:href="@{/insumos}" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+
+</html>

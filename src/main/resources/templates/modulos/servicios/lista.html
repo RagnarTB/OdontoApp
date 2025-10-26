@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+    th:replace="~{layout/base :: layout(titulo='Gestión de Servicios', contenido=~{::#contenido-principal})}">
+
+<body>
+    <div id="contenido-principal">
+
+        <style>
+            .category-card {
+                display: flex;
+                align-items: center;
+                padding: 1rem;
+                border-radius: 0.75rem;
+                color: white;
+                transition: transform 0.2s;
+            }
+
+            .category-card:hover {
+                transform: translateY(-5px);
+            }
+
+            .category-icon {
+                font-size: 1.5rem;
+                margin-right: 1rem;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: rgba(255, 255, 255, 0.2);
+                border-radius: 0.5rem;
+            }
+
+            .table .badge {
+                font-size: 0.8rem;
+                padding: 0.4em 0.8em;
+                color: white !important;
+                font-weight: 600;
+            }
+        </style>
+
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Gestión de Servicios</h1>
+                        <p class="text-muted">Administra los servicios ofrecidos en tu clínica</p>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/servicios/nuevo}" class="btn btn-primary float-sm-right shadow-sm">
+                            <i class="fas fa-plus mr-2"></i> Nuevo Servicio
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>Resumen por categoría</h5>
+                        <div class="row">
+                            <div class="col-lg col-md-4 col-6 mb-3" th:each="cat : ${categoriasConteo}">
+                                <div class="category-card shadow" th:styleappend="'background-color:' + ${cat.color}">
+                                    <div class="category-icon"><i th:class="${cat.icono}"></i></div>
+                                    <div>
+                                        <h6 class="mb-0 font-weight-bold" th:text="${cat.nombre}">Consulta</h6>
+                                        <small th:text="${cat.cantidadServicios} + ' servicios'">1 servicio</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert"
+                    th:text="${success}"></div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert"
+                    th:text="${error}"></div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h3 class="card-title font-weight-bold">Lista de Servicios (<span
+                                    th:text="${paginaProcedimientos.totalElements}"></span>)</h3>
+                            <div class="card-tools">
+                                <form th:action="@{/servicios}" method="get" class="form-inline">
+                                    <input type="text" name="keyword" class="form-control"
+                                        placeholder="Buscar por nombre, código o descripción..." th:value="${keyword}"
+                                        style="width: 300px;">
+                                    <select class="form-control ml-2" name="categoriaId">
+                                        <option value="">Todas las categorías</option>
+                                        <option th:each="cat : ${todasLasCategorias}" th:value="${cat.id}"
+                                            th:text="${cat.nombre}"></option>
+                                    </select>
+                                    <button type="submit" class="btn btn-default ml-2"><i
+                                            class="fas fa-search"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Servicio</th>
+                                    <th class="text-center">Categoría</th>
+                                    <th class="text-center">Duración</th>
+                                    <th class="text-center">Precio</th>
+                                    <th class="text-center">Estado</th>
+                                    <th>Última Actualización</th>
+                                    <th style="width: 120px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="proc : ${paginaProcedimientos.content}">
+                                    <td>
+                                        <b th:text="${proc.nombre}">Consulta General</b><br>
+                                        <small class="text-muted" th:text="${proc.codigo}">CON-001</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge"
+                                            th:styleappend="'background-color:' + ${proc.categoria.color}"
+                                            th:text="${proc.categoria.nombre}">Consulta</span>
+                                    </td>
+                                    <td class="text-center" th:text="${proc.duracionBaseMinutos} + ' min'">30 min</td>
+                                    <td class="text-center"
+                                        th:text="'S/. ' + ${#numbers.formatDecimal(proc.precioBase, 1, 'COMMA', 2, 'POINT')}">
+                                        S/. 80</td>
+                                    <td class="text-center"><span class="badge badge-success">Activo</span></td>
+                                    <td th:text="${#temporals.format(proc.fechaModificacion, 'dd/MM/yyyy')}">18/6/2024
+                                    </td>
+                                    <td>
+                                        <a th:href="@{/servicios/editar/{id}(id=${proc.id})}"
+                                            class="btn btn-sm btn-warning" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a th:href="@{/servicios/eliminar/{id}(id=${proc.id})}"
+                                            class="btn btn-sm btn-danger" title="Eliminar"
+                                            onclick="return confirm('¿Está seguro de eliminar este servicio?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr th:if="${paginaProcedimientos.empty}">
+                                    <td colspan="7" class="text-center text-muted">No se encontraron servicios.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+
+</html>

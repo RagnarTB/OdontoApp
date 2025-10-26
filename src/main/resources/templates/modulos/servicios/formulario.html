@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+    th:replace="~{layout/base :: layout(titulo='Formulario de Servicio', contenido=~{::#contenido-principal})}">
+
+<body>
+    <div id="contenido-principal">
+
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 th:if="${procedimientoDTO.id == null}">Nuevo Servicio</h1>
+                        <h1 th:unless="${procedimientoDTO.id == null}">Editar Servicio</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/servicios}" class="btn btn-outline-secondary float-sm-right">
+                            <i class="fas fa-arrow-left mr-2"></i> Volver al Listado
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="card card-primary card-outline shadow-sm">
+                    <div class="card-header">
+                        <h3 class="card-title">Datos del Servicio</h3>
+                    </div>
+                    <form th:action="@{/servicios/guardar}" th:object="${procedimientoDTO}" method="post">
+                        <input type="hidden" th:field="*{id}" />
+
+                        <div class="card-body">
+                            <div th:if="${error}" class="alert alert-danger" role="alert" th:text="${error}"></div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="codigo">Código del Servicio</label>
+                                        <input type="text" class="form-control" id="codigo" th:field="*{codigo}"
+                                            placeholder="Ej: LIM-001" required>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('codigo')}"
+                                            th:errors="*{codigo}"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="nombre">Nombre del Servicio</label>
+                                        <input type="text" class="form-control" id="nombre" th:field="*{nombre}"
+                                            placeholder="Ej: Limpieza Dental (Profilaxis)" required>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('nombre')}"
+                                            th:errors="*{nombre}"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="categoriaId">Categoría</label>
+                                        <select class="form-control" id="categoriaId" th:field="*{categoriaId}"
+                                            required>
+                                            <option value="">-- Seleccione una categoría --</option>
+                                            <option th:each="cat : ${categorias}" th:value="${cat.id}"
+                                                th:text="${cat.nombre}"></option>
+                                        </select>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('categoriaId')}"
+                                            th:errors="*{categoriaId}"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="duracionBaseMinutos">Duración (minutos)</label>
+                                        <input type="number" class="form-control" id="duracionBaseMinutos"
+                                            th:field="*{duracionBaseMinutos}" placeholder="Ej: 45" required min="1">
+                                        <div class="text-danger" th:if="${#fields.hasErrors('duracionBaseMinutos')}"
+                                            th:errors="*{duracionBaseMinutos}"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="precioBase">Precio Base (S/.)</label>
+                                        <input type="number" step="0.01" class="form-control" id="precioBase"
+                                            th:field="*{precioBase}" placeholder="Ej: 120.00" required>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('precioBase')}"
+                                            th:errors="*{precioBase}"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="descripcion">Descripción (Opcional)</label>
+                                        <textarea class="form-control" id="descripcion" th:field="*{descripcion}"
+                                            rows="3"
+                                            placeholder="Añada una breve descripción del servicio..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary shadow-sm">
+                                <i class="fas fa-save mr-2"></i> Guardar Servicio
+                            </button>
+                            <a th:href="@{/servicios}" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+
+</html>
