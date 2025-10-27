@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<body>
+
+    <div th:fragment="gestionCategorias">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="modal-title">Gestionar Categorías</h5>
+            <button type="button" class="btn btn-primary btn-sm"
+                onclick="cargarFormularioCategoria('/categorias-insumo/nuevo')">
+                <i class="fas fa-plus"></i> Nueva
+            </button>
+        </div>
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th class="text-center">Estado</th>
+                    <th style="width: 120px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="cat : ${listaCategorias}">
+                    <td th:text="${cat.nombre}"></td>
+                    <td class="text-center">
+                        <span class="badge" th:classappend="${cat.estaActiva} ? 'badge-success' : 'badge-secondary'"
+                            th:text="${cat.estaActiva} ? 'Activa' : 'Inactiva'"></span>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-xs btn-warning" title="Editar"
+                            th:onclick="'cargarFormularioCategoria(\'/categorias-insumo/editar/' + ${cat.id} + '\')'">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <a th:href="@{/categorias-insumo/cambiar-estado/{id}(id=${cat.id})}" class="btn btn-xs"
+                            th:classappend="${cat.estaActiva} ? 'btn-outline-secondary' : 'btn-outline-success'"
+                            th:title="${cat.estaActiva} ? 'Desactivar' : 'Activar'">
+                            <i class="fas" th:classappend="${cat.estaActiva} ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                        </a>
+                        <a th:href="@{/categorias-insumo/eliminar/{id}(id=${cat.id})}" class="btn btn-xs btn-danger"
+                            title="Eliminar" onclick="return confirm('¿Está seguro de eliminar esta categoría?');">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <div th:fragment="formularioCategoria">
+        <form th:action="@{/categorias-insumo/guardar}" th:object="${categoria}" method="post">
+            <input type="hidden" th:field="*{id}" />
+            <h5 class="modal-title mb-3" th:text="${categoria.id == null} ? 'Nueva Categoría' : 'Editar Categoría'">
+            </h5>
+
+            <div class="form-group">
+                <label for="nombreCat">Nombre</label>
+                <input type="text" class="form-control" id="nombreCat" th:field="*{nombre}" required>
+            </div>
+            <div class="form-group">
+                <label for="descCat">Descripción</label>
+                <textarea class="form-control" id="descCat" th:field="*{descripcion}" rows="2"></textarea>
+            </div>
+
+            <div class="modal-footer mt-3 p-0">
+                <button type="button" class="btn btn-secondary" onclick="cargarGestionCategorias()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save mr-1"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div th:fragment="errorCategoria" class="alert alert-danger">
+        Error: No se pudo encontrar la categoría solicitada.
+    </div>
+
+</body>
+
+</html>

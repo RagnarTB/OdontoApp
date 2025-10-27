@@ -1,0 +1,384 @@
+/* Estilos Generales para las Vistas */
+body {
+    background-color: #f4f6f9;
+    /* Fondo gris claro como en Figma */
+}
+
+.content-wrapper {
+    background-color: #f4f6f9;
+}
+
+/* Estilos para la lista de usuarios */
+.user-list-container .card-header {
+    border-bottom: none;
+}
+
+.user-list-header {
+    display: none;
+    /* Ocultamos la cabecera de tabla tradicional */
+}
+
+/* Tarjeta de cada usuario (reemplaza la fila <tr>) */
+.user-card {
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s ease;
+}
+
+.user-card:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.user-card>div {
+    flex: 1;
+    padding: 0 10px;
+}
+
+/* Columna de Usuario (Avatar e Info) */
+.user-info {
+    flex: 3;
+    display: flex;
+    align-items: center;
+}
+
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin-right: 15px;
+}
+
+.user-avatar.bg-purple {
+    background-color: #6f42c1;
+}
+
+.user-avatar.bg-teal {
+    background-color: #20c997;
+}
+
+.user-avatar.bg-orange {
+    background-color: #fd7e14;
+}
+
+.user-avatar.bg-info {
+    background-color: #17a2b8;
+}
+
+
+.user-details .user-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.user-details .user-email {
+    font-size: 0.85rem;
+    color: #777;
+}
+
+/* Píldoras de Rol y Estado */
+.role-pill,
+.status-pill {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-align: center;
+    display: inline-block;
+}
+
+.role-pill.admin {
+    background-color: #e7dff8;
+    color: #6f42c1;
+}
+
+.role-pill.odontologo {
+    background-color: #d3f3ea;
+    color: #20c997;
+}
+
+.role-pill.recepcionista {
+    background-color: #fff0e4;
+    color: #fd7e14;
+}
+
+.role-pill.enfermero {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.role-pill.paciente {
+    background-color: #e2e3e5;
+    color: #495057;
+}
+
+
+.status-pill.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-pill.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Columna de Acciones */
+.user-actions {
+    text-align: right;
+    flex: 1.5;
+}
+
+.user-actions .btn {
+    margin-left: 5px;
+}
+
+/* Estilo para el Switch de Estado */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+    vertical-align: middle;
+}
+
+.switch input {
+    display: none;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 28px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked+.slider {
+    background-color: #28a745;
+}
+
+input:checked+.slider:before {
+    transform: translateX(22px);
+}
+
+/* --- NUEVO: Estilos para la Fila de Cabecera --- */
+.user-list-card-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    /* Similar al padding del user-card */
+    margin-bottom: 8px;
+    /* Espacio antes de la primera tarjeta */
+    font-weight: 600;
+    color: #6c757d;
+    /* Color gris como en Figma */
+    font-size: 0.85rem;
+    border-bottom: 1px solid #dee2e6;
+    /* Línea separadora */
+}
+
+/* --- NUEVO: Estilos más explícitos para Columnas --- */
+
+/* Contenedores generales (header y card) */
+.user-list-card-header,
+.user-card {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    /* Ajusta padding si es necesario */
+}
+
+/* Estilo base para todas las columnas (header y card) */
+.user-list-card-header>div,
+.user-card>div {
+    padding: 0 10px;
+    flex-shrink: 1;
+    /* Permitir que encojan si no hay espacio */
+    flex-grow: 0
+        /* No crecer por defecto */
+        /* background-color: rgba(255,0,0,0.1); /* Descomenta para debug visual */
+}
+
+
+/* --- Tamaños específicos por columna --- */
+
+/* Col 1: Usuario */
+.user-list-card-header .user-info-header,
+.user-card .user-info {
+    flex-basis: 30%;
+    /* Ancho base más grande */
+    flex-grow: 3;
+    /* Permitir crecer más */
+}
+
+/* Col 2: Rol */
+.user-list-card-header .user-role-header,
+/* Nueva clase para header */
+.user-card .user-role {
+    /* Nueva clase para datos */
+    flex-basis: 12%;
+    flex-grow: 1;
+    text-align: center;
+    /* Centrar píldora */
+}
+
+/* Col 3: Contacto */
+.user-list-card-header .user-contact-header,
+/* Nueva clase */
+.user-card .user-contact {
+    /* Nueva clase */
+    flex-basis: 12%;
+    flex-grow: 1;
+}
+
+/* Col 4: Contratación */
+.user-list-card-header .user-hiring-header,
+/* Nueva clase */
+.user-card .user-hiring {
+    /* Nueva clase */
+    flex-basis: 12%;
+    flex-grow: 1;
+}
+
+/* Col 5: Estado */
+.user-list-card-header .user-status-header,
+/* Nueva clase */
+.user-card .user-status {
+    /* Nueva clase */
+    flex-basis: 10%;
+    flex-grow: 1;
+    text-align: center;
+    /* Centrar píldora */
+}
+
+/* Col 6: Último Acceso */
+.user-list-card-header .user-access-header,
+/* Nueva clase */
+.user-card .user-access {
+    /* Nueva clase */
+    flex-basis: 12%;
+    flex-grow: 1;
+}
+
+/* Col 7: Acciones */
+.user-list-card-header .user-actions-header,
+.user-card .user-actions {
+    flex-basis: 12%;
+    flex-grow: 1;
+    text-align: right;
+}
+
+/* ================================================================== */
+/* == ESTILOS REFINADOS PARA LA BARRA LATERAL (ASPECTO MODERNO)    == */
+/* ================================================================== */
+
+/* --- Fondo y Estructura General --- */
+.main-sidebar {
+    background-color: #f8f9fa !important; /* Un gris muy claro para separar del contenido */
+    border-right: none !important;
+}
+
+/* --- Logo Superior --- */
+.brand-link {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e3e6f0;
+}
+.brand-link .brand-text {
+    font-weight: 700 !important;
+    font-size: 1.4rem;
+    color: #343a40;
+}
+
+.nav-sidebar .nav-item {
+    margin: 0 0.5rem; /* Añade un pequeño margen horizontal a cada item */
+}
+
+.nav-sidebar .nav-link {
+    border-radius: 0.5rem; /* Todos los enlaces tendrán bordes redondeados */
+    margin-bottom: 0.25rem; /* Pequeño espacio vertical entre enlaces */
+    color: #6c757d; /* Gris secundario para texto inactivo */
+    font-weight: 500;
+}
+
+.nav-sidebar .nav-link .nav-icon {
+    color: #869099; /* Gris para los íconos inactivos */
+    width: 1.6rem; /* Asegura que todos los íconos ocupen el mismo espacio */
+}
+
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active {
+    background-color: #0d6efd; /* Azul vibrante */
+    color: #ffffff;
+    font-weight: 600; /* Texto más grueso para destacar */
+    /* La sombra que le da el efecto "pop" */
+    box-shadow: 0 5px 15px rgba(13, 110, 253, 0.35);
+}
+
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active .nav-icon,
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active p {
+    color: #ffffff !important; /* Asegura que ícono y texto sean blancos */
+}
+
+.sidebar-light-primary .nav-sidebar > .nav-item:not(.menu-open) > .nav-link:hover {
+    background-color: #e9ecef; /* Fondo gris claro al pasar el mouse */
+    color: #212529; /* Texto más oscuro al pasar el mouse */
+}
+
+/* --- Panel de Usuario Inferior --- */
+.sidebar-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1rem;
+    border-top: 1px solid #e3e6f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f8f9fa; /* Mismo gris que el fondo */
+}
+
+.sidebar-footer a:first-child { flex-grow: 1; text-decoration: none; }
+.sidebar-footer .avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #6f42c1;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: bold;
+    margin-right: 10px;
+    text-transform: uppercase;
+}
+.sidebar-footer .info { line-height: 1.2; color: #343a40; }
+.sidebar-footer .info small { color: #6c757d; }
+.sidebar-footer .logout-button { font-size: 1.2rem; color: #6c757d; }
+.sidebar-footer .logout-button:hover { color: #343a40; }

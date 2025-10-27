@@ -65,6 +65,17 @@ public class ProcedimientoController {
         return "modulos/servicios/lista";
     }
 
+    @GetMapping("/cambiar-estado/{id}")
+    public String cambiarEstado(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            procedimientoService.cambiarEstado(id);
+            redirectAttributes.addFlashAttribute("success", "Estado del servicio cambiado con éxito.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al cambiar estado: " + e.getMessage());
+        }
+        return "redirect:/servicios";
+    }
+
     @GetMapping("/nuevo")
     public String mostrarFormularioNuevo(Model model) {
         model.addAttribute("procedimientoDTO", new ProcedimientoDTO());

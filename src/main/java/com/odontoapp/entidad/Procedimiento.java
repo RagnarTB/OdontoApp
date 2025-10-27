@@ -40,4 +40,7 @@ public class Procedimiento extends EntidadAuditable {
     private CategoriaProcedimiento categoria;
 
     private boolean eliminado = false;
+    
+    @Column(nullable = false)
+    private boolean estaActivo = true;
 }

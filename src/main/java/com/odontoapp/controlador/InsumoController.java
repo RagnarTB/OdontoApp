@@ -1,9 +1,11 @@
+// Reemplaza el contenido de com/odontoapp/controlador/InsumoController.java
+
 package com.odontoapp.controlador;
 
 import com.odontoapp.dto.InsumoDTO;
 import com.odontoapp.entidad.Insumo;
-import com.odontoapp.repositorio.CategoriaInsumoRepository;
 import com.odontoapp.repositorio.UnidadMedidaRepository;
+import com.odontoapp.servicio.CategoriaInsumoService; // Importante
 import com.odontoapp.servicio.InsumoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -20,14 +22,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class InsumoController {
 
     private final InsumoService insumoService;
-    private final CategoriaInsumoRepository categoriaInsumoRepository;
     private final UnidadMedidaRepository unidadMedidaRepository;
+    private final CategoriaInsumoService categoriaInsumoService;
 
-    public InsumoController(InsumoService insumoService, CategoriaInsumoRepository categoriaInsumoRepository,
-            UnidadMedidaRepository unidadMedidaRepository) {
+    public InsumoController(InsumoService insumoService,
+            UnidadMedidaRepository unidadMedidaRepository,
+            CategoriaInsumoService categoriaInsumoService) {
         this.insumoService = insumoService;
-        this.categoriaInsumoRepository = categoriaInsumoRepository;
         this.unidadMedidaRepository = unidadMedidaRepository;
+        this.categoriaInsumoService = categoriaInsumoService;
     }
 
     @GetMapping
@@ -36,17 +39,12 @@ public class InsumoController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword) {
 
-        // 🔥 LÍNEA CLAVE: Carga las alertas de stock bajo y las envía a la vista
         model.addAttribute("alertasStockBajo", insumoService.listarConStockBajo());
 
-        // Carga la tabla principal (esto ya lo tenías)
         Pageable pageable = PageRequest.of(page, size);
         Page<Insumo> paginaInsumos = insumoService.listarTodos(keyword, pageable);
         model.addAttribute("paginaInsumos", paginaInsumos);
         model.addAttribute("keyword", keyword);
-
-        // Carga las categorías para el filtro (esto también lo tenías)
-        model.addAttribute("todasLasCategorias", categoriaInsumoRepository.findAll());
 
         return "modulos/insumos/lista";
     }
@@ -113,10 +111,9 @@ public class InsumoController {
         return "redirect:/insumos";
     }
 
+
     private void cargarCatalogos(Model model) {
-        model.addAttribute("categorias", categoriaInsumoRepository.findAll());
+        model.addAttribute("categorias", categoriaInsumoService.listarCategoriasActivas());
         model.addAttribute("unidadesMedida", unidadMedidaRepository.findAll());
     }
 }
-
-

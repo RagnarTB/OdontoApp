@@ -32,10 +32,17 @@
                         <p class="text-muted">Gestiona el inventario de tu clínica dental</p>
                     </div>
                     <div class="col-sm-6">
-                        <a th:href="@{/insumos/nuevo}" class="btn btn-primary float-sm-right shadow-sm"
-                            sec:authorize="hasAuthority('CREAR_INVENTARIO')">
-                            <i class="fas fa-plus mr-2"></i> Nuevo Artículo
-                        </a>
+                        <div class="float-sm-right">
+                            <button type="button" class="btn btn-secondary shadow-sm mr-2" data-toggle="modal"
+                                data-target="#modal-gestion-categorias">
+                                <i class="fas fa-tags mr-2"></i> Gestionar Categorías
+                            </button>
+
+                            <a th:href="@{/insumos/nuevo}" class="btn btn-primary shadow-sm"
+                                sec:authorize="hasAuthority('CREAR_INVENTARIO')">
+                                <i class="fas fa-plus mr-2"></i> Nuevo Artículo
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -155,6 +162,22 @@
                     </div>
                 </div>
             </div>
+
+            <div class="modal fade" id="modal-gestion-categorias" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Gestión de Categorías</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="modal-categorias-content">
+                            <div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <div class="modal fade" id="modal-nuevo-movimiento" tabindex="-1" role="dialog">
@@ -174,6 +197,18 @@
 
         <div id="page-scripts" th:fragment="scripts">
             <script>
+                function cargarGestionCategorias() {
+                    var modalContent = $('#modal-categorias-content');
+                    modalContent.html('<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>');
+                    modalContent.load('/categorias-insumo/gestion');
+                }
+
+                function cargarFormularioCategoria(url) {
+                    var modalContent = $('#modal-categorias-content');
+                    modalContent.html('<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>');
+                    modalContent.load(url);
+                }
+
                 $(document).ready(function () {
                     $('#modal-nuevo-movimiento').on('show.bs.modal', function (event) {
                         var button = $(event.relatedTarget);
@@ -205,6 +240,24 @@
                             }
                         });
                         $('.nav-tabs a[href="#tab-movimientos"]').tab('show');
+                    });
+                    $('#modal-gestion-categorias').on('show.bs.modal', function (event) {
+                        cargarGestionCategorias();
+                    });
+
+                    $('#modal-form-content').on('change', '#select-tipo-movimiento', function () {
+                        var tipoId = $(this).val();
+                        var motivoSelect = $('#motivoMovimientoId');
+
+                        if (tipoId) {
+                            motivoSelect.prop('disabled', false);
+                            motivoSelect.html('<option value="">Cargando...</option>');
+                            var url = '/inventario/movimientos/motivos/' + tipoId;
+                            motivoSelect.load(url);
+                        } else {
+                            motivoSelect.html('<option value="">-- Primero seleccione un tipo --</option>');
+                            motivoSelect.prop('disabled', true);
+                        }
                     });
                 });
             </script>

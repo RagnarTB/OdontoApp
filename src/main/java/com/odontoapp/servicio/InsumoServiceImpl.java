@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
+import jakarta.transaction.Transactional;
 
 @Service
 public class InsumoServiceImpl implements InsumoService {
@@ -21,7 +22,8 @@ public class InsumoServiceImpl implements InsumoService {
     private final CategoriaInsumoRepository categoriaInsumoRepository;
     private final UnidadMedidaRepository unidadMedidaRepository;
 
-    public InsumoServiceImpl(InsumoRepository insumoRepository, CategoriaInsumoRepository categoriaInsumoRepository, UnidadMedidaRepository unidadMedidaRepository) {
+    public InsumoServiceImpl(InsumoRepository insumoRepository, CategoriaInsumoRepository categoriaInsumoRepository,
+            UnidadMedidaRepository unidadMedidaRepository) {
         this.insumoRepository = insumoRepository;
         this.categoriaInsumoRepository = categoriaInsumoRepository;
         this.unidadMedidaRepository = unidadMedidaRepository;
@@ -34,7 +36,7 @@ public class InsumoServiceImpl implements InsumoService {
         }
         return insumoRepository.findAll(pageable);
     }
-    
+
     @Override
     public List<Insumo> listarConStockBajo() {
         return insumoRepository.findInsumosConStockBajo(); // <-- Llamada al nuevo método del repositorio
@@ -46,22 +48,27 @@ public class InsumoServiceImpl implements InsumoService {
     }
 
     @Override
+    @Transactional
     public Insumo guardar(InsumoDTO dto) {
-        Optional<Insumo> existente = insumoRepository.findByCodigo(dto.getCodigo());
-        if (existente.isPresent() && !existente.get().getId().equals(dto.getId())) {
-            throw new DataIntegrityViolationException("El código '" + dto.getCodigo() + "' ya está en uso.");
+        if (dto.getId() != null && dto.getCodigo() != null && !dto.getCodigo().isBlank()) {
+            insumoRepository.findByCodigo(dto.getCodigo()).ifPresent(existente -> {
+                if (!existente.getId().equals(dto.getId())) {
+                    throw new DataIntegrityViolationException("El código '" + dto.getCodigo() + "' ya está en uso.");
+                }
+            });
         }
 
-        Insumo insumo = (dto.getId() != null)
-                ? insumoRepository.findById(dto.getId()).orElse(new Insumo())
-                : new Insumo();
+        boolean esNuevo = dto.getId() == null;
+
+        Insumo insumo = esNuevo ? new Insumo()
+                : insumoRepository.findById(dto.getId())
+                        .orElseThrow(() -> new IllegalStateException("Insumo no encontrado con ID: " + dto.getId()));
 
         CategoriaInsumo categoria = categoriaInsumoRepository.findById(dto.getCategoriaId())
                 .orElseThrow(() -> new IllegalStateException("Categoría no encontrada."));
         UnidadMedida unidad = unidadMedidaRepository.findById(dto.getUnidadMedidaId())
                 .orElseThrow(() -> new IllegalStateException("Unidad de medida no encontrada."));
 
-        insumo.setCodigo(dto.getCodigo());
         insumo.setNombre(dto.getNombre());
         insumo.setDescripcion(dto.getDescripcion());
         insumo.setMarca(dto.getMarca());
@@ -73,7 +80,17 @@ public class InsumoServiceImpl implements InsumoService {
         insumo.setCategoria(categoria);
         insumo.setUnidadMedida(unidad);
 
-        return insumoRepository.save(insumo);
+        if (esNuevo) {
+            insumo.setCodigo("TEMP-" + System.currentTimeMillis());
+            Insumo insumoGuardadoTemporal = insumoRepository.saveAndFlush(insumo);
+
+            String codigoGenerado = "INS-" + String.format("%05d", insumoGuardadoTemporal.getId());
+            insumoGuardadoTemporal.setCodigo(codigoGenerado);
+
+            return insumoRepository.save(insumoGuardadoTemporal);
+        } else {
+            return insumoRepository.save(insumo);
+        }
     }
 
     @Override

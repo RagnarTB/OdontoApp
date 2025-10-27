@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.List;
 
 @Service
 public class ProcedimientoServiceImpl implements ProcedimientoService {
@@ -18,7 +19,8 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
     private final ProcedimientoRepository procedimientoRepository;
     private final CategoriaProcedimientoRepository categoriaRepository;
 
-    public ProcedimientoServiceImpl(ProcedimientoRepository procedimientoRepository, CategoriaProcedimientoRepository categoriaRepository) {
+    public ProcedimientoServiceImpl(ProcedimientoRepository procedimientoRepository,
+            CategoriaProcedimientoRepository categoriaRepository) {
         this.procedimientoRepository = procedimientoRepository;
         this.categoriaRepository = categoriaRepository;
     }
@@ -67,5 +69,29 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
             throw new IllegalStateException("El procedimiento no existe.");
         }
         procedimientoRepository.deleteById(id);
+    }
+
+    @Override
+    public void cambiarEstado(Long id) {
+        Procedimiento procedimiento = procedimientoRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Servicio no encontrado."));
+
+        // Lógica de negocio opcional: Si se intenta desactivar, validar que no esté en
+        // citas futuras.
+        // if (procedimiento.isEstaActivo()) {
+        // long citasFuturas = citaRepository.countByProcedimientoIdAndFechaAfter(id,
+        // LocalDateTime.now());
+        // if (citasFuturas > 0) {
+        // throw new DataIntegrityViolationException("No se puede desactivar. El
+        // servicio está agendado en " + citasFuturas + " cita(s) futura(s).");
+        // }
+        // }
+        procedimiento.setEstaActivo(!procedimiento.isEstaActivo());
+        procedimientoRepository.save(procedimiento);
+    }
+
+    @Override
+    public List<Procedimiento> listarActivos() {
+        return procedimientoRepository.findByEstaActivoTrue();
     }
 }
