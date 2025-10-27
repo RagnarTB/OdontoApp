@@ -6,7 +6,6 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-import jakarta.persistence.Column;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -27,7 +26,4 @@ public class CategoriaInsumo extends EntidadAuditable {
     private String descripcion;
 
     private boolean eliminado = false;
-
-    @Column(nullable = false)
-    private boolean estaActiva = true;
 }

@@ -73,11 +73,19 @@ public class Usuario extends EntidadAuditable { // Extiende EntidadAuditable
     @Column(length = 20, name = "numero_documento") // Puede necesitar unique constraint si es clave
     private String numeroDocumento;
 
+    @Column(length = 20)
     private String telefono;
+
+    @Column(length = 255)
+    private String direccion;
 
     private LocalDate fechaNacimiento;
 
-    private String direccion;
+    @Column(name = "fecha_contratacion")
+    private LocalDate fechaContratacion; // Fecha de contratación/creación inicial
+
+    @Column(name = "ultimo_acceso")
+    private LocalDateTime ultimoAcceso; // Fecha y hora del último login
 
     @Column(name = "debe_actualizar_password")
     private boolean debeActualizarPassword = false;

@@ -119,18 +119,31 @@
 
                             <!-- TERCERA FILA: FECHA NAC - DIRECCIÓN -->
                             <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="fechaNacimiento">Fecha de Nacimiento</label>
-                                        <input type="date" class="form-control" th:field="*{fechaNacimiento}">
-                                    </div>
+                                <div class="col-md-4"> <div class="form-group">
+                                    <label for="fechaNacimiento">Fecha de Nacimiento</label>
+                                    <input type="date" class="form-control" id="fechaNacimiento" th:field="*{fechaNacimiento}"
+                                           th:classappend="${#fields.hasErrors('fechaNacimiento')} ? 'is-invalid' : ''">
+                                    <div th:if="${#fields.hasErrors('fechaNacimiento')}" class="invalid-feedback"
+                                         th:errors="*{fechaNacimiento}"></div>
+                                </div>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="direccion">Dirección</label>
-                                        <input type="text" class="form-control" th:field="*{direccion}">
-                                    </div>
+                                <div class="col-md-4"> <div class="form-group">
+                                    <label for="fechaContratacion">Fecha Contratación</label>
+                                    <input type="date" class="form-control" id="fechaContratacion" th:field="*{fechaContratacion}"
+                                           th:classappend="${#fields.hasErrors('fechaContratacion')} ? 'is-invalid' : ''">
+                                    <div th:if="${#fields.hasErrors('fechaContratacion')}" class="invalid-feedback"
+                                         th:errors="*{fechaContratacion}"></div>
+                                </div>
+                                </div>
+                                <div class="col-md-4"> <div class="form-group">
+                                    <label for="direccion">Dirección</label>
+                                    <input type="text" class="form-control" id="direccion" th:field="*{direccion}"
+                                           placeholder="Av. Ejemplo 123"
+                                           th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid' : ''">
+                                    <div th:if="${#fields.hasErrors('direccion')}" class="invalid-feedback"
+                                         th:errors="*{direccion}"></div>
+                                </div>
                                 </div>
                             </div>
 

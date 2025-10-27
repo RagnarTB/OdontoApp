@@ -37,14 +37,9 @@ public class InventarioController {
 
         model.addAttribute("movimientoDTO", movimientoDTO);
         model.addAttribute("tiposMovimiento", tipoMovimientoRepository.findAll());
+        model.addAttribute("motivosMovimiento", motivoMovimientoRepository.findAll());
 
         return "modulos/insumos/fragments :: modalMovimiento";
-    }
-
-    @GetMapping("/movimientos/motivos/{tipoId}")
-    public String getMotivosPorTipo(@PathVariable Long tipoId, Model model) {
-        model.addAttribute("motivosMovimiento", motivoMovimientoRepository.findByTipoMovimientoId(tipoId));
-        return "modulos/insumos/fragments :: opcionesMotivos";
     }
 
     @PostMapping("/movimientos/registrar")
@@ -81,3 +76,5 @@ public class InventarioController {
         return "modulos/insumos/fragments :: historialMovimientos";
     }
 }
+
+

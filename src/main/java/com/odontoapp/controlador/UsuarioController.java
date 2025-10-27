@@ -151,6 +151,8 @@ public class UsuarioController {
             usuarioDTO.setTelefono(usuario.getTelefono());
             usuarioDTO.setFechaNacimiento(usuario.getFechaNacimiento());
             usuarioDTO.setDireccion(usuario.getDireccion());
+            usuarioDTO.setFechaContratacion(usuario.getFechaContratacion());
+            usuarioDTO.setUltimoAcceso(usuario.getUltimoAcceso());
             // --- Fin mapeo nuevos campos ---
 
             usuarioDTO.setRoles(usuario.getRoles().stream()

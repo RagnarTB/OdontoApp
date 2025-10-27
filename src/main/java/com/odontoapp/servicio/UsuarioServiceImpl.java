@@ -74,6 +74,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                 }
             }
             usuario = new Usuario();
+            usuario.setFechaContratacion(java.time.LocalDate.now());
 
         } else {
             usuario = usuarioRepository.findById(usuarioDTO.getId())

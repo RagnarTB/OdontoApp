@@ -2,6 +2,7 @@ package com.odontoapp.dto;
 
 import java.time.LocalDate; // Importar
 import java.util.List;
+import java.time.LocalDateTime;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
@@ -30,6 +31,8 @@ public class UsuarioDTO {
     private String telefono; // Nuevo
     private LocalDate fechaNacimiento; // Nuevo
     private String direccion; // Nuevo
+    private LocalDate fechaContratacion;
+    private LocalDateTime ultimoAcceso;
 
     @NotEmpty(message = "Debe seleccionar al menos un rol")
     private List<Long> roles;

@@ -19,6 +19,4 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
 
     @Query("SELECT i FROM Insumo i WHERE i.stockActual <= i.stockMinimo AND i.stockMinimo > 0")
     List<Insumo> findInsumosConStockBajo();
-
-    long countByCategoriaId(Long categoriaId);
 }

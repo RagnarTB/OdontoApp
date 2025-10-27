@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
-import java.util.List;
 
 public interface ProcedimientoRepository extends JpaRepository<Procedimiento, Long> {
 
@@ -17,5 +16,4 @@ public interface ProcedimientoRepository extends JpaRepository<Procedimiento, Lo
 
     Optional<Procedimiento> findByCodigo(String codigo);
     long countByCategoriaId(Long categoriaId);
-    List<Procedimiento> findByEstaActivoTrue();
 }

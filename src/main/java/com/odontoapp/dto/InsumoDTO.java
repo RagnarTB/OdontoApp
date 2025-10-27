@@ -9,6 +9,7 @@ import java.time.LocalDate;
 public class InsumoDTO {
     private Long id;
 
+    @NotEmpty(message = "El código es obligatorio")
     private String codigo;
 
     @NotEmpty(message = "El nombre es obligatorio")

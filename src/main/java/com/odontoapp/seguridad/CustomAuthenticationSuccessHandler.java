@@ -2,7 +2,10 @@ package com.odontoapp.seguridad;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Optional;
+import java.time.LocalDateTime;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -44,6 +47,21 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
         String username = authentication.getName();
         Usuario usuario = null;
+
+        try {
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(username);
+            if (usuarioOpt.isPresent()) {
+                usuario = usuarioOpt.get(); // Assign to the 'usuario' variable
+                usuario.setUltimoAcceso(LocalDateTime.now()); // Set current time
+                usuarioRepository.save(usuario); // Save the change
+                log.info("Último acceso actualizado para {}", username);
+            } else {
+                log.warn("Usuario '{}' autenticado pero no encontrado en BD para actualizar último acceso.", username);
+            }
+        } catch (Exception e) {
+            log.error("¡ERROR al buscar o actualizar último acceso para '{}'!", username, e);
+            // Decide if you want to proceed even if update fails, or handle differently
+        }
 
         try {
             usuario = usuarioRepository.findByEmail(username).orElse(null);

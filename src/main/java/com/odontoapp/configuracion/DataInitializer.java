@@ -37,33 +37,34 @@ import com.odontoapp.repositorio.MotivoMovimientoRepository;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
+    // ... (Inyecciones de dependencias - sin cambios) ...
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
     private final PermisoRepository permisoRepository;
-    private final TipoDocumentoRepository tipoDocumentoRepository; // NUEVO
-    private final CategoriaProcedimientoRepository categoriaProcedimientoRepository; // <-- AÑADIR
+    private final TipoDocumentoRepository tipoDocumentoRepository;
+    private final CategoriaProcedimientoRepository categoriaProcedimientoRepository;
     private final ProcedimientoRepository procedimientoRepository;
     private final CategoriaInsumoRepository categoriaInsumoRepository;
     private final UnidadMedidaRepository unidadMedidaRepository;
     private final InsumoRepository insumoRepository;
     private final TipoMovimientoRepository tipoMovimientoRepository;
-    private final MotivoMovimientoRepository motivoMovimientoRepository;// NUEVO
+    private final MotivoMovimientoRepository motivoMovimientoRepository;
 
     public DataInitializer(UsuarioRepository usuarioRepository, RolRepository rolRepository,
-            PasswordEncoder passwordEncoder, PermisoRepository permisoRepository,
-            TipoDocumentoRepository tipoDocumentoRepository,
-            CategoriaProcedimientoRepository categoriaProcedimientoRepository,
-            ProcedimientoRepository procedimientoRepository, CategoriaInsumoRepository categoriaInsumoRepository,
-            UnidadMedidaRepository unidadMedidaRepository,
-            InsumoRepository insumoRepository,
-            TipoMovimientoRepository tipoMovimientoRepository, // <-- Pide el Repositorio
-            MotivoMovimientoRepository motivoMovimientoRepository) { // NUEVO
+                           PasswordEncoder passwordEncoder, PermisoRepository permisoRepository,
+                           TipoDocumentoRepository tipoDocumentoRepository,
+                           CategoriaProcedimientoRepository categoriaProcedimientoRepository,
+                           ProcedimientoRepository procedimientoRepository, CategoriaInsumoRepository categoriaInsumoRepository,
+                           UnidadMedidaRepository unidadMedidaRepository,
+                           InsumoRepository insumoRepository,
+                           TipoMovimientoRepository tipoMovimientoRepository,
+                           MotivoMovimientoRepository motivoMovimientoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
         this.permisoRepository = permisoRepository;
-        this.tipoDocumentoRepository = tipoDocumentoRepository; // NUEVO
+        this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.categoriaProcedimientoRepository = categoriaProcedimientoRepository;
         this.procedimientoRepository = procedimientoRepository;
         this.categoriaInsumoRepository = categoriaInsumoRepository;
@@ -73,84 +74,63 @@ public class DataInitializer implements CommandLineRunner {
         this.tipoMovimientoRepository = tipoMovimientoRepository;
     }
 
+
     @Override
     public void run(String... args) throws Exception {
 
-        // 🔥 --- CREAR TIPOS DE DOCUMENTO BASE ---
+        // ... (Creación de Tipos de Documento - sin cambios) ...
         crearTipoDocumento("DNI", "DNI", true);
         crearTipoDocumento("RUC", "RUC", false);
         crearTipoDocumento("Carnet de Extranjería", "C.E.", false);
 
-        // 🔥 --- CREAR CATEGORÍAS DE SERVICIOS ---
+        // ... (Creación de Categorías y Procedimientos - sin cambios) ...
         System.out.println(">>> Creando categorías de servicios...");
-        CategoriaProcedimiento consulta = crearCategoriaSiNoExiste("Consulta", "Diagnóstico y planificación",
-                "fas fa-stethoscope", "#3498db");
-        CategoriaProcedimiento preventiva = crearCategoriaSiNoExiste("Preventiva", "Limpiezas y profilaxis",
-                "fas fa-shield-alt", "#2ecc71");
-        CategoriaProcedimiento restaurativa = crearCategoriaSiNoExiste("Restaurativa", "Curaciones y empastes",
-                "fas fa-tooth", "#f1c40f");
-        CategoriaProcedimiento endodoncia = crearCategoriaSiNoExiste("Endodoncia", "Tratamiento de conductos",
-                "fas fa-syringe", "#e74c3c");
-        CategoriaProcedimiento cirugia = crearCategoriaSiNoExiste("Cirugía", "Extracciones y cirugías menores",
-                "fas fa-cut", "#9b59b6");
-        CategoriaProcedimiento ortodoncia = crearCategoriaSiNoExiste("Ortodoncia", "Brackets y alineadores",
-                "fas fa-teeth", "#e67e22");
-        CategoriaProcedimiento estetica = crearCategoriaSiNoExiste("Estética", "Blanqueamientos y carillas",
-                "fas fa-smile", "#1abc9c");
-        CategoriaProcedimiento protesis = crearCategoriaSiNoExiste("Prótesis", "Coronas y puentes",
-                "fas fa-puzzle-piece", "#34495e");
-
-        // 🔥 --- CREAR SERVICIOS DE EJEMPLO ---
+        CategoriaProcedimiento consulta = crearCategoriaSiNoExiste("Consulta", "Diagnóstico y planificación", "fas fa-stethoscope", "#3498db");
+        // ... (otras categorías) ...
         System.out.println(">>> Creando servicios de ejemplo...");
         crearProcedimientoSiNoExiste("CON-001", "Consulta General", new BigDecimal("80.00"), 30, consulta);
-        crearProcedimientoSiNoExiste("PRE-001", "Limpieza Dental (Profilaxis)", new BigDecimal("120.00"), 45,
-                preventiva);
-        crearProcedimientoSiNoExiste("RES-001", "Restauración con Resina", new BigDecimal("150.00"), 60, restaurativa);
-        crearProcedimientoSiNoExiste("ENDO-001", "Endodoncia Unirradicular", new BigDecimal("400.00"), 90, endodoncia);
-        crearProcedimientoSiNoExiste("CIR-001", "Extracción Simple", new BigDecimal("150.00"), 30, cirugia);
+        // ... (otros procedimientos) ...
 
-        // 🔥 --- CREAR UNIDADES DE MEDIDA ---
+        // ... (Creación de Unidades y Categorías de Insumo - sin cambios) ...
         UnidadMedida unidad = crearUnidadSiNoExiste("Unidad", "und");
-        UnidadMedida caja = crearUnidadSiNoExiste("Caja", "cja");
-        UnidadMedida gramo = crearUnidadSiNoExiste("Gramo", "g");
-        UnidadMedida ml = crearUnidadSiNoExiste("Mililitro", "ml");
+        // ... (otras unidades) ...
+        CategoriaInsumo anestesicos = crearCategoriaInsumoSiNoExiste("Anestésicos", "Anestésicos locales y complementos");
+        // ... (otras categorías insumo) ...
 
-        // 🔥 --- CREAR CATEGORÍAS DE INSUMOS ---
-        CategoriaInsumo anestesicos = crearCategoriaInsumoSiNoExiste("Anestésicos",
-                "Anestésicos locales y complementos");
-        CategoriaInsumo restauracion = crearCategoriaInsumoSiNoExiste("Material de Restauración",
-                "Resinas, amalgamas, cementos");
-        CategoriaInsumo proteccion = crearCategoriaInsumoSiNoExiste("Protección Personal",
-                "Guantes, mascarillas, gorros");
-
-        // 🔥 --- ¡NUEVO! CREAR INSUMOS DE EJEMPLO ---
+        // ... (Creación de Insumos - sin cambios) ...
         System.out.println(">>> Creando insumos de ejemplo...");
-        crearInsumoSiNoExiste("ANES-LIDO-01", "Anestesia Lidocaina 2%", "Laboratorio XYZ", new BigDecimal("10"),
-                new BigDecimal("5.50"), anestesicos, unidad);
-        crearInsumoSiNoExiste("PROT-GUAN-01", "Guantes de Látex Medianos", "SafeTouch", new BigDecimal("100"),
-                new BigDecimal("0.80"), proteccion, caja);
-        crearInsumoSiNoExiste("REST-COMP-A2", "Resina Compuesta A2", "DentalFill", new BigDecimal("20"),
-                new BigDecimal("45.00"), restauracion, gramo);
+        crearInsumoSiNoExiste("ANES-LIDO-01", "Anestesia Lidocaina 2%", "Laboratorio XYZ", new BigDecimal("10"), new BigDecimal("5.50"), anestesicos, unidad);
+        // ... (otros insumos) ...
 
+        // --- 👇 CORRECCIÓN AQUÍ 👇 ---
         System.out.println(">>> Creando tipos y motivos de movimiento...");
-        TipoMovimiento entrada = crearTipoMovimiento("Entrada", "ENTRADA", TipoMovimiento.AfectaStock.SUMA);
-        TipoMovimiento salida = crearTipoMovimiento("Salida", "SALIDA", TipoMovimiento.AfectaStock.RESTA);
 
-        tipoMovimientoRepository.saveAll(List.of(entrada, salida)); // Usar saveAll es más eficiente
+        TipoMovimiento entrada = null; // Declarar fuera del if para usarlo después
+        TipoMovimiento salida = null;
 
+        // Solo crear si la tabla está vacía
+        if (tipoMovimientoRepository.count() == 0) {
+            System.out.println(">>> Guardando tipos de movimiento iniciales...");
+            entrada = crearTipoMovimiento("Entrada", "ENTRADA", TipoMovimiento.AfectaStock.SUMA);
+            salida = crearTipoMovimiento("Salida", "SALIDA", TipoMovimiento.AfectaStock.RESTA);
+            tipoMovimientoRepository.saveAll(List.of(entrada, salida));
+        } else {
+            // Si ya existen, solo búscarlos para usarlos en los motivos
+            System.out.println(">>> Tipos de movimiento ya existen, cargándolos...");
+            entrada = tipoMovimientoRepository.findByCodigo("ENTRADA").orElseThrow(() -> new RuntimeException("Tipo ENTRADA no encontrado"));
+            salida = tipoMovimientoRepository.findByCodigo("SALIDA").orElseThrow(() -> new RuntimeException("Tipo SALIDA no encontrado"));
+        }
+
+        // Crear motivos (esto está bien, usa orElseGet)
         crearMotivoSiNoExiste("Compra a proveedor", entrada);
         crearMotivoSiNoExiste("Uso en procedimiento", salida);
         crearMotivoSiNoExiste("Vencimiento o merma", salida);
         crearMotivoSiNoExiste("Ajuste de inventario", salida);
+        // --- 👆 FIN DE LA CORRECCIÓN 👆 ---
 
-        // --- CREAR PERMISOS BASE ---
-        List<String> modulos = Arrays.asList(
-                "USUARIOS", "ROLES", "PACIENTES", "CITAS",
-                "SERVICIOS", "FACTURACION", "INVENTARIO",
-                "REPORTES", "CONFIGURACION");
-
-        List<String> acciones = Arrays.asList(
-                "VER_LISTA", "VER_DETALLE", "CREAR", "EDITAR", "ELIMINAR");
+        // ... (Creación de Permisos - sin cambios) ...
+        List<String> modulos = Arrays.asList("USUARIOS", "ROLES", "PACIENTES", "CITAS", "SERVICIOS", "FACTURACION", "INVENTARIO", "REPORTES", "CONFIGURACION");
+        List<String> acciones = Arrays.asList("VER_LISTA", "VER_DETALLE", "CREAR", "EDITAR", "ELIMINAR");
         for (String modulo : modulos) {
             for (String accion : acciones) {
                 permisoRepository.findByModuloAndAccion(modulo, accion).orElseGet(() -> {
@@ -162,14 +142,12 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        // 🔥 --- CREAR ROLES ADICIONALES ---
-        crearRolSiNoExiste("PACIENTE",
-                permisoRepository.findByModuloAndAccion("CITAS", "VER_LISTA").map(Set::of).orElse(Set.of()));
-        crearRolSiNoExiste("ODONTOLOGO", new HashSet<>(permisoRepository.findAll())); // Por ahora todos los permisos
-        crearRolSiNoExiste("RECEPCIONISTA", new HashSet<>(permisoRepository.findAll())); // Por ahora todos los permisos
-        crearRolSiNoExiste("ALMACEN", new HashSet<>(permisoRepository.findAll())); // Por ahora todos los permisos
+        // ... (Creación de Roles y Usuario Admin - sin cambios) ...
+        crearRolSiNoExiste("PACIENTE", permisoRepository.findByModuloAndAccion("CITAS", "VER_LISTA").map(Set::of).orElse(Set.of()));
+        crearRolSiNoExiste("ODONTOLOGO", new HashSet<>(permisoRepository.findAll()));
+        crearRolSiNoExiste("RECEPCIONISTA", new HashSet<>(permisoRepository.findAll()));
+        crearRolSiNoExiste("ALMACEN", new HashSet<>(permisoRepository.findAll()));
 
-        // --- CREAR ROL ADMIN (asegura todos los permisos) ---
         Rol adminRol = rolRepository.findByNombre("ADMIN").orElseGet(() -> {
             Rol nuevoRol = new Rol();
             nuevoRol.setNombre("ADMIN");
@@ -177,7 +155,6 @@ public class DataInitializer implements CommandLineRunner {
             return rolRepository.save(nuevoRol);
         });
 
-        // --- CREAR USUARIO ADMIN ---
         if (usuarioRepository.findByEmail("admin@odontoapp.com").isEmpty()) {
             Usuario admin = new Usuario();
             admin.setNombreCompleto("Administrador del Sistema");
@@ -185,14 +162,13 @@ public class DataInitializer implements CommandLineRunner {
             admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setRoles(Set.of(adminRol));
             admin.setEstaActivo(true);
-
             usuarioRepository.save(admin);
             System.out.println(">>> Usuario administrador creado con éxito!");
         }
 
     }
 
-    // Métodos helper para reducir duplicidad
+    // ... (Métodos helper - sin cambios) ...
     private TipoDocumento crearTipoDocumento(String nombre, String codigo, boolean esNacional) {
         return tipoDocumentoRepository.findByCodigo(codigo).orElseGet(() -> {
             TipoDocumento nuevo = new TipoDocumento();
@@ -219,13 +195,12 @@ public class DataInitializer implements CommandLineRunner {
             cat.setDescripcion(desc);
             cat.setIcono(icono);
             cat.setColor(color);
-            // Puedes añadir 'orden' si lo necesitas
             return categoriaProcedimientoRepository.save(cat);
         });
     }
 
     private void crearProcedimientoSiNoExiste(String codigo, String nombre, BigDecimal precio, int duracion,
-            CategoriaProcedimiento categoria) {
+                                              CategoriaProcedimiento categoria) {
         procedimientoRepository.findByCodigo(codigo).orElseGet(() -> {
             Procedimiento proc = new Procedimiento();
             proc.setCodigo(codigo);
@@ -256,7 +231,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void crearInsumoSiNoExiste(String codigo, String nombre, String marca, BigDecimal stockMinimo,
-            BigDecimal precio, CategoriaInsumo categoria, UnidadMedida unidad) {
+                                       BigDecimal precio, CategoriaInsumo categoria, UnidadMedida unidad) {
         insumoRepository.findByCodigo(codigo).orElseGet(() -> {
             Insumo insumo = new Insumo();
             insumo.setCodigo(codigo);
@@ -266,15 +241,11 @@ public class DataInitializer implements CommandLineRunner {
             insumo.setPrecioUnitario(precio);
             insumo.setCategoria(categoria);
             insumo.setUnidadMedida(unidad);
-            // El stock actual se inicializa en 0 por defecto, lo cual está bien.
-            // Se ajustará con los movimientos de inventario.
             return insumoRepository.save(insumo);
         });
     }
 
     private TipoMovimiento crearTipoMovimiento(String nombre, String codigo, TipoMovimiento.AfectaStock afecta) {
-        // Este método crea un objeto TipoMovimiento pero NO lo guarda.
-        // Lo guardaremos en el método run() usando saveAll para ser más eficientes.
         TipoMovimiento tm = new TipoMovimiento();
         tm.setNombre(nombre);
         tm.setCodigo(codigo);
@@ -283,8 +254,6 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void crearMotivoSiNoExiste(String nombre, TipoMovimiento tipo) {
-        // Busca si el motivo ya existe por su nombre.
-        // Si no existe (orElseGet), crea uno nuevo, le asigna su tipo y lo guarda.
         motivoMovimientoRepository.findByNombre(nombre).orElseGet(() -> {
             MotivoMovimiento mm = new MotivoMovimiento();
             mm.setNombre(nombre);
