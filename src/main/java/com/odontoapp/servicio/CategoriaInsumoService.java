@@ -1,11 +1,10 @@
 // ruta: com/odontoapp/servicio/CategoriaInsumoService.java
 package com.odontoapp.servicio;
 
-import com.odontoapp.entidad.CategoriaInsumo;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
+
+import com.odontoapp.entidad.CategoriaInsumo;
 
 public interface CategoriaInsumoService {
     List<CategoriaInsumo> listarTodasOrdenadasPorNombre();

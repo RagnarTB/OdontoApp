@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
-    th:replace="~{layout/base :: layout(titulo='Formulario de Rol', contenido=~{::#contenido-principal})}">
+    th:replace="~{layout/base :: layout(titulo='Formulario de Rol', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
 
 <body>
     <div id="contenido-principal">
@@ -8,7 +8,13 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1>Formulario de Rol</h1>
+                        <h1 th:if="${rol.id == null}">Nuevo Rol</h1>
+                        <h1 th:unless="${rol.id == null}">Editar Rol</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/roles}" class="btn btn-outline-secondary float-sm-right">
+                            <i class="fas fa-arrow-left mr-2"></i> Volver al Listado
+                        </a>
                     </div>
                 </div>
             </div>
@@ -16,20 +22,35 @@
 
         <section class="content">
             <div class="container-fluid">
-                <div class="card card-primary">
+                <div class="card card-primary card-outline shadow-sm">
                     <div class="card-header">
                         <h3 class="card-title">Datos del Rol</h3>
                     </div>
-                    <form th:action="@{/roles/guardar}" th:object="${rol}" method="post">
+                    <!-- Añadir id al form para el JS -->
+                    <form th:action="@{/roles/guardar}" th:object="${rol}" method="post" id="rolForm">
+                        <!-- ID Oculto para Edición -->
+                        <input type="hidden" th:field="*{id}" id="rolId" />
+
                         <div class="card-body">
-                            <div th:if="${#fields.hasErrors('*')}"
+                            <!-- Errores Generales / de Campo -->
+                            <div th:if="${#fields.hasGlobalErrors()}"
                                 class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <strong><i class="icon fas fa-ban"></i> Error de Validación:</strong> Por favor, corrige
-                                los campos
-                                marcados.
+                                <strong><i class="icon fas fa-ban"></i> Error Global:</strong>
+                                <ul>
+                                    <li th:each="err : ${#fields.globalErrors()}" th:text="${err}"></li>
+                                </ul>
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
                                         aria-hidden="true">&times;</span></button>
                             </div>
+                            <div th:if="${#fields.hasErrors('*') && !#fields.hasGlobalErrors()}"
+                                class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong><i class="icon fas fa-ban"></i> Error de Validaci&oacute;n:</strong>
+                                Por favor, corrige los campos marcados.
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                            </div>
+
+                            <!-- Error Específico del Controlador -->
                             <div th:if="${errorValidacion}" class="alert alert-danger alert-dismissible fade show"
                                 role="alert">
                                 <strong><i class="icon fas fa-ban"></i> Error:</strong> <span
@@ -37,34 +58,48 @@
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
                                         aria-hidden="true">&times;</span></button>
                             </div>
+
+                            <!-- Campo Nombre -->
                             <div class="form-group">
                                 <label for="nombre">Nombre del Rol</label>
                                 <input type="text" class="form-control" id="nombre" th:field="*{nombre}"
-                                    placeholder="Ej: RECEPCIONISTA"
+                                    placeholder="Ej: RECEPCIONISTA (se guardar&aacute; en may&uacute;sculas)" required
                                     th:classappend="${#fields.hasErrors('nombre')} ? 'is-invalid' : ''">
                                 <div th:if="${#fields.hasErrors('nombre')}" class="invalid-feedback"
                                     th:errors="*{nombre}"></div>
                             </div>
 
+                            <!-- Campo Permisos -->
                             <div class="form-group">
-                                <label>Permisos</label>
+                                <label>Permisos Asignados</label>
                                 <div class="row">
-                                    <div class="col-md-4" th:each="entry : ${permisosAgrupados}">
-                                        <h5>Módulo: <span th:text="${entry.key}"></span></h5>
-                                        <div class="form-check" th:each="permiso : ${entry.value}">
-                                            <input class="form-check-input" type="checkbox" th:field="*{permisos}"
-                                                th:value="${permiso.id}" />
-                                            <label class="form-check-label" th:text="${permiso.accion}"></label>
+                                    <!-- Iterar sobre permisos agrupados por módulo -->
+                                    <div class="col-md-4 mb-3" th:each="entry : ${permisosAgrupados}">
+                                        <h6 class="text-primary"><i class="fas fa-folder-open mr-2"></i><strong
+                                                th:text="${entry.key}">M&oacute;dulo</strong></h6>
+                                        <div class="pl-3">
+                                            <!-- Iterar sobre permisos dentro de cada módulo -->
+                                            <div class="form-check" th:each="permiso : ${entry.value}">
+                                                <!-- Añadir clase 'permiso-checkbox' -->
+                                                <input class="form-check-input permiso-checkbox" type="checkbox"
+                                                    th:field="*{permisos}" th:value="${permiso.id}"
+                                                    th:id="${'permiso-' + permiso.id}" />
+                                                <label class="form-check-label" th:for="${'permiso-' + permiso.id}"
+                                                    th:text="${permiso.accion}"></label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div th:if="${#fields.hasErrors('permisos')}" class="invalid-feedback d-block"
+                                <!-- Mostrar error si la lista está vacía (Validación @NotEmpty en DTO) -->
+                                <div th:if="${#fields.hasErrors('permisos')}" class="text-danger small mt-2"
                                     th:errors="*{permisos}"></div>
                             </div>
-                        </div>
+                        </div> <!-- Fin .card-body -->
 
                         <div class="card-footer">
-                            <button type="submit" class="btn btn-primary">Guardar Rol</button>
+                            <!-- Añadir id al botón para el JS -->
+                            <button type="submit" class="btn btn-primary" id="btnGuardarRol"><i
+                                    class="fas fa-save mr-2"></i>Guardar Rol</button>
                             <a th:href="@{/roles}" class="btn btn-secondary">Cancelar</a>
                         </div>
                     </form>
@@ -72,6 +107,80 @@
             </div>
         </section>
     </div>
+
+    <!-- Scripts específicos de la página -->
+    <th:block id="page-scripts">
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const form = document.getElementById('rolForm');
+                const rolIdInput = document.getElementById('rolId');
+                const nombreInput = document.getElementById('nombre');
+                const permisoCheckboxes = document.querySelectorAll('.permiso-checkbox');
+                const btnGuardar = document.getElementById('btnGuardarRol');
+
+                let estadoInicialNombre = '';
+                let estadoInicialPermisos = new Set();
+                const esModoEdicion = rolIdInput && rolIdInput.value !== '';
+
+                // Guardar estado inicial solo en modo edición
+                if (esModoEdicion) {
+                    estadoInicialNombre = nombreInput.value;
+                    permisoCheckboxes.forEach(cb => {
+                        if (cb.checked) {
+                            estadoInicialPermisos.add(cb.value);
+                        }
+                    });
+                    // Deshabilitar botón inicialmente en modo edición
+                    btnGuardar.disabled = true;
+                } else {
+                    // Habilitar botón en modo creación
+                    btnGuardar.disabled = false;
+                }
+
+
+                // Función para verificar si hay cambios
+                function verificarCambios() {
+                    if (!esModoEdicion) return true; // Siempre habilitado si es nuevo
+
+                    let nombreCambiado = nombreInput.value !== estadoInicialNombre;
+
+                    let permisosActuales = new Set();
+                    permisoCheckboxes.forEach(cb => {
+                        if (cb.checked) {
+                            permisosActuales.add(cb.value);
+                        }
+                    });
+
+                    // Comprobar si los conjuntos de permisos son diferentes
+                    let permisosCambiados = estadoInicialPermisos.size !== permisosActuales.size ||
+                        ![...estadoInicialPermisos].every(p => permisosActuales.has(p));
+
+                    return nombreCambiado || permisosCambiados;
+                }
+
+                // Función para actualizar estado del botón
+                function actualizarEstadoBoton() {
+                    if (esModoEdicion) {
+                        btnGuardar.disabled = !verificarCambios();
+                    }
+                    // En modo creación, el botón siempre está habilitado (no se deshabilita aquí)
+                }
+
+                // Añadir listeners para detectar cambios
+                nombreInput.addEventListener('input', actualizarEstadoBoton);
+                permisoCheckboxes.forEach(cb => {
+                    cb.addEventListener('change', actualizarEstadoBoton);
+                });
+
+                // Llamada inicial en caso de que el navegador autocomplete algo
+                if (esModoEdicion) {
+                    actualizarEstadoBoton();
+                }
+
+            });
+        </script>
+    </th:block>
+
 </body>
 
 </html>

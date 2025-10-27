@@ -1,7 +1,13 @@
 package com.odontoapp.controlador;
 
+// --- Imports necesarios ---
+import java.time.DayOfWeek;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap; // Import Arrays
 import java.util.List;
-import java.util.Optional;
+import java.util.Locale;
+import java.util.Optional; // Import Locale
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,9 +23,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.odontoapp.dto.HorarioExcepcionDTO;
 import com.odontoapp.dto.UsuarioDTO;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.entidad.Usuario;
@@ -31,12 +39,18 @@ import com.odontoapp.servicio.UsuarioService;
 import jakarta.validation.Valid;
 
 @Controller
+@RequestMapping("/usuarios")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
+
+    // Constante para los días ordenados
+    private static final List<DayOfWeek> DIAS_SEMANA_ORDENADOS = Arrays.asList(
+            DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY,
+            DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
 
     public UsuarioController(UsuarioService usuarioService, UsuarioRepository usuarioRepository,
             RolRepository rolRepository, TipoDocumentoRepository tipoDocumentoRepository) {
@@ -46,8 +60,7 @@ public class UsuarioController {
         this.tipoDocumentoRepository = tipoDocumentoRepository;
     }
 
-    // Muestra la lista de usuarios
-    @GetMapping("/usuarios")
+    @GetMapping
     public String listarUsuarios(Model model,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -59,89 +72,110 @@ public class UsuarioController {
         return "modulos/usuarios/lista";
     }
 
-    // Muestra el formulario para crear un nuevo usuario
-    @GetMapping("/usuarios/nuevo")
+    @GetMapping("/nuevo")
     public String mostrarFormularioNuevoUsuario(Model model) {
         UsuarioDTO usuario = new UsuarioDTO();
+        usuario.setHorarioRegular(new EnumMap<>(DayOfWeek.class));
+        usuario.setExcepcionesHorario(new ArrayList<>());
+        // Inicializar horario regular vacío para la vista
+        for (DayOfWeek dia : DIAS_SEMANA_ORDENADOS) {
+            usuario.getHorarioRegular().put(dia, "");
+        }
+
         model.addAttribute("usuario", usuario);
-        cargarRolesActivos(model);
-        model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // Añadir tipos doc
+        cargarRolesYTiposDoc(model);
+        model.addAttribute("diasSemana", DIAS_SEMANA_ORDENADOS); // <-- Añadir lista al modelo
+        model.addAttribute("localeEs", new Locale("es", "ES")); // <-- Locale para nombres de días
         return "modulos/usuarios/formulario";
     }
 
-    @PostMapping("/usuarios/guardar")
+    @PostMapping("/guardar")
     public String guardarUsuario(@Valid @ModelAttribute("usuario") UsuarioDTO usuarioDTO,
             BindingResult result,
             Model model,
             RedirectAttributes redirectAttributes) {
 
-        // 1. Validación del DTO (campos vacíos, formato email, etc.)
         if (result.hasErrors()) {
-            cargarRolesActivos(model);
-            model.addAttribute("usuario", usuarioDTO);
-            // El error #fields.hasErrors('*') se mostrará automáticamente en la vista
+            cargarRolesYTiposDoc(model);
+            model.addAttribute("diasSemana", DIAS_SEMANA_ORDENADOS); // <-- Añadir también en caso de error
+            model.addAttribute("localeEs", new Locale("es", "ES")); // <-- Añadir también en caso de error
+            // Asegurarse de que el mapa horarioRegular tenga todos los días si hay error de
+            // validación
+            if (usuarioDTO.getHorarioRegular() == null) {
+                usuarioDTO.setHorarioRegular(new EnumMap<>(DayOfWeek.class));
+            }
+            for (DayOfWeek dia : DIAS_SEMANA_ORDENADOS) {
+                usuarioDTO.getHorarioRegular().putIfAbsent(dia, "");
+            }
             return "modulos/usuarios/formulario";
         }
 
-        // 2. Intentar guardar y manejar excepciones del servicio
         try {
             usuarioService.guardarUsuario(usuarioDTO);
             redirectAttributes.addFlashAttribute("success", "Usuario guardado con éxito.");
             return "redirect:/usuarios";
 
-        } catch (DataIntegrityViolationException e) {
-            cargarRolesActivos(model);
-            model.addAttribute("usuario", usuarioDTO); // Devolver datos al formulario
+        } catch (DataIntegrityViolationException | IllegalArgumentException e) {
+            cargarRolesYTiposDoc(model);
+            model.addAttribute("usuario", usuarioDTO); // Devolver DTO con datos ingresados
+            model.addAttribute("diasSemana", DIAS_SEMANA_ORDENADOS); // <-- Añadir también en caso de error
+            model.addAttribute("localeEs", new Locale("es", "ES")); // <-- Añadir también en caso de error
+            // Asegurarse de que el mapa horarioRegular tenga todos los días si hay error de
+            // guardado
+            if (usuarioDTO.getHorarioRegular() == null) {
+                usuarioDTO.setHorarioRegular(new EnumMap<>(DayOfWeek.class));
+            }
+            for (DayOfWeek dia : DIAS_SEMANA_ORDENADOS) {
+                usuarioDTO.getHorarioRegular().putIfAbsent(dia, "");
+            }
 
-            String mensajeServicio = e.getMessage();
-
-            // Verificar si es nuestro mensaje personalizado para restaurar
-            if (mensajeServicio != null && mensajeServicio.startsWith("EMAIL_ELIMINADO:")) {
+            if (e instanceof DataIntegrityViolationException && e.getMessage() != null
+                    && e.getMessage().startsWith("EMAIL_ELIMINADO:")) {
                 try {
-                    String[] parts = mensajeServicio.split(":");
+                    String[] parts = e.getMessage().split(":");
                     Long idUsuarioEliminado = Long.parseLong(parts[1]);
                     String emailEliminado = parts[2];
-                    model.addAttribute("errorRestauracion", // Atributo específico para la vista
+                    model.addAttribute("errorRestauracion",
                             "El email '" + emailEliminado + "' pertenece a un usuario eliminado.");
-                    model.addAttribute("idUsuarioParaRestaurar", idUsuarioEliminado); // Pasar ID a la vista
+                    model.addAttribute("idUsuarioParaRestaurar", idUsuarioEliminado);
                 } catch (Exception parseEx) {
-                    // Si el formato del mensaje es inesperado
                     model.addAttribute("errorValidacion", "El email ya existe (usuario eliminado, error al procesar).");
                 }
             } else {
-                // Si es otro DataIntegrityViolationException (email activo, u otro constraint)
-                // Usamos el mensaje de la excepción que ya viene formateado desde el servicio
-                model.addAttribute("errorValidacion",
-                        mensajeServicio != null ? mensajeServicio : "Error de integridad de datos.");
+                model.addAttribute("errorValidacion", e.getMessage());
             }
-            return "modulos/usuarios/formulario"; // Volver al formulario
-
-        } catch (IllegalArgumentException e) { // Ej: Quitar rol ADMIN
-            cargarRolesActivos(model);
-            model.addAttribute("usuario", usuarioDTO);
-            model.addAttribute("errorValidacion", e.getMessage());
             return "modulos/usuarios/formulario";
 
-        } catch (Exception e) { // Otros errores inesperados
-            cargarRolesActivos(model);
+        } catch (Exception e) {
+            cargarRolesYTiposDoc(model);
             model.addAttribute("usuario", usuarioDTO);
+            model.addAttribute("diasSemana", DIAS_SEMANA_ORDENADOS); // <-- Añadir también en caso de error
+            model.addAttribute("localeEs", new Locale("es", "ES")); // <-- Añadir también en caso de error
+            // Asegurarse de que el mapa horarioRegular tenga todos los días si hay error
+            // inesperado
+            if (usuarioDTO.getHorarioRegular() == null) {
+                usuarioDTO.setHorarioRegular(new EnumMap<>(DayOfWeek.class));
+            }
+            for (DayOfWeek dia : DIAS_SEMANA_ORDENADOS) {
+                usuarioDTO.getHorarioRegular().putIfAbsent(dia, "");
+            }
             model.addAttribute("errorValidacion", "Ocurrió un error inesperado. Contacte al administrador.");
             System.err.println("Error INESPERADO al guardar usuario: " + e.getMessage());
-            e.printStackTrace(); // Log completo para el desarrollador
+            e.printStackTrace();
             return "modulos/usuarios/formulario";
         }
     }
 
-    // Muestra el formulario para editar un usuario existentes
-    @GetMapping("/usuarios/editar/{id}")
+    @GetMapping("/editar/{id}")
     public String mostrarFormularioEditarUsuario(@PathVariable Long id, Model model,
             RedirectAttributes redirectAttributes) {
         Optional<Usuario> usuarioOpt = usuarioService.buscarPorId(id);
         if (usuarioOpt.isPresent()) {
             Usuario usuario = usuarioOpt.get();
             UsuarioDTO usuarioDTO = new UsuarioDTO();
+
+            // --- Mapear campos básicos ---
             usuarioDTO.setId(usuario.getId());
-            // --- Mapear nuevos campos ---
             if (usuario.getTipoDocumento() != null) {
                 usuarioDTO.setTipoDocumentoId(usuario.getTipoDocumento().getId());
             }
@@ -153,29 +187,43 @@ public class UsuarioController {
             usuarioDTO.setDireccion(usuario.getDireccion());
             usuarioDTO.setFechaContratacion(usuario.getFechaContratacion());
             usuarioDTO.setUltimoAcceso(usuario.getUltimoAcceso());
-            // --- Fin mapeo nuevos campos ---
-
             usuarioDTO.setRoles(usuario.getRoles().stream()
                     .map(Rol::getId)
                     .collect(Collectors.toList()));
 
+            // --- Mapear Horarios de Entidad a DTO ---
+            usuarioDTO.setHorarioRegular(new EnumMap<>(DayOfWeek.class));
+            // Asegurar que existan entradas para todos los días
+            for (DayOfWeek dia : DIAS_SEMANA_ORDENADOS) {
+                usuarioDTO.getHorarioRegular().put(dia,
+                        (usuario.getHorarioRegular() != null && usuario.getHorarioRegular().containsKey(dia))
+                                ? usuario.getHorarioRegular().get(dia)
+                                : "");
+            }
+
+            usuarioDTO.setExcepcionesHorario(new ArrayList<>());
+            if (usuario.getExcepcionesHorario() != null) {
+                List<HorarioExcepcionDTO> excepcionesDTO = usuario.getExcepcionesHorario().stream()
+                        .map(ex -> new HorarioExcepcionDTO(ex.getFecha(), ex.getHoras(), ex.getMotivo()))
+                        .sorted((e1, e2) -> e1.getFecha().compareTo(e2.getFecha())) // Ordenar por fecha
+                        .collect(Collectors.toList());
+                usuarioDTO.setExcepcionesHorario(excepcionesDTO);
+            }
+
             model.addAttribute("usuario", usuarioDTO);
-            cargarRolesActivos(model);
-            model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // Añadir tipos doc
+            cargarRolesYTiposDoc(model);
+            model.addAttribute("diasSemana", DIAS_SEMANA_ORDENADOS); // <-- Añadir lista al modelo
+            model.addAttribute("localeEs", new Locale("es", "ES")); // <-- Locale para nombres de días
             return "modulos/usuarios/formulario";
         }
         redirectAttributes.addFlashAttribute("error", "Usuario no encontrado.");
         return "redirect:/usuarios";
     }
 
-    // Procesa la actualización de un usuario (usa el mismo endpoint POST /guardar)
-    // Spring diferencia si es nuevo o edición por la presencia del ID en el DTO
-
-    // Elimina un usuario
-    @GetMapping("/usuarios/eliminar/{id}")
+    // --- Otros métodos (eliminar, cambiarEstado, desbloquear, restablecer) sin
+    // cambios relevantes ---
+    @GetMapping("/eliminar/{id}")
     public String eliminarUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        // Obtenemos el email del usuario logueado para la validación de
-        // auto-eliminación
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String emailUsuarioActual = authentication.getName();
 
@@ -186,32 +234,25 @@ public class UsuarioController {
         }
         Usuario usuarioParaModificar = usuarioParaModificarOpt.get();
 
-        // REGLAS DE NEGOCIO (ya están en el servicio, pero reforzamos en controlador)
         if (usuarioParaModificar.getEmail().equals(emailUsuarioActual)) {
-            redirectAttributes.addFlashAttribute("error", "No puedes desactivar tu propio usuario.");
+            redirectAttributes.addFlashAttribute("error", "No puedes eliminar tu propio usuario.");
         } else {
             try {
-                // Llama al servicio que ahora hace SOFT DELETE
                 usuarioService.eliminarUsuario(id);
-                redirectAttributes.addFlashAttribute("success", "Usuario eliminado lógicamente con éxito."); // <--
-                                                                                                             // Mensaje
-                                                                                                             // actualizado
-            } catch (UnsupportedOperationException | DataIntegrityViolationException e) { // Añadir
-                                                                                          // DataIntegrityViolationException
+                redirectAttributes.addFlashAttribute("success", "Usuario eliminado lógicamente con éxito.");
+            } catch (UnsupportedOperationException | DataIntegrityViolationException e) {
                 redirectAttributes.addFlashAttribute("error", e.getMessage());
             } catch (Exception e) {
                 redirectAttributes.addFlashAttribute("error", "Error al intentar eliminar lógicamente el usuario.");
                 System.err.println("Error al eliminar (soft delete) usuario: " + e.getMessage());
             }
         }
-
         return "redirect:/usuarios";
     }
 
-    @GetMapping("/usuarios/cambiar-estado/{id}")
+    @GetMapping("/cambiar-estado/{id}")
     public String cambiarEstadoUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            // Regla de negocio: No puedes desactivarte a ti mismo
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Usuario usuarioActual = usuarioRepository.findByEmail(authentication.getName()).orElse(null);
 
@@ -220,14 +261,12 @@ public class UsuarioController {
                 return "redirect:/usuarios";
             }
 
-            // Llama al método que alterna el estado
             usuarioService.cambiarEstadoUsuario(id);
-            // Determinar si se activó o desactivó para el mensaje
-            Usuario usuarioCambiado = usuarioService.buscarPorId(id).orElse(null); // Volver a buscar para estado actual
+            Usuario usuarioCambiado = usuarioService.buscarPorId(id).orElse(null);
             String accion = (usuarioCambiado != null && usuarioCambiado.isEstaActivo()) ? "activado" : "desactivado";
             redirectAttributes.addFlashAttribute("success", "Usuario " + accion + " con éxito.");
 
-        } catch (UnsupportedOperationException | IllegalStateException e) { // Capturar excepciones específicas
+        } catch (UnsupportedOperationException | IllegalStateException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error al cambiar estado del usuario.");
@@ -236,9 +275,7 @@ public class UsuarioController {
         return "redirect:/usuarios";
     }
 
-    // ... (dentro de la clase UsuarioController)
-
-    @GetMapping("/usuarios/desbloquear/{id}")
+    @GetMapping("/desbloquear/{id}")
     public String desbloquearUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         Optional<Usuario> usuarioOpt = usuarioService.buscarPorId(id);
         if (usuarioOpt.isPresent()) {
@@ -250,31 +287,36 @@ public class UsuarioController {
         return "redirect:/usuarios";
     }
 
-    // --- MÉTODO HELPER ---
-    private void cargarRolesActivos(Model model) {
-        List<Rol> rolesActivos = rolRepository.findAll()
-                .stream()
-                .filter(Rol::isEstaActivo) // Asegúrate que Rol tenga el getter isEstaActivo()
-                .filter(rol -> !"PACIENTE".equals(rol.getNombre()) && !"ODONTOLOGO".equals(rol.getNombre()))
-                .collect(Collectors.toList());
-        model.addAttribute("listaRoles", rolesActivos);
-    }
-
-    @GetMapping("/usuarios/restablecer/{id}")
+    @GetMapping("/restablecer/{id}")
     public String restablecerUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             usuarioService.restablecerUsuario(id);
             redirectAttributes.addFlashAttribute("success",
                     "Usuario restablecido con éxito. Se ha enviado un email con una nueva contraseña temporal.");
-        } catch (IllegalStateException | UnsupportedOperationException e) {
+        } catch (RuntimeException e) { // Captura RuntimeException directamente
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+            if (e.getCause() != null) {
+                System.err.println("Causa del error al restablecer: " + e.getCause().getMessage());
+            }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error",
                     "Error inesperado al restablecer el usuario: " + e.getMessage());
             System.err.println("Error al restablecer usuario: " + e.getMessage());
             e.printStackTrace();
         }
-        return "redirect:/usuarios"; // O redirigir al formulario de edición si prefieres
+        return "redirect:/usuarios";
     }
 
-} // Fin de la clase
+    // --- MÉTODO HELPER REFACTORIZADO ---
+    private void cargarRolesYTiposDoc(Model model) {
+        List<Rol> rolesActivos = rolRepository.findAll()
+                .stream()
+                .filter(Rol::isEstaActivo)
+                // Excluimos PACIENTE de la lista de roles asignables manualmente aquí
+                .filter(rol -> !"PACIENTE".equals(rol.getNombre()))
+                .collect(Collectors.toList());
+        model.addAttribute("listaRoles", rolesActivos);
+        model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll());
+    }
+
+}

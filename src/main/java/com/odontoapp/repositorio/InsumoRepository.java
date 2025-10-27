@@ -1,14 +1,15 @@
 package com.odontoapp.repositorio;
 
-import com.odontoapp.entidad.Insumo;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-import java.util.Optional;
+import com.odontoapp.entidad.Insumo;
 
 public interface InsumoRepository extends JpaRepository<Insumo, Long> {
 
@@ -19,4 +20,16 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
 
     @Query("SELECT i FROM Insumo i WHERE i.stockActual <= i.stockMinimo AND i.stockMinimo > 0")
     List<Insumo> findInsumosConStockBajo();
+
+    // --- NUEVO MÉTODO AÑADIDO ---
+    /**
+     * Cuenta cuántos insumos pertenecen a una categoría específica.
+     * Útil para validar si una categoría puede ser eliminada o desactivada.
+     * Spring Data JPA genera la consulta: "SELECT count(i) FROM Insumo i WHERE
+     * i.categoria.id = :categoriaId"
+     * 
+     * @param categoriaId El ID de la CategoriaInsumo.
+     * @return El número de insumos asociados a esa categoría.
+     */
+    long countByCategoriaId(Long categoriaId);
 }

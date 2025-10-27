@@ -1,62 +1,85 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
-    th:replace="~{layout/base :: layout(titulo='Formulario de Usuario', contenido=~{::#contenido-principal})}">
+    th:replace="~{layout/base :: layout(titulo='Formulario de Usuario', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
 
 <body>
     <div id="contenido-principal">
-        <section class="content-header"></section>
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 th:if="${usuario.id == null}">Nuevo Usuario</h1>
+                        <h1 th:unless="${usuario.id == null}">Editar Usuario</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/usuarios}" class="btn btn-outline-secondary float-sm-right">
+                            <i class="fas fa-arrow-left mr-2"></i> Volver al Listado
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <section class="content">
             <div class="container-fluid">
-                <div class="card card-primary">
+                <div class="card card-primary card-outline shadow-sm">
                     <div class="card-header">
                         <h3 class="card-title">Datos del Usuario</h3>
                     </div>
 
-                    <form th:action="@{/usuarios/guardar}" th:object="${usuario}" method="post">
+                    <form th:action="@{/usuarios/guardar}" th:object="${usuario}" method="post" id="usuarioForm">
+                        <!-- Campo oculto para el ID (para edición) -->
+                        <input type="hidden" th:field="*{id}" />
+
                         <div class="card-body">
 
                             <!-- ALERTA DE VALIDACIÓN GENERAL -->
-                            <div th:if="${#fields.hasErrors('*')}"
+                            <div th:if="${#fields.hasGlobalErrors()}"
                                 class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <strong><i class="icon fas fa-ban"></i> Error de Validación:</strong>
+                                <strong><i class="icon fas fa-ban"></i> Error Global:</strong>
+                                <ul>
+                                    <li th:each="err : ${#fields.globalErrors()}" th:text="${err}"></li>
+                                </ul>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
+                            </div>
+                            <div th:if="${#fields.hasErrors('*') && !#fields.hasGlobalErrors()}"
+                                class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong><i class="icon fas fa-ban"></i> Error de Validaci&oacute;n:</strong>
                                 Por favor, corrige los campos marcados.
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
                             </div>
 
-                            <!-- ALERTA DE ERROR CUSTOM -->
+
+                            <!-- ALERTA DE ERROR CUSTOM (Duplicados, etc) -->
                             <div th:if="${errorValidacion}" class="alert alert-danger alert-dismissible fade show"
                                 role="alert">
                                 <strong><i class="icon fas fa-ban"></i> Error:</strong>
                                 <span th:text="${errorValidacion}"></span>
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
                             </div>
 
                             <!-- ALERTA DE RESTAURACIÓN DE CUENTA -->
                             <div th:if="${errorRestauracion}" class="alert alert-warning alert-dismissible fade show"
                                 role="alert">
-                                <strong><i class="icon fas fa-exclamation-triangle"></i> Atención:</strong>
+                                <strong><i class="icon fas fa-exclamation-triangle"></i> Atenci&oacute;n:</strong>
                                 <span th:text="${errorRestauracion}"></span>
-
                                 <strong> ¿Desea restablecer esta cuenta?</strong>
-
                                 <a th:if="${idUsuarioParaRestaurar}"
                                     th:href="@{/usuarios/restablecer/{id}(id=${idUsuarioParaRestaurar})}"
                                     class="btn btn-sm btn-success ml-2"
                                     onclick="return confirm('¿Estás seguro de restablecer este usuario? Se enviará una nueva contraseña temporal a su email.');">
-                                    <i class="fas fa-undo"></i> Sí, Restablecer Usuario
+                                    <i class="fas fa-undo"></i> S&iacute;, Restablecer Usuario
                                 </a>
-
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                        aria-hidden="true">&times;</span></button>
                             </div>
 
-                            <!-- PRIMERA FILA: TIPO DOC - NUM DOC - NOMBRE -->
+                            <!-- DATOS BÁSICOS -->
+                            <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-user-circle mr-2"></i>Informaci&oacute;n
+                                Personal</h5>
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
@@ -71,88 +94,89 @@
                                             th:errors="*{tipoDocumentoId}"></div>
                                     </div>
                                 </div>
-
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="numeroDocumento">Número Documento</label>
+                                        <label for="numeroDocumento">N&uacute;mero Documento</label>
                                         <input type="text" class="form-control" th:field="*{numeroDocumento}"
-                                            id="numeroDocumento" placeholder="Número de Documento"
+                                            id="numeroDocumento" placeholder="N° de Documento"
                                             th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('numeroDocumento')}"
                                             class="invalid-feedback d-block" th:errors="*{numeroDocumento}"></div>
                                     </div>
                                 </div>
-
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="nombreCompleto">Nombre Completo</label>
                                         <input type="text" class="form-control" id="nombreCompleto"
-                                            th:field="*{nombreCompleto}" placeholder="Ingrese el nombre completo"
+                                            th:field="*{nombreCompleto}" placeholder="Nombre completo" required
                                             th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
                                             th:errors="*{nombreCompleto}"></div>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- SEGUNDA FILA: EMAIL - TELÉFONO -->
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="email">Email</label>
                                         <input type="email" class="form-control" id="email" th:field="*{email}"
-                                            placeholder="Ingrese el email"
+                                            placeholder="correo@ejemplo.com" required
                                             th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback"
                                             th:errors="*{email}"></div>
                                     </div>
                                 </div>
-
-                                <div class="col-md-6">
+                                <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="telefono">Teléfono</label>
-                                        <input type="text" class="form-control" th:field="*{telefono}"
-                                            placeholder="987654321">
+                                        <label for="telefono">Tel&eacute;fono</label>
+                                        <input type="text" class="form-control" id="telefono" th:field="*{telefono}"
+                                            placeholder="987654321"
+                                            th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('telefono')}" class="invalid-feedback"
+                                            th:errors="*{telefono}"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="fechaNacimiento">Fecha de Nacimiento</label>
+                                        <input type="date" class="form-control" id="fechaNacimiento"
+                                            th:field="*{fechaNacimiento}"
+                                            th:classappend="${#fields.hasErrors('fechaNacimiento')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('fechaNacimiento')}" class="invalid-feedback"
+                                            th:errors="*{fechaNacimiento}"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label for="direccion">Direcci&oacute;n</label>
+                                        <input type="text" class="form-control" id="direccion" th:field="*{direccion}"
+                                            placeholder="Av. Ejemplo 123"
+                                            th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('direccion')}" class="invalid-feedback"
+                                            th:errors="*{direccion}"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="fechaContratacion">Fecha Contrataci&oacute;n</label>
+                                        <input type="date" class="form-control" id="fechaContratacion"
+                                            th:field="*{fechaContratacion}"
+                                            th:classappend="${#fields.hasErrors('fechaContratacion')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('fechaContratacion')}" class="invalid-feedback"
+                                            th:errors="*{fechaContratacion}"></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- TERCERA FILA: FECHA NAC - DIRECCIÓN -->
-                            <div class="row">
-                                <div class="col-md-4"> <div class="form-group">
-                                    <label for="fechaNacimiento">Fecha de Nacimiento</label>
-                                    <input type="date" class="form-control" id="fechaNacimiento" th:field="*{fechaNacimiento}"
-                                           th:classappend="${#fields.hasErrors('fechaNacimiento')} ? 'is-invalid' : ''">
-                                    <div th:if="${#fields.hasErrors('fechaNacimiento')}" class="invalid-feedback"
-                                         th:errors="*{fechaNacimiento}"></div>
-                                </div>
-                                </div>
-
-                                <div class="col-md-4"> <div class="form-group">
-                                    <label for="fechaContratacion">Fecha Contratación</label>
-                                    <input type="date" class="form-control" id="fechaContratacion" th:field="*{fechaContratacion}"
-                                           th:classappend="${#fields.hasErrors('fechaContratacion')} ? 'is-invalid' : ''">
-                                    <div th:if="${#fields.hasErrors('fechaContratacion')}" class="invalid-feedback"
-                                         th:errors="*{fechaContratacion}"></div>
-                                </div>
-                                </div>
-                                <div class="col-md-4"> <div class="form-group">
-                                    <label for="direccion">Dirección</label>
-                                    <input type="text" class="form-control" id="direccion" th:field="*{direccion}"
-                                           placeholder="Av. Ejemplo 123"
-                                           th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid' : ''">
-                                    <div th:if="${#fields.hasErrors('direccion')}" class="invalid-feedback"
-                                         th:errors="*{direccion}"></div>
-                                </div>
-                                </div>
-                            </div>
-
                             <!-- ROLES -->
+                            <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-user-shield mr-2"></i>Roles</h5>
                             <div class="form-group">
-                                <label>Roles</label>
-                                <div th:each="rol : ${listaRoles}" class="form-check">
-                                    <input class="form-check-input" type="checkbox" th:field="*{roles}"
+                                <div th:each="rol : ${listaRoles}" class="form-check form-check-inline">
+                                    <input class="form-check-input rol-checkbox" type="checkbox" th:field="*{roles}"
                                         th:value="${rol.id}" th:id="${'rol-' + rol.id}"
+                                        th:attr="data-rol-nombre=${rol.nombre}"
                                         th:classappend="${#fields.hasErrors('roles')} ? 'is-invalid' : ''" />
                                     <label class="form-check-label" th:for="${'rol-' + rol.id}"
                                         th:text="${rol.nombre}"></label>
@@ -160,10 +184,100 @@
                                 <div th:if="${#fields.hasErrors('roles')}" class="invalid-feedback d-block"
                                     th:errors="*{roles}"></div>
                             </div>
-                        </div>
+
+                            <!-- SECCIÓN DE HORARIOS (Visible solo si se marca ODONTOLOGO) -->
+                            <div id="seccionHorarios" style="display: none;">
+                                <hr>
+                                <h5 class="mt-4 mb-3 text-primary"><i class="far fa-calendar-alt mr-2"></i>Horario
+                                    Laboral (Odont&oacute;logo)</h5>
+                                <p class="text-muted small">Define el horario semanal y las excepciones. Formato de
+                                    horas: HH:mm-HH:mm (ej. 09:00-13:00). M&uacute;ltiples rangos separados por coma
+                                    (ej. 09:00-13:00,15:00-19:00). Dejar vac&iacute;o si no trabaja ese d&iacute;a.</p>
+
+                                <!-- Horario Regular -->
+                                <h6>Horario Regular</h6>
+                                <div class="row mb-3">
+                                    <div th:each="dia : ${diasSemana}" class="col-md-3 col-sm-6 mb-2">
+                                        <label
+                                            th:text="${#strings.capitalize(#strings.toLowerCase(dia.getDisplayName(T(java.time.format.TextStyle).FULL, localeEs)))}"
+                                            th:for="${'hr-' + dia}"></label>
+                                        <input type="text" class="form-control form-control-sm hora-input"
+                                            th:id="${'hr-' + dia}" th:name="'horarioRegular[' + ${dia} + ']'"
+                                            th:value="*{horarioRegular != null ? horarioRegular[__${dia}__] : ''}"
+                                            placeholder="ej: 09:00-13:00,15:00-19:00"
+                                            pattern="^$|^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9](,([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9])*$"
+                                            title="Formato: HH:mm-HH:mm o HH:mm-HH:mm,HH:mm-HH:mm">
+                                    </div>
+                                </div>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('horarioRegular')}"
+                                    th:errors="*{horarioRegular}"></div>
+                                <!-- ***** LÍNEA ELIMINADA ***** -->
+                                <!-- <div class="text-danger small" th:if="${#fields.hasErrors('horarioRegular[*]')}" th:errors="*{horarioRegular[*]}"></div> -->
+
+
+                                <!-- Excepciones de Horario -->
+                                <h6 class="mt-4">Excepciones de Horario</h6>
+                                <table class="table table-sm table-bordered" id="tablaExcepciones">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25%;">Fecha</th>
+                                            <th style="width: 45%;">Horario Espec&iacute;fico / Estado</th>
+                                            <th style="width: 20%;">Motivo (Opcional)</th>
+                                            <th style="width: 10%;">Acci&oacute;n</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Filas existentes -->
+                                        <tr th:each="ex, iterStat : *{excepcionesHorario}"
+                                            th:id="'filaExcepcion-' + ${iterStat.index}">
+                                            <td>
+                                                <input type="date" class="form-control form-control-sm" required
+                                                    th:field="*{excepcionesHorario[__${iterStat.index}__].fecha}"
+                                                    th:classappend="${#fields.hasErrors('excepcionesHorario[__${iterStat.index}__].fecha')} ? 'is-invalid' : ''">
+                                                <div th:if="${#fields.hasErrors('excepcionesHorario[__${iterStat.index}__].fecha')}"
+                                                    class="invalid-feedback"
+                                                    th:errors="*{excepcionesHorario[__${iterStat.index}__].fecha}">
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm hora-input"
+                                                    required placeholder="ej: 09:00-12:00 o NO_LABORABLE"
+                                                    th:field="*{excepcionesHorario[__${iterStat.index}__].horas}"
+                                                    pattern="^NO_LABORABLE$|^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9](,([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9])*$"
+                                                    title="Formato: HH:mm-HH:mm[,HH:mm-HH:mm] o NO_LABORABLE"
+                                                    th:classappend="${#fields.hasErrors('excepcionesHorario[__${iterStat.index}__].horas')} ? 'is-invalid' : ''">
+                                                <div th:if="${#fields.hasErrors('excepcionesHorario[__${iterStat.index}__].horas')}"
+                                                    class="invalid-feedback"
+                                                    th:errors="*{excepcionesHorario[__${iterStat.index}__].horas}">
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm"
+                                                    placeholder="ej: Vacaciones, Congreso"
+                                                    th:field="*{excepcionesHorario[__${iterStat.index}__].motivo}">
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-danger btn-sm"
+                                                    title="Eliminar Excepción" onclick="eliminarExcepcion(this)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div th:if="${#fields.hasErrors('excepcionesHorario') && !#fields.hasErrors('excepcionesHorario[*]')}"
+                                    class="alert alert-danger" th:errors="*{excepcionesHorario}"></div>
+
+                                <button type="button" class="btn btn-success btn-sm mt-2" onclick="agregarExcepcion()">
+                                    <i class="fas fa-plus"></i> Añadir Excepci&oacute;n
+                                </button>
+                            </div> <!-- Fin #seccionHorarios -->
+
+                        </div> <!-- Fin .card-body -->
 
                         <div class="card-footer">
-                            <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-2"></i>Guardar
+                                Usuario</button>
                             <a th:href="@{/usuarios}" class="btn btn-secondary">Cancelar</a>
                         </div>
                     </form>
@@ -171,6 +285,192 @@
             </div>
         </section>
     </div>
+
+    <!-- Fragmento para plantilla de nueva fila de excepción (oculto) -->
+    <table style="display:none;">
+        <tr id="plantillaExcepcion">
+            <td>
+                <input type="date" class="form-control form-control-sm" name="excepcionesHorario[INDEX].fecha" required>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm hora-input"
+                    name="excepcionesHorario[INDEX].horas" placeholder="ej: 09:00-12:00 o NO_LABORABLE" required
+                    pattern="^NO_LABORABLE$|^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9](,([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9])*$"
+                    title="Formato: HH:mm-HH:mm[,HH:mm-HH:mm] o NO_LABORABLE">
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm" name="excepcionesHorario[INDEX].motivo"
+                    placeholder="ej: Vacaciones, Congreso">
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-danger btn-sm" title="Eliminar Excepción"
+                    onclick="eliminarExcepcion(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    </table>
+
+    <th:block id="page-scripts">
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const seccionHorarios = document.getElementById('seccionHorarios');
+                const checkboxesRoles = document.querySelectorAll('.rol-checkbox');
+                let rolOdontologoId = null;
+
+                // Encontrar el ID del rol ODONTOLOGO dinámicamente
+                checkboxesRoles.forEach(cb => {
+                    // Usar toUpperCase para comparación insensible a mayúsculas/minúsculas
+                    if (cb.dataset.rolNombre && cb.dataset.rolNombre.toUpperCase() === 'ODONTOLOGO') {
+                        rolOdontologoId = cb.value;
+                    }
+                    cb.addEventListener('change', toggleSeccionHorarios);
+                });
+
+                function toggleSeccionHorarios() {
+                    let odontologoSeleccionado = false;
+                    checkboxesRoles.forEach(cb => {
+                        // Asegurarse de comparar con rolOdontologoId (que es string)
+                        if (cb.value === rolOdontologoId && cb.checked) {
+                            odontologoSeleccionado = true;
+                        }
+                    });
+
+                    if (odontologoSeleccionado) {
+                        seccionHorarios.style.display = 'block';
+                        // Habilitar campos dentro de la sección y añadir 'required' si aplica
+                        seccionHorarios.querySelectorAll('input, select, textarea, button').forEach(el => {
+                            el.disabled = false;
+                            // Re-aplicar 'required' si estaba originalmente en la plantilla o en filas existentes
+                            if (el.hasAttribute('data-original-required')) {
+                                el.required = true;
+                            }
+                        });
+
+
+                    } else {
+                        seccionHorarios.style.display = 'none';
+                        // Deshabilitar campos y quitar 'required' temporalmente
+                        seccionHorarios.querySelectorAll('input, select, textarea, button').forEach(el => {
+                            el.disabled = true;
+                            // Guardar si el campo era originalmente required
+                            if (el.required) {
+                                el.setAttribute('data-original-required', 'true');
+                                el.required = false; // Quitar required mientras está oculto
+                            }
+                            // Limpiar validaciones inválidas visuales al ocultar
+                            el.classList.remove('is-invalid');
+                            // Limpiar mensajes de error personalizados
+                            if (el.setCustomValidity) el.setCustomValidity('');
+
+                        });
+                    }
+                }
+
+                // Llamar al inicio para establecer el estado inicial correcto
+                toggleSeccionHorarios();
+
+                // Validar formato de hora en inputs (existentes y nuevos)
+                function addHoraInputValidation(inputElement) {
+                    inputElement.addEventListener('input', function () {
+                        // Permitir campo vacío si no es required (horario regular)
+                        // O si el valor es exactamente "NO_LABORABLE" (excepciones)
+                        // Corregir: el horario regular NO tiene required, excepciones SÍ lo tienen en fecha y horas
+                        const isEmptyAllowed = !inputElement.hasAttribute('required') || this.value.toUpperCase() === 'NO_LABORABLE';
+                        const pattern = new RegExp(this.pattern);
+
+                        if (this.value && !isEmptyAllowed && !pattern.test(this.value)) {
+                            this.setCustomValidity(this.title || 'Formato inválido');
+                            this.classList.add('is-invalid');
+                        } else if (this.value.toUpperCase() === 'NO_LABORABLE' && this.pattern.includes('NO_LABORABLE')) {
+                            // Si es NO_LABORABLE y el patrón lo permite, es válido
+                            this.setCustomValidity('');
+                            this.classList.remove('is-invalid');
+                        } else if (this.value && !pattern.test(this.value)) {
+                            // Si tiene valor pero no coincide con el patrón completo (y no es NO_LABORABLE permitido)
+                            // Y no es un campo vacío permitido
+                            if (!this.value && !inputElement.hasAttribute('required')) {
+                                this.setCustomValidity('');
+                                this.classList.remove('is-invalid');
+                            } else {
+                                this.setCustomValidity(this.title || 'Formato inválido');
+                                this.classList.add('is-invalid');
+                            }
+                        }
+                        else { // Válido (coincide patrón o es vacío permitido)
+                            this.setCustomValidity('');
+                            this.classList.remove('is-invalid');
+                        }
+                    });
+                    // Disparar validación inicial por si hay valores precargados inválidos
+                    if (inputElement.value) {
+                        inputElement.dispatchEvent(new Event('input'));
+                    }
+                }
+
+                document.querySelectorAll('.hora-input').forEach(addHoraInputValidation);
+
+
+            }); // Fin DOMContentLoaded
+
+            let excepcionIndex = document.querySelectorAll('#tablaExcepciones tbody tr').length;
+
+            function agregarExcepcion() {
+                const tbody = document.getElementById('tablaExcepciones').querySelector('tbody');
+                const plantilla = document.getElementById('plantillaExcepcion');
+                const nuevaFila = plantilla.cloneNode(true); // Clonar la fila plantilla
+                nuevaFila.style.display = ''; // Hacerla visible
+                nuevaFila.id = 'filaExcepcion-' + excepcionIndex; // Asignar ID único
+
+                // Actualizar los atributos 'name' con el índice correcto
+                nuevaFila.querySelectorAll('input').forEach(input => {
+                    input.name = input.name.replace('INDEX', excepcionIndex);
+                    // IMPORTANTE: Habilitar inputs de la nueva fila si la sección está visible
+                    const seccionVisible = document.getElementById('seccionHorarios').style.display !== 'none';
+                    input.disabled = !seccionVisible;
+
+                    // Añadir listener de validación de patrón a los nuevos inputs de hora
+                    if (input.classList.contains('hora-input')) {
+                        addHoraInputValidation(input);
+                    }
+                    // Marcar como 'required' si corresponde (ya está en la plantilla)
+                    // y la sección está visible
+                    if (input.hasAttribute('required')) {
+                        input.setAttribute('data-original-required', 'true'); // Marcar para la lógica de toggle
+                        input.required = seccionVisible; // Solo required si está habilitado/visible
+                    }
+                });
+
+                tbody.appendChild(nuevaFila); // Añadir la nueva fila a la tabla
+                excepcionIndex++; // Incrementar el índice para la próxima fila
+            }
+
+            function eliminarExcepcion(button) {
+                const fila = button.closest('tr'); // Obtener la fila a eliminar
+                if (fila) {
+                    fila.remove(); // Eliminar la fila del DOM
+                    // Opcional: Re-indexar si es necesario
+                    // reindexarExcepciones();
+                }
+            }
+
+            // Opcional: Función para re-indexar si la eliminación causa problemas
+            // function reindexarExcepciones() {
+            //     const filas = document.querySelectorAll('#tablaExcepciones tbody tr');
+            //     filas.forEach((fila, index) => {
+            //         fila.id = 'filaExcepcion-' + index;
+            //         fila.querySelectorAll('input').forEach(input => {
+            //              if(input.name) {
+            //                   input.name = input.name.replace(/\[\d+\]/, '[' + index + ']');
+            //              }
+            //         });
+            //     });
+            //     excepcionIndex = filas.length;
+            // }
+
+        </script>
+    </th:block>
+
 </body>
 
 </html>

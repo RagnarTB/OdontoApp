@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping; // Añadir RequestMapping
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -27,64 +28,70 @@ import com.odontoapp.servicio.RolService;
 import jakarta.validation.Valid;
 
 @Controller
+@RequestMapping("/roles") // Añadir RequestMapping a nivel de clase
 public class RolController {
 
     private final RolService rolService;
     private final PermisoRepository permisoRepository;
+
+    // Nombres de roles protegidos
+    private static final String ROL_ADMIN = "ADMIN";
+    private static final String ROL_PACIENTE = "PACIENTE";
+    private static final String ROL_ODONTOLOGO = "ODONTOLOGO";
 
     public RolController(RolService rolService, PermisoRepository permisoRepository) {
         this.rolService = rolService;
         this.permisoRepository = permisoRepository;
     }
 
-    @GetMapping("/roles")
+    @GetMapping
     public String listarRoles(Model model,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Rol> paginaRoles = rolService.listarTodosLosRoles(keyword, pageable);
+        // Búsqueda insensible a mayúsculas si los nombres se guardan en mayúsculas
+        String keywordUpper = (keyword != null) ? keyword.toUpperCase() : null;
+        Page<Rol> paginaRoles = rolService.listarTodosLosRoles(keywordUpper, pageable);
 
         model.addAttribute("paginaRoles", paginaRoles);
-        model.addAttribute("keyword", keyword);
+        model.addAttribute("keyword", keyword); // Mantener keyword original para mostrar en input de búsqueda
         return "modulos/roles/lista";
     }
 
-    @GetMapping("/roles/nuevo")
+    @GetMapping("/nuevo")
     public String mostrarFormularioNuevoRol(Model model) {
         model.addAttribute("rol", new RolDTO());
         cargarPermisos(model);
         return "modulos/roles/formulario";
     }
 
-    @PostMapping("/roles/guardar")
+    @PostMapping("/guardar")
     public String guardarRol(@Valid @ModelAttribute("rol") RolDTO rolDTO,
             BindingResult result,
-            Model model, // Usar Model para errores en el formulario
+            Model model,
             RedirectAttributes redirectAttributes) {
 
-        // Validación del DTO
         if (result.hasErrors()) {
-            cargarPermisos(model); // Recargar permisos necesarios para la vista
-            model.addAttribute("rol", rolDTO); // Devolver DTO con errores
-            // Los errores de campo se mostrarán automáticamente por Thymeleaf
+            cargarPermisos(model);
+            model.addAttribute("rol", rolDTO);
             return "modulos/roles/formulario";
         }
 
         try {
             rolService.guardarRol(rolDTO);
             redirectAttributes.addFlashAttribute("success", "Rol guardado con éxito.");
-            return "redirect:/roles"; // Redirigir a la lista si todo OK
+            return "redirect:/roles";
 
-        } catch (DataIntegrityViolationException e) {
-            // Error de duplicado u otro error de integridad capturado del servicio
+        } catch (DataIntegrityViolationException | UnsupportedOperationException | IllegalStateException e) { // Capturar
+                                                                                                              // más
+                                                                                                              // excepciones
             cargarPermisos(model);
-            model.addAttribute("rol", rolDTO); // Devolver datos al formulario
-            model.addAttribute("errorValidacion", e.getMessage()); // Pasar el mensaje de error a la vista
-            return "modulos/roles/formulario"; // Volver al formulario
+            model.addAttribute("rol", rolDTO);
+            model.addAttribute("errorValidacion", e.getMessage()); // Usar mensaje de la excepción
+            return "modulos/roles/formulario";
 
         } catch (Exception e) {
-            // Otros errores inesperados
             cargarPermisos(model);
             model.addAttribute("rol", rolDTO);
             model.addAttribute("errorValidacion", "Ocurrió un error inesperado al guardar el rol.");
@@ -94,10 +101,20 @@ public class RolController {
         }
     }
 
-    @GetMapping("/roles/editar/{id}")
-    public String mostrarFormularioEditarRol(@PathVariable Long id, Model model) {
+    @GetMapping("/editar/{id}")
+    public String mostrarFormularioEditarRol(@PathVariable Long id, Model model,
+            RedirectAttributes redirectAttributes) { // Añadir RedirectAttributes
         Rol rol = rolService.buscarRolPorId(id).orElse(null);
         if (rol != null) {
+
+            // --- PROTECCIÓN EN CONTROLADOR ---
+            if (ROL_ADMIN.equals(rol.getNombre()) || ROL_PACIENTE.equals(rol.getNombre())) {
+                redirectAttributes.addFlashAttribute("error", "El rol '" + rol.getNombre() + "' no puede ser editado.");
+                return "redirect:/roles";
+            }
+            // Opcional: Proteger ODONTOLOGO también si no quieres que se edite nada
+            // if (ROL_ODONTOLOGO.equals(rol.getNombre())) { ... }
+
             RolDTO rolDTO = new RolDTO();
             rolDTO.setId(rol.getId());
             rolDTO.setNombre(rol.getNombre());
@@ -109,16 +126,18 @@ public class RolController {
             cargarPermisos(model);
             return "modulos/roles/formulario";
         }
+        redirectAttributes.addFlashAttribute("error", "Rol no encontrado."); // Mensaje si no existe
         return "redirect:/roles";
     }
 
-    @GetMapping("/roles/eliminar/{id}")
+    @GetMapping("/eliminar/{id}")
     public String eliminarRol(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            rolService.eliminarRol(id); // Llama al método que hace soft delete
-            redirectAttributes.addFlashAttribute("success", "Rol eliminado lógicamente con éxito."); // <-- Mensaje
-                                                                                                     // actualizado
-        } catch (UnsupportedOperationException | DataIntegrityViolationException e) {
+            rolService.eliminarRol(id);
+            redirectAttributes.addFlashAttribute("success", "Rol eliminado lógicamente con éxito.");
+        } catch (UnsupportedOperationException | DataIntegrityViolationException | IllegalStateException e) { // Capturar
+                                                                                                              // más
+                                                                                                              // excepciones
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error al intentar eliminar lógicamente el rol.");
@@ -127,13 +146,22 @@ public class RolController {
         return "redirect:/roles";
     }
 
-    @GetMapping("/roles/cambiar-estado/{id}")
+    @GetMapping("/cambiar-estado/{id}")
     public String cambiarEstadoRol(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             rolService.cambiarEstadoRol(id);
-            redirectAttributes.addFlashAttribute("success", "Estado del rol cambiado con éxito.");
-        } catch (Exception e) {
+            // Mensaje más específico
+            Rol rolActualizado = rolService.buscarRolPorId(id).orElse(null);
+            String estado = (rolActualizado != null && rolActualizado.isEstaActivo()) ? "activado" : "desactivado";
+            redirectAttributes.addFlashAttribute("success", "Rol " + estado + " con éxito.");
+        } catch (UnsupportedOperationException | DataIntegrityViolationException | IllegalStateException e) { // Capturar
+                                                                                                              // más
+                                                                                                              // excepciones
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error inesperado al cambiar estado del rol.");
+            System.err.println("Error al cambiar estado rol: " + e.getMessage());
+            e.printStackTrace();
         }
         return "redirect:/roles";
     }

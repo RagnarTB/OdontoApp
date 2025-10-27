@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
-    th:replace="{layout/base :: layout(titulo='Mi Dashboard', contenido={::#contenido-principal})}">
+    th:replace="~{layout/base :: layout(titulo='Mi Portal', contenido=~{::#contenido-principal})}">
 
 <body>
     <div id="contenido-principal">
@@ -16,13 +16,20 @@
 
         <section class="content">
             <div class="container-fluid">
-                <div class="card">
+                <div class="card card-outline card-info">
                     <div class="card-header">
-                        <h3 class="card-title">Bienvenido, <span
-                                th:text="${usuarioLogueado.nombreCompleto}">Paciente</span></h3>
+                        <h3 class="card-title">Bienvenido/a, <span
+                                th:text="${usuarioLogueado != null ? usuarioLogueado.nombreCompleto : 'Paciente'}"></span>
+                        </h3>
                     </div>
-                    <div class="card-body">
-                        Aquí podrás ver tus próximas citas, historial y más.
+                    <div class="card-body text-center">
+                        <i class="fas fa-tools fa-3x text-info mb-3"></i>
+                        <h4>Próximamente...</h4>
+                        <p class="text-muted">Estamos trabajando en esta sección para que pronto puedas gestionar tus
+                            citas y ver tu historial.</p>
+                        <a th:href="@{/logout}" class="btn btn-outline-secondary mt-3">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </a>
                     </div>
                 </div>
             </div>

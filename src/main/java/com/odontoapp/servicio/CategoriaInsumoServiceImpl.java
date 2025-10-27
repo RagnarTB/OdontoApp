@@ -66,7 +66,7 @@ public class CategoriaInsumoServiceImpl implements CategoriaInsumoService {
         CategoriaInsumo categoria = categoriaRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Categoría no encontrada."));
 
-        if (categoria.isEstaActiva()) { 
+        if (categoria.isEstaActiva()) {
             long conteoInsumos = insumoRepository.countByCategoriaId(id);
             if (conteoInsumos > 0) {
                 throw new DataIntegrityViolationException("No se puede desactivar la categoría porque tiene "

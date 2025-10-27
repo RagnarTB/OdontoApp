@@ -50,14 +50,47 @@ public class PacienteServiceImpl implements PacienteService {
         this.tipoDocumentoRepository = tipoDocumentoRepository;
     }
 
+    // Método modificado para validar DNI también en Usuarios
     private void validarUnicidadDocumento(String numeroDocumento, Long tipoDocumentoId, Long idPacienteExcluir) {
-        Optional<Paciente> existentePorDoc = pacienteRepository
+        // 1. Validar en Pacientes (como antes)
+        Optional<Paciente> existentePorDocPaciente = pacienteRepository
                 .findByNumeroTipoDocumentoIgnorandoSoftDelete(numeroDocumento, tipoDocumentoId);
-        if (existentePorDoc.isPresent()
-                && (idPacienteExcluir == null || !existentePorDoc.get().getId().equals(idPacienteExcluir))) {
+        if (existentePorDocPaciente.isPresent()
+                && (idPacienteExcluir == null || !existentePorDocPaciente.get().getId().equals(idPacienteExcluir))) {
             TipoDocumento tipoDoc = tipoDocumentoRepository.findById(tipoDocumentoId).orElse(new TipoDocumento());
             throw new DataIntegrityViolationException(
-                    "El documento '" + tipoDoc.getCodigo() + " " + numeroDocumento + "' ya está registrado.");
+                    "El documento '" + tipoDoc.getCodigo() + " " + numeroDocumento
+                            + "' ya está registrado para otro paciente.");
+        }
+
+        // 2. Validar en Usuarios (NUEVO)
+        Optional<Usuario> existentePorDocUsuario = usuarioRepository
+                .findByNumeroDocumentoAndTipoDocumentoIdIgnorandoSoftDelete(numeroDocumento, tipoDocumentoId);
+
+        if (existentePorDocUsuario.isPresent()) {
+            Usuario usuarioConDoc = existentePorDocUsuario.get();
+            boolean perteneceAlPacienteActual = false;
+
+            // Si estamos editando, verificar si el usuario encontrado es el asociado al
+            // paciente actual
+            if (idPacienteExcluir != null) {
+                Optional<Paciente> pacienteActualOpt = pacienteRepository.findById(idPacienteExcluir);
+                if (pacienteActualOpt.isPresent() && pacienteActualOpt.get().getUsuario() != null) {
+                    perteneceAlPacienteActual = pacienteActualOpt.get().getUsuario().getId()
+                            .equals(usuarioConDoc.getId());
+                }
+            }
+
+            // Si el documento existe en Usuarios y NO pertenece al paciente que estamos
+            // guardando/editando
+            if (!perteneceAlPacienteActual) {
+                TipoDocumento tipoDoc = tipoDocumentoRepository.findById(tipoDocumentoId).orElse(new TipoDocumento());
+                // Podríamos diferenciar si el usuario es paciente o personal, pero por ahora un
+                // mensaje general
+                throw new DataIntegrityViolationException(
+                        "El documento '" + tipoDoc.getCodigo() + " " + numeroDocumento
+                                + "' ya está registrado para otro usuario del sistema (personal o paciente inactivo).");
+            }
         }
     }
 

@@ -1,11 +1,17 @@
 package com.odontoapp.entidad;
 
-import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -25,5 +31,12 @@ public class CategoriaInsumo extends EntidadAuditable {
 
     private String descripcion;
 
+    // --- NUEVO CAMPO ---
+    @Column(nullable = false)
+    private boolean estaActiva = true; // Valor por defecto true para nuevas categorías
+
+    @Column(nullable = false) // Asegúrate que la columna exista en la BD
     private boolean eliminado = false;
+
+    // Lombok @Data genera automáticamente isEstaActiva() y setEstaActiva()
 }
