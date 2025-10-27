@@ -1,14 +1,28 @@
-# Usa una imagen base de OpenJDK 21
+# ---- Etapa 1: Construcción con Maven ----
+FROM maven:3.9-eclipse-temurin-21 AS builder
+
+# Establecer directorio de trabajo
+WORKDIR /build
+
+# Copiar solo el pom.xml para descargar dependencias eficientemente
+COPY pom.xml .
+# Descargar dependencias (esto se cachea si pom.xml no cambia)
+RUN mvn dependency:go-offline -B
+
+# Copiar el resto del código fuente
+COPY src ./src
+
+# Compilar y empaquetar la aplicación, omitiendo tests
+RUN mvn package -DskipTests
+
+# ---- Etapa 2: Imagen Final ----
 FROM openjdk:21-jdk-slim
 
-# Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copia el archivo .jar compilado de tu proyecto al contenedor
-COPY target/*.jar app.jar
+# Copiar el JAR construido desde la etapa 'builder'
+COPY --from=builder /build/target/*.jar app.jar
 
-# Expone el puerto en el que se ejecutará la aplicación
 EXPOSE 8080
 
-# El comando para ejecutar la aplicación cuando se inicie el contenedor
 ENTRYPOINT ["java","-jar","app.jar"]
