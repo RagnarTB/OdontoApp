@@ -44,6 +44,9 @@ public class Paciente extends EntidadAuditable {
     @Lob
     private String antecedentesMedicos;
 
+    @Column(columnDefinition = "json")
+    private String estadoOdontograma;
+
     private boolean eliminado = false;
 
     @OneToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE })

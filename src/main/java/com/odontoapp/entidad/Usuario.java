@@ -37,8 +37,8 @@ import lombok.ToString;
 
 @Data
 // ACTUALIZADO: Añadir nuevas colecciones a las exclusiones
-@EqualsAndHashCode(callSuper = true, exclude = { "roles", "paciente", "horarioRegular", "excepcionesHorario" })
-@ToString(callSuper = true, exclude = { "roles", "paciente", "horarioRegular", "excepcionesHorario" })
+@EqualsAndHashCode(callSuper = true, exclude = { "roles", "paciente", "horarioRegular", "excepcionesHorario", "odontologoPreferido" })
+@ToString(callSuper = true, exclude = { "roles", "paciente", "horarioRegular", "excepcionesHorario", "odontologoPreferido" })
 @Entity
 @Table(name = "usuarios")
 @SQLDelete(sql = "UPDATE usuarios SET eliminado = true, fecha_eliminacion = NOW() WHERE id = ?")
@@ -71,6 +71,10 @@ public class Usuario extends EntidadAuditable { // Extiende EntidadAuditable
 
     @OneToOne(mappedBy = "usuario")
     private Paciente paciente;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "odontologo_preferido_id", nullable = true)
+    private Usuario odontologoPreferido;
 
     // --- Campos Soft Delete ---
     private boolean eliminado = false;
