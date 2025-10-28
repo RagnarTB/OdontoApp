@@ -3,12 +3,17 @@ package com.odontoapp.entidad;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "movimientos_inventario")
+@SQLDelete(sql = "UPDATE movimientos_inventario SET eliminado = true, fecha_eliminacion = NOW() WHERE id = ?")
+@Where(clause = "eliminado = false")
 public class MovimientoInventario extends EntidadAuditable {
 
     @Id
@@ -38,4 +43,8 @@ public class MovimientoInventario extends EntidadAuditable {
 
     private String referencia; // Ej: "Cita #123", "Compra #456"
     private String notas;
+
+    // --- Campos Soft Delete ---
+    private boolean eliminado = false;
+    private LocalDateTime fechaEliminacion;
 }

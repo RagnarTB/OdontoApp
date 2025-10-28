@@ -51,6 +51,11 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
         CategoriaProcedimiento categoria = categoriaRepository.findById(dto.getCategoriaId())
                 .orElseThrow(() -> new IllegalStateException("Categoría no encontrada."));
 
+        // Validar que la categoría no esté eliminada (tiene soft delete)
+        if (categoria.isEliminado()) {
+            throw new IllegalStateException("No se puede usar una categoría de procedimiento eliminada.");
+        }
+
         procedimiento.setCodigo(dto.getCodigo());
         procedimiento.setNombre(dto.getNombre());
         procedimiento.setDescripcion(dto.getDescripcion());
@@ -66,6 +71,16 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
         if (!procedimientoRepository.existsById(id)) {
             throw new IllegalStateException("El procedimiento no existe.");
         }
+
+        // NOTA: Si existe una entidad Cita que referencia a Procedimiento,
+        // se debería validar que no haya citas asociadas antes de eliminar.
+        // Ejemplo:
+        // long conteoCitas = citaRepository.countByProcedimientoId(id);
+        // if (conteoCitas > 0) {
+        //     throw new DataIntegrityViolationException(
+        //             "No se puede eliminar el procedimiento porque tiene citas asociadas.");
+        // }
+
         procedimientoRepository.deleteById(id);
     }
 }
