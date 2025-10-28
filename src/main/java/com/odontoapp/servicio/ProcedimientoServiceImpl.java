@@ -4,6 +4,7 @@ import com.odontoapp.dto.ProcedimientoDTO;
 import com.odontoapp.entidad.CategoriaProcedimiento;
 import com.odontoapp.entidad.Procedimiento;
 import com.odontoapp.repositorio.CategoriaProcedimientoRepository;
+import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -17,10 +18,14 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
 
     private final ProcedimientoRepository procedimientoRepository;
     private final CategoriaProcedimientoRepository categoriaRepository;
+    private final CitaRepository citaRepository;
 
-    public ProcedimientoServiceImpl(ProcedimientoRepository procedimientoRepository, CategoriaProcedimientoRepository categoriaRepository) {
+    public ProcedimientoServiceImpl(ProcedimientoRepository procedimientoRepository,
+                                     CategoriaProcedimientoRepository categoriaRepository,
+                                     CitaRepository citaRepository) {
         this.procedimientoRepository = procedimientoRepository;
         this.categoriaRepository = categoriaRepository;
+        this.citaRepository = citaRepository;
     }
 
     @Override
@@ -72,14 +77,13 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
             throw new IllegalStateException("El procedimiento no existe.");
         }
 
-        // NOTA: Si existe una entidad Cita que referencia a Procedimiento,
-        // se debería validar que no haya citas asociadas antes de eliminar.
-        // Ejemplo:
-        // long conteoCitas = citaRepository.countByProcedimientoId(id);
-        // if (conteoCitas > 0) {
-        //     throw new DataIntegrityViolationException(
-        //             "No se puede eliminar el procedimiento porque tiene citas asociadas.");
-        // }
+        // Validar que no tenga citas asociadas
+        long conteoCitas = citaRepository.countByProcedimientoId(id);
+        if (conteoCitas > 0) {
+            throw new DataIntegrityViolationException(
+                    "No se puede eliminar el procedimiento porque tiene " + conteoCitas +
+                    " cita(s) asociada(s).");
+        }
 
         procedimientoRepository.deleteById(id);
     }
