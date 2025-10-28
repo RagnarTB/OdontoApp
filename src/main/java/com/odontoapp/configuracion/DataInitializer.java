@@ -33,6 +33,12 @@ import com.odontoapp.entidad.TipoMovimiento;
 import com.odontoapp.entidad.MotivoMovimiento;
 import com.odontoapp.repositorio.TipoMovimientoRepository;
 import com.odontoapp.repositorio.MotivoMovimientoRepository;
+import com.odontoapp.entidad.EstadoCita;
+import com.odontoapp.entidad.EstadoPago;
+import com.odontoapp.entidad.MetodoPago;
+import com.odontoapp.repositorio.EstadoCitaRepository;
+import com.odontoapp.repositorio.EstadoPagoRepository;
+import com.odontoapp.repositorio.MetodoPagoRepository;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -50,6 +56,9 @@ public class DataInitializer implements CommandLineRunner {
     private final InsumoRepository insumoRepository;
     private final TipoMovimientoRepository tipoMovimientoRepository;
     private final MotivoMovimientoRepository motivoMovimientoRepository;
+    private final EstadoCitaRepository estadoCitaRepository;
+    private final EstadoPagoRepository estadoPagoRepository;
+    private final MetodoPagoRepository metodoPagoRepository;
 
     public DataInitializer(UsuarioRepository usuarioRepository, RolRepository rolRepository,
                            PasswordEncoder passwordEncoder, PermisoRepository permisoRepository,
@@ -59,7 +68,10 @@ public class DataInitializer implements CommandLineRunner {
                            UnidadMedidaRepository unidadMedidaRepository,
                            InsumoRepository insumoRepository,
                            TipoMovimientoRepository tipoMovimientoRepository,
-                           MotivoMovimientoRepository motivoMovimientoRepository) {
+                           MotivoMovimientoRepository motivoMovimientoRepository,
+                           EstadoCitaRepository estadoCitaRepository,
+                           EstadoPagoRepository estadoPagoRepository,
+                           MetodoPagoRepository metodoPagoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
@@ -72,6 +84,9 @@ public class DataInitializer implements CommandLineRunner {
         this.insumoRepository = insumoRepository;
         this.motivoMovimientoRepository = motivoMovimientoRepository;
         this.tipoMovimientoRepository = tipoMovimientoRepository;
+        this.estadoCitaRepository = estadoCitaRepository;
+        this.estadoPagoRepository = estadoPagoRepository;
+        this.metodoPagoRepository = metodoPagoRepository;
     }
 
 
@@ -127,6 +142,29 @@ public class DataInitializer implements CommandLineRunner {
         crearMotivoSiNoExiste("Vencimiento o merma", salida);
         crearMotivoSiNoExiste("Ajuste de inventario", salida);
         // --- 👆 FIN DE LA CORRECCIÓN 👆 ---
+
+        // --- CREACIÓN DE ESTADOS DE CITA ---
+        System.out.println(">>> Creando estados de cita...");
+        crearEstadoCitaSiNoExiste("PENDIENTE", "Cita agendada, esperando confirmación", "#FFC107");
+        crearEstadoCitaSiNoExiste("CONFIRMADA", "Cita confirmada por el paciente", "#2196F3");
+        crearEstadoCitaSiNoExiste("CANCELADA_PACIENTE", "Cancelada por el paciente", "#FF5722");
+        crearEstadoCitaSiNoExiste("CANCELADA_CLINICA", "Cancelada por la clínica", "#F44336");
+        crearEstadoCitaSiNoExiste("ASISTIO", "Paciente asistió a la cita", "#4CAF50");
+        crearEstadoCitaSiNoExiste("NO_ASISTIO", "Paciente no asistió a la cita", "#9E9E9E");
+        crearEstadoCitaSiNoExiste("REPROGRAMADA", "Cita reprogramada", "#FF9800");
+
+        // --- CREACIÓN DE ESTADOS DE PAGO ---
+        System.out.println(">>> Creando estados de pago...");
+        crearEstadoPagoSiNoExiste("PENDIENTE", "Pago pendiente, sin abonos");
+        crearEstadoPagoSiNoExiste("PAGADO_PARCIAL", "Pago parcial realizado");
+        crearEstadoPagoSiNoExiste("PAGADO_TOTAL", "Pago completado en su totalidad");
+        crearEstadoPagoSiNoExiste("ANULADO", "Comprobante anulado");
+
+        // --- CREACIÓN DE MÉTODOS DE PAGO ---
+        System.out.println(">>> Creando métodos de pago...");
+        crearMetodoPagoSiNoExiste("EFECTIVO", "Pago en efectivo");
+        crearMetodoPagoSiNoExiste("YAPE", "Pago mediante Yape");
+        crearMetodoPagoSiNoExiste("MIXTO", "Pago combinado (Efectivo + Yape)");
 
         // ... (Creación de Permisos - sin cambios) ...
         List<String> modulos = Arrays.asList("USUARIOS", "ROLES", "PACIENTES", "CITAS", "SERVICIOS", "FACTURACION", "INVENTARIO", "REPORTES", "CONFIGURACION");
@@ -259,6 +297,34 @@ public class DataInitializer implements CommandLineRunner {
             mm.setNombre(nombre);
             mm.setTipoMovimiento(tipo);
             return motivoMovimientoRepository.save(mm);
+        });
+    }
+
+    private void crearEstadoCitaSiNoExiste(String nombre, String descripcion, String colorUi) {
+        estadoCitaRepository.findByNombre(nombre).orElseGet(() -> {
+            EstadoCita estado = new EstadoCita();
+            estado.setNombre(nombre);
+            estado.setDescripcion(descripcion);
+            estado.setColorUi(colorUi);
+            return estadoCitaRepository.save(estado);
+        });
+    }
+
+    private void crearEstadoPagoSiNoExiste(String nombre, String descripcion) {
+        estadoPagoRepository.findByNombre(nombre).orElseGet(() -> {
+            EstadoPago estado = new EstadoPago();
+            estado.setNombre(nombre);
+            estado.setDescripcion(descripcion);
+            return estadoPagoRepository.save(estado);
+        });
+    }
+
+    private void crearMetodoPagoSiNoExiste(String nombre, String descripcion) {
+        metodoPagoRepository.findByNombre(nombre).orElseGet(() -> {
+            MetodoPago metodo = new MetodoPago();
+            metodo.setNombre(nombre);
+            metodo.setDescripcion(descripcion);
+            return metodoPagoRepository.save(metodo);
         });
     }
 }
