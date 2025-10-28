@@ -1,0 +1,50 @@
+package com.odontoapp.repositorio;
+
+import com.odontoapp.entidad.Comprobante;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
+public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> {
+
+    /**
+     * Busca un comprobante por su número único.
+     * @param numeroComprobante El número del comprobante
+     * @return Optional con el comprobante si existe
+     */
+    Optional<Comprobante> findByNumeroComprobante(String numeroComprobante);
+
+    /**
+     * Busca todos los comprobantes de un paciente específico.
+     * @param pacienteId El ID del usuario paciente
+     * @param pageable Paginación
+     * @return Página de comprobantes del paciente
+     */
+    Page<Comprobante> findByPacienteId(Long pacienteId, Pageable pageable);
+
+    /**
+     * Busca el comprobante asociado a una cita específica.
+     * @param citaId El ID de la cita
+     * @return Optional con el comprobante si existe
+     */
+    Optional<Comprobante> findByCitaId(Long citaId);
+
+    /**
+     * Busca comprobantes por estado de pago.
+     * @param estadoPagoId El ID del estado de pago
+     * @param pageable Paginación
+     * @return Página de comprobantes con ese estado
+     */
+    Page<Comprobante> findByEstadoPagoId(Long estadoPagoId, Pageable pageable);
+
+    /**
+     * Busca comprobantes pendientes (con saldo pendiente).
+     * @param pageable Paginación
+     * @return Página de comprobantes con saldo pendiente
+     */
+    Page<Comprobante> findByMontoPendienteGreaterThan(BigDecimal monto, Pageable pageable);
+}
