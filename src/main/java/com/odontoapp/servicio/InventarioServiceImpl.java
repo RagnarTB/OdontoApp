@@ -39,6 +39,11 @@ public class InventarioServiceImpl implements InventarioService {
         Insumo insumo = insumoRepository.findById(dto.getInsumoId())
                 .orElseThrow(() -> new IllegalStateException("Insumo no encontrado con ID: " + dto.getInsumoId()));
 
+        // Validar que el insumo no esté eliminado
+        if (insumo.isEliminado()) {
+            throw new IllegalStateException("No se puede registrar un movimiento para un insumo eliminado.");
+        }
+
         TipoMovimiento tipo = tipoMovimientoRepository.findById(dto.getTipoMovimientoId())
                 .orElseThrow(() -> new IllegalStateException("Tipo de movimiento no encontrado."));
 
