@@ -3,11 +3,17 @@ package com.odontoapp.servicio.impl;
 import com.odontoapp.dto.ComprobanteDTO;
 import com.odontoapp.dto.DetalleComprobanteDTO;
 import com.odontoapp.dto.PagoDTO;
+import com.odontoapp.entidad.Cita;
 import com.odontoapp.entidad.Comprobante;
+import com.odontoapp.entidad.DetalleComprobante;
 import com.odontoapp.entidad.EstadoCita;
 import com.odontoapp.entidad.EstadoPago;
+import com.odontoapp.entidad.Insumo;
 import com.odontoapp.entidad.MetodoPago;
 import com.odontoapp.entidad.Pago;
+import com.odontoapp.entidad.Procedimiento;
+import com.odontoapp.entidad.Usuario;
+import jakarta.persistence.EntityNotFoundException;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.ComprobanteRepository;
 import com.odontoapp.repositorio.DetalleComprobanteRepository;
@@ -26,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -84,15 +91,144 @@ public class FacturacionServiceImpl implements FacturacionService {
     @Override
     @Transactional
     public Comprobante generarComprobanteDesdeCita(Long citaId, List<DetalleComprobanteDTO> detallesAdicionales) {
-        // TODO: Implementar lógica completa
-        // 1. Validar que la cita exista y esté en estado ASISTIO
-        // 2. Validar que la cita no tenga ya un comprobante
-        // 3. Obtener los tratamientos realizados de la cita
-        // 4. Generar detalles del comprobante desde los tratamientos
-        // 5. Agregar detalles adicionales si se proporcionan
-        // 6. Calcular totales
-        // 7. Crear y guardar el comprobante con estado PENDIENTE
-        throw new UnsupportedOperationException("Método pendiente de implementación");
+        // 1. Buscar la cita
+        if (citaId == null) {
+            throw new IllegalArgumentException("El ID de la cita no puede ser nulo");
+        }
+
+        Cita cita = citaRepository.findById(citaId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Cita no encontrada con ID: " + citaId));
+
+        // 2. Validar estado de la cita
+        if (!ESTADO_CITA_ASISTIO.equals(cita.getEstadoCita().getNombre())) {
+            throw new IllegalStateException(
+                    "La cita no está marcada como 'ASISTIO'. No se puede generar comprobante. " +
+                    "Estado actual: " + cita.getEstadoCita().getNombre());
+        }
+
+        // 3. Verificar que no exista ya un comprobante para esta cita
+        Optional<Comprobante> comprobanteExistente = comprobanteRepository.findByCitaId(citaId);
+        if (comprobanteExistente.isPresent()) {
+            throw new IllegalStateException(
+                    "Ya existe un comprobante generado para esta cita con ID: " +
+                    comprobanteExistente.get().getId());
+        }
+
+        // 4. Obtener el paciente de la cita
+        Usuario paciente = cita.getPaciente();
+        if (paciente == null) {
+            throw new IllegalStateException("La cita no tiene un paciente asignado");
+        }
+
+        // 5. Buscar el estado de pago PENDIENTE
+        EstadoPago estadoPendiente = estadoPagoRepository.findByNombre(ESTADO_PAGO_PENDIENTE)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Estado de pago PENDIENTE no encontrado en la base de datos"));
+
+        // 6. Generar serie y número de comprobante
+        String serieNumero = generarSiguienteSerieNumero();
+
+        // 7. Crear la entidad Comprobante
+        Comprobante comprobante = new Comprobante();
+        comprobante.setCita(cita);
+        comprobante.setPaciente(paciente);
+        comprobante.setFechaEmision(LocalDateTime.now());
+        comprobante.setNumeroComprobante(serieNumero);
+        comprobante.setEstadoPago(estadoPendiente);
+        comprobante.setTipoComprobante("CITA");
+        comprobante.setMontoTotal(BigDecimal.ZERO);
+        comprobante.setMontoPagado(BigDecimal.ZERO);
+        comprobante.setMontoPendiente(BigDecimal.ZERO);
+
+        // 8. Crear detalle para el procedimiento de la cita
+        if (cita.getProcedimiento() != null) {
+            Procedimiento procedimiento = cita.getProcedimiento();
+
+            DetalleComprobante detalleProcedimiento = new DetalleComprobante();
+            detalleProcedimiento.setComprobante(comprobante);
+            detalleProcedimiento.setTipoItem("PROCEDIMIENTO");
+            detalleProcedimiento.setItemId(procedimiento.getId());
+            detalleProcedimiento.setDescripcionItem(procedimiento.getNombre());
+            detalleProcedimiento.setCantidad(BigDecimal.ONE);
+            detalleProcedimiento.setPrecioUnitario(procedimiento.getPrecioBase());
+            detalleProcedimiento.setSubtotal(procedimiento.getPrecioBase());
+
+            comprobante.getDetalles().add(detalleProcedimiento);
+        }
+
+        // 9. Añadir detalles adicionales (insumos vendidos durante la cita)
+        if (detallesAdicionales != null && !detallesAdicionales.isEmpty()) {
+            for (DetalleComprobanteDTO detalleDTO : detallesAdicionales) {
+                // Validar que sea un insumo
+                if (!"INSUMO".equals(detalleDTO.getTipoItem())) {
+                    throw new IllegalArgumentException(
+                            "Solo se permiten detalles adicionales de tipo INSUMO. " +
+                            "Tipo recibido: " + detalleDTO.getTipoItem());
+                }
+
+                // Validar campos obligatorios
+                if (detalleDTO.getItemId() == null) {
+                    throw new IllegalArgumentException(
+                            "El ID del insumo es obligatorio en los detalles adicionales");
+                }
+
+                // Buscar el insumo
+                Insumo insumo = insumoRepository.findById(detalleDTO.getItemId())
+                        .orElseThrow(() -> new EntityNotFoundException(
+                                "Insumo no encontrado con ID: " + detalleDTO.getItemId()));
+
+                // Crear el detalle
+                DetalleComprobante detalleInsumo = new DetalleComprobante();
+                detalleInsumo.setComprobante(comprobante);
+                detalleInsumo.setTipoItem("INSUMO");
+                detalleInsumo.setItemId(insumo.getId());
+                detalleInsumo.setDescripcionItem(
+                        detalleDTO.getDescripcionItem() != null && !detalleDTO.getDescripcionItem().isEmpty()
+                        ? detalleDTO.getDescripcionItem()
+                        : insumo.getNombre());
+                detalleInsumo.setCantidad(detalleDTO.getCantidad());
+                detalleInsumo.setPrecioUnitario(
+                        detalleDTO.getPrecioUnitario() != null
+                        ? detalleDTO.getPrecioUnitario()
+                        : insumo.getPrecioUnitario());
+                detalleInsumo.setSubtotal(
+                        detalleInsumo.getCantidad().multiply(detalleInsumo.getPrecioUnitario()));
+                detalleInsumo.setNotas(detalleDTO.getNotas());
+
+                comprobante.getDetalles().add(detalleInsumo);
+
+                // TODO: Llamar a InventarioService.descontarStockPorVentaDirecta(...)
+                // para descontar el stock de estos insumos adicionales vendidos
+            }
+        }
+
+        // 10. Calcular totales
+        BigDecimal total = comprobante.getDetalles().stream()
+                .map(DetalleComprobante::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        comprobante.setMontoTotal(total);
+        comprobante.setMontoPendiente(total);
+        comprobante.setDescripcion("Comprobante generado desde cita ID: " + citaId);
+
+        // 11. Guardar el comprobante (con CascadeType.ALL, los detalles se guardan automáticamente)
+        Comprobante comprobanteGuardado = comprobanteRepository.save(comprobante);
+
+        return comprobanteGuardado;
+    }
+
+    /**
+     * Genera el siguiente número de comprobante con serie.
+     * Por ahora retorna un valor temporal.
+     *
+     * @return El número de comprobante generado
+     */
+    private String generarSiguienteSerieNumero() {
+        // TODO: Implementar lógica de secuencia real
+        // Podría usar una tabla de secuencias o un contador en base de datos
+        // Formato sugerido: "B001-000124" donde B001 es la serie y 000124 es el correlativo
+        return "B001-TEMP-" + System.currentTimeMillis();
     }
 
     @Override
