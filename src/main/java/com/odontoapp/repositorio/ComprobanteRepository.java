@@ -27,6 +27,22 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
     Page<Comprobante> findByPacienteId(Long pacienteId, Pageable pageable);
 
     /**
+     * Busca todos los comprobantes de un paciente ordenados por fecha de emisión descendente.
+     * @param pacienteId El ID del usuario paciente
+     * @param pageable Paginación
+     * @return Página de comprobantes del paciente ordenados
+     */
+    Page<Comprobante> findByPacienteIdOrderByFechaEmisionDesc(Long pacienteId, Pageable pageable);
+
+    /**
+     * Busca comprobantes con saldo pendiente de un paciente específico.
+     * @param pacienteId El ID del usuario paciente
+     * @param monto Monto mínimo de saldo pendiente (usar BigDecimal.ZERO)
+     * @return Lista de comprobantes con saldo pendiente
+     */
+    List<Comprobante> findByPacienteIdAndMontoPendienteGreaterThan(Long pacienteId, BigDecimal monto);
+
+    /**
      * Busca el comprobante asociado a una cita específica.
      * @param citaId El ID de la cita
      * @return Optional con el comprobante si existe

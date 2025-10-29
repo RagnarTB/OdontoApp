@@ -1,6 +1,7 @@
 package com.odontoapp.servicio;
 
 import com.odontoapp.dto.ComprobanteDTO;
+import com.odontoapp.dto.DetalleComprobanteDTO;
 import com.odontoapp.dto.PagoDTO;
 import com.odontoapp.entidad.Comprobante;
 import com.odontoapp.entidad.Pago;
@@ -17,15 +18,16 @@ import java.util.Optional;
 public interface FacturacionService {
 
     /**
-     * Genera un comprobante automáticamente desde una cita completada.
-     * Incluye los procedimientos y tratamientos realizados.
+     * Genera un comprobante automáticamente desde una cita completada (estado ASISTIO).
+     * Incluye los procedimientos y tratamientos realizados, más detalles adicionales opcionales.
      *
      * @param citaId ID de la cita
+     * @param detallesAdicionales Lista de detalles adicionales (ej: insumos vendidos durante la cita)
      * @return El comprobante generado
      * @throws jakarta.persistence.EntityNotFoundException si no se encuentra la cita
-     * @throws IllegalStateException si la cita no está en estado válido para facturar
+     * @throws IllegalStateException si la cita no está en estado ASISTIO o ya tiene comprobante
      */
-    Comprobante generarComprobanteDesdeCita(Long citaId);
+    Comprobante generarComprobanteDesdeCita(Long citaId, List<DetalleComprobanteDTO> detallesAdicionales);
 
     /**
      * Genera un comprobante de venta directa (sin cita previa).
@@ -40,11 +42,13 @@ public interface FacturacionService {
     /**
      * Registra un pago sobre un comprobante existente.
      * Actualiza el estado del comprobante según el monto pagado.
+     * Valida monto, método, y actualiza saldo/estado del comprobante.
      *
      * @param dto Datos del pago a registrar
      * @return El pago registrado
      * @throws jakarta.persistence.EntityNotFoundException si no se encuentra el comprobante
      * @throws IllegalArgumentException si el monto excede el saldo pendiente
+     * @throws IllegalStateException si el comprobante está ANULADO o PAGADO_TOTAL
      */
     Pago registrarPago(PagoDTO dto);
 
@@ -74,6 +78,15 @@ public interface FacturacionService {
     Page<Comprobante> buscarComprobantesPorPaciente(Long pacienteUsuarioId, Pageable pageable);
 
     /**
+     * Busca todos los comprobantes con saldo pendiente de un paciente.
+     * Útil para mostrar deudas en el portal del paciente.
+     *
+     * @param pacienteUsuarioId ID del paciente
+     * @return Lista de comprobantes pendientes del paciente
+     */
+    List<Comprobante> buscarComprobantesPendientesPorPaciente(Long pacienteUsuarioId);
+
+    /**
      * Busca todos los pagos realizados sobre un comprobante.
      *
      * @param comprobanteId ID del comprobante
@@ -84,12 +97,15 @@ public interface FacturacionService {
     /**
      * Anula un comprobante existente.
      * Cambia el estado a ANULADO y no permite más pagos.
+     * Podría requerir lógica adicional (ej: revertir stock si es venta directa).
      *
      * @param comprobanteId ID del comprobante a anular
+     * @param motivoAnulacion Motivo de la anulación
+     * @return El comprobante anulado
      * @throws jakarta.persistence.EntityNotFoundException si no se encuentra el comprobante
-     * @throws IllegalStateException si el comprobante ya está anulado
+     * @throws IllegalStateException si el comprobante ya tiene pagos registrados o ya está anulado
      */
-    void anularComprobante(Long comprobanteId);
+    Comprobante anularComprobante(Long comprobanteId, String motivoAnulacion);
 
     /**
      * Busca todos los comprobantes con saldo pendiente.
