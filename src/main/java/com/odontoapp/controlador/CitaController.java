@@ -5,6 +5,7 @@ import com.odontoapp.dto.FullCalendarEventDTO;
 import com.odontoapp.entidad.Cita;
 import com.odontoapp.entidad.EstadoCita;
 import com.odontoapp.repositorio.EstadoCitaRepository;
+import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.RolRepository;
@@ -38,6 +39,7 @@ public class CitaController {
     private final UsuarioRepository usuarioRepository;
     private final PacienteRepository pacienteRepository;
     private final ProcedimientoRepository procedimientoRepository;
+    private final InsumoRepository insumoRepository;
     private final EstadoCitaRepository estadoCitaRepository;
 
     public CitaController(CitaService citaService,
@@ -46,6 +48,7 @@ public class CitaController {
                          UsuarioRepository usuarioRepository,
                          PacienteRepository pacienteRepository,
                          ProcedimientoRepository procedimientoRepository,
+                         InsumoRepository insumoRepository,
                          EstadoCitaRepository estadoCitaRepository) {
         this.citaService = citaService;
         this.facturacionService = facturacionService;
@@ -53,6 +56,7 @@ public class CitaController {
         this.usuarioRepository = usuarioRepository;
         this.pacienteRepository = pacienteRepository;
         this.procedimientoRepository = procedimientoRepository;
+        this.insumoRepository = insumoRepository;
         this.estadoCitaRepository = estadoCitaRepository;
     }
 
@@ -76,10 +80,14 @@ public class CitaController {
         // Buscar todos los procedimientos
         var listaProcedimientos = procedimientoRepository.findAll();
 
+        // Buscar todos los insumos (para el modal de registrar tratamiento)
+        var listaInsumos = insumoRepository.findAll();
+
         // Añadir al modelo
         model.addAttribute("listaOdontologos", listaOdontologos);
         model.addAttribute("listaPacientes", listaPacientes);
         model.addAttribute("listaProcedimientos", listaProcedimientos);
+        model.addAttribute("listaInsumos", listaInsumos);
         model.addAttribute("citaDTO", new CitaDTO());
 
         return "modulos/citas/calendario";
@@ -206,6 +214,27 @@ public class CitaController {
             attributes.addFlashAttribute("error", "Error al cancelar: " + e.getMessage());
         } catch (Exception e) {
             attributes.addFlashAttribute("error", "Error inesperado al cancelar la cita: " + e.getMessage());
+        }
+
+        return "redirect:/citas";
+    }
+
+    /**
+     * Confirma una cita pendiente.
+     *
+     * @param citaId ID de la cita a confirmar
+     * @param attributes Atributos para mensajes flash
+     * @return Redirección al calendario
+     */
+    @PostMapping("/confirmar")
+    public String confirmarCita(@RequestParam Long citaId, RedirectAttributes attributes) {
+        try {
+            citaService.confirmarCita(citaId);
+            attributes.addFlashAttribute("success", "Cita confirmada con éxito.");
+        } catch (IllegalStateException e) {
+            attributes.addFlashAttribute("error", "Error al confirmar: " + e.getMessage());
+        } catch (Exception e) {
+            attributes.addFlashAttribute("error", "Error inesperado al confirmar la cita: " + e.getMessage());
         }
 
         return "redirect:/citas";

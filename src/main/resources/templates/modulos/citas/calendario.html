@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(titulo='Agenda de Citas', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
+
+<body>
+<div id="contenido-principal">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Agenda de Citas</h1>
+                    <p class="text-muted">Visualiza y gestiona las citas de la clínica</p>
+                </div>
+                <div class="col-sm-6">
+                    <button type="button" class="btn btn-primary float-sm-right" data-toggle="modal" data-target="#modalAgendarCita">
+                        <i class="fas fa-plus"></i> Nueva Cita
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            <!-- Mensajes flash -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span th:text="${success}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div th:if="${warning}" class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <span th:text="${warning}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span th:text="${error}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card card-outline card-info mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="filtroOdontologo">Filtrar por Odontólogo:</label>
+                            <select id="filtroOdontologo" class="form-control">
+                                <option value="">Todos los odontólogos</option>
+                                <option th:each="odontologo : ${listaOdontologos}"
+                                        th:value="${odontologo.id}"
+                                        th:text="${odontologo.nombreCompleto}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="mt-4">
+                                <span class="badge badge-warning mr-2"><i class="fas fa-circle"></i> Pendiente</span>
+                                <span class="badge badge-info mr-2"><i class="fas fa-circle"></i> Confirmada</span>
+                                <span class="badge badge-success mr-2"><i class="fas fa-circle"></i> Asistió</span>
+                                <span class="badge badge-danger mr-2"><i class="fas fa-circle"></i> No Asistió</span>
+                                <span class="badge badge-secondary mr-2"><i class="fas fa-circle"></i> Cancelada</span>
+                                <span class="badge badge-orange mr-2"><i class="fas fa-circle"></i> Reprogramada</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendario -->
+            <div class="card card-primary">
+                <div class="card-body p-0">
+                    <div id="calendario" style="padding: 15px;"></div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Incluir modales -->
+    <div th:replace="~{modulos/citas/fragmentos :: modalAgendarCita}"></div>
+    <div th:replace="~{modulos/citas/fragmentos :: modalDetalleCita}"></div>
+    <div th:replace="~{modulos/citas/fragmentos :: modalReprogramarCita}"></div>
+    <div th:replace="~{modulos/citas/fragmentos :: modalCancelarCita}"></div>
+    <div th:replace="~{modulos/citas/fragmentos :: modalRegistrarTratamiento}"></div>
+
+</div>
+
+<th:block id="page-scripts">
+    <!-- Moment.js -->
+    <script th:src="@{/adminlte/plugins/moment/moment.min.js}"></script>
+
+    <!-- FullCalendar -->
+    <link rel="stylesheet" th:href="@{/adminlte/plugins/fullcalendar/main.css}">
+    <script th:src="@{/adminlte/plugins/fullcalendar/main.js}"></script>
+    <script th:src="@{/adminlte/plugins/fullcalendar/locales-all.js}"></script>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendario');
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                locale: 'es',
+                initialView: 'timeGridWeek',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                buttonText: {
+                    today: 'Hoy',
+                    month: 'Mes',
+                    week: 'Semana',
+                    day: 'Día'
+                },
+                allDaySlot: false,
+                slotMinTime: '08:00:00',
+                slotMaxTime: '20:00:00',
+                slotDuration: '00:30:00',
+                height: 'auto',
+                navLinks: true,
+                editable: false,
+                selectable: true,
+                selectMirror: true,
+                dayMaxEvents: true,
+                weekends: true,
+
+                // Cargar eventos desde el backend
+                events: function(info, successCallback, failureCallback) {
+                    var odontologoId = document.getElementById('filtroOdontologo').value;
+                    var url = /*[[@{/citas/api/eventos}]]*/ '/citas/api/eventos';
+
+                    var params = new URLSearchParams({
+                        start: info.startStr,
+                        end: info.endStr
+                    });
+
+                    if (odontologoId) {
+                        params.append('odontologoId', odontologoId);
+                    }
+
+                    fetch(url + '?' + params.toString())
+                        .then(response => response.json())
+                        .then(data => successCallback(data))
+                        .catch(error => {
+                            console.error('Error al cargar eventos:', error);
+                            failureCallback(error);
+                        });
+                },
+
+                // Clic en un espacio vacío (agendar cita)
+                dateClick: function(info) {
+                    // Rellenar la fecha en el formulario de agendar
+                    document.getElementById('fechaHoraInicioAgendar').value = info.dateStr;
+
+                    // Abrir el modal
+                    $('#modalAgendarCita').modal('show');
+                },
+
+                // Clic en un evento existente (ver detalles)
+                eventClick: function(info) {
+                    // Prevenir navegación
+                    info.jsEvent.preventDefault();
+
+                    // Obtener datos del evento
+                    var evento = info.event;
+                    var props = evento.extendedProps;
+
+                    // Rellenar el modal de detalles
+                    document.getElementById('detalleCitaId').value = evento.id;
+                    document.getElementById('detallePaciente').textContent = evento.title;
+                    document.getElementById('detalleOdontologo').textContent = props.odontologoNombre || 'N/A';
+                    document.getElementById('detalleProcedimiento').textContent = props.procedimientoNombre || 'N/A';
+                    document.getElementById('detalleEstado').textContent = props.estadoNombre || 'N/A';
+                    document.getElementById('detalleFechaHoraInicio').textContent = moment(evento.start).format('DD/MM/YYYY HH:mm');
+                    document.getElementById('detalleFechaHoraFin').textContent = moment(evento.end).format('DD/MM/YYYY HH:mm');
+                    document.getElementById('detalleMotivoConsulta').textContent = props.motivoConsulta || '-';
+                    document.getElementById('detalleNotasInternas').textContent = props.notasInternas || '-';
+
+                    // Actualizar todos los campos hidden de citaId en los formularios del modal
+                    document.querySelectorAll('.citaIdField').forEach(function(field) {
+                        field.value = evento.id;
+                    });
+
+                    // Rellenar el modal de reprogramar con la cita actual
+                    document.getElementById('reprogramarCitaId').value = evento.id;
+
+                    // Rellenar el modal de cancelar
+                    document.getElementById('cancelarCitaId').value = evento.id;
+
+                    // Rellenar el modal de registrar tratamiento
+                    document.getElementById('tratamientoCitaId').value = evento.id;
+
+                    // Mostrar/ocultar botones según el estado
+                    mostrarBotonesSegunEstado(props.estadoNombre);
+
+                    // Abrir el modal
+                    $('#modalDetalleCita').modal('show');
+                }
+            });
+
+            calendar.render();
+
+            // Recargar calendario al cambiar el filtro de odontólogo
+            document.getElementById('filtroOdontologo').addEventListener('change', function() {
+                calendar.refetchEvents();
+            });
+        });
+
+        // Función para mostrar/ocultar botones según el estado de la cita
+        function mostrarBotonesSegunEstado(estado) {
+            var btnConfirmar = document.getElementById('btnConfirmarCita');
+            var btnAsistencia = document.getElementById('divAsistencia');
+            var btnReprogramar = document.getElementById('btnReprogramar');
+            var btnCancelar = document.getElementById('btnCancelar');
+            var btnRegistrarTratamiento = document.getElementById('btnRegistrarTratamiento');
+
+            // Por defecto ocultar todo
+            btnConfirmar.style.display = 'none';
+            btnAsistencia.style.display = 'none';
+            btnReprogramar.style.display = 'inline-block';
+            btnCancelar.style.display = 'inline-block';
+            btnRegistrarTratamiento.style.display = 'none';
+
+            switch(estado) {
+                case 'PENDIENTE':
+                    btnConfirmar.style.display = 'inline-block';
+                    break;
+                case 'CONFIRMADA':
+                    btnAsistencia.style.display = 'block';
+                    break;
+                case 'ASISTIO':
+                    btnReprogramar.style.display = 'none';
+                    btnCancelar.style.display = 'none';
+                    btnRegistrarTratamiento.style.display = 'inline-block';
+                    break;
+                case 'NO_ASISTIO':
+                case 'CANCELADA_PACIENTE':
+                case 'CANCELADA_CLINICA':
+                case 'REPROGRAMADA':
+                    btnConfirmar.style.display = 'none';
+                    btnAsistencia.style.display = 'none';
+                    btnReprogramar.style.display = 'none';
+                    btnCancelar.style.display = 'none';
+                    break;
+            }
+        }
+        /*]]>*/
+    </script>
+</th:block>
+
+</body>
+</html>
