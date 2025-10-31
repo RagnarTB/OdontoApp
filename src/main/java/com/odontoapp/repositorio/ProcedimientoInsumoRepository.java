@@ -22,4 +22,11 @@ public interface ProcedimientoInsumoRepository extends JpaRepository<Procedimien
      * @return Optional con la relación si existe
      */
     Optional<ProcedimientoInsumo> findByProcedimientoIdAndInsumoId(Long procedimientoId, Long insumoId);
+
+    /**
+     * Busca todos los procedimientos que utilizan un insumo específico.
+     * @param insumoId El ID del insumo
+     * @return Lista de relaciones procedimiento-insumo
+     */
+    List<ProcedimientoInsumo> findByInsumoId(Long insumoId);
 }
