@@ -56,6 +56,9 @@ public class FacturacionServiceImpl implements FacturacionService {
     private static final String ESTADO_PAGO_ANULADO = "ANULADO";
     private static final String ESTADO_CITA_ASISTIO = "ASISTIO";
 
+    // --- Constantes para numeración de comprobantes ---
+    private static final String SERIE_DEFAULT = "B001";
+
     // --- Repositorios ---
     private final ComprobanteRepository comprobanteRepository;
     private final DetalleComprobanteRepository detalleComprobanteRepository;
@@ -230,16 +233,49 @@ public class FacturacionServiceImpl implements FacturacionService {
     }
 
     /**
-     * Genera el siguiente número de comprobante con serie.
-     * Por ahora retorna un valor temporal.
+     * Genera el siguiente número de comprobante con serie secuencial.
+     * Formato: "B001-0000001" donde B001 es la serie y 0000001 es el correlativo de 7 dígitos.
+     * Usa sincronización para evitar problemas de concurrencia.
      *
      * @return El número de comprobante generado
      */
-    private String generarSiguienteSerieNumero() {
-        // TODO: Implementar lógica de secuencia real
-        // Podría usar una tabla de secuencias o un contador en base de datos
-        // Formato sugerido: "B001-000124" donde B001 es la serie y 000124 es el correlativo
-        return "B001-TEMP-" + System.currentTimeMillis();
+    private synchronized String generarSiguienteSerieNumero() {
+        try {
+            // 1. Buscar el último comprobante de la serie
+            Optional<Comprobante> ultimoComprobante =
+                comprobanteRepository.findTopBySerieNumeroStartingWithOrderBySerieNumeroDesc(SERIE_DEFAULT);
+
+            // 2. Si no existe ningún comprobante, es el primero
+            if (ultimoComprobante.isEmpty()) {
+                return SERIE_DEFAULT + "-0000001";
+            }
+
+            // 3. Obtener el número del último comprobante (ej: "B001-0000124")
+            String ultimoNumero = ultimoComprobante.get().getSerieNumero();
+
+            // 4. Extraer la parte numérica (después del último "-")
+            String[] partes = ultimoNumero.split("-");
+            if (partes.length < 2) {
+                // Si el formato no es válido, empezar desde 1
+                return SERIE_DEFAULT + "-0000001";
+            }
+
+            String parteNumerica = partes[partes.length - 1];
+
+            // 5. Parsear a long e incrementar
+            long ultimoCorrelativo = Long.parseLong(parteNumerica);
+            long nuevoCorrelativo = ultimoCorrelativo + 1;
+
+            // 6. Formatear el nuevo número con 7 dígitos
+            String numeroFormateado = String.format("%07d", nuevoCorrelativo);
+
+            // 7. Retornar el comprobante completo
+            return SERIE_DEFAULT + "-" + numeroFormateado;
+
+        } catch (NumberFormatException e) {
+            // En caso de error en el formato, empezar desde 1
+            return SERIE_DEFAULT + "-0000001";
+        }
     }
 
     @Override

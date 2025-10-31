@@ -63,4 +63,13 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
      * @return Página de comprobantes con saldo pendiente
      */
     Page<Comprobante> findByMontoPendienteGreaterThan(BigDecimal monto, Pageable pageable);
+
+    /**
+     * Busca el último comprobante que comienza con un prefijo de serie,
+     * ordenado por el nombre de la serie de forma descendente (para manejar B001-999 vs B001-1000).
+     * Usamos SerieNumero como campo de ordenación.
+     * @param seriePrefix El prefijo de la serie (ej: "B001")
+     * @return Optional con el último comprobante de esa serie si existe
+     */
+    Optional<Comprobante> findTopBySerieNumeroStartingWithOrderBySerieNumeroDesc(String seriePrefix);
 }
