@@ -248,17 +248,86 @@ public class FacturacionServiceImpl implements FacturacionService {
     @Override
     @Transactional
     public Pago registrarPago(PagoDTO dto) {
-        // TODO: Implementar lógica completa
-        // 1. Validar que el comprobante exista
-        // 2. Validar que el comprobante no esté ANULADO
-        // 3. Validar que el comprobante no esté PAGADO_TOTAL
-        // 4. Validar que el monto no exceda el saldo pendiente
-        // 5. Validar que el método de pago exista
-        // 6. Si es pago MIXTO, validar montoEfectivo y montoYape
-        // 7. Crear y guardar el pago
-        // 8. Actualizar montoPagado y montoPendiente del comprobante
-        // 9. Actualizar estado del comprobante según saldo restante
-        throw new UnsupportedOperationException("Método pendiente de implementación");
+        // 1. Validación de DTO
+        if (dto.getComprobanteId() == null) {
+            throw new IllegalArgumentException("El ID del comprobante es obligatorio");
+        }
+        if (dto.getMonto() == null || dto.getMonto().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El monto del pago debe ser positivo");
+        }
+        if (dto.getMetodoPagoId() == null) {
+            throw new IllegalArgumentException("El ID del método de pago es obligatorio");
+        }
+
+        // 2. Obtener entidades
+        Comprobante comprobante = comprobanteRepository.findById(dto.getComprobanteId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Comprobante no encontrado con ID: " + dto.getComprobanteId()));
+
+        MetodoPago metodoPago = metodoPagoRepository.findById(dto.getMetodoPagoId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Método de pago no encontrado con ID: " + dto.getMetodoPagoId()));
+
+        EstadoPago estadoPagadoTotal = estadoPagoRepository.findByNombre(ESTADO_PAGO_PAGADO_TOTAL)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Estado de pago PAGADO_TOTAL no encontrado en la base de datos"));
+
+        EstadoPago estadoPagadoParcial = estadoPagoRepository.findByNombre(ESTADO_PAGO_PAGADO_PARCIAL)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Estado de pago PAGADO_PARCIAL no encontrado en la base de datos"));
+
+        EstadoPago estadoAnulado = estadoPagoRepository.findByNombre(ESTADO_PAGO_ANULADO)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Estado de pago ANULADO no encontrado en la base de datos"));
+
+        // 3. Validar estado del comprobante
+        String estadoActual = comprobante.getEstadoPago().getNombre();
+        if (ESTADO_PAGO_ANULADO.equals(estadoActual) || ESTADO_PAGO_PAGADO_TOTAL.equals(estadoActual)) {
+            throw new IllegalStateException(
+                    "No se pueden registrar pagos para un comprobante ANULADO o que ya está PAGADO TOTALMENTE. " +
+                    "Estado actual: " + estadoActual);
+        }
+
+        // 4. Validar monto del pago
+        if (dto.getMonto().compareTo(comprobante.getMontoPendiente()) > 0) {
+            throw new IllegalArgumentException(
+                    "El monto del pago (S/ " + dto.getMonto() + ") no puede ser mayor que el saldo pendiente (S/ " +
+                    comprobante.getMontoPendiente() + ")");
+        }
+
+        // 5. Crear entidad Pago
+        Pago pago = new Pago();
+        pago.setComprobante(comprobante);
+        pago.setMetodoPago(metodoPago);
+        pago.setFechaPago(dto.getFechaPago() != null ? dto.getFechaPago() : LocalDateTime.now());
+        pago.setMonto(dto.getMonto());
+        pago.setReferenciaYape(dto.getReferenciaYape());
+        pago.setMontoEfectivo(dto.getMontoEfectivo());
+        pago.setMontoYape(dto.getMontoYape());
+        pago.setNotas(dto.getNotas());
+
+        // 6. Guardar Pago
+        Pago pagoGuardado = pagoRepository.save(pago);
+
+        // 7. Actualizar Comprobante
+        BigDecimal nuevoMontoPagado = comprobante.getMontoPagado().add(dto.getMonto());
+        BigDecimal nuevoSaldoPendiente = comprobante.getMontoPendiente().subtract(dto.getMonto());
+
+        comprobante.setMontoPagado(nuevoMontoPagado);
+        comprobante.setMontoPendiente(nuevoSaldoPendiente);
+
+        // 8. Actualizar estado de pago del comprobante
+        if (nuevoSaldoPendiente.compareTo(BigDecimal.ZERO) == 0) {
+            comprobante.setEstadoPago(estadoPagadoTotal);
+        } else {
+            comprobante.setEstadoPago(estadoPagadoParcial);
+        }
+
+        // 9. Guardar Comprobante actualizado
+        comprobanteRepository.save(comprobante);
+
+        // 10. Devolver Pago
+        return pagoGuardado;
     }
 
     @Override
