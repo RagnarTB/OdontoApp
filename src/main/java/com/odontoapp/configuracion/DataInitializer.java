@@ -138,6 +138,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // Crear motivos (esto está bien, usa orElseGet)
         crearMotivoSiNoExiste("Compra a proveedor", entrada);
+        crearMotivoSiNoExiste("Anulación de Venta", entrada);
         crearMotivoSiNoExiste("Uso en procedimiento", salida);
         crearMotivoSiNoExiste("Vencimiento o merma", salida);
         crearMotivoSiNoExiste("Ajuste de inventario", salida);

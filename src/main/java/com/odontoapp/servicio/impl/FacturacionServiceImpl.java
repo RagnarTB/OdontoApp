@@ -507,14 +507,77 @@ public class FacturacionServiceImpl implements FacturacionService {
     @Override
     @Transactional
     public Comprobante anularComprobante(Long comprobanteId, String motivoAnulacion) {
-        // TODO: Implementar lógica completa
-        // 1. Validar que el comprobante exista
-        // 2. Validar que no esté ya anulado
-        // 3. Validar que no tenga pagos registrados
-        // 4. Cambiar estado a ANULADO
-        // 5. Registrar motivo de anulación
-        // 6. (Opcional) Revertir movimientos de inventario si es venta directa
-        throw new UnsupportedOperationException("Método pendiente de implementación");
+        // 1. Validación de parámetros
+        if (comprobanteId == null) {
+            throw new IllegalArgumentException("El ID del comprobante es obligatorio");
+        }
+
+        // 2. Obtener entidades
+        Comprobante comprobante = comprobanteRepository.findById(comprobanteId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Comprobante no encontrado con ID: " + comprobanteId));
+
+        EstadoPago estadoAnulado = estadoPagoRepository.findByNombre(ESTADO_PAGO_ANULADO)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Estado de pago ANULADO no encontrado en la base de datos"));
+
+        // 3. Validar estado actual
+        if (ESTADO_PAGO_ANULADO.equals(comprobante.getEstadoPago().getNombre())) {
+            throw new IllegalStateException("El comprobante ya se encuentra anulado");
+        }
+
+        // 4. Validar que no tenga pagos
+        List<Pago> pagos = pagoRepository.findByComprobanteIdOrderByFechaPagoDesc(comprobanteId);
+        if (pagos != null && !pagos.isEmpty()) {
+            throw new IllegalStateException(
+                    "No se puede anular un comprobante que ya tiene pagos registrados. " +
+                    "Debe revertir los pagos primero. Pagos encontrados: " + pagos.size());
+        }
+
+        // 5. Revertir stock si es VENTA_DIRECTA
+        if ("VENTA_DIRECTA".equals(comprobante.getTipoComprobante())) {
+            // Buscar tipo y motivo para la reversión
+            TipoMovimiento tipoEntrada = tipoMovimientoRepository.findByCodigo("ENTRADA")
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Tipo de movimiento ENTRADA no encontrado"));
+
+            MotivoMovimiento motivoAnulacionVenta = motivoMovimientoRepository.findByNombre("Anulación de Venta")
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Motivo de movimiento 'Anulación de Venta' no encontrado"));
+
+            // Iterar sobre los detalles para revertir insumos
+            for (DetalleComprobante detalle : comprobante.getDetalles()) {
+                if ("INSUMO".equals(detalle.getTipoItem())) {
+                    // Crear MovimientoDTO para devolver el stock
+                    MovimientoDTO movimientoDTO = new MovimientoDTO();
+                    movimientoDTO.setInsumoId(detalle.getItemId());
+                    movimientoDTO.setTipoMovimientoId(tipoEntrada.getId());
+                    movimientoDTO.setMotivoMovimientoId(motivoAnulacionVenta.getId());
+                    movimientoDTO.setCantidad(detalle.getCantidad());
+                    movimientoDTO.setReferencia("Anulación de " + comprobante.getNumeroComprobante());
+
+                    // Registrar movimiento de entrada (devolver stock)
+                    inventarioService.registrarMovimiento(movimientoDTO);
+                }
+            }
+        }
+
+        // 6. Actualizar comprobante
+        comprobante.setEstadoPago(estadoAnulado);
+        comprobante.setMontoPendiente(BigDecimal.ZERO);
+
+        // Actualizar observaciones con el motivo de anulación
+        String observacionesActuales = comprobante.getDescripcion() != null
+                ? comprobante.getDescripcion()
+                : "";
+        String nuevaObservacion = observacionesActuales.isEmpty()
+                ? "ANULADO: " + motivoAnulacion
+                : observacionesActuales + " | ANULADO: " + motivoAnulacion;
+        comprobante.setDescripcion(nuevaObservacion);
+
+        // 7. Guardar y devolver
+        Comprobante comprobanteGuardado = comprobanteRepository.save(comprobante);
+        return comprobanteGuardado;
     }
 
     @Override
