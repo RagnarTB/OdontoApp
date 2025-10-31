@@ -10,8 +10,10 @@ import com.odontoapp.entidad.EstadoCita;
 import com.odontoapp.entidad.EstadoPago;
 import com.odontoapp.entidad.Insumo;
 import com.odontoapp.entidad.MetodoPago;
+import com.odontoapp.entidad.MotivoMovimiento;
 import com.odontoapp.entidad.Pago;
 import com.odontoapp.entidad.Procedimiento;
+import com.odontoapp.entidad.TipoMovimiento;
 import com.odontoapp.entidad.Usuario;
 import jakarta.persistence.EntityNotFoundException;
 import com.odontoapp.repositorio.CitaRepository;
@@ -21,11 +23,14 @@ import com.odontoapp.repositorio.EstadoCitaRepository;
 import com.odontoapp.repositorio.EstadoPagoRepository;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.MetodoPagoRepository;
+import com.odontoapp.repositorio.MotivoMovimientoRepository;
 import com.odontoapp.repositorio.PagoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
+import com.odontoapp.repositorio.TipoMovimientoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.servicio.FacturacionService;
 import com.odontoapp.servicio.InventarioService;
+import com.odontoapp.dto.MovimientoDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -62,6 +67,8 @@ public class FacturacionServiceImpl implements FacturacionService {
     private final EstadoPagoRepository estadoPagoRepository;
     private final MetodoPagoRepository metodoPagoRepository;
     private final EstadoCitaRepository estadoCitaRepository;
+    private final TipoMovimientoRepository tipoMovimientoRepository;
+    private final MotivoMovimientoRepository motivoMovimientoRepository;
     private final InventarioService inventarioService;
 
     public FacturacionServiceImpl(ComprobanteRepository comprobanteRepository,
@@ -74,6 +81,8 @@ public class FacturacionServiceImpl implements FacturacionService {
                                  EstadoPagoRepository estadoPagoRepository,
                                  MetodoPagoRepository metodoPagoRepository,
                                  EstadoCitaRepository estadoCitaRepository,
+                                 TipoMovimientoRepository tipoMovimientoRepository,
+                                 MotivoMovimientoRepository motivoMovimientoRepository,
                                  InventarioService inventarioService) {
         this.comprobanteRepository = comprobanteRepository;
         this.detalleComprobanteRepository = detalleComprobanteRepository;
@@ -85,6 +94,8 @@ public class FacturacionServiceImpl implements FacturacionService {
         this.estadoPagoRepository = estadoPagoRepository;
         this.metodoPagoRepository = metodoPagoRepository;
         this.estadoCitaRepository = estadoCitaRepository;
+        this.tipoMovimientoRepository = tipoMovimientoRepository;
+        this.motivoMovimientoRepository = motivoMovimientoRepository;
         this.inventarioService = inventarioService;
     }
 
@@ -234,15 +245,132 @@ public class FacturacionServiceImpl implements FacturacionService {
     @Override
     @Transactional
     public Comprobante generarComprobanteVentaDirecta(ComprobanteDTO dto) {
-        // TODO: Implementar lógica completa
-        // 1. Validar que el paciente exista
-        // 2. Validar que haya detalles en el comprobante
-        // 3. Crear el comprobante
-        // 4. Generar número de comprobante único
-        // 5. Crear y guardar los detalles
-        // 6. Registrar salidas de inventario para insumos vendidos
-        // 7. Calcular totales y establecer estado PENDIENTE
-        throw new UnsupportedOperationException("Método pendiente de implementación");
+        // 1. Validación de DTO
+        if (dto == null) {
+            throw new IllegalArgumentException("El DTO del comprobante no puede ser nulo");
+        }
+        if (dto.getPacienteUsuarioId() == null) {
+            throw new IllegalArgumentException("El ID del paciente es obligatorio");
+        }
+        if (dto.getDetalles() == null || dto.getDetalles().isEmpty()) {
+            throw new IllegalArgumentException("El comprobante debe tener al menos un detalle");
+        }
+
+        // 2. Obtener entidades base
+        Usuario paciente = usuarioRepository.findById(dto.getPacienteUsuarioId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Paciente no encontrado con ID: " + dto.getPacienteUsuarioId()));
+
+        EstadoPago estadoPendiente = estadoPagoRepository.findByNombre(ESTADO_PAGO_PENDIENTE)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Estado de pago PENDIENTE no encontrado en la base de datos"));
+
+        // 3. Generar serie y número
+        String serieNumero = generarSiguienteSerieNumero();
+
+        // 4. Crear entidad Comprobante
+        Comprobante comprobante = new Comprobante();
+        comprobante.setPaciente(paciente);
+        comprobante.setFechaEmision(LocalDateTime.now());
+        comprobante.setNumeroComprobante(serieNumero);
+        comprobante.setEstadoPago(estadoPendiente);
+        comprobante.setTipoComprobante("VENTA_DIRECTA");
+        comprobante.setMontoTotal(BigDecimal.ZERO);
+        comprobante.setMontoPagado(BigDecimal.ZERO);
+        comprobante.setMontoPendiente(BigDecimal.ZERO);
+        comprobante.setCita(null); // Venta directa no tiene cita asociada
+        comprobante.setDescripcion(dto.getObservaciones());
+
+        // 5. Procesar detalles y descontar stock
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (DetalleComprobanteDTO detalleDTO : dto.getDetalles()) {
+            // Validar campos obligatorios del detalle
+            if (detalleDTO.getTipoItem() == null || detalleDTO.getTipoItem().isEmpty()) {
+                throw new IllegalArgumentException("El tipo de ítem es obligatorio en cada detalle");
+            }
+            if (detalleDTO.getItemId() == null) {
+                throw new IllegalArgumentException("El ID del ítem es obligatorio en cada detalle");
+            }
+            if (detalleDTO.getCantidad() == null || detalleDTO.getCantidad().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("La cantidad debe ser positiva");
+            }
+            if (detalleDTO.getPrecioUnitario() == null || detalleDTO.getPrecioUnitario().compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("El precio unitario no puede ser negativo");
+            }
+
+            // Crear detalle
+            DetalleComprobante detalle = new DetalleComprobante();
+            detalle.setComprobante(comprobante);
+            detalle.setTipoItem(detalleDTO.getTipoItem());
+            detalle.setItemId(detalleDTO.getItemId());
+            detalle.setCantidad(detalleDTO.getCantidad());
+            detalle.setPrecioUnitario(detalleDTO.getPrecioUnitario());
+            detalle.setSubtotal(detalleDTO.getCantidad().multiply(detalleDTO.getPrecioUnitario()));
+            detalle.setNotas(detalleDTO.getNotas());
+
+            // Procesar según tipo de ítem
+            if ("INSUMO".equals(detalleDTO.getTipoItem())) {
+                // Buscar el insumo
+                Insumo insumo = insumoRepository.findById(detalleDTO.getItemId())
+                        .orElseThrow(() -> new EntityNotFoundException(
+                                "Insumo no encontrado con ID: " + detalleDTO.getItemId()));
+
+                detalle.setDescripcionItem(
+                        detalleDTO.getDescripcionItem() != null && !detalleDTO.getDescripcionItem().isEmpty()
+                        ? detalleDTO.getDescripcionItem()
+                        : insumo.getNombre());
+
+                // Descontar stock
+                TipoMovimiento tipoSalida = tipoMovimientoRepository.findByCodigo("SALIDA")
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Tipo de movimiento SALIDA no encontrado"));
+
+                MotivoMovimiento motivoVentaDirecta = motivoMovimientoRepository.findByNombre("Venta Directa")
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Motivo de movimiento 'Venta Directa' no encontrado"));
+
+                // Crear MovimientoDTO
+                MovimientoDTO movimientoDTO = new MovimientoDTO();
+                movimientoDTO.setInsumoId(insumo.getId());
+                movimientoDTO.setTipoMovimientoId(tipoSalida.getId());
+                movimientoDTO.setMotivoMovimientoId(motivoVentaDirecta.getId());
+                movimientoDTO.setCantidad(detalleDTO.getCantidad());
+                movimientoDTO.setReferencia("Venta POS: " + serieNumero);
+
+                // Registrar movimiento (esto lanzará excepción si no hay stock suficiente)
+                inventarioService.registrarMovimiento(movimientoDTO);
+
+            } else if ("PROCEDIMIENTO".equals(detalleDTO.getTipoItem())) {
+                // Buscar el procedimiento
+                Procedimiento procedimiento = procedimientoRepository.findById(detalleDTO.getItemId())
+                        .orElseThrow(() -> new EntityNotFoundException(
+                                "Procedimiento no encontrado con ID: " + detalleDTO.getItemId()));
+
+                detalle.setDescripcionItem(
+                        detalleDTO.getDescripcionItem() != null && !detalleDTO.getDescripcionItem().isEmpty()
+                        ? detalleDTO.getDescripcionItem()
+                        : procedimiento.getNombre());
+            } else {
+                throw new IllegalArgumentException(
+                        "Tipo de ítem no soportado: " + detalleDTO.getTipoItem() +
+                        ". Solo se permiten 'INSUMO' o 'PROCEDIMIENTO'");
+            }
+
+            // Añadir detalle al comprobante
+            comprobante.getDetalles().add(detalle);
+
+            // Acumular total
+            total = total.add(detalle.getSubtotal());
+        }
+
+        // 6. Actualizar totales del comprobante
+        comprobante.setMontoTotal(total);
+        comprobante.setMontoPendiente(total);
+
+        // 7. Guardar y devolver
+        Comprobante comprobanteGuardado = comprobanteRepository.save(comprobante);
+        return comprobanteGuardado;
     }
 
     @Override

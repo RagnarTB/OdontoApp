@@ -141,6 +141,7 @@ public class DataInitializer implements CommandLineRunner {
         crearMotivoSiNoExiste("Uso en procedimiento", salida);
         crearMotivoSiNoExiste("Vencimiento o merma", salida);
         crearMotivoSiNoExiste("Ajuste de inventario", salida);
+        crearMotivoSiNoExiste("Venta Directa", salida);
         // --- 👆 FIN DE LA CORRECCIÓN 👆 ---
 
         // --- CREACIÓN DE ESTADOS DE CITA ---
