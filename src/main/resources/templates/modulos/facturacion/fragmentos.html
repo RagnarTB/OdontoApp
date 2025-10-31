@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- ========================================== -->
+<!-- MODAL: Registrar Pago -->
+<!-- ========================================== -->
+<div th:fragment="modalRegistrarPago" class="modal fade" id="modalRegistrarPago" tabindex="-1" role="dialog" aria-labelledby="modalRegistrarPagoLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form th:action="@{/facturacion/registrar-pago}" method="post" th:object="${pagoDTO}">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="modalRegistrarPagoLabel">
+                        <i class="fas fa-money-bill-wave mr-2"></i>Registrar Pago
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- ID del Comprobante (Hidden) -->
+                    <input type="hidden" id="pagoComprobanteId" name="comprobanteId">
+
+                    <!-- Información del Comprobante -->
+                    <div class="alert alert-info" role="alert">
+                        <strong>Comprobante:</strong> <span id="infoNumeroComprobante"></span><br>
+                        <strong>Saldo Pendiente:</strong> S/ <span id="infoSaldoPendiente"></span>
+                    </div>
+
+                    <!-- Fecha de Pago -->
+                    <div class="form-group">
+                        <label for="fechaPago">Fecha de Pago <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" id="fechaPago" name="fechaPago" required>
+                    </div>
+
+                    <!-- Monto -->
+                    <div class="form-group">
+                        <label for="monto">Monto a Pagar <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">S/</span>
+                            </div>
+                            <input type="number" class="form-control" id="monto" name="monto" step="0.01" min="0.01" required>
+                        </div>
+                        <small class="form-text text-muted">
+                            El monto no debe exceder el saldo pendiente.
+                        </small>
+                    </div>
+
+                    <!-- Método de Pago -->
+                    <div class="form-group">
+                        <label for="metodoPagoId">Método de Pago <span class="text-danger">*</span></label>
+                        <select class="form-control" id="metodoPagoId" name="metodoPagoId" required>
+                            <option value="">Seleccione un método</option>
+                            <option th:each="metodo : ${listaMetodosPago}"
+                                    th:value="${metodo.id}"
+                                    th:text="${metodo.nombre}"></option>
+                        </select>
+                    </div>
+
+                    <!-- Campos Opcionales para Yape -->
+                    <div id="camposYape" style="display: none;">
+                        <div class="form-group">
+                            <label for="referenciaYape">Referencia Yape</label>
+                            <input type="text" class="form-control" id="referenciaYape" name="referenciaYape" placeholder="Número de operación Yape">
+                        </div>
+                    </div>
+
+                    <!-- Campos Opcionales para Pago Mixto -->
+                    <div id="camposMixto" style="display: none;">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="montoEfectivo">Monto Efectivo</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">S/</span>
+                                        </div>
+                                        <input type="number" class="form-control" id="montoEfectivo" name="montoEfectivo" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="montoYape">Monto Yape</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">S/</span>
+                                        </div>
+                                        <input type="number" class="form-control" id="montoYape" name="montoYape" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notas -->
+                    <div class="form-group">
+                        <label for="notasPago">Notas</label>
+                        <textarea class="form-control" id="notasPago" name="notas" rows="2" placeholder="Notas adicionales sobre el pago"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check mr-1"></i>Registrar Pago
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Script para el modal de pago -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    $(document).ready(function() {
+        // Event listener para cambio de método de pago
+        $('#metodoPagoId').change(function() {
+            var metodoTexto = $(this).find('option:selected').text().toUpperCase();
+
+            // Ocultar todos los campos opcionales
+            $('#camposYape').hide();
+            $('#camposMixto').hide();
+
+            // Mostrar campos según el método seleccionado
+            if (metodoTexto.includes('YAPE')) {
+                $('#camposYape').show();
+            }
+            if (metodoTexto.includes('MIXTO')) {
+                $('#camposMixto').show();
+            }
+        });
+
+        // Validación adicional para pago mixto
+        $('#modalRegistrarPago form').submit(function(e) {
+            var metodoTexto = $('#metodoPagoId option:selected').text().toUpperCase();
+
+            if (metodoTexto.includes('MIXTO')) {
+                var montoTotal = parseFloat($('#monto').val() || 0);
+                var montoEfectivo = parseFloat($('#montoEfectivo').val() || 0);
+                var montoYape = parseFloat($('#montoYape').val() || 0);
+
+                if (Math.abs((montoEfectivo + montoYape) - montoTotal) > 0.01) {
+                    alert('La suma de Efectivo y Yape debe ser igual al Monto Total.');
+                    e.preventDefault();
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    });
+    /*]]>*/
+</script>
+
+</body>
+</html>

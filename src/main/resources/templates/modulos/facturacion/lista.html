@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(titulo='Gestión de Comprobantes', contenido=~{::#contenido-principal})}">
+
+<body>
+<div id="contenido-principal">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Gestión de Comprobantes</h1>
+                    <p class="text-muted">Administra los comprobantes y pagos de la clínica</p>
+                </div>
+                <div class="col-sm-6">
+                    <a th:href="@{/facturacion/pos}" class="btn btn-success float-sm-right">
+                        <i class="fas fa-cash-register"></i> Ir al POS (Venta Directa)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            <!-- Mensajes flash -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span th:text="${success}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span th:text="${error}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <!-- Tabla de Comprobantes -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Comprobantes Pendientes
+                        <span class="badge badge-secondary ml-1" th:if="${comprobantes}" th:text="${comprobantes.totalElements}">0</span>
+                    </h3>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>Serie y Número</th>
+                                <th>Tipo</th>
+                                <th>Paciente</th>
+                                <th>Fecha Emisión</th>
+                                <th class="text-right">Total</th>
+                                <th class="text-right">Pagado</th>
+                                <th class="text-right">Saldo Pendiente</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${comprobantes == null || comprobantes.empty}">
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                    No se encontraron comprobantes pendientes.
+                                </td>
+                            </tr>
+                            <tr th:each="comprobante : ${comprobantes}">
+                                <td>
+                                    <strong th:text="${comprobante.numeroComprobante}">B001-0000001</strong>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info" th:text="${comprobante.tipoComprobante}">CITA</span>
+                                </td>
+                                <td th:text="${comprobante.paciente.nombreCompleto}">Juan Pérez</td>
+                                <td th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy HH:mm')}">01/11/2025 10:30</td>
+                                <td class="text-right">
+                                    <strong>S/ </strong>
+                                    <span th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">150.00</span>
+                                </td>
+                                <td class="text-right">
+                                    <span class="text-success">S/ </span>
+                                    <span th:text="${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}">0.00</span>
+                                </td>
+                                <td class="text-right">
+                                    <strong class="text-danger">S/ </strong>
+                                    <span th:text="${#numbers.formatDecimal(comprobante.montoPendiente, 1, 2)}">150.00</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge"
+                                          th:classappend="${comprobante.estadoPago.nombre == 'PENDIENTE'} ? 'badge-warning' :
+                                                          (${comprobante.estadoPago.nombre == 'PAGADO_PARCIAL'} ? 'badge-info' :
+                                                          (${comprobante.estadoPago.nombre == 'PAGADO_TOTAL'} ? 'badge-success' :
+                                                          (${comprobante.estadoPago.nombre == 'ANULADO'} ? 'badge-danger' : 'badge-secondary')))"
+                                          th:text="${comprobante.estadoPago.nombre}">
+                                        PENDIENTE
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <!-- Botón Ver Detalle / Registrar Pago -->
+                                        <a th:href="@{/facturacion/detalle/{id}(id=${comprobante.id})}"
+                                           class="btn btn-info"
+                                           title="Ver detalle y registrar pago"
+                                           th:if="${comprobante.estadoPago.nombre != 'ANULADO'}">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+
+                                        <!-- Botón Anular -->
+                                        <a th:href="@{/facturacion/anular/{id}(id=${comprobante.id})}"
+                                           class="btn btn-danger"
+                                           title="Anular comprobante"
+                                           th:if="${comprobante.estadoPago.nombre != 'ANULADO' && comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
+                                           onclick="return confirm('¿Está seguro de que desea anular este comprobante? Esta acción no se puede deshacer.');">
+                                            <i class="fas fa-ban"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                <div class="card-footer clearfix" th:if="${comprobantes != null && comprobantes.totalPages > 1}">
+                    <ul class="pagination pagination-sm m-0 float-right">
+                        <li class="page-item" th:classappend="${comprobantes.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/facturacion(page=0)}">&laquo;</a>
+                        </li>
+                        <li class="page-item" th:classappend="${!comprobantes.hasPrevious()} ? 'disabled'">
+                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.number - 1})}">&lsaquo;</a>
+                        </li>
+                        <li class="page-item"
+                            th:each="i : ${#numbers.sequence(0, comprobantes.totalPages - 1)}"
+                            th:classappend="${comprobantes.number == i} ? 'active'">
+                            <a class="page-link" th:href="@{/facturacion(page=${i})}" th:text="${i + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${!comprobantes.hasNext()} ? 'disabled'">
+                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.number + 1})}">&rsaquo;</a>
+                        </li>
+                        <li class="page-item" th:classappend="${comprobantes.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.totalPages - 1})}">&raquo;</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+</body>
+</html>

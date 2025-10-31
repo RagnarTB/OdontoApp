@@ -4,6 +4,7 @@ import com.odontoapp.dto.ComprobanteDTO;
 import com.odontoapp.dto.PagoDTO;
 import com.odontoapp.entidad.Comprobante;
 import com.odontoapp.repositorio.InsumoRepository;
+import com.odontoapp.repositorio.MetodoPagoRepository;
 import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.servicio.FacturacionService;
@@ -27,15 +28,18 @@ public class FacturacionController {
     private final PacienteRepository pacienteRepository;
     private final ProcedimientoRepository procedimientoRepository;
     private final InsumoRepository insumoRepository;
+    private final MetodoPagoRepository metodoPagoRepository;
 
     public FacturacionController(FacturacionService facturacionService,
                                 PacienteRepository pacienteRepository,
                                 ProcedimientoRepository procedimientoRepository,
-                                InsumoRepository insumoRepository) {
+                                InsumoRepository insumoRepository,
+                                MetodoPagoRepository metodoPagoRepository) {
         this.facturacionService = facturacionService;
         this.pacienteRepository = pacienteRepository;
         this.procedimientoRepository = procedimientoRepository;
         this.insumoRepository = insumoRepository;
+        this.metodoPagoRepository = metodoPagoRepository;
     }
 
     /**
@@ -101,7 +105,7 @@ public class FacturacionController {
         try {
             Comprobante comprobante = facturacionService.generarComprobanteVentaDirecta(dto);
             attributes.addFlashAttribute("success",
-                    "Comprobante " + comprobante.getSerieNumero() + " generado con éxito.");
+                    "Comprobante " + comprobante.getNumeroComprobante() + " generado con éxito.");
         } catch (IllegalArgumentException e) {
             attributes.addFlashAttribute("error",
                     "Error en los datos del comprobante: " + e.getMessage());
@@ -159,7 +163,7 @@ public class FacturacionController {
         try {
             Comprobante comprobante = facturacionService.anularComprobante(id, motivo);
             attributes.addFlashAttribute("success",
-                    "Comprobante " + comprobante.getSerieNumero() + " anulado con éxito.");
+                    "Comprobante " + comprobante.getNumeroComprobante() + " anulado con éxito.");
         } catch (IllegalStateException e) {
             attributes.addFlashAttribute("error",
                     "Error al anular el comprobante: " + e.getMessage());
@@ -193,10 +197,12 @@ public class FacturacionController {
 
             Comprobante comprobante = comprobanteOpt.get();
             var pagos = facturacionService.buscarPagosPorComprobante(id);
+            var listaMetodosPago = metodoPagoRepository.findAll();
 
             model.addAttribute("comprobante", comprobante);
             model.addAttribute("pagos", pagos);
             model.addAttribute("pagoDTO", new PagoDTO());
+            model.addAttribute("listaMetodosPago", listaMetodosPago);
 
             return "modulos/facturacion/detalle";
 

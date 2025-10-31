@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(titulo='Punto de Venta (POS)', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
+
+<body>
+<div id="contenido-principal">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Punto de Venta (POS)</h1>
+                    <p class="text-muted">Registra ventas directas de procedimientos e insumos</p>
+                </div>
+                <div class="col-sm-6">
+                    <a th:href="@{/facturacion}" class="btn btn-outline-secondary float-sm-right">
+                        <i class="fas fa-arrow-left mr-2"></i> Volver al Listado
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            <!-- Mensajes flash -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span th:text="${success}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span th:text="${error}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <form id="formPOS" th:action="@{/facturacion/generar-venta-directa}" method="post" th:object="${comprobanteDTO}">
+
+                <div class="row">
+                    <!-- Columna Izquierda: Búsqueda de Items -->
+                    <div class="col-md-5">
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-search mr-2"></i>Buscar Items
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <!-- Selección de Paciente -->
+                                <div class="form-group">
+                                    <label for="pacienteUsuarioId">Paciente <span class="text-danger">*</span></label>
+                                    <select id="pacienteUsuarioId" name="pacienteUsuarioId" class="form-control select2" required style="width: 100%;">
+                                        <option value="">Seleccione un paciente</option>
+                                        <option th:each="paciente : ${listaPacientes}"
+                                                th:value="${paciente.usuario != null ? paciente.usuario.id : ''}"
+                                                th:text="${paciente.nombreCompleto + ' - ' + paciente.numeroDocumento}"></option>
+                                    </select>
+                                </div>
+
+                                <hr>
+
+                                <!-- Búsqueda de Procedimientos -->
+                                <div class="form-group">
+                                    <label for="selectProcedimiento">Agregar Procedimiento</label>
+                                    <select id="selectProcedimiento" class="form-control select2" style="width: 100%;">
+                                        <option value="">Buscar procedimiento...</option>
+                                        <option th:each="procedimiento : ${listaProcedimientos}"
+                                                th:value="${procedimiento.id}"
+                                                th:text="${procedimiento.nombre}"
+                                                th:attr="data-price=${procedimiento.precioBase},data-nombre=${procedimiento.nombre}"></option>
+                                    </select>
+                                </div>
+
+                                <!-- Búsqueda de Insumos -->
+                                <div class="form-group">
+                                    <label for="selectInsumo">Agregar Insumo</label>
+                                    <select id="selectInsumo" class="form-control select2" style="width: 100%;">
+                                        <option value="">Buscar insumo...</option>
+                                        <option th:each="insumo : ${listaInsumos}"
+                                                th:value="${insumo.id}"
+                                                th:text="${insumo.nombre + ' (Stock: ' + insumo.stockActual + ')'}"
+                                                th:attr="data-price=${insumo.precioUnitario},data-nombre=${insumo.nombre}"></option>
+                                    </select>
+                                </div>
+
+                                <button type="button" id="btnAgregarItem" class="btn btn-success btn-block">
+                                    <i class="fas fa-plus-circle mr-2"></i>Agregar al Carrito
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha: Carrito de Compra -->
+                    <div class="col-md-7">
+                        <div class="card card-success">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-shopping-cart mr-2"></i>Detalles del Comprobante
+                                </h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm" id="tablaDetalles">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40%;">Descripción</th>
+                                            <th class="text-center" style="width: 15%;">Cantidad</th>
+                                            <th class="text-right" style="width: 20%;">P. Unitario</th>
+                                            <th class="text-right" style="width: 20%;">Subtotal</th>
+                                            <th class="text-center" style="width: 5%;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyDetalles">
+                                        <tr id="filaVacia">
+                                            <td colspan="5" class="text-center text-muted py-4">
+                                                <i class="fas fa-cart-plus fa-3x mb-2"></i>
+                                                <p>No hay items en el carrito. Usa el panel de búsqueda para agregar.</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer">
+                                <!-- Total -->
+                                <div class="row">
+                                    <div class="col-6">
+                                        <h3>Total:</h3>
+                                    </div>
+                                    <div class="col-6 text-right">
+                                        <h2 class="text-success">
+                                            S/ <span id="montoTotal">0.00</span>
+                                        </h2>
+                                    </div>
+                                </div>
+
+                                <!-- Observaciones -->
+                                <div class="form-group mt-3">
+                                    <label for="observaciones">Observaciones</label>
+                                    <textarea id="observaciones" name="observaciones" class="form-control" rows="2" placeholder="Observaciones adicionales del comprobante"></textarea>
+                                </div>
+
+                                <!-- Botón Generar Comprobante -->
+                                <button type="submit" class="btn btn-success btn-lg btn-block" id="btnGenerar" disabled>
+                                    <i class="fas fa-file-invoice-dollar mr-2"></i>Generar Comprobante Pendiente
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Container para inputs hidden de detalles (se llenarán con JS) -->
+                <div id="containerDetallesHidden"></div>
+
+            </form>
+
+        </div>
+    </section>
+</div>
+
+<th:block id="page-scripts">
+    <!-- Select2 CSS -->
+    <link rel="stylesheet" th:href="@{/adminlte/plugins/select2/css/select2.min.css}">
+    <link rel="stylesheet" th:href="@{/adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css}">
+
+    <!-- Select2 JS -->
+    <script th:src="@{/adminlte/plugins/select2/js/select2.full.min.js}"></script>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        $(document).ready(function() {
+            // Inicializar Select2
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                placeholder: 'Seleccione una opción',
+                allowClear: true
+            });
+
+            // Array para almacenar los detalles del comprobante
+            let detalles = [];
+            let itemIndex = 0;
+
+            // Botón Agregar Item
+            $('#btnAgregarItem').click(function() {
+                let tipoItem = '';
+                let itemId = '';
+                let descripcion = '';
+                let precio = 0;
+
+                // Verificar si se seleccionó un procedimiento
+                if ($('#selectProcedimiento').val()) {
+                    tipoItem = 'PROCEDIMIENTO';
+                    itemId = $('#selectProcedimiento').val();
+                    let option = $('#selectProcedimiento option:selected');
+                    descripcion = option.attr('data-nombre');
+                    precio = parseFloat(option.attr('data-price') || 0);
+                }
+                // Verificar si se seleccionó un insumo
+                else if ($('#selectInsumo').val()) {
+                    tipoItem = 'INSUMO';
+                    itemId = $('#selectInsumo').val();
+                    let option = $('#selectInsumo option:selected');
+                    descripcion = option.attr('data-nombre');
+                    precio = parseFloat(option.attr('data-price') || 0);
+                }
+                else {
+                    alert('Por favor, selecciona un procedimiento o un insumo.');
+                    return;
+                }
+
+                // Crear objeto detalle
+                let detalle = {
+                    index: itemIndex++,
+                    tipoItem: tipoItem,
+                    itemId: itemId,
+                    descripcionItem: descripcion,
+                    cantidad: 1,
+                    precioUnitario: precio,
+                    subtotal: precio * 1
+                };
+
+                // Agregar a la lista
+                detalles.push(detalle);
+
+                // Agregar fila a la tabla
+                agregarFilaDetalle(detalle);
+
+                // Limpiar selección
+                $('#selectProcedimiento').val(null).trigger('change');
+                $('#selectInsumo').val(null).trigger('change');
+
+                // Actualizar total
+                actualizarTotal();
+
+                // Habilitar botón generar
+                $('#btnGenerar').prop('disabled', false);
+            });
+
+            // Función para agregar fila a la tabla
+            function agregarFilaDetalle(detalle) {
+                // Ocultar fila vacía
+                $('#filaVacia').hide();
+
+                let fila = `
+                    <tr data-index="${detalle.index}">
+                        <td>${detalle.descripcionItem}</td>
+                        <td class="text-center">
+                            <input type="number" class="form-control form-control-sm cantidad-input" value="${detalle.cantidad}" min="1" step="0.01" style="width: 80px; display: inline-block;">
+                        </td>
+                        <td class="text-right">S/ ${detalle.precioUnitario.toFixed(2)}</td>
+                        <td class="text-right subtotal">S/ ${detalle.subtotal.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-danger btn-sm btn-eliminar" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+
+                $('#tbodyDetalles').append(fila);
+            }
+
+            // Event listener para cambio de cantidad
+            $(document).on('change', '.cantidad-input', function() {
+                let fila = $(this).closest('tr');
+                let index = fila.data('index');
+                let nuevaCantidad = parseFloat($(this).val());
+
+                // Actualizar detalle en el array
+                let detalle = detalles.find(d => d.index === index);
+                if (detalle) {
+                    detalle.cantidad = nuevaCantidad;
+                    detalle.subtotal = detalle.precioUnitario * nuevaCantidad;
+
+                    // Actualizar subtotal en la fila
+                    fila.find('.subtotal').text('S/ ' + detalle.subtotal.toFixed(2));
+
+                    // Actualizar total
+                    actualizarTotal();
+                }
+            });
+
+            // Event listener para eliminar fila
+            $(document).on('click', '.btn-eliminar', function() {
+                let fila = $(this).closest('tr');
+                let index = fila.data('index');
+
+                // Eliminar del array
+                detalles = detalles.filter(d => d.index !== index);
+
+                // Eliminar fila
+                fila.remove();
+
+                // Si no hay detalles, mostrar fila vacía
+                if (detalles.length === 0) {
+                    $('#filaVacia').show();
+                    $('#btnGenerar').prop('disabled', true);
+                }
+
+                // Actualizar total
+                actualizarTotal();
+            });
+
+            // Función para actualizar el total
+            function actualizarTotal() {
+                let total = detalles.reduce((sum, d) => sum + d.subtotal, 0);
+                $('#montoTotal').text(total.toFixed(2));
+            }
+
+            // Antes de enviar el formulario, crear inputs hidden para cada detalle
+            $('#formPOS').submit(function(e) {
+                if (detalles.length === 0) {
+                    alert('Debe agregar al menos un item al carrito.');
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Limpiar container de hidden inputs
+                $('#containerDetallesHidden').empty();
+
+                // Crear inputs hidden para cada detalle
+                detalles.forEach((detalle, idx) => {
+                    $('#containerDetallesHidden').append(`
+                        <input type="hidden" name="detalles[${idx}].tipoItem" value="${detalle.tipoItem}">
+                        <input type="hidden" name="detalles[${idx}].itemId" value="${detalle.itemId}">
+                        <input type="hidden" name="detalles[${idx}].descripcionItem" value="${detalle.descripcionItem}">
+                        <input type="hidden" name="detalles[${idx}].cantidad" value="${detalle.cantidad}">
+                        <input type="hidden" name="detalles[${idx}].precioUnitario" value="${detalle.precioUnitario}">
+                        <input type="hidden" name="detalles[${idx}].subtotal" value="${detalle.subtotal}">
+                    `);
+                });
+
+                return true;
+            });
+        });
+        /*]]>*/
+    </script>
+</th:block>
+
+</body>
+</html>
