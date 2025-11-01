@@ -6,6 +6,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -41,6 +42,10 @@ public class Rol extends EntidadAuditable { // <-- Extiende EntidadAuditable
     private Set<Permiso> permisos;
 
     private boolean estaActivo = true;
+
+    // Campo para marcar roles del sistema que no deben ser modificados/eliminados
+    @Column(nullable = false)
+    private boolean esRolSistema = false;
 
     // --- NUEVO CAMPO SOFT DELETE ---
     private boolean eliminado = false;

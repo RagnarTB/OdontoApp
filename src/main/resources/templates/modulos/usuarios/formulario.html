@@ -314,6 +314,110 @@
     <th:block id="page-scripts">
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+                // --- FUNCIONALIDAD DE BÚSQUEDA DE DNI ---
+                const tipoDocumentoSelect = document.getElementById('tipoDocumentoId');
+                const numeroDocumentoInput = document.getElementById('numeroDocumento');
+                const nombreCompletoInput = document.getElementById('nombreCompleto');
+                let timeoutId = null; // Para debounce
+
+                // Agregar botón de búsqueda al lado del input de documento
+                const divNumeroDocumento = numeroDocumentoInput.closest('.form-group');
+                const btnBuscarDni = document.createElement('button');
+                btnBuscarDni.type = 'button';
+                btnBuscarDni.className = 'btn btn-sm btn-info mt-1';
+                btnBuscarDni.innerHTML = '<i class="fas fa-search"></i> Buscar DNI';
+                btnBuscarDni.id = 'btnBuscarDni';
+                btnBuscarDni.style.display = 'none'; // Oculto por defecto
+                divNumeroDocumento.appendChild(btnBuscarDni);
+
+                // Función para verificar si el tipo de documento es DNI
+                function esDNI() {
+                    const selectedOption = tipoDocumentoSelect.options[tipoDocumentoSelect.selectedIndex];
+                    return selectedOption && selectedOption.text.toUpperCase().includes('DNI');
+                }
+
+                // Mostrar/ocultar botón de búsqueda según tipo de documento
+                tipoDocumentoSelect.addEventListener('change', function() {
+                    btnBuscarDni.style.display = esDNI() ? 'inline-block' : 'none';
+                });
+
+                // Trigger inicial para mostrar botón si ya hay DNI seleccionado
+                if (esDNI()) {
+                    btnBuscarDni.style.display = 'inline-block';
+                }
+
+                // Función para buscar DNI
+                function buscarDatosReniec(dni) {
+                    // Validar que sea DNI y tenga 8 dígitos
+                    if (!esDNI() || !dni || dni.length !== 8) {
+                        return;
+                    }
+
+                    // Mostrar indicador de carga
+                    mostrarCargando('Buscando datos en RENIEC...');
+
+                    // Deshabilitar el campo de nombre mientras se busca
+                    nombreCompletoInput.disabled = true;
+
+                    // Llamar al endpoint REST
+                    $.ajax({
+                        url: '/usuarios/api/buscar-dni',
+                        method: 'GET',
+                        data: { dni: dni },
+                        success: function(response) {
+                            cerrarCargando();
+                            if (response.nombreCompleto) {
+                                nombreCompletoInput.value = response.nombreCompleto;
+                                nombreCompletoInput.disabled = false;
+                                mostrarExito('Datos encontrados correctamente');
+                            } else {
+                                nombreCompletoInput.disabled = false;
+                                mostrarAdvertencia('No se encontraron datos para este DNI');
+                            }
+                        },
+                        error: function(xhr) {
+                            cerrarCargando();
+                            nombreCompletoInput.disabled = false;
+                            let errorMsg = 'Error al consultar RENIEC';
+                            if (xhr.responseJSON && xhr.responseJSON.error) {
+                                errorMsg = xhr.responseJSON.error;
+                            } else if (xhr.status === 404) {
+                                errorMsg = 'No se encontraron datos para este DNI';
+                            }
+                            mostrarAdvertencia(errorMsg);
+                        }
+                    });
+                }
+
+                // Evento al hacer clic en el botón de búsqueda
+                btnBuscarDni.addEventListener('click', function() {
+                    const dni = numeroDocumentoInput.value.trim();
+                    if (dni.length === 8) {
+                        buscarDatosReniec(dni);
+                    } else {
+                        mostrarAdvertencia('El DNI debe tener 8 dígitos');
+                    }
+                });
+
+                // Auto-búsqueda al escribir (debounce de 1 segundo)
+                numeroDocumentoInput.addEventListener('input', function() {
+                    const dni = this.value.trim();
+
+                    // Limpiar timeout anterior
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
+
+                    // Si tiene 8 dígitos y es DNI, buscar automáticamente después de 1 segundo
+                    if (esDNI() && dni.length === 8 && /^\d{8}$/.test(dni)) {
+                        timeoutId = setTimeout(function() {
+                            buscarDatosReniec(dni);
+                        }, 1000);
+                    }
+                });
+
+                // --- FIN FUNCIONALIDAD DNI ---
+
                 const seccionHorarios = document.getElementById('seccionHorarios');
                 const checkboxesRoles = document.querySelectorAll('.rol-checkbox');
                 let rolOdontologoId = null;

@@ -61,7 +61,11 @@ public class Usuario extends EntidadAuditable { // Extiende EntidadAuditable
     private int intentosFallidos = 0;
     private LocalDateTime fechaBloqueo;
 
-    // Este campo es solo para el flujo de activaciÃ³n
+    // Campo para identificar al super-administrador (primer admin creado)
+    @Column(nullable = false)
+    private boolean esSuperAdmin = false;
+
+    // Este campo es solo para el flujo de activación
     private String verificationToken;
 
     // --- Relaciones ---

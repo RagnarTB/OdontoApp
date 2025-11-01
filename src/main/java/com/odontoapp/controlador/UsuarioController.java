@@ -34,7 +34,11 @@ import com.odontoapp.entidad.Usuario;
 import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.TipoDocumentoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
+import com.odontoapp.servicio.ReniecService;
 import com.odontoapp.servicio.UsuarioService;
+import com.odontoapp.dto.ReniecResponseDTO;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import jakarta.validation.Valid;
 
@@ -46,6 +50,7 @@ public class UsuarioController {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
+    private final ReniecService reniecService;
 
     // Constante para los días ordenados
     private static final List<DayOfWeek> DIAS_SEMANA_ORDENADOS = Arrays.asList(
@@ -53,11 +58,13 @@ public class UsuarioController {
             DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
 
     public UsuarioController(UsuarioService usuarioService, UsuarioRepository usuarioRepository,
-            RolRepository rolRepository, TipoDocumentoRepository tipoDocumentoRepository) {
+            RolRepository rolRepository, TipoDocumentoRepository tipoDocumentoRepository,
+            ReniecService reniecService) {
         this.usuarioService = usuarioService;
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
+        this.reniecService = reniecService;
     }
 
     @GetMapping
@@ -305,6 +312,41 @@ public class UsuarioController {
             e.printStackTrace();
         }
         return "redirect:/usuarios";
+    }
+
+    // --- API REST PARA BÚSQUEDA DE DNI ---
+    /**
+     * Endpoint REST para consultar datos de una persona por DNI (RENIEC)
+     * Retorna JSON con los datos de la persona si se encuentra
+     *
+     * @param dni Número de documento a buscar (8 dígitos)
+     * @return ResponseEntity con ReniecResponseDTO o error
+     */
+    @GetMapping("/api/buscar-dni")
+    @ResponseBody
+    public ResponseEntity<?> buscarPorDni(@RequestParam String dni) {
+        try {
+            // Validar formato básico de DNI (8 dígitos)
+            if (dni == null || !dni.matches("\\d{8}")) {
+                return ResponseEntity.badRequest()
+                        .body(java.util.Map.of("error", "DNI debe tener 8 dígitos numéricos"));
+            }
+
+            // Consultar servicio RENIEC
+            ReniecResponseDTO persona = reniecService.consultarDni(dni);
+
+            if (persona != null && persona.getNombreCompleto() != null) {
+                return ResponseEntity.ok(persona);
+            } else {
+                return ResponseEntity.status(404)
+                        .body(java.util.Map.of("error", "No se encontraron datos para el DNI ingresado"));
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error en endpoint buscar-dni: " + e.getMessage());
+            return ResponseEntity.status(500)
+                    .body(java.util.Map.of("error", "Error al consultar el servicio de RENIEC"));
+        }
     }
 
     // --- MÉTODO HELPER REFACTORIZADO ---
