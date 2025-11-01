@@ -68,4 +68,12 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @return Página de citas con ese estado
      */
     Page<Cita> findByEstadoCitaId(Long estadoCitaId, Pageable pageable);
+
+    /**
+     * Cuenta las citas en un rango de fechas (para estadísticas del dashboard)
+     * @param inicio Fecha y hora de inicio
+     * @param fin Fecha y hora de fin
+     * @return Número de citas en el rango
+     */
+    Long countByFechaHoraInicioBetween(LocalDateTime inicio, LocalDateTime fin);
 }

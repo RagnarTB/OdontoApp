@@ -33,4 +33,18 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
 
     @Query("SELECT p FROM Paciente p WHERE p.id = :id")
     Optional<Paciente> findByIdIgnorandoSoftDelete(@Param("id") Long id);
+
+    /**
+     * Cuenta los pacientes creados en un rango de fechas (para estadísticas)
+     * @param inicio Fecha y hora de inicio
+     * @param fin Fecha y hora de fin
+     * @return Número de pacientes creados en el rango
+     */
+    Long countByFechaCreacionBetween(java.time.LocalDateTime inicio, java.time.LocalDateTime fin);
+
+    /**
+     * Cuenta el total de pacientes activos
+     * @return Total de pacientes activos
+     */
+    Long countByEliminadoFalse();
 }

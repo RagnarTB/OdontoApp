@@ -6,8 +6,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import com.odontoapp.entidad.EstadoPago;
 
 public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> {
 
@@ -71,4 +74,24 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
      * @return Optional con el último comprobante de esa serie si existe
      */
     Optional<Comprobante> findTopByNumeroComprobanteStartingWithOrderByNumeroComprobanteDesc(String numeroPrefix);
+
+    /**
+     * Busca comprobantes por estado de pago y que estén activos (no eliminados)
+     * @param estadoPago El estado de pago
+     * @return Lista de comprobantes con ese estado
+     */
+    List<Comprobante> findByEstadoPagoAndEliminadoFalse(EstadoPago estadoPago);
+
+    /**
+     * Busca comprobantes pagados en un rango de fechas
+     * @param estadoPago El estado de pago
+     * @param inicio Fecha de inicio
+     * @param fin Fecha de fin
+     * @return Lista de comprobantes pagados en el rango
+     */
+    List<Comprobante> findByEstadoPagoAndFechaEmisionBetweenAndEliminadoFalse(
+        EstadoPago estadoPago,
+        LocalDateTime inicio,
+        LocalDateTime fin
+    );
 }

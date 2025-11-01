@@ -13,20 +13,168 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1>¡Bienvenido a OdontoApp!</h1>
+                        <h1>Dashboard</h1>
                     </div>
                 </div>
             </div>
         </section>
+
         <!-- Contenido Principal -->
         <section class="content">
             <div class="container-fluid">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Página Principal</h3>
+                <!-- Info boxes (Estadísticas principales) -->
+                <div class="row">
+                    <!-- Citas del Día -->
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-info elevation-1"><i class="fas fa-calendar-check"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Citas del Día</span>
+                                <span class="info-box-number" th:text="${citasDelDia != null ? citasDelDia : 0}">0</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        Has iniciado sesión correctamente. ¡Ahora podemos empezar a construir los módulos!
+
+                    <!-- Total de Pacientes -->
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="info-box mb-3">
+                            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-users"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Total Pacientes</span>
+                                <span class="info-box-number" th:text="${totalPacientes != null ? totalPacientes : 0}">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pacientes Nuevos del Mes -->
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="info-box mb-3">
+                            <span class="info-box-icon bg-primary elevation-1"><i class="fas fa-user-plus"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Pacientes Nuevos</span>
+                                <span class="info-box-number" th:text="${pacientesNuevos != null ? pacientesNuevos : 0}">0</span>
+                                <small>Este mes</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ingresos del Mes -->
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="info-box mb-3">
+                            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-dollar-sign"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Ingresos del Mes</span>
+                                <span class="info-box-number">
+                                    S/. <span th:text="${ingresosDelMes != null ? #numbers.formatDecimal(ingresosDelMes, 1, 'COMMA', 2, 'POINT') : '0.00'}">0.00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Segunda fila de estadísticas -->
+                <div class="row">
+                    <!-- Ingresos Pendientes -->
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="small-box bg-warning">
+                            <div class="inner">
+                                <h3>S/. <span th:text="${ingresosPendientes != null ? #numbers.formatDecimal(ingresosPendientes, 1, 'COMMA', 2, 'POINT') : '0.00'}">0.00</span></h3>
+                                <p>Ingresos Pendientes</p>
+                            </div>
+                            <div class="icon">
+                                <i class="fas fa-hourglass-half"></i>
+                            </div>
+                            <a th:href="@{/facturacion}" class="small-box-footer">Ver comprobantes <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Próximas Citas -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header border-transparent">
+                                <h3 class="card-title">Próximas Citas</h3>
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table m-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Paciente</th>
+                                                <th>Odontólogo</th>
+                                                <th>Fecha y Hora</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${proximasCitas == null || proximasCitas.isEmpty()}">
+                                                <td colspan="4" class="text-center text-muted">No hay citas próximas</td>
+                                            </tr>
+                                            <tr th:each="cita : ${proximasCitas}">
+                                                <td th:text="${cita.pacienteNombre}">Paciente</td>
+                                                <td th:text="${cita.odontologoNombre}">Odontólogo</td>
+                                                <td th:text="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}">Fecha</td>
+                                                <td><span class="badge badge-info" th:text="${cita.estadoCitaNombre}">Estado</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card-footer clearfix">
+                                <a th:href="@{/citas}" class="btn btn-sm btn-primary float-right">Ver Calendario de Citas</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Insumos con Stock Bajo -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header border-transparent">
+                                <h3 class="card-title">Insumos con Stock Bajo</h3>
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table m-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Insumo</th>
+                                                <th>Stock Actual</th>
+                                                <th>Stock Mínimo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${insumosStockBajo == null || insumosStockBajo.isEmpty()}">
+                                                <td colspan="3" class="text-center text-muted">Todos los insumos tienen stock suficiente</td>
+                                            </tr>
+                                            <tr th:each="insumo : ${insumosStockBajo}">
+                                                <td th:text="${insumo.nombre}">Insumo</td>
+                                                <td>
+                                                    <span class="badge badge-danger"
+                                                          th:text="${insumo.stockActual != null ? insumo.stockActual : 0} + ' ' + ${insumo.unidadMedidaNombre != null ? insumo.unidadMedidaNombre : ''}">
+                                                        0
+                                                    </span>
+                                                </td>
+                                                <td th:text="${insumo.stockMinimo != null ? insumo.stockMinimo : 0} + ' ' + ${insumo.unidadMedidaNombre != null ? insumo.unidadMedidaNombre : ''}">0</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card-footer clearfix">
+                                <a th:href="@{/insumos}" class="btn btn-sm btn-warning float-right">Ver Inventario</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
