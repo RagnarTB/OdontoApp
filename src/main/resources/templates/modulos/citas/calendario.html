@@ -157,8 +157,23 @@
 
                 // Clic en un espacio vacío (agendar cita)
                 dateClick: function(info) {
+                    // Obtener la fecha/hora del clic y redondear a intervalos de 30 minutos
+                    var fechaHora = moment(info.date);
+
+                    // Redondear minutos a 0 o 30
+                    var minutos = fechaHora.minutes();
+                    if (minutos > 0 && minutos < 30) {
+                        fechaHora.minutes(30);
+                    } else if (minutos > 30) {
+                        fechaHora.add(1, 'hour').minutes(0);
+                    }
+                    fechaHora.seconds(0);
+
+                    // Formato datetime-local (YYYY-MM-DDTHH:mm)
+                    var fechaHoraFormateada = fechaHora.format('YYYY-MM-DDTHH:mm');
+
                     // Rellenar la fecha en el formulario de agendar
-                    document.getElementById('fechaHoraInicioAgendar').value = info.dateStr;
+                    document.getElementById('fechaHoraInicioAgendar').value = fechaHoraFormateada;
 
                     // Abrir el modal
                     $('#modalAgendarCita').modal('show');

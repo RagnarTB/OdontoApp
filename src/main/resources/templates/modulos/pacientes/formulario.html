@@ -26,6 +26,16 @@
 
                         <div class="card-body">
 
+                            <!-- ALERTA INFORMATIVA PARA MODO EDICIÓN -->
+                            <div th:if="${pacienteDTO.id != null}" class="alert alert-info alert-dismissible fade show" role="alert">
+                                <h5><i class="icon fas fa-info-circle"></i> Modo Edición</h5>
+                                <strong>Campos editables:</strong> Email, Teléfono, Dirección, Alergias y Antecedentes Médicos.<br>
+                                <strong>Campos protegidos:</strong> Tipo de documento, Número de documento, Nombre completo y Fecha de nacimiento.
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+
                             <!-- ✅ VALIDACIONES -->
                             <div th:if="${#fields.hasErrors('*')}"
                                 class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -68,6 +78,7 @@
                                     <div class="form-group">
                                         <label for="tipoDocumentoId">Tipo Documento</label>
                                         <select class="form-control" th:field="*{tipoDocumentoId}" id="tipoDocumentoId"
+                                            th:disabled="${pacienteDTO.id != null}"
                                             th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">
                                             <option value="">Seleccione...</option>
                                             <option th:each="tipo : ${tiposDocumento}" th:value="${tipo.id}"
@@ -75,6 +86,9 @@
                                         </select>
                                         <div th:if="${#fields.hasErrors('tipoDocumentoId')}" class="invalid-feedback"
                                             th:errors="*{tipoDocumentoId}"></div>
+                                        <small th:if="${pacienteDTO.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
 
@@ -84,6 +98,7 @@
                                         <div class="input-group">
                                             <input type="text" class="form-control" th:field="*{numeroDocumento}"
                                                 id="numeroDocumento" placeholder="Número de Documento"
+                                                th:readonly="${pacienteDTO.id != null}"
                                                 th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
                                             <div class="input-group-append">
                                                 <button class="btn btn-outline-secondary" type="button"
@@ -93,6 +108,9 @@
                                         <small id="doc-error" class="form-text text-danger"></small>
                                         <div th:if="${#fields.hasErrors('numeroDocumento')}"
                                             class="invalid-feedback d-block" th:errors="*{numeroDocumento}"></div>
+                                        <small th:if="${pacienteDTO.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
 
@@ -101,9 +119,13 @@
                                         <label for="nombreCompleto">Nombre Completo</label>
                                         <input type="text" class="form-control" th:field="*{nombreCompleto}"
                                             id="nombreCompleto"
+                                            th:readonly="${pacienteDTO.id != null}"
                                             th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
                                             th:errors="*{nombreCompleto}"></div>
+                                        <small th:if="${pacienteDTO.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -117,6 +139,9 @@
                                             th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback"
                                             th:errors="*{email}"></div>
+                                        <small th:if="${pacienteDTO.id != null}" class="form-text text-success">
+                                            <i class="fas fa-edit"></i> Campo editable
+                                        </small>
                                     </div>
                                 </div>
 
@@ -125,6 +150,9 @@
                                         <label for="telefono">Teléfono</label>
                                         <input type="text" class="form-control" th:field="*{telefono}"
                                             placeholder="987654321">
+                                        <small th:if="${pacienteDTO.id != null}" class="form-text text-success">
+                                            <i class="fas fa-edit"></i> Campo editable
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -133,13 +161,20 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="fechaNacimiento">Fecha de Nacimiento</label>
-                                        <input type="date" class="form-control" th:field="*{fechaNacimiento}">
+                                        <input type="date" class="form-control" th:field="*{fechaNacimiento}"
+                                            th:readonly="${pacienteDTO.id != null}">
+                                        <small th:if="${pacienteDTO.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="direccion">Dirección</label>
                                         <input type="text" class="form-control" th:field="*{direccion}">
+                                        <small th:if="${pacienteDTO.id != null}" class="form-text text-success">
+                                            <i class="fas fa-edit"></i> Campo editable
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -148,12 +183,18 @@
                                 <label for="alergias">Alergias Conocidas</label>
                                 <textarea class="form-control" th:field="*{alergias}" rows="3"
                                     placeholder="Ej: Penicilina, AINES..."></textarea>
+                                <small th:if="${pacienteDTO.id != null}" class="form-text text-success">
+                                    <i class="fas fa-edit"></i> Campo editable
+                                </small>
                             </div>
 
                             <div class="form-group">
                                 <label for="antecedentesMedicos">Antecedentes Médicos Relevantes</label>
                                 <textarea class="form-control" th:field="*{antecedentesMedicos}" rows="3"
                                     placeholder="Ej: Hipertensión, Diabetes, Asma..."></textarea>
+                                <small th:if="${pacienteDTO.id != null}" class="form-text text-success">
+                                    <i class="fas fa-edit"></i> Campo editable
+                                </small>
                             </div>
 
                         </div>

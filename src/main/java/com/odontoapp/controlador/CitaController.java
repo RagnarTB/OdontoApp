@@ -294,6 +294,7 @@ public class CitaController {
         Map<String, Object> extendedProps = new HashMap<>();
         extendedProps.put("pacienteId", cita.getPaciente().getId());
         extendedProps.put("odontologoId", cita.getOdontologo().getId());
+        extendedProps.put("odontologoNombre", cita.getOdontologo().getNombreCompleto());
         extendedProps.put("estadoNombre", cita.getEstadoCita().getNombre());
 
         if (cita.getProcedimiento() != null) {
