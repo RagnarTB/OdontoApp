@@ -99,22 +99,30 @@
                             </div>
 
                             <div class="user-actions">
-                                <label class="switch" title="Cambiar Estado">
-                                    <input type="checkbox" th:checked="${usuario.estaActivo}"
-                                           th:attr="onchange=|location.href='@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}'|">
-                                    <span class="slider"></span>
-                                </label>
-                                <a th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
-                                   class="btn btn-sm btn-outline-secondary" title="Editar"
-                                   sec:authorize="hasAuthority('EDITAR_USUARIOS')">
-                                    <i class="fas fa-pencil-alt"></i>
-                                </a>
-                                <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
-                                   class="btn btn-sm btn-outline-danger" title="Eliminar"
-                                   onclick="return confirm('¿Está seguro de que desea eliminar este usuario?');"
-                                   sec:authorize="hasAuthority('ELIMINAR_USUARIOS')">
-                                    <i class="fas fa-trash-alt"></i>
-                                </a>
+                                <!-- Mostrar badge para super-admin en lugar de acciones -->
+                                <span th:if="${usuario.esSuperAdmin}" class="badge badge-primary">
+                                    <i class="fas fa-shield-alt"></i> Super Admin
+                                </span>
+
+                                <!-- Mostrar acciones solo si NO es super-admin -->
+                                <div th:unless="${usuario.esSuperAdmin}">
+                                    <label class="switch" title="Cambiar Estado">
+                                        <input type="checkbox" th:checked="${usuario.estaActivo}"
+                                               th:attr="onchange=|location.href='@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}'|">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <a th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
+                                       class="btn btn-sm btn-outline-secondary" title="Editar"
+                                       sec:authorize="hasAuthority('EDITAR_USUARIOS')">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+                                    <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
+                                       class="btn btn-sm btn-outline-danger btn-eliminar-usuario" title="Eliminar"
+                                       th:data-nombre="${usuario.nombreCompleto}"
+                                       sec:authorize="hasAuthority('ELIMINAR_USUARIOS')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -144,5 +152,20 @@
             </div>
             </div> </div> </section>
 </div>
+
+<script>
+    // Confirmación de eliminación de usuario con SweetAlert2
+    $(document).on('click', '.btn-eliminar-usuario', function(e) {
+        e.preventDefault();
+        const url = $(this).attr('href');
+        const nombre = $(this).data('nombre');
+
+        confirmarEliminacion(nombre).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    });
+</script>
 </body>
 </html>

@@ -89,6 +89,11 @@ public class UsuarioServiceImpl implements UsuarioService {
                     .orElseThrow(
                             () -> new IllegalStateException("Usuario no encontrado con ID: " + usuarioDTO.getId()));
 
+            // Proteger al super-administrador de ediciones no permitidas
+            if (usuario.isEsSuperAdmin()) {
+                throw new UnsupportedOperationException("No se puede modificar al super-administrador del sistema.");
+            }
+
             emailOriginal = usuario.getEmail();
 
             if (!emailNuevo.equals(emailOriginal)) {
@@ -102,10 +107,21 @@ public class UsuarioServiceImpl implements UsuarioService {
                                 "El email '" + emailNuevo + "' ya estÃ¡ en uso por otro usuario activo.");
                     }
                 }
-                // Validar si se intenta cambiar email del admin principal
+                // Validar si se intenta cambiar email del admin principal (si aplica)
                 if ("admin@odontoapp.com".equals(emailOriginal)) {
                     throw new IllegalArgumentException("No se puede cambiar el email del administrador principal.");
                 }
+
+                // --- LÓGICA DE CAMBIO DE EMAIL CON RESETEO DE CONTRASEÑA ---
+                // Si el email cambió, generar nueva contraseña temporal por seguridad
+                String passwordTemporal = PasswordUtil.generarPasswordAleatoria();
+                usuario.setPasswordTemporal(passwordTemporal);
+                usuario.setPassword(passwordEncoder.encode(passwordTemporal));
+                usuario.setDebeActualizarPassword(true); // Forzar cambio al siguiente login
+                enviarEmailTemporal = true; // Activar envío de email a la nueva dirección
+
+                System.out.println(">>> Cambio de email detectado para usuario " + emailOriginal +
+                                   " -> " + emailNuevo + ". Se generará nueva contraseña temporal.");
             }
             // Aseguramos inicialización si las colecciones fueran null (aunque no debería
             // pasar con JPA)
@@ -279,8 +295,9 @@ public class UsuarioServiceImpl implements UsuarioService {
             return;
         }
 
-        if ("admin@odontoapp.com".equals(usuario.getEmail())) {
-            throw new UnsupportedOperationException("No se puede eliminar al administrador principal.");
+        // Proteger al super-administrador
+        if (usuario.isEsSuperAdmin()) {
+            throw new UnsupportedOperationException("No se puede eliminar al super-administrador del sistema.");
         }
 
         // Soft delete del Paciente asociado (si existe y no está eliminado)
@@ -325,8 +342,9 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Usuario no encontrado con ID: " + id));
 
-        if ("admin@odontoapp.com".equals(usuario.getEmail()) && !activar) {
-            throw new UnsupportedOperationException("No se puede desactivar al administrador principal.");
+        // Proteger al super-administrador de ser desactivado
+        if (usuario.isEsSuperAdmin() && !activar) {
+            throw new UnsupportedOperationException("No se puede desactivar al super-administrador del sistema.");
         }
 
         // --- NUEVA VALIDACIÓN: No desactivar si es el único rol activo de algún

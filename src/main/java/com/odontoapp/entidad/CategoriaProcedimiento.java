@@ -1,5 +1,6 @@
 package com.odontoapp.entidad;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,6 +31,9 @@ public class CategoriaProcedimiento extends EntidadAuditable {
     private String icono;
     private int orden;
     private String color;
+
+    @Column(nullable = false)
+    private boolean estaActiva = true; // Valor por defecto true para nuevas categorías
 
     private boolean eliminado = false;
 }

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(titulo='Detalle de Comprobante', contenido=~{::#contenido-principal})}">
+
+<body>
+<div id="contenido-principal">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Detalle de Comprobante</h1>
+                    <p class="text-muted">Información completa del comprobante y pagos realizados</p>
+                </div>
+                <div class="col-sm-6">
+                    <a th:href="@{/facturacion}" class="btn btn-outline-secondary float-sm-right">
+                        <i class="fas fa-arrow-left mr-2"></i> Volver al Listado
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            <!-- Mensajes flash -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span th:text="${success}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span th:text="${error}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="row">
+                <!-- Columna Izquierda: Información del Comprobante -->
+                <div class="col-md-8">
+
+                    <!-- Información General -->
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-file-invoice mr-2"></i>Información del Comprobante
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Número:</strong> <span th:text="${comprobante.numeroComprobante}">B001-0000001</span></p>
+                                    <p><strong>Tipo:</strong> <span class="badge badge-info" th:text="${comprobante.tipoComprobante}">CITA</span></p>
+                                    <p><strong>Paciente:</strong> <span th:text="${comprobante.paciente.nombreCompleto}">Juan Pérez</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Fecha Emisión:</strong> <span th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy HH:mm')}">01/11/2025</span></p>
+                                    <p><strong>Estado:</strong>
+                                        <span class="badge"
+                                              th:classappend="${comprobante.estadoPago.nombre == 'PENDIENTE'} ? 'badge-warning' :
+                                                              (${comprobante.estadoPago.nombre == 'PAGADO_PARCIAL'} ? 'badge-info' :
+                                                              (${comprobante.estadoPago.nombre == 'PAGADO_TOTAL'} ? 'badge-success' :
+                                                              (${comprobante.estadoPago.nombre == 'ANULADO'} ? 'badge-danger' : 'badge-secondary')))"
+                                              th:text="${comprobante.estadoPago.nombre}">
+                                            PENDIENTE
+                                        </span>
+                                    </p>
+                                    <p th:if="${comprobante.cita != null}">
+                                        <strong>Cita ID:</strong> <span th:text="${comprobante.cita.id}">123</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div th:if="${comprobante.descripcion}" class="mt-3">
+                                <p><strong>Descripción:</strong></p>
+                                <p class="text-muted" th:text="${comprobante.descripcion}">Comprobante generado desde cita</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detalles del Comprobante -->
+                    <div class="card card-secondary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-list mr-2"></i>Detalles del Comprobante
+                            </h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Descripción</th>
+                                        <th class="text-center">Cantidad</th>
+                                        <th class="text-right">P. Unitario</th>
+                                        <th class="text-right">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${comprobante.detalles == null || comprobante.detalles.empty}">
+                                        <td colspan="5" class="text-center text-muted py-3">
+                                            No hay detalles registrados.
+                                        </td>
+                                    </tr>
+                                    <tr th:each="detalle : ${comprobante.detalles}">
+                                        <td>
+                                            <span class="badge"
+                                                  th:classappend="${detalle.tipoItem == 'PROCEDIMIENTO'} ? 'badge-primary' : 'badge-warning'"
+                                                  th:text="${detalle.tipoItem}">PROCEDIMIENTO</span>
+                                        </td>
+                                        <td th:text="${detalle.descripcionItem}">Limpieza Dental</td>
+                                        <td class="text-center" th:text="${#numbers.formatDecimal(detalle.cantidad, 1, 2)}">1.00</td>
+                                        <td class="text-right">S/ <span th:text="${#numbers.formatDecimal(detalle.precioUnitario, 1, 2)}">80.00</span></td>
+                                        <td class="text-right"><strong>S/ <span th:text="${#numbers.formatDecimal(detalle.subtotal, 1, 2)}">80.00</span></strong></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="4" class="text-right">Total:</th>
+                                        <th class="text-right text-success">
+                                            S/ <span th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">150.00</span>
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Historial de Pagos -->
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-history mr-2"></i>Historial de Pagos
+                            </h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Método</th>
+                                        <th class="text-right">Monto</th>
+                                        <th>Notas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${pagos == null || pagos.empty}">
+                                        <td colspan="4" class="text-center text-muted py-3">
+                                            <i class="fas fa-info-circle"></i> No se han registrado pagos aún.
+                                        </td>
+                                    </tr>
+                                    <tr th:each="pago : ${pagos}">
+                                        <td th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy HH:mm')}">01/11/2025 14:30</td>
+                                        <td>
+                                            <span class="badge badge-info" th:text="${pago.metodoPago.nombre}">EFECTIVO</span>
+                                            <span th:if="${pago.referenciaYape}" class="text-muted small">
+                                                <br>Ref: <span th:text="${pago.referenciaYape}">123456</span>
+                                            </span>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong class="text-success">S/ <span th:text="${#numbers.formatDecimal(pago.monto, 1, 2)}">50.00</span></strong>
+                                        </td>
+                                        <td>
+                                            <span th:if="${pago.notas}" th:text="${pago.notas}">Pago parcial</span>
+                                            <span th:unless="${pago.notas}" class="text-muted">-</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Columna Derecha: Resumen de Pagos -->
+                <div class="col-md-4">
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-calculator mr-2"></i>Resumen de Pagos
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label>Monto Total:</label>
+                                <h3 class="text-dark">S/ <span th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">150.00</span></h3>
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Monto Pagado:</label>
+                                <h3 class="text-success">S/ <span th:text="${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}">50.00</span></h3>
+                            </div>
+
+                            <div class="mb-4">
+                                <label>Saldo Pendiente:</label>
+                                <h2 class="text-danger">S/ <span th:text="${#numbers.formatDecimal(comprobante.montoPendiente, 1, 2)}">100.00</span></h2>
+                            </div>
+
+                            <hr>
+
+                            <!-- Botón Registrar Pago -->
+                            <button type="button" class="btn btn-success btn-lg btn-block"
+                                    data-toggle="modal"
+                                    data-target="#modalRegistrarPago"
+                                    th:if="${comprobante.estadoPago.nombre != 'ANULADO' && comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
+                                    th:attr="data-comprobante-id=${comprobante.id},
+                                             data-numero-comprobante=${comprobante.numeroComprobante},
+                                             data-saldo-pendiente=${comprobante.montoPendiente}">
+                                <i class="fas fa-money-bill-wave mr-2"></i>Registrar Pago
+                            </button>
+
+                            <div th:if="${comprobante.estadoPago.nombre == 'PAGADO_TOTAL'}" class="alert alert-success text-center">
+                                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                <p class="mb-0"><strong>Comprobante Pagado Totalmente</strong></p>
+                            </div>
+
+                            <div th:if="${comprobante.estadoPago.nombre == 'ANULADO'}" class="alert alert-danger text-center">
+                                <i class="fas fa-ban fa-2x mb-2"></i>
+                                <p class="mb-0"><strong>Comprobante Anulado</strong></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Acciones Adicionales -->
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-cogs mr-2"></i>Acciones
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <a th:href="@{/facturacion/imprimir/{id}(id=${comprobante.id})}"
+                               class="btn btn-outline-primary btn-block"
+                               target="_blank">
+                                <i class="fas fa-print mr-2"></i>Imprimir Comprobante
+                            </a>
+
+                            <a th:href="@{/facturacion/anular/{id}(id=${comprobante.id})}"
+                               class="btn btn-outline-danger btn-block"
+                               th:if="${comprobante.estadoPago.nombre != 'ANULADO' && (pagos == null || pagos.empty)}"
+                               onclick="return confirm('¿Está seguro de que desea anular este comprobante? Esta acción no se puede deshacer.');">
+                                <i class="fas fa-ban mr-2"></i>Anular Comprobante
+                            </a>
+
+                            <div th:if="${comprobante.estadoPago.nombre != 'ANULADO' && pagos != null && !pagos.empty}"
+                                 class="alert alert-warning small mt-2">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                No se puede anular un comprobante con pagos registrados.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Incluir Modal de Registrar Pago -->
+    <div th:replace="~{modulos/facturacion/fragmentos :: modalRegistrarPago}"></div>
+
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    $(document).ready(function() {
+        // Cuando se abre el modal de registrar pago, rellenar los datos
+        $('#modalRegistrarPago').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Botón que abrió el modal
+            var comprobanteId = button.data('comprobante-id');
+            var numeroComprobante = button.data('numero-comprobante');
+            var saldoPendiente = button.data('saldo-pendiente');
+
+            // Rellenar campos del modal
+            $('#pagoComprobanteId').val(comprobanteId);
+            $('#infoNumeroComprobante').text(numeroComprobante);
+            $('#infoSaldoPendiente').text(saldoPendiente);
+
+            // Establecer fecha actual por defecto
+            var now = new Date();
+            var dateString = now.getFullYear() + '-' +
+                             String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                             String(now.getDate()).padStart(2, '0') + 'T' +
+                             String(now.getHours()).padStart(2, '0') + ':' +
+                             String(now.getMinutes()).padStart(2, '0');
+            $('#fechaPago').val(dateString);
+
+            // Establecer monto máximo
+            $('#monto').attr('max', saldoPendiente);
+            $('#monto').val(saldoPendiente);
+        });
+    });
+    /*]]>*/
+</script>
+
+</body>
+</html>

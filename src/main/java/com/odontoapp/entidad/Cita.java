@@ -58,6 +58,18 @@ public class Cita extends EntidadAuditable {
     @Column(name = "notas_internas")
     private String notasInternas;
 
+    @Lob
+    @Column(name = "motivo_consulta")
+    private String motivoConsulta;
+
+    @Lob
+    @Column(name = "notas")
+    private String notas;
+
+    @Lob
+    @Column(name = "motivo_cancelacion")
+    private String motivoCancelacion;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "estado_cita_id", nullable = false)
     private EstadoCita estadoCita;

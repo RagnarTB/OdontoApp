@@ -2,10 +2,13 @@ package com.odontoapp.entidad;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,14 +17,16 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = { "cita", "paciente", "estadoPago" })
-@ToString(callSuper = true, exclude = { "cita", "paciente", "estadoPago" })
+@EqualsAndHashCode(callSuper = true, exclude = { "cita", "paciente", "estadoPago", "detalles" })
+@ToString(callSuper = true, exclude = { "cita", "paciente", "estadoPago", "detalles" })
 @Entity
 @Table(name = "comprobantes")
 @SQLDelete(sql = "UPDATE comprobantes SET eliminado = true, fecha_eliminacion = NOW() WHERE id = ?")
@@ -32,8 +37,8 @@ public class Comprobante extends EntidadAuditable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cita_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cita_id", nullable = true)
     private Cita cita;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -59,10 +64,25 @@ public class Comprobante extends EntidadAuditable {
     @JoinColumn(name = "estado_pago_id", nullable = false)
     private EstadoPago estadoPago;
 
+    @Column(name = "tipo_comprobante", length = 50)
+    private String tipoComprobante; // 'CITA', 'BOLETA', 'FACTURA', 'TICKET'
+
     @Column(name = "descripcion")
     private String descripcion;
+
+    @OneToMany(mappedBy = "comprobante", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<DetalleComprobante> detalles = new ArrayList<>();
 
     // --- Campos Soft Delete ---
     private boolean eliminado = false;
     private LocalDateTime fechaEliminacion;
+
+    /**
+     * Método alias para compatibilidad con código legacy.
+     * Retorna el número de comprobante (serie y correlativo).
+     * @return El número de comprobante
+     */
+    public String getSerieNumero() {
+        return numeroComprobante;
+    }
 }

@@ -35,4 +35,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @Query("SELECT u FROM Usuario u WHERE u.numeroDocumento = :numDoc AND u.tipoDocumento.id = :tipoDocId")
     Optional<Usuario> findByNumeroDocumentoAndTipoDocumentoIdIgnorandoSoftDelete(
             @Param("numDoc") String numDoc, @Param("tipoDocId") Long tipoDocId);
+
+    // Buscar usuarios por nombre de rol
+    @Query("SELECT u FROM Usuario u JOIN u.roles r WHERE r.nombre = :rolNombre")
+    java.util.List<Usuario> findByRolesNombre(@Param("rolNombre") String rolNombre);
 }

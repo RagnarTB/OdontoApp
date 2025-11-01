@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<body>
+
+    <!-- Fragment: Gestión de Categorías -->
+    <div th:fragment="gestionCategorias">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="modal-title">Gestionar Categorías de Servicios</h5>
+            <button type="button" class="btn btn-primary btn-sm"
+                onclick="cargarFormularioCategoriaProc('/categorias-procedimiento/nuevo')">
+                <i class="fas fa-plus"></i> Nueva Categoría
+            </button>
+        </div>
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th class="text-center">Estado</th>
+                    <th style="width: 150px;" class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:if="${listaCategorias == null || listaCategorias.isEmpty()}">
+                    <td colspan="4" class="text-center text-muted">No hay categorías registradas</td>
+                </tr>
+                <tr th:each="cat : ${listaCategorias}">
+                    <td th:text="${cat.nombre}">Categoría</td>
+                    <td th:text="${cat.descripcion != null ? cat.descripcion : '-'}">Descripción</td>
+                    <td class="text-center">
+                        <span class="badge" th:classappend="${cat.estaActiva} ? 'badge-success' : 'badge-secondary'"
+                            th:text="${cat.estaActiva} ? 'Activa' : 'Inactiva'"></span>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-xs btn-warning" title="Editar"
+                            th:onclick="'cargarFormularioCategoriaProc(\'/categorias-procedimiento/editar/' + ${cat.id} + '\')'">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <a th:href="@{/categorias-procedimiento/cambiar-estado/{id}(id=${cat.id})}" class="btn btn-xs"
+                            th:classappend="${cat.estaActiva} ? 'btn-outline-secondary' : 'btn-outline-success'"
+                            th:title="${cat.estaActiva} ? 'Desactivar' : 'Activar'">
+                            <i class="fas" th:classappend="${cat.estaActiva} ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                        </a>
+                        <a href="#" class="btn btn-xs btn-danger btn-eliminar-cat-proc"
+                            th:data-url="@{/categorias-procedimiento/eliminar/{id}(id=${cat.id})}"
+                            th:data-nombre="${cat.nombre}"
+                            title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Fragment: Formulario de Categoría -->
+    <div th:fragment="formularioCategoria">
+        <form th:action="@{/categorias-procedimiento/guardar}" th:object="${categoria}" method="post">
+            <input type="hidden" th:field="*{id}" />
+            <h5 class="modal-title mb-3" th:text="${categoria.id == null} ? 'Nueva Categoría de Servicio' : 'Editar Categoría de Servicio'">
+            </h5>
+
+            <div class="form-group">
+                <label for="nombreCatProc">Nombre <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="nombreCatProc" th:field="*{nombre}" required
+                    placeholder="Ej: Ortodoncia, Endodoncia, Periodoncia">
+            </div>
+
+            <div class="form-group">
+                <label for="descCatProc">Descripción</label>
+                <textarea class="form-control" id="descCatProc" th:field="*{descripcion}" rows="3"
+                    placeholder="Descripción breve de la categoría (opcional)"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="iconoCatProc">Ícono (clase Font Awesome)</label>
+                <input type="text" class="form-control" id="iconoCatProc" th:field="*{icono}"
+                    placeholder="Ej: fa-tooth, fa-shield-alt">
+                <small class="form-text text-muted">Opcional. Ver íconos en <a href="https://fontawesome.com/icons" target="_blank">fontawesome.com</a></small>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="ordenCatProc">Orden</label>
+                        <input type="number" class="form-control" id="ordenCatProc" th:field="*{orden}"
+                            placeholder="0" min="0">
+                        <small class="form-text text-muted">Para ordenar en listados</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="colorCatProc">Color (Hex)</label>
+                        <input type="text" class="form-control" id="colorCatProc" th:field="*{color}"
+                            placeholder="#007bff">
+                        <small class="form-text text-muted">Ej: #007bff</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer mt-3 p-0">
+                <button type="button" class="btn btn-secondary" onclick="cargarGestionCategoriasProc()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save mr-1"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Fragment: Error -->
+    <div th:fragment="errorCategoria" class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        Error: No se pudo encontrar la categoría solicitada.
+    </div>
+
+</body>
+
+</html>

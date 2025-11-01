@@ -38,40 +38,16 @@ public class RolServiceImpl implements RolService {
     public void guardarRol(RolDTO rolDTO) {
         String nombreRolUpper = rolDTO.getNombre().toUpperCase(); // Normalizar a mayúsculas
 
-        // --- VALIDACIÓN DE ROLES PROTEGIDOS ---
+        // --- VALIDACIÓN DE ROLES DEL SISTEMA ---
         if (rolDTO.getId() != null) { // Solo aplica si estamos editando
             Rol rolExistente = rolRepository.findById(rolDTO.getId())
                     .orElseThrow(
                             () -> new IllegalStateException("Rol no encontrado para editar con ID: " + rolDTO.getId()));
 
-            // Impedir cambiar el NOMBRE de roles protegidos
-            if ((ROL_ADMIN.equals(rolExistente.getNombre()) || ROL_PACIENTE.equals(rolExistente.getNombre())
-                    || ROL_ODONTOLOGO.equals(rolExistente.getNombre()))
-                    && !nombreRolUpper.equals(rolExistente.getNombre())) {
+            // Impedir editar roles del sistema (Administrador, Paciente, Odontólogo)
+            if (rolExistente.isEsRolSistema()) {
                 throw new UnsupportedOperationException(
-                        "No se puede cambiar el nombre del rol protegido '" + rolExistente.getNombre() + "'.");
-            }
-            // Impedir guardar CUALQUIER cambio en ADMIN o PACIENTE (excepto si solo se
-            // cambian permisos y no es ADMIN/PACIENTE)
-            // Opcional: Podrías permitir editar permisos de ODONTOLOGO si quisieras.
-            if (ROL_ADMIN.equals(rolExistente.getNombre()) || ROL_PACIENTE.equals(rolExistente.getNombre())) {
-                // Comprobar si se intentó cambiar algo más que los permisos
-                boolean soloPermisosCambiados = nombreRolUpper.equals(rolExistente.getNombre()); // Y podrías añadir más
-                                                                                                 // checks si Rol
-                                                                                                 // tuviera más campos
-
-                if (!soloPermisosCambiados) {
-                    throw new UnsupportedOperationException(
-                            "El rol '" + rolExistente.getNombre() + "' no puede ser modificado.");
-                }
-                // Si solo cambian permisos y NO es ADMIN/PACIENTE, se permite continuar
-                // Si es ADMIN/PACIENTE, incluso si solo cambian permisos, podrías bloquearlo
-                // aquí si quieres
-                // if (ROL_ADMIN.equals(rolExistente.getNombre()) ||
-                // ROL_PACIENTE.equals(rolExistente.getNombre())) {
-                // throw new UnsupportedOperationException("Los permisos de los roles ADMIN y
-                // PACIENTE no pueden ser modificados.");
-                // }
+                        "El rol del sistema '" + rolExistente.getNombre() + "' no puede ser modificado.");
             }
         } else {
             // Impedir crear NUEVOS roles con nombres protegidos
@@ -140,11 +116,10 @@ public class RolServiceImpl implements RolService {
         Rol rol = rolRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Rol no encontrado"));
 
-        // --- PROTECCIÓN MEJORADA usando constantes ---
-        if (ROL_ADMIN.equals(rol.getNombre()) || ROL_PACIENTE.equals(rol.getNombre())
-                || ROL_ODONTOLOGO.equals(rol.getNombre())) {
+        // Proteger roles del sistema (Admin, Paciente, Odontólogo)
+        if (rol.isEsRolSistema()) {
             throw new UnsupportedOperationException(
-                    "No se puede eliminar el rol protegido '" + rol.getNombre() + "'.");
+                    "No se puede eliminar el rol del sistema '" + rol.getNombre() + "'.");
         }
 
         // Validar si tiene usuarios asociados (importante cargar la colección)
@@ -180,11 +155,10 @@ public class RolServiceImpl implements RolService {
         Rol rol = rolRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Rol no encontrado"));
 
-        // --- PROTECCIÓN MEJORADA usando constantes ---
-        if (ROL_ADMIN.equals(rol.getNombre()) || ROL_PACIENTE.equals(rol.getNombre())
-                || ROL_ODONTOLOGO.equals(rol.getNombre())) {
+        // Proteger roles del sistema de cambio de estado
+        if (rol.isEsRolSistema()) {
             throw new UnsupportedOperationException(
-                    "No se puede cambiar el estado del rol protegido '" + rol.getNombre() + "'.");
+                    "No se puede cambiar el estado del rol del sistema '" + rol.getNombre() + "'.");
         }
 
         // VALIDACIÓN MEJORADA: Evitar desactivar si deja usuarios sin roles activos

@@ -33,6 +33,16 @@
 
                         <div class="card-body">
 
+                            <!-- ALERTA INFORMATIVA PARA MODO EDICIÓN -->
+                            <div th:if="${usuario.id != null}" class="alert alert-info alert-dismissible fade show" role="alert">
+                                <h5><i class="icon fas fa-info-circle"></i> Modo Edición</h5>
+                                <strong>Campos editables:</strong> Email, Teléfono, Dirección, Roles y Horarios.<br>
+                                <strong>Campos protegidos:</strong> Tipo de documento, Número de documento, Nombre completo, Fecha de nacimiento y Fecha de contratación.
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+
                             <!-- ALERTA DE VALIDACIÓN GENERAL -->
                             <div th:if="${#fields.hasGlobalErrors()}"
                                 class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -85,6 +95,7 @@
                                     <div class="form-group">
                                         <label for="tipoDocumentoId">Tipo Documento</label>
                                         <select class="form-control" th:field="*{tipoDocumentoId}" id="tipoDocumentoId"
+                                            th:disabled="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">
                                             <option value="">Seleccione...</option>
                                             <option th:each="tipo : ${tiposDocumento}" th:value="${tipo.id}"
@@ -92,6 +103,9 @@
                                         </select>
                                         <div th:if="${#fields.hasErrors('tipoDocumentoId')}" class="invalid-feedback"
                                             th:errors="*{tipoDocumentoId}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -99,9 +113,13 @@
                                         <label for="numeroDocumento">N&uacute;mero Documento</label>
                                         <input type="text" class="form-control" th:field="*{numeroDocumento}"
                                             id="numeroDocumento" placeholder="N° de Documento"
+                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('numeroDocumento')}"
                                             class="invalid-feedback d-block" th:errors="*{numeroDocumento}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -109,9 +127,13 @@
                                         <label for="nombreCompleto">Nombre Completo</label>
                                         <input type="text" class="form-control" id="nombreCompleto"
                                             th:field="*{nombreCompleto}" placeholder="Nombre completo" required
+                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
                                             th:errors="*{nombreCompleto}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -124,6 +146,9 @@
                                             th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback"
                                             th:errors="*{email}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-success">
+                                            <i class="fas fa-edit"></i> Campo editable - Se enviará nueva contraseña temporal si cambia
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -134,6 +159,9 @@
                                             th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('telefono')}" class="invalid-feedback"
                                             th:errors="*{telefono}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-success">
+                                            <i class="fas fa-edit"></i> Campo editable
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -141,9 +169,13 @@
                                         <label for="fechaNacimiento">Fecha de Nacimiento</label>
                                         <input type="date" class="form-control" id="fechaNacimiento"
                                             th:field="*{fechaNacimiento}"
+                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('fechaNacimiento')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('fechaNacimiento')}" class="invalid-feedback"
                                             th:errors="*{fechaNacimiento}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -156,6 +188,9 @@
                                             th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('direccion')}" class="invalid-feedback"
                                             th:errors="*{direccion}"></div>
+                                        <small class="form-text text-muted">
+                                            <i class="fas fa-edit"></i> Campo editable
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -163,9 +198,13 @@
                                         <label for="fechaContratacion">Fecha Contrataci&oacute;n</label>
                                         <input type="date" class="form-control" id="fechaContratacion"
                                             th:field="*{fechaContratacion}"
+                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('fechaContratacion')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('fechaContratacion')}" class="invalid-feedback"
                                             th:errors="*{fechaContratacion}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -314,6 +353,110 @@
     <th:block id="page-scripts">
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+                // --- FUNCIONALIDAD DE BÚSQUEDA DE DNI ---
+                const tipoDocumentoSelect = document.getElementById('tipoDocumentoId');
+                const numeroDocumentoInput = document.getElementById('numeroDocumento');
+                const nombreCompletoInput = document.getElementById('nombreCompleto');
+                let timeoutId = null; // Para debounce
+
+                // Agregar botón de búsqueda al lado del input de documento
+                const divNumeroDocumento = numeroDocumentoInput.closest('.form-group');
+                const btnBuscarDni = document.createElement('button');
+                btnBuscarDni.type = 'button';
+                btnBuscarDni.className = 'btn btn-sm btn-info mt-1';
+                btnBuscarDni.innerHTML = '<i class="fas fa-search"></i> Buscar DNI';
+                btnBuscarDni.id = 'btnBuscarDni';
+                btnBuscarDni.style.display = 'none'; // Oculto por defecto
+                divNumeroDocumento.appendChild(btnBuscarDni);
+
+                // Función para verificar si el tipo de documento es DNI
+                function esDNI() {
+                    const selectedOption = tipoDocumentoSelect.options[tipoDocumentoSelect.selectedIndex];
+                    return selectedOption && selectedOption.text.toUpperCase().includes('DNI');
+                }
+
+                // Mostrar/ocultar botón de búsqueda según tipo de documento
+                tipoDocumentoSelect.addEventListener('change', function() {
+                    btnBuscarDni.style.display = esDNI() ? 'inline-block' : 'none';
+                });
+
+                // Trigger inicial para mostrar botón si ya hay DNI seleccionado
+                if (esDNI()) {
+                    btnBuscarDni.style.display = 'inline-block';
+                }
+
+                // Función para buscar DNI
+                function buscarDatosReniec(dni) {
+                    // Validar que sea DNI y tenga 8 dígitos
+                    if (!esDNI() || !dni || dni.length !== 8) {
+                        return;
+                    }
+
+                    // Mostrar indicador de carga
+                    mostrarCargando('Buscando datos en RENIEC...');
+
+                    // Deshabilitar el campo de nombre mientras se busca
+                    nombreCompletoInput.disabled = true;
+
+                    // Llamar al endpoint REST
+                    $.ajax({
+                        url: '/usuarios/api/buscar-dni',
+                        method: 'GET',
+                        data: { dni: dni },
+                        success: function(response) {
+                            cerrarCargando();
+                            if (response.nombreCompleto) {
+                                nombreCompletoInput.value = response.nombreCompleto;
+                                nombreCompletoInput.disabled = false;
+                                mostrarExito('Datos encontrados correctamente');
+                            } else {
+                                nombreCompletoInput.disabled = false;
+                                mostrarAdvertencia('No se encontraron datos para este DNI');
+                            }
+                        },
+                        error: function(xhr) {
+                            cerrarCargando();
+                            nombreCompletoInput.disabled = false;
+                            let errorMsg = 'Error al consultar RENIEC';
+                            if (xhr.responseJSON && xhr.responseJSON.error) {
+                                errorMsg = xhr.responseJSON.error;
+                            } else if (xhr.status === 404) {
+                                errorMsg = 'No se encontraron datos para este DNI';
+                            }
+                            mostrarAdvertencia(errorMsg);
+                        }
+                    });
+                }
+
+                // Evento al hacer clic en el botón de búsqueda
+                btnBuscarDni.addEventListener('click', function() {
+                    const dni = numeroDocumentoInput.value.trim();
+                    if (dni.length === 8) {
+                        buscarDatosReniec(dni);
+                    } else {
+                        mostrarAdvertencia('El DNI debe tener 8 dígitos');
+                    }
+                });
+
+                // Auto-búsqueda al escribir (debounce de 1 segundo)
+                numeroDocumentoInput.addEventListener('input', function() {
+                    const dni = this.value.trim();
+
+                    // Limpiar timeout anterior
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
+
+                    // Si tiene 8 dígitos y es DNI, buscar automáticamente después de 1 segundo
+                    if (esDNI() && dni.length === 8 && /^\d{8}$/.test(dni)) {
+                        timeoutId = setTimeout(function() {
+                            buscarDatosReniec(dni);
+                        }, 1000);
+                    }
+                });
+
+                // --- FIN FUNCIONALIDAD DNI ---
+
                 const seccionHorarios = document.getElementById('seccionHorarios');
                 const checkboxesRoles = document.querySelectorAll('.rol-checkbox');
                 let rolOdontologoId = null;

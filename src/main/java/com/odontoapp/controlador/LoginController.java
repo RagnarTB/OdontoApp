@@ -10,15 +10,4 @@ public class LoginController {
     public String vistaLogin() {
         return "publico/login";
     }
-
-    @GetMapping({ "/", "/dashboard" })
-    public String verDashboard() {
-        return "dashboard";
-    }
-
-    @GetMapping("/paciente/dashboard")
-    public String verDashboardPaciente() {
-        return "paciente/dashboard";
-    }
-
 }

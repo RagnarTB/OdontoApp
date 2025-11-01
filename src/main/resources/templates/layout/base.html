@@ -40,6 +40,35 @@
     <!-- AdminLTE App -->
     <script th:src="@{/adminlte/dist/js/adminlte.min.js}"></script>
 
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Custom Utilities -->
+    <script th:src="@{/js/notificaciones.js}"></script>
+
+    <!-- Mostrar alertas flash de Spring Boot -->
+    <script th:inline="javascript">
+        $(document).ready(function() {
+            const success = /*[[${success}]]*/ null;
+            const error = /*[[${error}]]*/ null;
+            const warning = /*[[${warning}]]*/ null;
+            const info = /*[[${info}]]*/ null;
+
+            if (success) {
+                mostrarExito(success);
+            }
+            if (error) {
+                mostrarError(error);
+            }
+            if (warning) {
+                mostrarAdvertencia(warning);
+            }
+            if (info) {
+                mostrarInfo(info);
+            }
+        });
+    </script>
+
     <!-- instruccion para thymeleaf -->
     <th:block th:replace="${scripts} ?: ~{}"></th:block>
 </body>
