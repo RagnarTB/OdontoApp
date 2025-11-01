@@ -42,8 +42,10 @@
                             th:title="${cat.estaActiva} ? 'Desactivar' : 'Activar'">
                             <i class="fas" th:classappend="${cat.estaActiva} ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
                         </a>
-                        <a th:href="@{/categorias-procedimiento/eliminar/{id}(id=${cat.id})}" class="btn btn-xs btn-danger"
-                            title="Eliminar" onclick="return confirm('¿Está seguro de eliminar esta categoría? Esta acción no se puede deshacer.');">
+                        <a href="#" class="btn btn-xs btn-danger btn-eliminar-cat-proc"
+                            th:data-url="@{/categorias-procedimiento/eliminar/{id}(id=${cat.id})}"
+                            th:data-nombre="${cat.nombre}"
+                            title="Eliminar">
                             <i class="fas fa-trash"></i>
                         </a>
                     </td>

@@ -142,8 +142,8 @@
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <a th:href="@{/servicios/eliminar/{id}(id=${proc.id})}"
-                                            class="btn btn-sm btn-danger" title="Eliminar"
-                                            onclick="return confirm('¿Está seguro de eliminar este servicio?');">
+                                            class="btn btn-sm btn-danger btn-eliminar-servicio" title="Eliminar"
+                                            th:data-nombre="${proc.nombre}">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </td>
@@ -197,6 +197,32 @@
                 $('#contenidoModalCategoriaProc').html('<div class="alert alert-danger">Error al cargar el formulario.</div>');
             });
         }
+
+        // Confirmación de eliminación con SweetAlert2
+        $(document).on('click', '.btn-eliminar-servicio', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            const nombre = $(this).data('nombre');
+
+            confirmarEliminacion(nombre).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        });
+
+        // Confirmación de eliminación de categoría de procedimiento
+        $(document).on('click', '.btn-eliminar-cat-proc', function(e) {
+            e.preventDefault();
+            const url = $(this).data('url');
+            const nombre = $(this).data('nombre');
+
+            confirmarEliminacion(nombre).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        });
     </script>
 </body>
 

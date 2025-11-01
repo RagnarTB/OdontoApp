@@ -250,6 +250,19 @@
                         $('#contenidoModalCategoriaInsumo').html('<div class="alert alert-danger">Error al cargar el formulario.</div>');
                     });
                 }
+
+                // Confirmación de eliminación de categoría de insumo
+                $(document).on('click', '.btn-eliminar-cat-insumo', function(e) {
+                    e.preventDefault();
+                    const url = $(this).data('url');
+                    const nombre = $(this).data('nombre');
+
+                    confirmarEliminacion(nombre).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = url;
+                        }
+                    });
+                });
             </script>
         </div>
     </div>
