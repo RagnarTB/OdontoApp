@@ -289,7 +289,7 @@ public class ProcedimientoInsumoController {
         dto.setProcedimientoCodigo(entidad.getProcedimiento().getCodigo());
         dto.setInsumoNombre(entidad.getInsumo().getNombre());
         dto.setInsumoCodigo(entidad.getInsumo().getCodigo());
-        dto.setInsumoUnidadMedida(entidad.getInsumo().getUnidadMedida());
+        dto.setInsumoUnidadMedida(entidad.getInsumo().getUnidadMedida().getNombre());
         dto.setInsumoStockActual(entidad.getInsumo().getStockActual());
 
         return dto;

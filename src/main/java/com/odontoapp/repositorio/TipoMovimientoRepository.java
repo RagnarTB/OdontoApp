@@ -10,4 +10,5 @@ public interface TipoMovimientoRepository extends JpaRepository<TipoMovimiento, 
     boolean existsByNombre(String nombre);
 
     Optional<TipoMovimiento> findByCodigo(String codigo);
+    Optional<TipoMovimiento> findByNombre(String nombre);
 }

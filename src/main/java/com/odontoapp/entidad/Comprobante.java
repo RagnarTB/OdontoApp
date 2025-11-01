@@ -76,4 +76,13 @@ public class Comprobante extends EntidadAuditable {
     // --- Campos Soft Delete ---
     private boolean eliminado = false;
     private LocalDateTime fechaEliminacion;
+
+    /**
+     * Método alias para compatibilidad con código legacy.
+     * Retorna el número de comprobante (serie y correlativo).
+     * @return El número de comprobante
+     */
+    public String getSerieNumero() {
+        return numeroComprobante;
+    }
 }
