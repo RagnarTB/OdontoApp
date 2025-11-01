@@ -243,7 +243,7 @@ public class FacturacionServiceImpl implements FacturacionService {
         try {
             // 1. Buscar el último comprobante de la serie
             Optional<Comprobante> ultimoComprobante =
-                comprobanteRepository.findTopBySerieNumeroStartingWithOrderBySerieNumeroDesc(SERIE_DEFAULT);
+                comprobanteRepository.findTopByNumeroComprobanteStartingWithOrderByNumeroComprobanteDesc(SERIE_DEFAULT);
 
             // 2. Si no existe ningún comprobante, es el primero
             if (ultimoComprobante.isEmpty()) {
@@ -251,7 +251,7 @@ public class FacturacionServiceImpl implements FacturacionService {
             }
 
             // 3. Obtener el número del último comprobante (ej: "B001-0000124")
-            String ultimoNumero = ultimoComprobante.get().getSerieNumero();
+            String ultimoNumero = ultimoComprobante.get().getNumeroComprobante();
 
             // 4. Extraer la parte numérica (después del último "-")
             String[] partes = ultimoNumero.split("-");
