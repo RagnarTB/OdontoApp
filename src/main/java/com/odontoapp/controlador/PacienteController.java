@@ -208,4 +208,31 @@ public class PacienteController {
         return "redirect:/pacientes";
     }
 
+    /**
+     * Muestra el historial clínico completo de un paciente
+     * Incluye: datos básicos, tratamientos, citas, odontograma, comprobantes
+     */
+    @GetMapping("/pacientes/historial/{id}")
+    public String verHistorial(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        Optional<Paciente> pacienteOpt = pacienteService.buscarPorId(id);
+
+        if (pacienteOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Paciente no encontrado.");
+            return "redirect:/pacientes";
+        }
+
+        Paciente paciente = pacienteOpt.get();
+        model.addAttribute("paciente", paciente);
+
+        // Aquí se pueden agregar otros datos como tratamientos, citas, etc.
+        // Por ahora solo pasamos el paciente básico
+        // En futuras iteraciones se puede agregar:
+        // model.addAttribute("tratamientos", tratamientoService.listarPorPaciente(id));
+        // model.addAttribute("citas", citaService.listarPorPaciente(id));
+        // model.addAttribute("odontograma", odontogramaService.obtenerPorPaciente(id));
+        // model.addAttribute("comprobantes", comprobanteService.listarPorPaciente(id));
+
+        return "modulos/pacientes/historial";
+    }
+
 }

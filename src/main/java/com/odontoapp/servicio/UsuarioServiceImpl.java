@@ -107,10 +107,21 @@ public class UsuarioServiceImpl implements UsuarioService {
                                 "El email '" + emailNuevo + "' ya estÃ¡ en uso por otro usuario activo.");
                     }
                 }
-                // Validar si se intenta cambiar email del admin principal
+                // Validar si se intenta cambiar email del admin principal (si aplica)
                 if ("admin@odontoapp.com".equals(emailOriginal)) {
                     throw new IllegalArgumentException("No se puede cambiar el email del administrador principal.");
                 }
+
+                // --- LÓGICA DE CAMBIO DE EMAIL CON RESETEO DE CONTRASEÑA ---
+                // Si el email cambió, generar nueva contraseña temporal por seguridad
+                String passwordTemporal = PasswordUtil.generarPasswordAleatoria();
+                usuario.setPasswordTemporal(passwordTemporal);
+                usuario.setPassword(passwordEncoder.encode(passwordTemporal));
+                usuario.setDebeActualizarPassword(true); // Forzar cambio al siguiente login
+                enviarEmailTemporal = true; // Activar envío de email a la nueva dirección
+
+                System.out.println(">>> Cambio de email detectado para usuario " + emailOriginal +
+                                   " -> " + emailNuevo + ". Se generará nueva contraseña temporal.");
             }
             // Aseguramos inicialización si las colecciones fueran null (aunque no debería
             // pasar con JPA)

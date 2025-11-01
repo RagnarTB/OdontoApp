@@ -33,6 +33,16 @@
 
                         <div class="card-body">
 
+                            <!-- ALERTA INFORMATIVA PARA MODO EDICIÓN -->
+                            <div th:if="${usuario.id != null}" class="alert alert-info alert-dismissible fade show" role="alert">
+                                <h5><i class="icon fas fa-info-circle"></i> Modo Edición</h5>
+                                <strong>Campos editables:</strong> Email, Teléfono, Dirección, Roles y Horarios.<br>
+                                <strong>Campos protegidos:</strong> Tipo de documento, Número de documento, Nombre completo, Fecha de nacimiento y Fecha de contratación.
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+
                             <!-- ALERTA DE VALIDACIÓN GENERAL -->
                             <div th:if="${#fields.hasGlobalErrors()}"
                                 class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -85,6 +95,7 @@
                                     <div class="form-group">
                                         <label for="tipoDocumentoId">Tipo Documento</label>
                                         <select class="form-control" th:field="*{tipoDocumentoId}" id="tipoDocumentoId"
+                                            th:disabled="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">
                                             <option value="">Seleccione...</option>
                                             <option th:each="tipo : ${tiposDocumento}" th:value="${tipo.id}"
@@ -92,6 +103,9 @@
                                         </select>
                                         <div th:if="${#fields.hasErrors('tipoDocumentoId')}" class="invalid-feedback"
                                             th:errors="*{tipoDocumentoId}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -99,9 +113,13 @@
                                         <label for="numeroDocumento">N&uacute;mero Documento</label>
                                         <input type="text" class="form-control" th:field="*{numeroDocumento}"
                                             id="numeroDocumento" placeholder="N° de Documento"
+                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('numeroDocumento')}"
                                             class="invalid-feedback d-block" th:errors="*{numeroDocumento}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -109,9 +127,13 @@
                                         <label for="nombreCompleto">Nombre Completo</label>
                                         <input type="text" class="form-control" id="nombreCompleto"
                                             th:field="*{nombreCompleto}" placeholder="Nombre completo" required
+                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
                                             th:errors="*{nombreCompleto}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -124,6 +146,9 @@
                                             th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback"
                                             th:errors="*{email}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-success">
+                                            <i class="fas fa-edit"></i> Campo editable - Se enviará nueva contraseña temporal si cambia
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -134,6 +159,9 @@
                                             th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('telefono')}" class="invalid-feedback"
                                             th:errors="*{telefono}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-success">
+                                            <i class="fas fa-edit"></i> Campo editable
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -141,9 +169,13 @@
                                         <label for="fechaNacimiento">Fecha de Nacimiento</label>
                                         <input type="date" class="form-control" id="fechaNacimiento"
                                             th:field="*{fechaNacimiento}"
+                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('fechaNacimiento')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('fechaNacimiento')}" class="invalid-feedback"
                                             th:errors="*{fechaNacimiento}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -156,6 +188,9 @@
                                             th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('direccion')}" class="invalid-feedback"
                                             th:errors="*{direccion}"></div>
+                                        <small class="form-text text-muted">
+                                            <i class="fas fa-edit"></i> Campo editable
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -163,9 +198,13 @@
                                         <label for="fechaContratacion">Fecha Contrataci&oacute;n</label>
                                         <input type="date" class="form-control" id="fechaContratacion"
                                             th:field="*{fechaContratacion}"
+                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('fechaContratacion')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('fechaContratacion')}" class="invalid-feedback"
                                             th:errors="*{fechaContratacion}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
                                     </div>
                                 </div>
                             </div>
