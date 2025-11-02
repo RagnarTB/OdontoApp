@@ -16,4 +16,8 @@ public interface ProcedimientoRepository extends JpaRepository<Procedimiento, Lo
 
     Optional<Procedimiento> findByCodigo(String codigo);
     long countByCategoriaId(Long categoriaId);
+
+    // Método para cargar procedimientos con sus relaciones (EAGER fetch)
+    @Query("SELECT p FROM Procedimiento p LEFT JOIN FETCH p.categoria")
+    java.util.List<Procedimiento> findAllWithRelations();
 }

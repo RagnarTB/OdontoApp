@@ -105,7 +105,14 @@ public class ProcedimientoController {
             dto.setCategoriaId(proc.getCategoria().getId());
 
             model.addAttribute("procedimientoDTO", dto);
-            cargarCategorias(model);
+
+            // Para edición, cargar todas las categorías activas
+            // más la categoría actual del procedimiento (aunque esté inactiva)
+            List<CategoriaProcedimiento> categorias = categoriaRepository.findAll().stream()
+                    .filter(cat -> cat.isEstaActiva() || cat.getId().equals(proc.getCategoria().getId()))
+                    .collect(Collectors.toList());
+            model.addAttribute("categorias", categorias);
+
             return "modulos/servicios/formulario";
         }).orElseGet(() -> {
             redirectAttributes.addFlashAttribute("error", "Servicio no encontrado.");
@@ -125,7 +132,10 @@ public class ProcedimientoController {
     }
 
     private void cargarCategorias(Model model) {
-        List<CategoriaProcedimiento> categorias = categoriaRepository.findAll();
+        // Cargar solo categorías activas para formularios
+        List<CategoriaProcedimiento> categorias = categoriaRepository.findAll().stream()
+                .filter(CategoriaProcedimiento::isEstaActiva)
+                .collect(Collectors.toList());
         model.addAttribute("categorias", categorias);
     }
 }

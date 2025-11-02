@@ -21,6 +21,10 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
     @Query("SELECT i FROM Insumo i WHERE i.stockActual <= i.stockMinimo AND i.stockMinimo > 0")
     List<Insumo> findInsumosConStockBajo();
 
+    // Método para cargar insumos con sus relaciones (EAGER fetch)
+    @Query("SELECT i FROM Insumo i LEFT JOIN FETCH i.categoria LEFT JOIN FETCH i.unidadMedida")
+    List<Insumo> findAllWithRelations();
+
     // --- NUEVO MÉTODO AÑADIDO ---
     /**
      * Cuenta cuántos insumos pertenecen a una categoría específica.
