@@ -69,7 +69,7 @@ public class DashboardServiceImpl implements DashboardService {
     public BigDecimal obtenerIngresosPendientes() {
         // Obtener el estado "Pendiente"
         EstadoPago estadoPendiente = estadoPagoRepository.findByNombre("Pendiente")
-            .orElse(null);
+                .orElse(null);
 
         if (estadoPendiente == null) {
             return BigDecimal.ZERO;
@@ -77,11 +77,11 @@ public class DashboardServiceImpl implements DashboardService {
 
         // Obtener comprobantes pendientes de pago
         List<Comprobante> comprobantesPendientes = comprobanteRepository
-            .findByEstadoPagoAndEliminadoFalse(estadoPendiente);
+                .findByEstadoPagoAndEliminadoFalse(estadoPendiente);
 
         return comprobantesPendientes.stream()
-            .map(Comprobante::getMontoPendiente)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(Comprobante::getMontoPendiente)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         // Obtener el estado "Pagado"
         EstadoPago estadoPagado = estadoPagoRepository.findByNombre("Pagado")
-            .orElse(null);
+                .orElse(null);
 
         if (estadoPagado == null) {
             return BigDecimal.ZERO;
@@ -103,15 +103,14 @@ public class DashboardServiceImpl implements DashboardService {
 
         // Obtener comprobantes pagados del mes
         List<Comprobante> comprobantesPagados = comprobanteRepository
-            .findByEstadoPagoAndFechaEmisionBetweenAndEliminadoFalse(
-                estadoPagado,
-                inicioDateTime,
-                finDateTime
-            );
+                .findByEstadoPagoAndFechaEmisionBetweenAndEliminadoFalse(
+                        estadoPagado,
+                        inicioDateTime,
+                        finDateTime);
 
         return comprobantesPagados.stream()
-            .map(Comprobante::getMontoPagado)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(Comprobante::getMontoPagado)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Override
@@ -131,9 +130,9 @@ public class DashboardServiceImpl implements DashboardService {
 
         // Limitar a las próximas 5 citas
         return citas.stream()
-            .limit(5)
-            .map(this::convertirACitaDTO)
-            .collect(Collectors.toList());
+                .limit(5)
+                .map(this::convertirACitaDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -142,9 +141,9 @@ public class DashboardServiceImpl implements DashboardService {
 
         // Limitar a los primeros 5
         return insumos.stream()
-            .limit(5)
-            .map(this::convertirAInsumoDTO)
-            .collect(Collectors.toList());
+                .limit(5)
+                .map(this::convertirAInsumoDTO)
+                .collect(Collectors.toList());
     }
 
     /**

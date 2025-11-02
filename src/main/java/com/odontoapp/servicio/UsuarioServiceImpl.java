@@ -57,7 +57,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         boolean esNuevo = usuarioDTO.getId() == null;
         String emailNuevo = usuarioDTO.getEmail();
         String emailOriginal = null;
-
+        boolean enviarEmailTemporal = false;
         // --- 1. VALIDACIÓN PREVIA DE DOCUMENTO ---
         validarUnicidadDocumentoUsuario(
                 usuarioDTO.getNumeroDocumento(),
@@ -121,7 +121,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                 enviarEmailTemporal = true; // Activar envío de email a la nueva dirección
 
                 System.out.println(">>> Cambio de email detectado para usuario " + emailOriginal +
-                                   " -> " + emailNuevo + ". Se generará nueva contraseña temporal.");
+                        " -> " + emailNuevo + ". Se generará nueva contraseña temporal.");
             }
             // Aseguramos inicialización si las colecciones fueran null (aunque no debería
             // pasar con JPA)
@@ -153,8 +153,6 @@ public class UsuarioServiceImpl implements UsuarioService {
             // Permitir actualizar fecha de contratación si viene en el DTO (opcional)
             usuario.setFechaContratacion(usuarioDTO.getFechaContratacion());
         }
-
-        boolean enviarEmailTemporal = false;
 
         // --- ContraseÃ±a SOLO si es nuevo ---
         if (esNuevo) {
