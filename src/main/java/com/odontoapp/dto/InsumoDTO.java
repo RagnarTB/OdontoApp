@@ -34,4 +34,11 @@ public class InsumoDTO {
 
     @NotNull(message = "La unidad de medida es obligatoria")
     private Long unidadMedidaId;
+
+    // Este campo lo requiere el DashboardServiceImpl (Error 2)
+    private BigDecimal stockActual;
+
+    // Este campo lo requiere el DashboardServiceImpl (Error 3)
+    private String unidadMedidaNombre;
+
 }
