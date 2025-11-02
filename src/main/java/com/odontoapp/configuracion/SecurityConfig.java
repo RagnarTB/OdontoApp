@@ -47,6 +47,10 @@ public class SecurityConfig {
                 filter.setFilterProcessesUrl("/login");
                 filter.setAuthenticationSuccessHandler(customAuthenticationSuccessHandler);
 
+                // Configurar parámetros del formulario
+                filter.setUsernameParameter("username");
+                filter.setPasswordParameter("password");
+
                 // Configurar el manejo de fallos de autenticación
                 filter.setAuthenticationFailureHandler((request, response, exception) -> {
                         String loginType = request.getParameter("loginType");
@@ -72,11 +76,12 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers("/cambiar-password-obligatorio").authenticated()
                                                 .anyRequest().authenticated())
-                                // ✅ Reemplazar formLogin con nuestro filtro personalizado
+                                // ✅ Configurar manejo de excepciones
+                                .exceptionHandling(exception -> exception
+                                                .authenticationEntryPoint((request, response, authException) ->
+                                                        response.sendRedirect("/login")))
+                                // ✅ Usar nuestro filtro personalizado
                                 .addFilterAt(dualLoginAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                                .formLogin(form -> form
-                                                .loginPage("/login")
-                                                .permitAll())
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessUrl("/login?logout")
