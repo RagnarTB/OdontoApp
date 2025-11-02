@@ -392,17 +392,27 @@
                         return;
                     }
 
+                    // Obtener el ID del tipo de documento
+                    const tipoDocId = tipoDocumentoSelect.value;
+                    if (!tipoDocId) {
+                        mostrarAdvertencia('Debe seleccionar un tipo de documento');
+                        return;
+                    }
+
                     // Mostrar indicador de carga
                     mostrarCargando('Buscando datos en RENIEC...');
 
                     // Deshabilitar el campo de nombre mientras se busca
                     nombreCompletoInput.disabled = true;
 
-                    // Llamar al endpoint REST
+                    // Llamar al endpoint REST con los parámetros correctos
                     $.ajax({
                         url: '/usuarios/api/buscar-dni',
                         method: 'GET',
-                        data: { dni: dni },
+                        data: {
+                            numDoc: dni,
+                            tipoDocId: tipoDocId
+                        },
                         success: function(response) {
                             cerrarCargando();
                             if (response.nombreCompleto) {

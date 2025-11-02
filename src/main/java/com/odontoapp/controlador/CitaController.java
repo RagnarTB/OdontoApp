@@ -72,29 +72,44 @@ public class CitaController {
      */
     @GetMapping
     public String verCalendario(Model model) {
-        // Buscar usuarios con rol ODONTOLOGO
-        var rolOdontologo = rolRepository.findByNombre("ODONTOLOGO");
-        var listaOdontologos = rolOdontologo.isPresent()
-                ? usuarioRepository.findByRolesNombre("ODONTOLOGO")
-                : List.of();
+        try {
+            // Buscar usuarios con rol ODONTOLOGO
+            var rolOdontologo = rolRepository.findByNombre("ODONTOLOGO");
+            var listaOdontologos = rolOdontologo.isPresent()
+                    ? usuarioRepository.findByRolesNombre("ODONTOLOGO")
+                    : List.of();
 
-        // Buscar todos los pacientes
-        var listaPacientes = pacienteRepository.findAll();
+            // Buscar todos los pacientes
+            var listaPacientes = pacienteRepository.findAll();
 
-        // Buscar todos los procedimientos
-        var listaProcedimientos = procedimientoRepository.findAll();
+            // Buscar todos los procedimientos con sus relaciones cargadas
+            var listaProcedimientos = procedimientoRepository.findAllWithRelations();
 
-        // Buscar todos los insumos (para el modal de registrar tratamiento)
-        var listaInsumos = insumoRepository.findAll();
+            // Buscar todos los insumos con sus relaciones cargadas (para el modal de registrar tratamiento)
+            var listaInsumos = insumoRepository.findAllWithRelations();
 
-        // Añadir al modelo
-        model.addAttribute("listaOdontologos", listaOdontologos);
-        model.addAttribute("listaPacientes", listaPacientes);
-        model.addAttribute("listaProcedimientos", listaProcedimientos);
-        model.addAttribute("listaInsumos", listaInsumos);
-        model.addAttribute("citaDTO", new CitaDTO());
+            // Añadir al modelo
+            model.addAttribute("listaOdontologos", listaOdontologos);
+            model.addAttribute("listaPacientes", listaPacientes);
+            model.addAttribute("listaProcedimientos", listaProcedimientos);
+            model.addAttribute("listaInsumos", listaInsumos);
+            model.addAttribute("citaDTO", new CitaDTO());
 
-        return "modulos/citas/calendario";
+            return "modulos/citas/calendario";
+        } catch (Exception e) {
+            System.err.println("Error al cargar calendario de citas: " + e.getMessage());
+            e.printStackTrace();
+
+            // Inicializar listas vacías para evitar errores en la vista
+            model.addAttribute("listaOdontologos", List.of());
+            model.addAttribute("listaPacientes", List.of());
+            model.addAttribute("listaProcedimientos", List.of());
+            model.addAttribute("listaInsumos", List.of());
+            model.addAttribute("citaDTO", new CitaDTO());
+            model.addAttribute("error", "Error al cargar los datos del calendario. Por favor, contacte al administrador.");
+
+            return "modulos/citas/calendario";
+        }
     }
 
     /**

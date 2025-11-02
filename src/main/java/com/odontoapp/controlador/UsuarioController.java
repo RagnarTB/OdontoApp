@@ -319,33 +319,53 @@ public class UsuarioController {
     // --- API REST PARA BÚSQUEDA DE DNI ---
     /**
      * Endpoint REST para consultar datos de una persona por DNI (RENIEC)
-     * Retorna JSON con los datos de la persona si se encuentra
+     * Compatible con el mismo formato que usa PacienteController
      *
-     * @param dni Número de documento a buscar (8 dígitos)
-     * @return ResponseEntity con ReniecResponseDTO o error
+     * @param numDoc Número de documento a buscar
+     * @param tipoDocId ID del tipo de documento
+     * @return ResponseEntity con datos de RENIEC o error
      */
     @GetMapping("/api/buscar-dni")
     @ResponseBody
-    public ResponseEntity<?> buscarPorDni(@RequestParam String dni) {
+    public ResponseEntity<?> buscarPorDni(
+            @RequestParam("numDoc") String numDoc,
+            @RequestParam("tipoDocId") Long tipoDocId) {
         try {
-            // Validar formato básico de DNI (8 dígitos)
-            if (dni == null || !dni.matches("\\d{8}")) {
+            // 1. Validar que el tipo de documento sea DNI
+            var tipoDocumento = tipoDocumentoRepository.findById(tipoDocId).orElse(null);
+            if (tipoDocumento == null || !"DNI".equals(tipoDocumento.getCodigo())) {
+                return ResponseEntity.badRequest()
+                        .body(java.util.Map.of("error", "La consulta Reniec solo está disponible para DNI."));
+            }
+
+            // 2. Validar formato básico de DNI (8 dígitos)
+            if (numDoc == null || !numDoc.matches("\\d{8}")) {
                 return ResponseEntity.badRequest()
                         .body(java.util.Map.of("error", "DNI debe tener 8 dígitos numéricos"));
             }
 
-            // Consultar servicio RENIEC
-            ReniecResponseDTO persona = reniecService.consultarDni(dni);
+            // 3. Verificar si ya existe un usuario con ese DNI (activo)
+            Optional<Usuario> usuarioExistente = usuarioRepository
+                    .findByNumeroDocumentoAndTipoDocumento_Id(numDoc, tipoDocId);
+
+            if (usuarioExistente.isPresent()) {
+                return ResponseEntity.badRequest()
+                        .body(java.util.Map.of("error", "Ya existe un usuario registrado con ese DNI."));
+            }
+
+            // 4. Consultar servicio RENIEC
+            ReniecResponseDTO persona = reniecService.consultarDni(numDoc);
 
             if (persona != null && persona.getNombreCompleto() != null) {
-                return ResponseEntity.ok(persona);
+                return ResponseEntity.ok(java.util.Map.of("nombreCompleto", persona.getNombreCompleto()));
             } else {
                 return ResponseEntity.status(404)
-                        .body(java.util.Map.of("error", "No se encontraron datos para el DNI ingresado"));
+                        .body(java.util.Map.of("error", "DNI no encontrado o datos incompletos. Verifique el número."));
             }
 
         } catch (Exception e) {
-            System.err.println("Error en endpoint buscar-dni: " + e.getMessage());
+            System.err.println("Error en endpoint buscar-dni de usuarios: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(500)
                     .body(java.util.Map.of("error", "Error al consultar el servicio de RENIEC"));
         }
