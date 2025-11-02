@@ -1,12 +1,14 @@
 // Archivo: C:\proyectos\nuevo\odontoapp\src\main\java\com\odontoapp\servicio\EmailService.java
 package com.odontoapp.servicio;
 
+import com.odontoapp.entidad.Cita;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class EmailService {
@@ -84,6 +86,155 @@ public class EmailService {
         } catch (MessagingException e) {
             System.err.println("Error al enviar email con contraseña temporal: " + e.getMessage());
             throw new RuntimeException("Error al enviar email con contraseña temporal: " + e.getMessage());
+        }
+    }
+
+    // ============ NOTIFICACIONES DE CITAS ============
+
+    /**
+     * Envía email de confirmación de cita al paciente
+     */
+    public void enviarConfirmacionCita(Cita cita) {
+        DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter formatoHora = DateTimeFormatter.ofPattern("HH:mm");
+
+        String fechaCita = cita.getFechaHoraInicio().format(formatoFecha);
+        String horaCita = cita.getFechaHoraInicio().format(formatoHora);
+
+        String subject = "Confirmación de Cita - OdontoApp";
+        String content = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>"
+                + "<h2 style='color: #28a745;'><i>✓</i> Cita Confirmada</h2>"
+                + "<p>Estimado(a) <strong>" + cita.getPaciente().getNombreCompleto() + "</strong>,</p>"
+                + "<p>Su cita ha sido confirmada exitosamente. A continuación los detalles:</p>"
+                + "<div style='background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;'>"
+                + "<p><strong>📅 Fecha:</strong> " + fechaCita + "</p>"
+                + "<p><strong>🕐 Hora:</strong> " + horaCita + "</p>"
+                + "<p><strong>👨‍⚕️ Odontólogo:</strong> " + cita.getOdontologo().getNombreCompleto() + "</p>"
+                + "<p><strong>🦷 Procedimiento:</strong> " + (cita.getProcedimiento() != null ? cita.getProcedimiento().getNombre() : "Por definir") + "</p>"
+                + "</div>"
+                + "<div style='background-color: #d1ecf1; padding: 15px; border-left: 4px solid #17a2b8; margin: 20px 0;'>"
+                + "<p style='margin: 0; color: #0c5460;'><strong>ℹ️ Importante:</strong></p>"
+                + "<p style='margin: 5px 0 0 0; color: #0c5460;'>Por favor llegue 10 minutos antes de su cita.</p>"
+                + "</div>"
+                + "<p>¿Necesita reprogramar o cancelar? Contáctenos lo antes posible.</p>"
+                + "<hr style='margin: 30px 0; border: none; border-top: 1px solid #ddd;'>"
+                + "<p style='color: #6c757d; font-size: 12px;'>Este es un mensaje automático de OdontoApp.</p>"
+                + "</div>";
+
+        try {
+            enviarEmail(cita.getPaciente().getEmail(), subject, content);
+            System.out.println("✓ Email de confirmación enviado a: " + cita.getPaciente().getEmail());
+        } catch (MessagingException e) {
+            System.err.println("Error al enviar email de confirmación de cita: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Envía email de cancelación de cita al paciente
+     */
+    public void enviarCancelacionCita(Cita cita, String motivo) {
+        DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter formatoHora = DateTimeFormatter.ofPattern("HH:mm");
+
+        String fechaCita = cita.getFechaHoraInicio().format(formatoFecha);
+        String horaCita = cita.getFechaHoraInicio().format(formatoHora);
+
+        String subject = "Cita Cancelada - OdontoApp";
+        String content = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>"
+                + "<h2 style='color: #dc3545;'><i>✗</i> Cita Cancelada</h2>"
+                + "<p>Estimado(a) <strong>" + cita.getPaciente().getNombreCompleto() + "</strong>,</p>"
+                + "<p>Le informamos que su cita ha sido <strong>cancelada</strong>:</p>"
+                + "<div style='background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;'>"
+                + "<p><strong>📅 Fecha:</strong> " + fechaCita + "</p>"
+                + "<p><strong>🕐 Hora:</strong> " + horaCita + "</p>"
+                + "<p><strong>👨‍⚕️ Odontólogo:</strong> " + cita.getOdontologo().getNombreCompleto() + "</p>"
+                + "<p><strong>📝 Motivo:</strong> " + (motivo != null ? motivo : "No especificado") + "</p>"
+                + "</div>"
+                + "<p>Si desea agendar una nueva cita, no dude en contactarnos.</p>"
+                + "<hr style='margin: 30px 0; border: none; border-top: 1px solid #ddd;'>"
+                + "<p style='color: #6c757d; font-size: 12px;'>Este es un mensaje automático de OdontoApp.</p>"
+                + "</div>";
+
+        try {
+            enviarEmail(cita.getPaciente().getEmail(), subject, content);
+            System.out.println("✓ Email de cancelación enviado a: " + cita.getPaciente().getEmail());
+        } catch (MessagingException e) {
+            System.err.println("Error al enviar email de cancelación de cita: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Envía email de reprogramación de cita al paciente
+     */
+    public void enviarReprogramacionCita(Cita citaAntigua, Cita citaNueva) {
+        DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter formatoHora = DateTimeFormatter.ofPattern("HH:mm");
+
+        String fechaAntigua = citaAntigua.getFechaHoraInicio().format(formatoFecha);
+        String horaAntigua = citaAntigua.getFechaHoraInicio().format(formatoHora);
+        String fechaNueva = citaNueva.getFechaHoraInicio().format(formatoFecha);
+        String horaNueva = citaNueva.getFechaHoraInicio().format(formatoHora);
+
+        String subject = "Cita Reprogramada - OdontoApp";
+        String content = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>"
+                + "<h2 style='color: #fd7e14;'><i>↻</i> Cita Reprogramada</h2>"
+                + "<p>Estimado(a) <strong>" + citaNueva.getPaciente().getNombreCompleto() + "</strong>,</p>"
+                + "<p>Su cita ha sido reprogramada. A continuación los detalles:</p>"
+                + "<div style='background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;'>"
+                + "<p style='margin: 0; text-decoration: line-through; color: #856404;'><strong>Fecha anterior:</strong> " + fechaAntigua + " a las " + horaAntigua + "</p>"
+                + "</div>"
+                + "<div style='background-color: #d4edda; padding: 20px; border-radius: 5px; margin: 20px 0; border: 2px solid #28a745;'>"
+                + "<p style='margin: 0; color: #155724;'><strong>📅 Nueva Fecha:</strong> " + fechaNueva + "</p>"
+                + "<p style='margin: 5px 0 0 0; color: #155724;'><strong>🕐 Nueva Hora:</strong> " + horaNueva + "</p>"
+                + "<p style='margin: 5px 0 0 0; color: #155724;'><strong>👨‍⚕️ Odontólogo:</strong> " + citaNueva.getOdontologo().getNombreCompleto() + "</p>"
+                + "</div>"
+                + "<p>Por favor confirme su asistencia o contáctenos si necesita hacer algún cambio.</p>"
+                + "<hr style='margin: 30px 0; border: none; border-top: 1px solid #ddd;'>"
+                + "<p style='color: #6c757d; font-size: 12px;'>Este es un mensaje automático de OdontoApp.</p>"
+                + "</div>";
+
+        try {
+            enviarEmail(citaNueva.getPaciente().getEmail(), subject, content);
+            System.out.println("✓ Email de reprogramación enviado a: " + citaNueva.getPaciente().getEmail());
+        } catch (MessagingException e) {
+            System.err.println("Error al enviar email de reprogramación de cita: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Envía email recordatorio de cita (24 horas antes)
+     */
+    public void enviarRecordatorioCita(Cita cita) {
+        DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter formatoHora = DateTimeFormatter.ofPattern("HH:mm");
+
+        String fechaCita = cita.getFechaHoraInicio().format(formatoFecha);
+        String horaCita = cita.getFechaHoraInicio().format(formatoHora);
+
+        String subject = "Recordatorio de Cita - Mañana - OdontoApp";
+        String content = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>"
+                + "<h2 style='color: #17a2b8;'><i>🔔</i> Recordatorio de Cita</h2>"
+                + "<p>Estimado(a) <strong>" + cita.getPaciente().getNombreCompleto() + "</strong>,</p>"
+                + "<p>Le recordamos que tiene una cita <strong>mañana</strong>:</p>"
+                + "<div style='background-color: #d1ecf1; padding: 20px; border-radius: 5px; border: 2px solid #17a2b8; margin: 20px 0;'>"
+                + "<p><strong>📅 Fecha:</strong> " + fechaCita + "</p>"
+                + "<p><strong>🕐 Hora:</strong> " + horaCita + "</p>"
+                + "<p><strong>👨‍⚕️ Odontólogo:</strong> " + cita.getOdontologo().getNombreCompleto() + "</p>"
+                + "<p><strong>🦷 Procedimiento:</strong> " + (cita.getProcedimiento() != null ? cita.getProcedimiento().getNombre() : "Por definir") + "</p>"
+                + "</div>"
+                + "<div style='background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;'>"
+                + "<p style='margin: 0; color: #856404;'><strong>⚠️ Importante:</strong></p>"
+                + "<p style='margin: 5px 0 0 0; color: #856404;'>Por favor llegue 10 minutos antes. Si no puede asistir, contáctenos lo antes posible.</p>"
+                + "</div>"
+                + "<hr style='margin: 30px 0; border: none; border-top: 1px solid #ddd;'>"
+                + "<p style='color: #6c757d; font-size: 12px;'>Este es un mensaje automático de OdontoApp.</p>"
+                + "</div>";
+
+        try {
+            enviarEmail(cita.getPaciente().getEmail(), subject, content);
+            System.out.println("✓ Email recordatorio enviado a: " + cita.getPaciente().getEmail());
+        } catch (MessagingException e) {
+            System.err.println("Error al enviar email recordatorio de cita: " + e.getMessage());
         }
     }
 }

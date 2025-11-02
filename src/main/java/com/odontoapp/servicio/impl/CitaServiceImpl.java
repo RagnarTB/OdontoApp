@@ -10,6 +10,7 @@ import com.odontoapp.repositorio.EstadoCitaRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.servicio.CitaService;
+import com.odontoapp.servicio.EmailService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,15 +48,18 @@ public class CitaServiceImpl implements CitaService {
     private final UsuarioRepository usuarioRepository;
     private final ProcedimientoRepository procedimientoRepository;
     private final EstadoCitaRepository estadoCitaRepository;
+    private final EmailService emailService;
 
     public CitaServiceImpl(CitaRepository citaRepository,
                           UsuarioRepository usuarioRepository,
                           ProcedimientoRepository procedimientoRepository,
-                          EstadoCitaRepository estadoCitaRepository) {
+                          EstadoCitaRepository estadoCitaRepository,
+                          EmailService emailService) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
         this.estadoCitaRepository = estadoCitaRepository;
+        this.emailService = emailService;
     }
 
     @Override
@@ -337,6 +341,13 @@ public class CitaServiceImpl implements CitaService {
         citaOriginal.setCitaReprogramada(nuevaCita);
         citaRepository.save(citaOriginal);
 
+        // Enviar email de reprogramación al paciente
+        try {
+            emailService.enviarReprogramacionCita(citaOriginal, nuevaCita);
+        } catch (Exception e) {
+            System.err.println("Error al enviar email de reprogramación: " + e.getMessage());
+        }
+
         return nuevaCita;
     }
 
@@ -366,8 +377,16 @@ public class CitaServiceImpl implements CitaService {
 
         cita.setEstadoCita(estadoCancelada);
         cita.setMotivoCancelacion(motivo);
+        Cita citaCancelada = citaRepository.save(cita);
 
-        return citaRepository.save(cita);
+        // Enviar email de cancelación al paciente
+        try {
+            emailService.enviarCancelacionCita(citaCancelada, motivo);
+        } catch (Exception e) {
+            System.err.println("Error al enviar email de cancelación: " + e.getMessage());
+        }
+
+        return citaCancelada;
     }
 
     @Override
@@ -384,7 +403,17 @@ public class CitaServiceImpl implements CitaService {
                 .orElseThrow(() -> new IllegalStateException("Estado CONFIRMADA no encontrado"));
 
         cita.setEstadoCita(estadoConfirmada);
-        return citaRepository.save(cita);
+        Cita citaConfirmada = citaRepository.save(cita);
+
+        // Enviar email de confirmación al paciente
+        try {
+            emailService.enviarConfirmacionCita(citaConfirmada);
+        } catch (Exception e) {
+            System.err.println("Error al enviar email de confirmación: " + e.getMessage());
+            // No lanzar excepción, la cita ya fue confirmada exitosamente
+        }
+
+        return citaConfirmada;
     }
 
     @Override
