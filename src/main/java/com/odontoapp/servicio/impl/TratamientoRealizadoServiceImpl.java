@@ -17,6 +17,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -95,26 +96,26 @@ public class TratamientoRealizadoServiceImpl implements TratamientoRealizadoServ
                             "Insumo no encontrado con ID: " + dto.getInsumoAjustadoId()));
 
             // Validar que si hay insumo ajustado, también haya cantidad
-            if (dto.getCantidadInsumoAjustada() == null || dto.getCantidadInsumoAjustada() <= 0) {
+            if (dto.getCantidadInsumoAjustada() == null || dto.getCantidadInsumoAjustada().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException(
                         "Si se especifica un insumo ajustado, la cantidad debe ser mayor a cero");
             }
 
             // ✅ VALIDAR STOCK DISPONIBLE
-            if (insumoAjustado.getCantidadDisponible() < dto.getCantidadInsumoAjustada()) {
+            if (insumoAjustado.getStockActual().compareTo(dto.getCantidadInsumoAjustada()) < 0) {
                 throw new IllegalStateException(
                     String.format("Stock insuficiente del insumo '%s'. " +
                         "Disponible: %.2f %s, Requerido: %.2f %s",
                         insumoAjustado.getNombre(),
-                        insumoAjustado.getCantidadDisponible(),
-                        insumoAjustado.getUnidadMedida(),
+                        insumoAjustado.getStockActual(),
+                        insumoAjustado.getUnidadMedida().getNombre(),
                         dto.getCantidadInsumoAjustada(),
-                        insumoAjustado.getUnidadMedida()));
+                        insumoAjustado.getUnidadMedida().getNombre()));
             }
 
             // ✅ DESCONTAR STOCK DEL INSUMO UTILIZADO
-            double nuevoStock = insumoAjustado.getCantidadDisponible() - dto.getCantidadInsumoAjustada();
-            insumoAjustado.setCantidadDisponible(nuevoStock);
+            BigDecimal nuevoStock = insumoAjustado.getStockActual().subtract(dto.getCantidadInsumoAjustada());
+            insumoAjustado.setStockActual(nuevoStock);
             insumoRepository.save(insumoAjustado);
 
             System.out.println("✓ Stock actualizado: " + insumoAjustado.getNombre() +
