@@ -360,7 +360,7 @@
                                     <option value="">Ninguno</option>
                                     <option th:each="insumo : ${listaInsumos}"
                                             th:value="${insumo.id}"
-                                            th:text="${insumo.nombre + ' (Stock: ' + insumo.cantidadDisponible + ' ' + insumo.unidadMedida + ')'}"></option>
+                                            th:text="${insumo.nombre + ' (Stock: ' + insumo.stockActual + ' ' + insumo.unidadMedida.abreviatura + ')'}"></option>
                                 </select>
                                 <small class="form-text text-muted">Si se usó un insumo, el stock se descontará automáticamente</small>
                                 <div id="stockWarning" class="alert alert-warning mt-2 d-none">
