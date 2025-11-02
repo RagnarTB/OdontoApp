@@ -456,4 +456,56 @@ public class CitaServiceImpl implements CitaService {
 
         return citas;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Cita> listarCitasConFiltros(Long estadoId, Long odontologoId,
+                                             LocalDate fechaDesde, LocalDate fechaHasta,
+                                             Pageable pageable) {
+        // Convertir fechas a LocalDateTime si están presentes
+        LocalDateTime fechaDesdeTime = fechaDesde != null ? fechaDesde.atStartOfDay() : null;
+        LocalDateTime fechaHastaTime = fechaHasta != null ? fechaHasta.atTime(23, 59, 59) : null;
+
+        // Si no hay filtros, devolver todas las citas
+        if (estadoId == null && odontologoId == null && fechaDesde == null && fechaHasta == null) {
+            return citaRepository.findAll(pageable);
+        }
+
+        // Obtener todas las citas y filtrar manualmente (solución simple)
+        // En producción se podría usar Specifications de JPA para filtros dinámicos
+        List<Cita> todasCitas = citaRepository.findAll();
+
+        List<Cita> citasFiltradas = todasCitas.stream()
+                .filter(cita -> {
+                    // Filtro por estado
+                    if (estadoId != null && !cita.getEstadoCita().getId().equals(estadoId)) {
+                        return false;
+                    }
+                    // Filtro por odontólogo
+                    if (odontologoId != null && !cita.getOdontologo().getId().equals(odontologoId)) {
+                        return false;
+                    }
+                    // Filtro por fecha desde
+                    if (fechaDesdeTime != null && cita.getFechaHoraInicio().isBefore(fechaDesdeTime)) {
+                        return false;
+                    }
+                    // Filtro por fecha hasta
+                    if (fechaHastaTime != null && cita.getFechaHoraInicio().isAfter(fechaHastaTime)) {
+                        return false;
+                    }
+                    return true;
+                })
+                .sorted((c1, c2) -> c2.getFechaHoraInicio().compareTo(c1.getFechaHoraInicio())) // Ordenar por fecha desc
+                .collect(Collectors.toList());
+
+        // Implementar paginación manual
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), citasFiltradas.size());
+
+        List<Cita> paginaActual = start >= citasFiltradas.size() ?
+                List.of() : citasFiltradas.subList(start, end);
+
+        return new org.springframework.data.domain.PageImpl<>(
+                paginaActual, pageable, citasFiltradas.size());
+    }
 }
