@@ -11,10 +11,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.odontoapp.seguridad.CustomAuthenticationSuccessHandler;
-import com.odontoapp.seguridad.DualLoginAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -35,38 +33,8 @@ public class SecurityConfig {
                 return authConfig.getAuthenticationManager();
         }
 
-        /**
-         * Bean del filtro de autenticación dual personalizado
-         */
         @Bean
-        public DualLoginAuthenticationFilter dualLoginAuthenticationFilter(
-                        AuthenticationManager authenticationManager) throws Exception {
-
-                DualLoginAuthenticationFilter filter = new DualLoginAuthenticationFilter();
-                filter.setAuthenticationManager(authenticationManager);
-                filter.setFilterProcessesUrl("/login");
-                filter.setAuthenticationSuccessHandler(customAuthenticationSuccessHandler);
-
-                // Configurar parámetros del formulario
-                filter.setUsernameParameter("username");
-                filter.setPasswordParameter("password");
-
-                // Configurar el manejo de fallos de autenticación
-                filter.setAuthenticationFailureHandler((request, response, exception) -> {
-                        String loginType = request.getParameter("loginType");
-                        String redirectUrl = "/login?error=true";
-                        if (loginType != null && !loginType.trim().isEmpty()) {
-                                redirectUrl += "&loginType=" + loginType;
-                        }
-                        response.sendRedirect(redirectUrl);
-                });
-
-                return filter;
-        }
-
-        @Bean
-        public SecurityFilterChain filterChain(HttpSecurity http,
-                        DualLoginAuthenticationFilter dualLoginAuthenticationFilter) throws Exception {
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .requestMatchers("/login", "/adminlte/**", "/css/**", "/js/**",
@@ -76,12 +44,14 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers("/cambiar-password-obligatorio").authenticated()
                                                 .anyRequest().authenticated())
-                                // ✅ Configurar manejo de excepciones
-                                .exceptionHandling(exception -> exception
-                                                .authenticationEntryPoint((request, response, authException) ->
-                                                        response.sendRedirect("/login")))
-                                // ✅ Usar nuestro filtro personalizado
-                                .addFilterAt(dualLoginAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                                .formLogin(form -> form
+                                                .loginPage("/login")
+                                                .loginProcessingUrl("/login")
+                                                .usernameParameter("username")
+                                                .passwordParameter("password")
+                                                .successHandler(customAuthenticationSuccessHandler)
+                                                .failureUrl("/login?error=true")
+                                                .permitAll())
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessUrl("/login?logout")

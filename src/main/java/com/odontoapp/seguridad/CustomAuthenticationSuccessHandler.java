@@ -75,6 +75,46 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             log.error("¡ERROR al buscar el usuario '{}' en la base de datos después del login!", username, e);
         }
 
+        // ✅ VALIDACIÓN DE LOGIN DUAL
+        String loginType = request.getParameter("loginType");
+        log.info("Login type recibido: '{}'", loginType);
+
+        if (loginType != null && !loginType.trim().isEmpty()) {
+            boolean esPaciente = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .anyMatch(role -> role.equals("PACIENTE"));
+
+            boolean esPersonal = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .anyMatch(role -> role.equals("ADMIN") || role.equals("ODONTOLOGO")
+                            || role.equals("RECEPCIONISTA") || role.equals("AUXILIAR") || role.equals("ALMACEN"));
+
+            // Validar login de pacientes: solo permitir rol PACIENTE
+            if ("paciente".equalsIgnoreCase(loginType)) {
+                if (!esPaciente) {
+                    log.warn("❌ Usuario '{}' intentó ingresar por login de PACIENTES pero NO tiene rol PACIENTE",
+                            username);
+                    String errorUrl = request.getContextPath()
+                            + "/login?error=true&reason=wrongPortal&loginType=paciente";
+                    response.sendRedirect(errorUrl);
+                    return;
+                }
+                log.info("✅ Usuario PACIENTE '{}' validado correctamente en login de pacientes", username);
+            }
+
+            // Validar login de personal: NO permitir solo rol PACIENTE
+            if ("personal".equalsIgnoreCase(loginType)) {
+                if (esPaciente && !esPersonal) {
+                    log.warn("❌ Usuario PACIENTE '{}' intentó ingresar por login de PERSONAL", username);
+                    String errorUrl = request.getContextPath()
+                            + "/login?error=true&reason=wrongPortal&loginType=personal";
+                    response.sendRedirect(errorUrl);
+                    return;
+                }
+                log.info("✅ Usuario PERSONAL '{}' validado correctamente en login de personal", username);
+            }
+        }
+
         // Lógica Cambio de Contraseña (con try-catch)
         if (usuario != null && usuario.isDebeActualizarPassword()) {
             String targetUrl = request.getContextPath() + "/cambiar-password-obligatorio";
