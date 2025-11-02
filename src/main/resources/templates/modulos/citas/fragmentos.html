@@ -18,11 +18,20 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <!-- Alerta de validación -->
+                    <div id="alertaValidacionCita" class="alert alert-danger d-none" role="alert">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span id="mensajeValidacionCita"></span>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="fechaHoraInicioAgendar">Fecha y Hora de Inicio <span class="text-danger">*</span></label>
                                 <input type="datetime-local" class="form-control" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
+                                <div class="invalid-feedback">
+                                    Por favor seleccione una fecha y hora válida (no puede ser en el pasado)
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -34,6 +43,9 @@
                                             th:value="${paciente.usuario != null ? paciente.usuario.id : ''}"
                                             th:text="${paciente.nombreCompleto}"></option>
                                 </select>
+                                <div class="invalid-feedback">
+                                    Por favor seleccione un paciente
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -48,6 +60,9 @@
                                             th:value="${odontologo.id}"
                                             th:text="${odontologo.nombreCompleto}"></option>
                                 </select>
+                                <div class="invalid-feedback">
+                                    Por favor seleccione un odontólogo
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -366,6 +381,125 @@
         </div>
     </div>
 </div>
+
+<!-- Script de validaciones inline para modal de citas -->
+<script th:fragment="scriptValidacionesCita">
+$(document).ready(function() {
+    // Referencias a elementos del formulario
+    const formAgendar = $('#modalAgendarCita form');
+    const fechaInput = $('#fechaHoraInicioAgendar');
+    const pacienteSelect = $('#pacienteIdAgendar');
+    const odontologoSelect = $('#odontologoIdAgendar');
+    const alertaValidacion = $('#alertaValidacionCita');
+    const mensajeValidacion = $('#mensajeValidacionCita');
+
+    // Función para validar fecha (no puede ser pasada)
+    function validarFecha() {
+        const fechaSeleccionada = new Date(fechaInput.val());
+        const ahora = new Date();
+
+        if (fechaInput.val() && fechaSeleccionada < ahora) {
+            fechaInput.addClass('is-invalid');
+            return false;
+        } else {
+            fechaInput.removeClass('is-invalid');
+            return true;
+        }
+    }
+
+    // Función para validar select
+    function validarSelect(selectElement) {
+        if (!selectElement.val() || selectElement.val() === '') {
+            selectElement.addClass('is-invalid');
+            return false;
+        } else {
+            selectElement.removeClass('is-invalid');
+            return true;
+        }
+    }
+
+    // Validación en tiempo real al cambiar fecha
+    fechaInput.on('change', function() {
+        validarFecha();
+        ocultarAlerta();
+    });
+
+    // Validación en tiempo real al cambiar selects
+    pacienteSelect.on('change', function() {
+        validarSelect($(this));
+        ocultarAlerta();
+    });
+
+    odontologoSelect.on('change', function() {
+        validarSelect($(this));
+        ocultarAlerta();
+    });
+
+    // Función para mostrar alerta de error
+    function mostrarAlerta(mensaje) {
+        mensajeValidacion.text(mensaje);
+        alertaValidacion.removeClass('d-none');
+        alertaValidacion[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Función para ocultar alerta
+    function ocultarAlerta() {
+        alertaValidacion.addClass('d-none');
+    }
+
+    // Validación al enviar el formulario
+    formAgendar.on('submit', function(e) {
+        let esValido = true;
+        let mensaje = '';
+
+        // Limpiar validaciones previas
+        fechaInput.removeClass('is-invalid');
+        pacienteSelect.removeClass('is-invalid');
+        odontologoSelect.removeClass('is-invalid');
+        ocultarAlerta();
+
+        // Validar fecha
+        if (!fechaInput.val()) {
+            fechaInput.addClass('is-invalid');
+            mensaje = 'Por favor seleccione una fecha y hora de inicio';
+            esValido = false;
+        } else if (!validarFecha()) {
+            mensaje = 'La fecha y hora no puede ser en el pasado';
+            esValido = false;
+        }
+
+        // Validar paciente
+        if (!validarSelect(pacienteSelect)) {
+            mensaje = mensaje || 'Por favor seleccione un paciente';
+            esValido = false;
+        }
+
+        // Validar odontólogo
+        if (!validarSelect(odontologoSelect)) {
+            mensaje = mensaje || 'Por favor seleccione un odontólogo';
+            esValido = false;
+        }
+
+        // Si no es válido, prevenir envío y mostrar mensaje
+        if (!esValido) {
+            e.preventDefault();
+            mostrarAlerta(mensaje);
+            return false;
+        }
+
+        return true;
+    });
+
+    // Limpiar validaciones al cerrar el modal
+    $('#modalAgendarCita').on('hidden.bs.modal', function() {
+        fechaInput.removeClass('is-invalid');
+        pacienteSelect.removeClass('is-invalid');
+        odontologoSelect.removeClass('is-invalid');
+        ocultarAlerta();
+        formAgendar[0].reset();
+    });
+});
+</script>
 
 </body>
 </html>
