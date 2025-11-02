@@ -40,6 +40,7 @@ public class CitaServiceImpl implements CitaService {
 
     private static final String NO_LABORABLE = "NO_LABORABLE";
     private static final int INTERVALO_MINUTOS = 30; // Intervalos de 30 minutos
+    private static final int BUFFER_MINUTOS = 15; // Buffer de 15 minutos después de cada cita
 
     // --- Dependencias ---
     private final CitaRepository citaRepository;
@@ -158,15 +159,70 @@ public class CitaServiceImpl implements CitaService {
 
     /**
      * Verifica si un slot de tiempo está ocupado por alguna cita.
+     * Incluye un buffer de 15 minutos después de cada cita.
      */
     private boolean estaOcupado(LocalDateTime inicio, LocalDateTime fin, List<Cita> citas) {
         for (Cita cita : citas) {
-            // Hay conflicto si los intervalos se solapan
-            if (inicio.isBefore(cita.getFechaHoraFin()) && fin.isAfter(cita.getFechaHoraInicio())) {
+            // Agregar buffer de 15 minutos al final de la cita
+            LocalDateTime finConBuffer = cita.getFechaHoraFin().plusMinutes(BUFFER_MINUTOS);
+
+            // Hay conflicto si los intervalos se solapan (considerando el buffer)
+            if (inicio.isBefore(finConBuffer) && fin.isAfter(cita.getFechaHoraInicio())) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Verifica si el horario de la cita está dentro del horario laboral del odontólogo.
+     * Considera tanto el horario regular como las excepciones.
+     */
+    private boolean estaEnHorarioLaboral(Usuario odontologo, LocalDateTime inicio, LocalDateTime fin) {
+        LocalDate fecha = inicio.toLocalDate();
+        LocalTime horaInicio = inicio.toLocalTime();
+        LocalTime horaFin = fin.toLocalTime();
+
+        // Verificar si hay excepción de horario
+        HorarioExcepcion excepcion = odontologo.getExcepcionesHorario().stream()
+                .filter(e -> e.getFecha().equals(fecha))
+                .findFirst()
+                .orElse(null);
+
+        String horarioStr;
+        if (excepcion != null) {
+            // Si es día no laborable, no está disponible
+            if (NO_LABORABLE.equals(excepcion.getHoras())) {
+                return false;
+            }
+            horarioStr = excepcion.getHoras();
+        } else {
+            // Usar horario regular
+            DayOfWeek diaSemana = fecha.getDayOfWeek();
+            horarioStr = odontologo.getHorarioRegular().get(diaSemana);
+
+            if (horarioStr == null || horarioStr.isEmpty()) {
+                return false; // Sin horario configurado para este día
+            }
+        }
+
+        // Parsear intervalos del horario (ej: "09:00-13:00,15:00-19:00")
+        String[] intervalos = horarioStr.split(",");
+
+        for (String intervalo : intervalos) {
+            String[] partes = intervalo.trim().split("-");
+            if (partes.length != 2) continue;
+
+            LocalTime horarioInicioIntervalo = LocalTime.parse(partes[0].trim());
+            LocalTime horarioFinIntervalo = LocalTime.parse(partes[1].trim());
+
+            // Verificar si el horario de la cita está dentro de este intervalo
+            if (!horaInicio.isBefore(horarioInicioIntervalo) && !horaFin.isAfter(horarioFinIntervalo)) {
+                return true; // Está dentro del rango
+            }
+        }
+
+        return false; // No está en ningún intervalo laboral
     }
 
     @Override
@@ -196,17 +252,21 @@ public class CitaServiceImpl implements CitaService {
             throw new IllegalStateException("No se puede agendar una cita en el pasado");
         }
 
-        // Verificar disponibilidad del odontólogo
+        // Verificar disponibilidad del odontólogo (incluyendo buffer de 15 minutos)
         List<Cita> citasConflictivas = citaRepository.findConflictingCitas(
-                odontologoId, fechaHoraInicio, fechaHoraFin);
+                odontologoId, fechaHoraInicio, fechaHoraFin.plusMinutes(BUFFER_MINUTOS));
 
         // Filtrar solo citas activas (no canceladas)
-        long citasActivas = citasConflictivas.stream()
+        List<Cita> citasActivas = citasConflictivas.stream()
                 .filter(c -> !c.getEstadoCita().getNombre().startsWith("CANCELADA"))
-                .count();
+                .collect(Collectors.toList());
 
-        if (citasActivas > 0) {
-            throw new IllegalStateException("El odontólogo ya tiene una cita programada en ese horario");
+        // Verificar conflictos usando el método que considera el buffer
+        if (estaOcupado(fechaHoraInicio, fechaHoraFin, citasActivas)) {
+            throw new IllegalStateException(
+                "El odontólogo no está disponible en ese horario. " +
+                "Recuerde que se requiere un tiempo de buffer de " + BUFFER_MINUTOS +
+                " minutos después de cada cita.");
         }
 
         // Verificar que el horario esté dentro del horario laboral del odontólogo
@@ -216,6 +276,13 @@ public class CitaServiceImpl implements CitaService {
         if (!(boolean) disponibilidad.get("disponible")) {
             throw new IllegalStateException("El odontólogo no está disponible en esta fecha: " +
                     disponibilidad.get("motivo"));
+        }
+
+        // Validar que el horario específico esté dentro de los rangos laborales
+        if (!estaEnHorarioLaboral(odontologo, fechaHoraInicio, fechaHoraFin)) {
+            throw new IllegalStateException(
+                "El horario seleccionado está fuera del horario laboral del odontólogo. " +
+                "Por favor seleccione un horario dentro de las horas de atención.");
         }
 
         // Crear la cita
