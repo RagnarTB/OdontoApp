@@ -117,6 +117,16 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     $(document).ready(function() {
+        // ✅ Autocompletar fecha/hora actual al abrir el modal (solo si no está seteada)
+        $('#modalRegistrarPago').on('show.bs.modal', function() {
+            // Solo setear la fecha si no tiene valor (evita sobrescribir valor seteado por otro script)
+            if (!$('#fechaPago').val()) {
+                const ahora = new Date();
+                const fechaFormateada = ahora.toISOString().slice(0, 16);
+                $('#fechaPago').val(fechaFormateada);
+            }
+        });
+
         // Event listener para cambio de método de pago
         $('#metodoPagoId').change(function() {
             var metodoTexto = $(this).find('option:selected').text().toUpperCase();
@@ -124,28 +134,129 @@
             // Ocultar todos los campos opcionales
             $('#camposYape').hide();
             $('#camposMixto').hide();
+            $('#referenciaYape').prop('required', false);
+            $('#montoEfectivo').prop('required', false);
+            $('#montoYape').prop('required', false);
+
+            // Limpiar valores previos
+            $('#referenciaYape').val('');
+            $('#montoEfectivo').val('');
+            $('#montoYape').val('');
 
             // Mostrar campos según el método seleccionado
-            if (metodoTexto.includes('YAPE')) {
+            if (metodoTexto.includes('YAPE') || metodoTexto.includes('TRANSFERENCIA')) {
                 $('#camposYape').show();
+                $('#referenciaYape').prop('required', true);
             }
             if (metodoTexto.includes('MIXTO')) {
                 $('#camposMixto').show();
+                $('#montoEfectivo').prop('required', true);
+                $('#montoYape').prop('required', true);
             }
         });
 
-        // Validación adicional para pago mixto
-        $('#modalRegistrarPago form').submit(function(e) {
+        // ✅ Auto-calcular monto restante en pago mixto
+        $('#montoEfectivo, #montoYape').on('input', function() {
             var metodoTexto = $('#metodoPagoId option:selected').text().toUpperCase();
 
+            if (metodoTexto.includes('MIXTO')) {
+                var montoTotal = parseFloat($('#monto').val()) || 0;
+                var montoEfectivo = parseFloat($('#montoEfectivo').val()) || 0;
+                var montoYape = parseFloat($('#montoYape').val()) || 0;
+                var sumaActual = montoEfectivo + montoYape;
+
+                // Mostrar advertencia si la suma no coincide
+                if (Math.abs(sumaActual - montoTotal) > 0.01 && sumaActual > 0) {
+                    var diferencia = montoTotal - sumaActual;
+                    var mensaje = diferencia > 0
+                        ? 'Falta: S/ ' + diferencia.toFixed(2)
+                        : 'Excede por: S/ ' + Math.abs(diferencia).toFixed(2);
+
+                    $('#montoEfectivo, #montoYape').addClass('border-warning');
+
+                    // Mostrar tooltip o mensaje
+                    if (!$('#warningMixto').length) {
+                        $('#camposMixto').append(
+                            '<small id="warningMixto" class="text-warning d-block mt-2">' +
+                            '<i class="fas fa-exclamation-triangle mr-1"></i>' + mensaje +
+                            '</small>'
+                        );
+                    } else {
+                        $('#warningMixto').html('<i class="fas fa-exclamation-triangle mr-1"></i>' + mensaje);
+                    }
+                } else if (Math.abs(sumaActual - montoTotal) <= 0.01 && sumaActual > 0) {
+                    // Suma correcta
+                    $('#montoEfectivo, #montoYape').removeClass('border-warning').addClass('border-success');
+                    $('#warningMixto').remove();
+                } else {
+                    $('#montoEfectivo, #montoYape').removeClass('border-warning border-success');
+                    $('#warningMixto').remove();
+                }
+            }
+        });
+
+        // ✅ Validación mejorada para pago mixto con SweetAlert2
+        $('#modalRegistrarPago form').submit(function(e) {
+            // ✅ VALIDAR QUE EL ID DEL COMPROBANTE ESTÉ PRESENTE
+            var comprobanteId = $('#pagoComprobanteId').val();
+            if (!comprobanteId || comprobanteId === '' || comprobanteId === '0') {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se ha especificado el comprobante. Por favor, cierre y vuelva a abrir el modal.',
+                    confirmButtonText: 'Entendido'
+                });
+                return false;
+            }
+
+            var metodoTexto = $('#metodoPagoId option:selected').text().toUpperCase();
+
+            // Validar pago mixto
             if (metodoTexto.includes('MIXTO')) {
                 var montoTotal = parseFloat($('#monto').val() || 0);
                 var montoEfectivo = parseFloat($('#montoEfectivo').val() || 0);
                 var montoYape = parseFloat($('#montoYape').val() || 0);
+                var suma = montoEfectivo + montoYape;
 
-                if (Math.abs((montoEfectivo + montoYape) - montoTotal) > 0.01) {
-                    alert('La suma de Efectivo y Yape debe ser igual al Monto Total.');
+                if (montoEfectivo <= 0 || montoYape <= 0) {
                     e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error en Pago Mixto',
+                        html: 'Ambos montos (Efectivo y Yape) deben ser <strong>mayores a cero</strong>.',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return false;
+                }
+
+                if (Math.abs(suma - montoTotal) > 0.01) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error en Pago Mixto',
+                        html: 'La suma de <strong>Efectivo (S/ ' + montoEfectivo.toFixed(2) + ')</strong> + ' +
+                              '<strong>Yape (S/ ' + montoYape.toFixed(2) + ')</strong> = ' +
+                              '<strong>S/ ' + suma.toFixed(2) + '</strong><br><br>' +
+                              'Debe ser igual al <strong>Monto Total: S/ ' + montoTotal.toFixed(2) + '</strong>',
+                        confirmButtonText: 'Corregir'
+                    });
+                    return false;
+                }
+            }
+
+            // Validar referencia Yape/Transferencia
+            if ((metodoTexto.includes('YAPE') || metodoTexto.includes('TRANSFERENCIA')) && !metodoTexto.includes('MIXTO')) {
+                var referenciaYape = $('#referenciaYape').val().trim();
+                if (!referenciaYape) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Referencia Requerida',
+                        text: 'Por favor ingrese el número de operación o referencia de la transacción.',
+                        confirmButtonText: 'Entendido'
+                    });
+                    $('#referenciaYape').focus();
                     return false;
                 }
             }

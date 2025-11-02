@@ -96,8 +96,16 @@
                     <p class="text-slate-500 mt-1">Accede a tu cuenta</p>
                 </div>
 
+                <!-- ✅ Mensajes de error mejorados -->
                 <div th:if="${param.error}" class="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-                    Credenciales incorrectas o cuenta inactiva/bloqueada. Verifica tus datos.
+                    <span th:if="${param.reason == 'wrongPortal'}">
+                        <strong>❌ Acceso denegado:</strong> Este usuario no puede ingresar por esta sección.
+                        <span th:if="${param.loginType == 'paciente'}">Por favor, use el login de "Personal Clínica".</span>
+                        <span th:if="${param.loginType == 'personal'}">Por favor, use el login de "Pacientes".</span>
+                    </span>
+                    <span th:unless="${param.reason == 'wrongPortal'}">
+                        Credenciales incorrectas o cuenta inactiva/bloqueada. Verifica tus datos.
+                    </span>
                 </div>
                 <div th:if="${param.logout}" class="p-3 bg-blue-100 text-blue-700 rounded-lg text-sm">
                     Has cerrado sesión correctamente.
@@ -118,8 +126,11 @@
                 </div>
 
                 <div>
+                    <!-- ✅ LOGIN PARA PERSONAL CLÍNICA -->
                     <div id="content-personal">
                         <form th:action="@{/login}" method="post" class="space-y-4 mt-4">
+                            <!-- Campo oculto para identificar tipo de login -->
+                            <input type="hidden" name="loginType" value="personal">
                             <div>
                                 <label for="username-personal" class="text-sm font-medium text-slate-700">Email</label>
                                 <input id="username-personal" name="username" type="email" placeholder="tu@email.com"
@@ -140,8 +151,11 @@
                         </form>
                     </div>
 
+                    <!-- ✅ LOGIN PARA PACIENTES -->
                     <div id="content-pacientes" class="hidden">
                         <form th:action="@{/login}" method="post" class="space-y-4 mt-4">
+                            <!-- Campo oculto para identificar tipo de login -->
+                            <input type="hidden" name="loginType" value="paciente">
                             <div>
                                 <label for="username-paciente" class="text-sm font-medium text-slate-700">Email</label>
                                 <input id="username-paciente" name="username" type="email"
@@ -201,10 +215,19 @@
         tabPersonal.addEventListener('click', showPersonalTab);
         tabPacientes.addEventListener('click', showPacientesTab);
 
-        // Opcional: Mostrar pestaña correcta si hay error
-        // Necesitarías pasar un parámetro como ?error=true&loginType=paciente
+        // ✅ Mostrar pestaña correcta si hay error
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('error') && urlParams.get('loginType') === 'paciente') {
+        if (urlParams.get('error')) {
+            const loginType = urlParams.get('loginType');
+            if (loginType === 'paciente') {
+                showPacientesTab();
+            } else if (loginType === 'personal') {
+                showPersonalTab();
+            } else {
+                showPersonalTab(); // Por defecto
+            }
+        } else if (urlParams.get('fromRegistro') === 'true') {
+            // Si viene del registro, mostrar tab de pacientes
             showPacientesTab();
         } else {
             showPersonalTab(); // Por defecto muestra personal

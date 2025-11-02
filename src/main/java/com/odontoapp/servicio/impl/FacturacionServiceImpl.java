@@ -212,8 +212,30 @@ public class FacturacionServiceImpl implements FacturacionService {
 
                 comprobante.getDetalles().add(detalleInsumo);
 
-                // TODO: Llamar a InventarioService.descontarStockPorVentaDirecta(...)
-                // para descontar el stock de estos insumos adicionales vendidos
+                // ✅ Descontar stock del insumo vendido durante la cita
+                TipoMovimiento tipoSalida = tipoMovimientoRepository.findByCodigo("SALIDA")
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Tipo de movimiento SALIDA no encontrado"));
+
+                MotivoMovimiento motivoVentaCita = motivoMovimientoRepository.findByNombre("Venta en Cita")
+                        .orElse(motivoMovimientoRepository.findByNombre("Venta Directa")
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "Motivo de movimiento 'Venta en Cita' o 'Venta Directa' no encontrado")));
+
+                // Crear MovimientoDTO para descontar stock
+                MovimientoDTO movimientoDTO = new MovimientoDTO();
+                movimientoDTO.setInsumoId(insumo.getId());
+                movimientoDTO.setTipoMovimientoId(tipoSalida.getId());
+                movimientoDTO.setMotivoMovimientoId(motivoVentaCita.getId());
+                movimientoDTO.setCantidad(detalleDTO.getCantidad());
+                movimientoDTO.setReferencia("Venta en cita ID: " + citaId);
+
+                // Registrar movimiento (esto lanzará excepción si no hay stock suficiente)
+                inventarioService.registrarMovimiento(movimientoDTO);
+
+                System.out.println("✓ Stock descontado: " + insumo.getNombre() +
+                        " | Cantidad: " + detalleDTO.getCantidad() +
+                        " | Desde Cita ID: " + citaId);
             }
         }
 
@@ -457,6 +479,43 @@ public class FacturacionServiceImpl implements FacturacionService {
             throw new IllegalArgumentException(
                     "El monto del pago (S/ " + dto.getMonto() + ") no puede ser mayor que el saldo pendiente (S/ " +
                     comprobante.getMontoPendiente() + ")");
+        }
+
+        // ✅ 4.1 Validar lógica de pago mixto
+        String nombreMetodoPago = metodoPago.getNombre().toUpperCase();
+        boolean esMetodoMixto = nombreMetodoPago.contains("MIXTO");
+        boolean esMetodoYape = nombreMetodoPago.contains("YAPE") || nombreMetodoPago.contains("TRANSFERENCIA");
+
+        if (esMetodoMixto) {
+            // Si es pago mixto, validar que se proporcionen ambos montos
+            if (dto.getMontoEfectivo() == null || dto.getMontoEfectivo().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException(
+                        "Para un pago mixto, el monto en efectivo debe ser mayor a cero");
+            }
+            if (dto.getMontoYape() == null || dto.getMontoYape().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException(
+                        "Para un pago mixto, el monto de Yape/Transferencia debe ser mayor a cero");
+            }
+
+            // Validar que la suma de ambos montos sea igual al monto total del pago
+            BigDecimal sumaMontos = dto.getMontoEfectivo().add(dto.getMontoYape());
+            BigDecimal diferencia = sumaMontos.subtract(dto.getMonto()).abs();
+
+            // Tolerancia de 0.01 para errores de redondeo
+            if (diferencia.compareTo(new BigDecimal("0.01")) > 0) {
+                throw new IllegalArgumentException(
+                        String.format("La suma de Efectivo (S/ %.2f) + Yape (S/ %.2f) = S/ %.2f debe ser igual al Monto Total (S/ %.2f)",
+                                dto.getMontoEfectivo(), dto.getMontoYape(), sumaMontos, dto.getMonto()));
+            }
+        } else {
+            // Para pagos no mixtos, limpiar los campos de monto mixto
+            dto.setMontoEfectivo(null);
+            dto.setMontoYape(null);
+
+            // Para métodos Yape/Transferencia, la referencia puede ser útil
+            if (!esMetodoYape) {
+                dto.setReferenciaYape(null);
+            }
         }
 
         // 5. Crear entidad Pago

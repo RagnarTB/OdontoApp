@@ -12,6 +12,10 @@ import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.FacturacionService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -91,6 +95,53 @@ public class CitaController {
         model.addAttribute("citaDTO", new CitaDTO());
 
         return "modulos/citas/calendario";
+    }
+
+    /**
+     * Muestra la vista de lista de citas con filtros y paginación.
+     *
+     * @param model Modelo de Spring MVC
+     * @param page Número de página (default 0)
+     * @param size Tamaño de página (default 20)
+     * @param estadoId ID del estado para filtrar (opcional)
+     * @param odontologoId ID del odontólogo para filtrar (opcional)
+     * @param fechaDesde Fecha desde para filtrar (opcional)
+     * @param fechaHasta Fecha hasta para filtrar (opcional)
+     * @return Vista de lista de citas
+     */
+    @GetMapping("/lista")
+    public String verListaCitas(Model model,
+                               @RequestParam(defaultValue = "0") int page,
+                               @RequestParam(defaultValue = "20") int size,
+                               @RequestParam(required = false) Long estadoId,
+                               @RequestParam(required = false) Long odontologoId,
+                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta) {
+
+        // Crear paginación ordenada por fecha descendente
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaHoraInicio").descending());
+
+        // Obtener citas según filtros
+        Page<Cita> paginaCitas = citaService.listarCitasConFiltros(
+            estadoId, odontologoId, fechaDesde, fechaHasta, pageable);
+
+        // Cargar listas para los filtros
+        var listaEstados = estadoCitaRepository.findAll();
+        var rolOdontologo = rolRepository.findByNombre("ODONTOLOGO");
+        var listaOdontologos = rolOdontologo.isPresent()
+                ? usuarioRepository.findByRolesNombre("ODONTOLOGO")
+                : List.of();
+
+        // Añadir al modelo
+        model.addAttribute("paginaCitas", paginaCitas);
+        model.addAttribute("listaEstados", listaEstados);
+        model.addAttribute("listaOdontologos", listaOdontologos);
+        model.addAttribute("estadoIdFiltro", estadoId);
+        model.addAttribute("odontologoIdFiltro", odontologoId);
+        model.addAttribute("fechaDesdeFiltro", fechaDesde);
+        model.addAttribute("fechaHastaFiltro", fechaHasta);
+
+        return "modulos/citas/lista";
     }
 
     /**

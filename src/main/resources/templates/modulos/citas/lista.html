@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+    th:replace="~{layout/base :: layout(titulo='Lista de Citas', contenido=~{::#contenido-principal})}">
+
+<body>
+    <div id="contenido-principal">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1><i class="fas fa-list-alt mr-2"></i>Lista de Citas</h1>
+                        <p class="text-muted">Gestión completa de todas las citas</p>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/citas}" class="btn btn-primary float-sm-right">
+                            <i class="fas fa-calendar-alt mr-1"></i> Ver Calendario
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+                <!-- Mensajes flash -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span th:text="${success}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <!-- Filtros -->
+                <div class="card card-outline card-info">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-filter mr-2"></i>Filtros de Búsqueda</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/citas/lista}" method="get" class="form-inline">
+                            <div class="row w-100">
+                                <div class="col-md-3">
+                                    <div class="form-group w-100">
+                                        <label for="estadoId" class="mr-2">Estado:</label>
+                                        <select id="estadoId" name="estadoId" class="form-control w-100">
+                                            <option value="">Todos los estados</option>
+                                            <option th:each="estado : ${listaEstados}"
+                                                    th:value="${estado.id}"
+                                                    th:text="${estado.nombre}"
+                                                    th:selected="${estado.id == estadoIdFiltro}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group w-100">
+                                        <label for="odontologoId" class="mr-2">Odontólogo:</label>
+                                        <select id="odontologoId" name="odontologoId" class="form-control w-100">
+                                            <option value="">Todos</option>
+                                            <option th:each="odontologo : ${listaOdontologos}"
+                                                    th:value="${odontologo.id}"
+                                                    th:text="${odontologo.nombreCompleto}"
+                                                    th:selected="${odontologo.id == odontologoIdFiltro}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group w-100">
+                                        <label for="fechaDesde" class="mr-2">Desde:</label>
+                                        <input type="date" id="fechaDesde" name="fechaDesde" class="form-control w-100"
+                                               th:value="${fechaDesdeFiltro}">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group w-100">
+                                        <label for="fechaHasta" class="mr-2">Hasta:</label>
+                                        <input type="date" id="fechaHasta" name="fechaHasta" class="form-control w-100"
+                                               th:value="${fechaHastaFiltro}">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-search mr-1"></i> Filtrar
+                                    </button>
+                                    <a th:href="@{/citas/lista}" class="btn btn-secondary w-100 mt-2">
+                                        <i class="fas fa-times mr-1"></i> Limpiar
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tabla de Citas -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-calendar-check mr-2"></i>
+                            Listado de Citas
+                            <span class="badge badge-primary ml-2" th:text="${paginaCitas.totalElements}">0</span>
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 150px;">Fecha y Hora</th>
+                                        <th>Paciente</th>
+                                        <th>Odontólogo</th>
+                                        <th>Procedimiento</th>
+                                        <th style="width: 120px;">Estado</th>
+                                        <th style="width: 180px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="cita : ${paginaCitas.content}">
+                                        <td>
+                                            <strong th:text="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy')}"></strong><br>
+                                            <small class="text-muted" th:text="${#temporals.format(cita.fechaHoraInicio, 'HH:mm')} + ' - ' + ${#temporals.format(cita.fechaHoraFin, 'HH:mm')}"></small>
+                                        </td>
+                                        <td th:text="${cita.paciente.nombreCompleto}"></td>
+                                        <td th:text="${cita.odontologo.nombreCompleto}"></td>
+                                        <td th:text="${cita.procedimiento != null ? cita.procedimiento.nombre : 'N/A'}"></td>
+                                        <td>
+                                            <span class="badge"
+                                                  th:classappend="${cita.estadoCita.nombre == 'PENDIENTE'} ? 'badge-warning' :
+                                                                  ${cita.estadoCita.nombre == 'CONFIRMADA'} ? 'badge-info' :
+                                                                  ${cita.estadoCita.nombre == 'ASISTIO'} ? 'badge-success' :
+                                                                  ${cita.estadoCita.nombre == 'NO_ASISTIO'} ? 'badge-danger' :
+                                                                  ${cita.estadoCita.nombre.startsWith('CANCELADA')} ? 'badge-secondary' :
+                                                                  ${cita.estadoCita.nombre == 'REPROGRAMADA'} ? 'badge-orange' : 'badge-light'"
+                                                  th:text="${cita.estadoCita.nombre}"></span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-info btn-ver-detalle"
+                                                        th:data-cita-id="${cita.id}"
+                                                        title="Ver Detalle">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <a th:href="@{/citas/confirmar(citaId=${cita.id})}"
+                                                   class="btn btn-success"
+                                                   th:if="${cita.estadoCita.nombre == 'PENDIENTE'}"
+                                                   title="Confirmar Cita"
+                                                   sec:authorize="hasAuthority('GESTIONAR_CITAS')">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-danger btn-cancelar-cita"
+                                                        th:data-cita-id="${cita.id}"
+                                                        th:data-paciente="${cita.paciente.nombreCompleto}"
+                                                        th:if="${cita.estadoCita.nombre != 'ASISTIO' and cita.estadoCita.nombre != 'NO_ASISTIO' and !cita.estadoCita.nombre.startsWith('CANCELADA')}"
+                                                        title="Cancelar Cita"
+                                                        sec:authorize="hasAuthority('GESTIONAR_CITAS')">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${paginaCitas.empty}">
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="fas fa-info-circle fa-2x mb-2"></i><br>
+                                            No se encontraron citas con los filtros seleccionados
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer clearfix" th:if="${paginaCitas.totalPages > 0}">
+                        <ul class="pagination pagination-sm m-0 float-right">
+                            <li class="page-item" th:classappend="${paginaCitas.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/citas/lista(page=${paginaCitas.number - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">«</a>
+                            </li>
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaCitas.totalPages - 1)}"
+                                th:classappend="${i == paginaCitas.number} ? 'active'">
+                                <a class="page-link" th:text="${i + 1}"
+                                   th:href="@{/citas/lista(page=${i}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}"></a>
+                            </li>
+                            <li class="page-item" th:classappend="${paginaCitas.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/citas/lista(page=${paginaCitas.number + 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">»</a>
+                            </li>
+                        </ul>
+                        <div class="float-left mt-2">
+                            <small class="text-muted">
+                                Mostrando <strong th:text="${paginaCitas.numberOfElements}">0</strong> de
+                                <strong th:text="${paginaCitas.totalElements}">0</strong> citas
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Manejar clic en botón cancelar
+            $(document).on('click', '.btn-cancelar-cita', function() {
+                const citaId = $(this).data('cita-id');
+                const paciente = $(this).data('paciente');
+
+                Swal.fire({
+                    title: '¿Cancelar cita?',
+                    html: `¿Está seguro de cancelar la cita del paciente<br><strong>${paciente}</strong>?`,
+                    icon: 'warning',
+                    input: 'textarea',
+                    inputLabel: 'Motivo de cancelación (requerido)',
+                    inputPlaceholder: 'Ingrese el motivo...',
+                    inputAttributes: {
+                        'aria-label': 'Ingrese el motivo de cancelación'
+                    },
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-ban"></i> Sí, cancelar',
+                    cancelButtonText: '<i class="fas fa-times"></i> No, volver',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'Debe ingresar un motivo de cancelación';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed && result.value) {
+                        window.location.href = `/citas/cancelar?citaId=${citaId}&motivo=${encodeURIComponent(result.value)}`;
+                    }
+                });
+            });
+
+            // Manejar clic en ver detalle (modal simple con información)
+            $(document).on('click', '.btn-ver-detalle', function() {
+                const citaId = $(this).data('cita-id');
+                window.location.href = `/citas?citaDetalle=${citaId}`;
+            });
+        });
+    </script>
+</body>
+
+</html>

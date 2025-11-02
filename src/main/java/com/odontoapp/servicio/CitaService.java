@@ -126,4 +126,18 @@ public interface CitaService {
      * @return Lista de citas en el rango de fechas
      */
     List<Cita> buscarCitasParaCalendario(LocalDate fechaInicio, LocalDate fechaFin, Long odontologoId);
+
+    /**
+     * Lista todas las citas con filtros opcionales y paginación.
+     *
+     * @param estadoId ID del estado para filtrar (opcional)
+     * @param odontologoId ID del odontólogo para filtrar (opcional)
+     * @param fechaDesde Fecha desde para filtrar (opcional)
+     * @param fechaHasta Fecha hasta para filtrar (opcional)
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de citas filtradas
+     */
+    Page<Cita> listarCitasConFiltros(Long estadoId, Long odontologoId,
+                                      LocalDate fechaDesde, LocalDate fechaHasta,
+                                      Pageable pageable);
 }

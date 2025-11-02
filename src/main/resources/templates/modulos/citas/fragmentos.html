@@ -18,11 +18,20 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <!-- Alerta de validación -->
+                    <div id="alertaValidacionCita" class="alert alert-danger d-none" role="alert">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span id="mensajeValidacionCita"></span>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="fechaHoraInicioAgendar">Fecha y Hora de Inicio <span class="text-danger">*</span></label>
                                 <input type="datetime-local" class="form-control" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
+                                <div class="invalid-feedback">
+                                    Por favor seleccione una fecha y hora válida (no puede ser en el pasado)
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -34,6 +43,9 @@
                                             th:value="${paciente.usuario != null ? paciente.usuario.id : ''}"
                                             th:text="${paciente.nombreCompleto}"></option>
                                 </select>
+                                <div class="invalid-feedback">
+                                    Por favor seleccione un paciente
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -48,6 +60,9 @@
                                             th:value="${odontologo.id}"
                                             th:text="${odontologo.nombreCompleto}"></option>
                                 </select>
+                                <div class="invalid-feedback">
+                                    Por favor seleccione un odontólogo
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -332,6 +347,10 @@
 
                     <hr>
                     <h6 class="text-muted">Insumo Ajustado (Opcional)</h6>
+                    <div class="alert alert-info alert-sm">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <small>El stock del insumo seleccionado se descontará automáticamente al registrar el tratamiento.</small>
+                    </div>
 
                     <div class="row">
                         <div class="col-md-8">
@@ -341,15 +360,20 @@
                                     <option value="">Ninguno</option>
                                     <option th:each="insumo : ${listaInsumos}"
                                             th:value="${insumo.id}"
-                                            th:text="${insumo.nombre}"></option>
+                                            th:text="${insumo.nombre + ' (Stock: ' + insumo.cantidadDisponible + ' ' + insumo.unidadMedida + ')'}"></option>
                                 </select>
-                                <small class="form-text text-muted">Si se usó un insumo en cantidad distinta a la esperada</small>
+                                <small class="form-text text-muted">Si se usó un insumo, el stock se descontará automáticamente</small>
+                                <div id="stockWarning" class="alert alert-warning mt-2 d-none">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    <span id="stockWarningText"></span>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="tratamientoCantidadAjustada">Cantidad</label>
-                                <input type="number" class="form-control" id="tratamientoCantidadAjustada" name="cantidadInsumoAjustada" step="0.01" min="0" placeholder="0.00">
+                                <input type="number" class="form-control" id="tratamientoCantidadAjustada" name="cantidadInsumoAjustada" step="0.01" min="0.01" placeholder="0.00">
+                                <small class="form-text text-muted" id="stockDisponibleText"></small>
                             </div>
                         </div>
                     </div>
@@ -366,6 +390,202 @@
         </div>
     </div>
 </div>
+
+<!-- Script de validaciones inline para modal de citas -->
+<script th:fragment="scriptValidacionesCita">
+$(document).ready(function() {
+    // Referencias a elementos del formulario
+    const formAgendar = $('#modalAgendarCita form');
+    const fechaInput = $('#fechaHoraInicioAgendar');
+    const pacienteSelect = $('#pacienteIdAgendar');
+    const odontologoSelect = $('#odontologoIdAgendar');
+    const alertaValidacion = $('#alertaValidacionCita');
+    const mensajeValidacion = $('#mensajeValidacionCita');
+
+    // Función para validar fecha (no puede ser pasada)
+    function validarFecha() {
+        const fechaSeleccionada = new Date(fechaInput.val());
+        const ahora = new Date();
+
+        if (fechaInput.val() && fechaSeleccionada < ahora) {
+            fechaInput.addClass('is-invalid');
+            return false;
+        } else {
+            fechaInput.removeClass('is-invalid');
+            return true;
+        }
+    }
+
+    // Función para validar select
+    function validarSelect(selectElement) {
+        if (!selectElement.val() || selectElement.val() === '') {
+            selectElement.addClass('is-invalid');
+            return false;
+        } else {
+            selectElement.removeClass('is-invalid');
+            return true;
+        }
+    }
+
+    // Validación en tiempo real al cambiar fecha
+    fechaInput.on('change', function() {
+        validarFecha();
+        ocultarAlerta();
+    });
+
+    // Validación en tiempo real al cambiar selects
+    pacienteSelect.on('change', function() {
+        validarSelect($(this));
+        ocultarAlerta();
+    });
+
+    odontologoSelect.on('change', function() {
+        validarSelect($(this));
+        ocultarAlerta();
+    });
+
+    // Función para mostrar alerta de error
+    function mostrarAlerta(mensaje) {
+        mensajeValidacion.text(mensaje);
+        alertaValidacion.removeClass('d-none');
+        alertaValidacion[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Función para ocultar alerta
+    function ocultarAlerta() {
+        alertaValidacion.addClass('d-none');
+    }
+
+    // Validación al enviar el formulario
+    formAgendar.on('submit', function(e) {
+        let esValido = true;
+        let mensaje = '';
+
+        // Limpiar validaciones previas
+        fechaInput.removeClass('is-invalid');
+        pacienteSelect.removeClass('is-invalid');
+        odontologoSelect.removeClass('is-invalid');
+        ocultarAlerta();
+
+        // Validar fecha
+        if (!fechaInput.val()) {
+            fechaInput.addClass('is-invalid');
+            mensaje = 'Por favor seleccione una fecha y hora de inicio';
+            esValido = false;
+        } else if (!validarFecha()) {
+            mensaje = 'La fecha y hora no puede ser en el pasado';
+            esValido = false;
+        }
+
+        // Validar paciente
+        if (!validarSelect(pacienteSelect)) {
+            mensaje = mensaje || 'Por favor seleccione un paciente';
+            esValido = false;
+        }
+
+        // Validar odontólogo
+        if (!validarSelect(odontologoSelect)) {
+            mensaje = mensaje || 'Por favor seleccione un odontólogo';
+            esValido = false;
+        }
+
+        // Si no es válido, prevenir envío y mostrar mensaje
+        if (!esValido) {
+            e.preventDefault();
+            mostrarAlerta(mensaje);
+            return false;
+        }
+
+        return true;
+    });
+
+    // Limpiar validaciones al cerrar el modal
+    $('#modalAgendarCita').on('hidden.bs.modal', function() {
+        fechaInput.removeClass('is-invalid');
+        pacienteSelect.removeClass('is-invalid');
+        odontologoSelect.removeClass('is-invalid');
+        ocultarAlerta();
+        formAgendar[0].reset();
+    });
+
+    // ============ SCRIPT PARA MODAL DE TRATAMIENTO ============
+
+    // Autocompletar fecha/hora actual al abrir el modal
+    $('#modalRegistrarTratamiento').on('show.bs.modal', function() {
+        const ahora = new Date();
+        const fechaFormateada = ahora.toISOString().slice(0, 16); // Formato YYYY-MM-DDTHH:mm
+        $('#tratamientoFechaRealizacion').val(fechaFormateada);
+    });
+
+    // Mapeo de insumos con su stock (se carga desde Thymeleaf)
+    const insumosStock = {};
+
+    // Al cambiar el insumo seleccionado, mostrar stock disponible
+    $('#tratamientoInsumoId').on('change', function() {
+        const insumoId = $(this).val();
+        const stockWarning = $('#stockWarning');
+        const stockText = $('#stockDisponibleText');
+
+        if (!insumoId) {
+            stockWarning.addClass('d-none');
+            stockText.text('');
+            $('#tratamientoCantidadAjustada').val('').prop('disabled', true);
+            return;
+        }
+
+        // Habilitar campo de cantidad
+        $('#tratamientoCantidadAjustada').prop('disabled', false);
+
+        // Extraer stock del texto del option seleccionado
+        const selectedOption = $(this).find('option:selected').text();
+        const stockMatch = selectedOption.match(/Stock:\s*([\d.]+)\s*(\w+)/);
+
+        if (stockMatch) {
+            const stockDisponible = parseFloat(stockMatch[1]);
+            const unidad = stockMatch[2];
+            insumosStock[insumoId] = { stock: stockDisponible, unidad: unidad };
+            stockText.html(`<i class="fas fa-box mr-1"></i>Stock disponible: <strong>${stockDisponible} ${unidad}</strong>`);
+
+            // Advertencia si stock bajo
+            if (stockDisponible < 10) {
+                stockWarning.removeClass('d-none');
+                $('#stockWarningText').text(`Stock bajo: solo quedan ${stockDisponible} ${unidad}`);
+            } else {
+                stockWarning.addClass('d-none');
+            }
+        }
+    });
+
+    // Validar cantidad al escribir
+    $('#tratamientoCantidadAjustada').on('input', function() {
+        const insumoId = $('#tratamientoInsumoId').val();
+        const cantidad = parseFloat($(this).val());
+        const stockWarning = $('#stockWarning');
+
+        if (insumoId && insumosStock[insumoId] && cantidad) {
+            const stockDisponible = insumosStock[insumoId].stock;
+            const unidad = insumosStock[insumoId].unidad;
+
+            if (cantidad > stockDisponible) {
+                stockWarning.removeClass('d-none').removeClass('alert-warning').addClass('alert-danger');
+                $('#stockWarningText').text(`¡CANTIDAD EXCEDE EL STOCK! Disponible: ${stockDisponible} ${unidad}, Solicitado: ${cantidad} ${unidad}`);
+                $(this).addClass('is-invalid');
+            } else {
+                stockWarning.removeClass('alert-danger').addClass('alert-warning').addClass('d-none');
+                $(this).removeClass('is-invalid');
+            }
+        }
+    });
+
+    // Limpiar al cerrar modal de tratamiento
+    $('#modalRegistrarTratamiento').on('hidden.bs.modal', function() {
+        $('#stockWarning').addClass('d-none');
+        $('#stockDisponibleText').text('');
+        $('#tratamientoCantidadAjustada').prop('disabled', true).removeClass('is-invalid');
+        $(this).find('form')[0].reset();
+    });
+});
+</script>
 
 </body>
 </html>

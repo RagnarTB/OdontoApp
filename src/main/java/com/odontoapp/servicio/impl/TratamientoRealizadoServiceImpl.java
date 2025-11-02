@@ -95,10 +95,31 @@ public class TratamientoRealizadoServiceImpl implements TratamientoRealizadoServ
                             "Insumo no encontrado con ID: " + dto.getInsumoAjustadoId()));
 
             // Validar que si hay insumo ajustado, también haya cantidad
-            if (dto.getCantidadInsumoAjustada() == null) {
+            if (dto.getCantidadInsumoAjustada() == null || dto.getCantidadInsumoAjustada() <= 0) {
                 throw new IllegalArgumentException(
-                        "Si se especifica un insumo ajustado, la cantidad ajustada es obligatoria");
+                        "Si se especifica un insumo ajustado, la cantidad debe ser mayor a cero");
             }
+
+            // ✅ VALIDAR STOCK DISPONIBLE
+            if (insumoAjustado.getCantidadDisponible() < dto.getCantidadInsumoAjustada()) {
+                throw new IllegalStateException(
+                    String.format("Stock insuficiente del insumo '%s'. " +
+                        "Disponible: %.2f %s, Requerido: %.2f %s",
+                        insumoAjustado.getNombre(),
+                        insumoAjustado.getCantidadDisponible(),
+                        insumoAjustado.getUnidadMedida(),
+                        dto.getCantidadInsumoAjustada(),
+                        insumoAjustado.getUnidadMedida()));
+            }
+
+            // ✅ DESCONTAR STOCK DEL INSUMO UTILIZADO
+            double nuevoStock = insumoAjustado.getCantidadDisponible() - dto.getCantidadInsumoAjustada();
+            insumoAjustado.setCantidadDisponible(nuevoStock);
+            insumoRepository.save(insumoAjustado);
+
+            System.out.println("✓ Stock actualizado: " + insumoAjustado.getNombre() +
+                " | Cantidad utilizada: " + dto.getCantidadInsumoAjustada() +
+                " | Nuevo stock: " + nuevoStock);
         }
 
         // Crear la nueva instancia de TratamientoRealizado

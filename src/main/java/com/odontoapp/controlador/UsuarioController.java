@@ -41,9 +41,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Controller
 @RequestMapping("/usuarios")
+@PreAuthorize("hasAuthority('ADMIN')") // ✅ Solo ADMIN puede gestionar usuarios
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
