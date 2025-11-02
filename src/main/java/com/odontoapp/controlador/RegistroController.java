@@ -134,7 +134,8 @@ public class RegistroController {
             pacienteService.completarRegistroPaciente(registroDTO, token, password);
             redirectAttributes.addFlashAttribute("success",
                     "¡Tu cuenta ha sido registrada y activada! Ya puedes iniciar sesión.");
-            return "redirect:/login";
+            // ✅ Redirigir al login de pacientes con parámetro para mostrar la pestaña correcta
+            return "redirect:/login?fromRegistro=true";
 
         } catch (IllegalStateException e) {
             // Token inválido, expirado o paciente ya activo

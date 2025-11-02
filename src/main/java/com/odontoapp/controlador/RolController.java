@@ -26,9 +26,11 @@ import com.odontoapp.repositorio.PermisoRepository;
 import com.odontoapp.servicio.RolService;
 
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Controller
 @RequestMapping("/roles") // Añadir RequestMapping a nivel de clase
+@PreAuthorize("hasAuthority('ADMIN')") // ✅ Solo ADMIN puede gestionar roles
 public class RolController {
 
     private final RolService rolService;
