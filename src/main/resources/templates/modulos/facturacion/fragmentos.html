@@ -46,10 +46,14 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text">S/</span>
                             </div>
-                            <input type="number" class="form-control" id="monto" name="monto" step="0.01" min="0.01" required>
+                            <input type="number" class="form-control" id="monto" name="monto"
+                                   step="0.01" min="0.01"
+                                   data-validar="decimal"
+                                   data-max-decimals="2"
+                                   required>
                         </div>
                         <small class="form-text text-muted">
-                            El monto no debe exceder el saldo pendiente.
+                            El monto no debe exceder el saldo pendiente. Solo números con hasta 2 decimales.
                         </small>
                     </div>
 
@@ -74,6 +78,9 @@
 
                     <!-- Campos Opcionales para Pago Mixto -->
                     <div id="camposMixto" style="display: none;">
+                        <div class="alert alert-info alert-sm">
+                            <i class="fas fa-info-circle"></i> <strong>Pago Mixto:</strong> Los montos de efectivo y yape deben sumar el monto total
+                        </div>
                         <div class="row">
                             <div class="col-6">
                                 <div class="form-group">
@@ -82,7 +89,10 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text">S/</span>
                                         </div>
-                                        <input type="number" class="form-control" id="montoEfectivo" name="montoEfectivo" step="0.01" min="0">
+                                        <input type="number" class="form-control" id="montoEfectivo" name="montoEfectivo"
+                                               step="0.01" min="0"
+                                               data-validar="decimal"
+                                               data-max-decimals="2">
                                     </div>
                                 </div>
                             </div>
@@ -93,7 +103,10 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text">S/</span>
                                         </div>
-                                        <input type="number" class="form-control" id="montoYape" name="montoYape" step="0.01" min="0">
+                                        <input type="number" class="form-control" id="montoYape" name="montoYape"
+                                               step="0.01" min="0"
+                                               data-validar="decimal"
+                                               data-max-decimals="2">
                                     </div>
                                 </div>
                             </div>
