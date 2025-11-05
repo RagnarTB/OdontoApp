@@ -30,7 +30,13 @@
                     <!-- Fecha de Pago -->
                     <div class="form-group">
                         <label for="fechaPago">Fecha de Pago <span class="text-danger">*</span></label>
-                        <input type="datetime-local" class="form-control" id="fechaPago" name="fechaPago" required>
+                        <input type="datetime-local" class="form-control" id="fechaPago" name="fechaPago"
+                               readonly
+                               style="background-color: #e9ecef; cursor: not-allowed;"
+                               required>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> La fecha se establece automáticamente al momento actual
+                        </small>
                     </div>
 
                     <!-- Monto -->

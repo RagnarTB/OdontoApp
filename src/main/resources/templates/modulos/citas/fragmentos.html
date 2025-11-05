@@ -28,10 +28,16 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="fechaHoraInicioAgendar">Fecha y Hora de Inicio <span class="text-danger">*</span></label>
-                                <input type="datetime-local" class="form-control" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
+                                <input type="datetime-local" class="form-control" id="fechaHoraInicioAgendar"
+                                       name="fechaHoraInicio"
+                                       data-validar="cita-anticipacion"
+                                       required>
                                 <div class="invalid-feedback">
-                                    Por favor seleccione una fecha y hora válida (no puede ser en el pasado)
+                                    La cita debe agendarse con al menos 2 horas de anticipación
                                 </div>
+                                <small class="form-text text-muted">
+                                    Mínimo 2 horas de anticipación desde ahora
+                                </small>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -219,7 +225,13 @@
 
                     <div class="form-group">
                         <label for="nuevaFechaHoraInicio">Nueva Fecha y Hora <span class="text-danger">*</span></label>
-                        <input type="datetime-local" class="form-control" id="nuevaFechaHoraInicio" name="nuevaFechaHoraInicio" required>
+                        <input type="datetime-local" class="form-control" id="nuevaFechaHoraInicio"
+                               name="nuevaFechaHoraInicio"
+                               data-validar="cita-anticipacion"
+                               required>
+                        <small class="form-text text-muted">
+                            Mínimo 2 horas de anticipación desde ahora
+                        </small>
                     </div>
 
                     <div class="form-group">

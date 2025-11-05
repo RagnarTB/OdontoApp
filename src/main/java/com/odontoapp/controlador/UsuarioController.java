@@ -195,6 +195,7 @@ public class UsuarioController {
             usuarioDTO.setFechaNacimiento(usuario.getFechaNacimiento());
             usuarioDTO.setDireccion(usuario.getDireccion());
             usuarioDTO.setFechaContratacion(usuario.getFechaContratacion());
+            usuarioDTO.setFechaVigencia(usuario.getFechaVigencia());
             usuarioDTO.setUltimoAcceso(usuario.getUltimoAcceso());
             usuarioDTO.setRoles(usuario.getRoles().stream()
                     .map(Rol::getId)

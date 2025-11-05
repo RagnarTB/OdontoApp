@@ -93,9 +93,9 @@
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="tipoDocumentoId">Tipo Documento</label>
+                                        <label for="tipoDocumentoId">Tipo Documento <span class="text-danger">*</span></label>
                                         <select class="form-control" th:field="*{tipoDocumentoId}" id="tipoDocumentoId"
-                                            th:disabled="${usuario.id != null}"
+                                            required
                                             th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">
                                             <option value="">Seleccione...</option>
                                             <option th:each="tipo : ${tiposDocumento}" th:value="${tipo.id}"
@@ -110,29 +110,40 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="numeroDocumento">N&uacute;mero Documento</label>
+                                        <label for="numeroDocumento">N&uacute;mero Documento <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" th:field="*{numeroDocumento}"
-                                            id="numeroDocumento" placeholder="N° de Documento"
+                                            id="numeroDocumento" placeholder="Ej: 12345678"
                                             th:readonly="${usuario.id != null}"
+                                            data-validar="dni"
+                                            maxlength="8"
+                                            required
                                             th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('numeroDocumento')}"
                                             class="invalid-feedback d-block" th:errors="*{numeroDocumento}"></div>
                                         <small th:if="${usuario.id != null}" class="form-text text-muted">
                                             <i class="fas fa-lock"></i> Campo no editable
                                         </small>
+                                        <small th:if="${usuario.id == null}" class="form-text text-muted">
+                                            8 dígitos - Solo números
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="nombreCompleto">Nombre Completo</label>
+                                        <label for="nombreCompleto">Nombre Completo <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="nombreCompleto"
-                                            th:field="*{nombreCompleto}" placeholder="Nombre completo" required
+                                            th:field="*{nombreCompleto}" placeholder="Nombre completo"
                                             th:readonly="${usuario.id != null}"
+                                            data-validar="nombre"
+                                            required
                                             th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
                                             th:errors="*{nombreCompleto}"></div>
                                         <small th:if="${usuario.id != null}" class="form-text text-muted">
-                                            <i class="fas fa-lock"></i> Campo no editable
+                                            <i class="fas fa-lock"></i> Campo no editable (obtenido de RENIEC)
+                                        </small>
+                                        <small th:if="${usuario.id == null}" class="form-text text-muted">
+                                            Solo letras y espacios - Se autocompleta con DNI
                                         </small>
                                     </div>
                                 </div>
@@ -156,31 +167,72 @@
                                         <label for="telefono">Tel&eacute;fono</label>
                                         <input type="text" class="form-control" id="telefono" th:field="*{telefono}"
                                             placeholder="987654321"
+                                            data-validar="telefono"
+                                            maxlength="9"
                                             th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('telefono')}" class="invalid-feedback"
                                             th:errors="*{telefono}"></div>
-                                        <small th:if="${usuario.id != null}" class="form-text text-success">
-                                            <i class="fas fa-edit"></i> Campo editable
+                                        <small class="form-text text-success">
+                                            <i class="fas fa-edit"></i> Campo editable - 9 dígitos
                                         </small>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="fechaNacimiento">Fecha de Nacimiento</label>
+                                        <label for="fechaNacimiento">Fecha de Nacimiento <span class="text-danger">*</span></label>
                                         <input type="date" class="form-control" id="fechaNacimiento"
                                             th:field="*{fechaNacimiento}"
                                             th:readonly="${usuario.id != null}"
+                                            data-validar="edad-minima"
+                                            data-edad-minima="18"
+                                            required
                                             th:classappend="${#fields.hasErrors('fechaNacimiento')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('fechaNacimiento')}" class="invalid-feedback"
                                             th:errors="*{fechaNacimiento}"></div>
                                         <small th:if="${usuario.id != null}" class="form-text text-muted">
                                             <i class="fas fa-lock"></i> Campo no editable
                                         </small>
+                                        <small th:if="${usuario.id == null}" class="form-text text-muted">
+                                            Debe ser mayor de 18 años
+                                        </small>
                                     </div>
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-8">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="fechaContratacion">Fecha Contrataci&oacute;n <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="fechaContratacion"
+                                            th:field="*{fechaContratacion}"
+                                            th:readonly="${usuario.id != null}"
+                                            data-validar="fecha-no-futura"
+                                            required
+                                            th:classappend="${#fields.hasErrors('fechaContratacion')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('fechaContratacion')}" class="invalid-feedback"
+                                            th:errors="*{fechaContratacion}"></div>
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
+                                        <small th:if="${usuario.id == null}" class="form-text text-muted">
+                                            No puede ser futura
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group" id="grupoFechaVigencia">
+                                        <label for="fechaVigencia">Fecha de Vigencia <span class="text-danger" id="vigenciaRequired">*</span></label>
+                                        <input type="date" class="form-control" id="fechaVigencia"
+                                            th:field="*{fechaVigencia}"
+                                            data-validar="fecha-no-pasada"
+                                            th:classappend="${#fields.hasErrors('fechaVigencia')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('fechaVigencia')}" class="invalid-feedback"
+                                            th:errors="*{fechaVigencia}"></div>
+                                        <small class="form-text text-info">
+                                            <i class="fas fa-info-circle"></i> Fecha hasta la cual el usuario tendrá acceso (no requerido para ADMIN)
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="direccion">Direcci&oacute;n</label>
                                         <input type="text" class="form-control" id="direccion" th:field="*{direccion}"
@@ -188,22 +240,8 @@
                                             th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('direccion')}" class="invalid-feedback"
                                             th:errors="*{direccion}"></div>
-                                        <small class="form-text text-muted">
+                                        <small class="form-text text-success">
                                             <i class="fas fa-edit"></i> Campo editable
-                                        </small>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="fechaContratacion">Fecha Contrataci&oacute;n</label>
-                                        <input type="date" class="form-control" id="fechaContratacion"
-                                            th:field="*{fechaContratacion}"
-                                            th:readonly="${usuario.id != null}"
-                                            th:classappend="${#fields.hasErrors('fechaContratacion')} ? 'is-invalid' : ''">
-                                        <div th:if="${#fields.hasErrors('fechaContratacion')}" class="invalid-feedback"
-                                            th:errors="*{fechaContratacion}"></div>
-                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
-                                            <i class="fas fa-lock"></i> Campo no editable
                                         </small>
                                     </div>
                                 </div>
@@ -467,17 +505,32 @@
 
                 // --- FIN FUNCIONALIDAD DNI ---
 
+                // --- FUNCIONALIDAD DE FECHA DE VIGENCIA Y ROL ADMIN ---
+                const fechaVigenciaInput = document.getElementById('fechaVigencia');
+                const grupoFechaVigencia = document.getElementById('grupoFechaVigencia');
+                const vigenciaRequired = document.getElementById('vigenciaRequired');
+                let rolAdminId = null;
+
                 const seccionHorarios = document.getElementById('seccionHorarios');
                 const checkboxesRoles = document.querySelectorAll('.rol-checkbox');
                 let rolOdontologoId = null;
 
-                // Encontrar el ID del rol ODONTOLOGO dinámicamente
+                // Encontrar el ID del rol ODONTOLOGO y ADMIN dinámicamente
                 checkboxesRoles.forEach(cb => {
-                    // Usar toUpperCase para comparación insensible a mayúsculas/minúsculas
-                    if (cb.dataset.rolNombre && cb.dataset.rolNombre.toUpperCase() === 'ODONTOLOGO') {
+                    const rolNombre = cb.dataset.rolNombre ? cb.dataset.rolNombre.toUpperCase() : '';
+
+                    if (rolNombre === 'ODONTOLOGO') {
                         rolOdontologoId = cb.value;
                     }
-                    cb.addEventListener('change', toggleSeccionHorarios);
+                    if (rolNombre === 'ADMIN') {
+                        rolAdminId = cb.value;
+                    }
+
+                    cb.addEventListener('change', function() {
+                        toggleSeccionHorarios();
+                        toggleFechaVigencia();
+                        verificarRolAdmin(this);
+                    });
                 });
 
                 function toggleSeccionHorarios() {
@@ -520,8 +573,85 @@
                     }
                 }
 
+                // --- FUNCIÓN PARA TOGGLE DE FECHA DE VIGENCIA ---
+                function toggleFechaVigencia() {
+                    let adminSeleccionado = false;
+
+                    checkboxesRoles.forEach(cb => {
+                        if (cb.value === rolAdminId && cb.checked) {
+                            adminSeleccionado = true;
+                        }
+                    });
+
+                    if (adminSeleccionado) {
+                        // Si es ADMIN, fecha de vigencia NO es requerida
+                        fechaVigenciaInput.required = false;
+                        vigenciaRequired.style.display = 'none';
+                        grupoFechaVigencia.classList.remove('required');
+                    } else {
+                        // Para cualquier otro rol, fecha de vigencia ES requerida
+                        fechaVigenciaInput.required = true;
+                        vigenciaRequired.style.display = 'inline';
+                        grupoFechaVigencia.classList.add('required');
+                    }
+                }
+
+                // --- FUNCIÓN PARA VERIFICAR ROL ADMIN (DOBLE CONFIRMACIÓN) ---
+                function verificarRolAdmin(checkbox) {
+                    if (checkbox.dataset.rolNombre && checkbox.dataset.rolNombre.toUpperCase() === 'ADMIN' && checkbox.checked) {
+                        Swal.fire({
+                            title: '¿Asignar rol ADMIN?',
+                            html: '<p class="text-warning"><strong>ADVERTENCIA:</strong></p>' +
+                                  '<p>Está a punto de asignar el rol de <strong>ADMINISTRADOR</strong>.</p>' +
+                                  '<p>Este rol tiene acceso completo al sistema y <strong>NO podrá ser modificado posteriormente</strong>.</p>' +
+                                  '<p>¿Está completamente seguro?</p>',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Sí, continuar',
+                            cancelButtonText: 'Cancelar'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Primera confirmación pasada, pedir segunda
+                                Swal.fire({
+                                    title: 'SEGUNDA CONFIRMACIÓN',
+                                    html: '<p class="text-danger"><strong>Esta es su última oportunidad.</strong></p>' +
+                                          '<p>Una vez guardado, este usuario con rol ADMIN:</p>' +
+                                          '<ul class="text-left">' +
+                                          '<li>Tendrá acceso completo al sistema</li>' +
+                                          '<li>NO podrá ser modificado ni eliminado</li>' +
+                                          '<li>No requerirá fecha de vigencia</li>' +
+                                          '</ul>' +
+                                          '<p><strong>¿Confirma la asignación del rol ADMIN?</strong></p>',
+                                    icon: 'error',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#d33',
+                                    cancelButtonColor: '#3085d6',
+                                    confirmButtonText: 'SÍ, CONFIRMO',
+                                    cancelButtonText: 'NO, cancelar'
+                                }).then((secondResult) => {
+                                    if (!secondResult.isConfirmed) {
+                                        // Si cancela la segunda confirmación, desmarcar el checkbox
+                                        checkbox.checked = false;
+                                        toggleFechaVigencia();
+                                        mostrarInfo('Asignación de rol ADMIN cancelada');
+                                    } else {
+                                        mostrarExito('Rol ADMIN confirmado. Recuerde que este cambio es permanente.');
+                                    }
+                                });
+                            } else {
+                                // Si cancela la primera confirmación, desmarcar el checkbox
+                                checkbox.checked = false;
+                                toggleFechaVigencia();
+                            }
+                        });
+                    }
+                }
+
                 // Llamar al inicio para establecer el estado inicial correcto
                 toggleSeccionHorarios();
+                toggleFechaVigencia();
 
                 // Validar formato de hora en inputs (existentes y nuevos)
                 function addHoraInputValidation(inputElement) {

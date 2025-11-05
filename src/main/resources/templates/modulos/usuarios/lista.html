@@ -99,30 +99,39 @@
                             </div>
 
                             <div class="user-actions">
-                                <!-- Mostrar badge para super-admin en lugar de acciones -->
-                                <span th:if="${usuario.esSuperAdmin}" class="badge badge-primary">
-                                    <i class="fas fa-shield-alt"></i> Super Admin
-                                </span>
+                                <!-- Verificar si el usuario tiene rol protegido (ADMIN, ODONTOLOGO, PACIENTE) -->
+                                <th:block th:with="rolNombre=${usuario.getRoles().iterator().next().getNombre()}">
+                                    <!-- Mostrar badge para super-admin -->
+                                    <span th:if="${usuario.esSuperAdmin}" class="badge badge-primary">
+                                        <i class="fas fa-shield-alt"></i> Super Admin
+                                    </span>
 
-                                <!-- Mostrar acciones solo si NO es super-admin -->
-                                <div th:unless="${usuario.esSuperAdmin}">
-                                    <label class="switch" title="Cambiar Estado">
-                                        <input type="checkbox" th:checked="${usuario.estaActivo}"
-                                               th:attr="onchange=|location.href='@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}'|">
-                                        <span class="slider"></span>
-                                    </label>
-                                    <a th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
-                                       class="btn btn-sm btn-outline-secondary" title="Editar"
-                                       sec:authorize="hasAuthority('EDITAR_USUARIOS')">
-                                        <i class="fas fa-pencil-alt"></i>
-                                    </a>
-                                    <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
-                                       class="btn btn-sm btn-outline-danger btn-eliminar-usuario" title="Eliminar"
-                                       th:data-nombre="${usuario.nombreCompleto}"
-                                       sec:authorize="hasAuthority('ELIMINAR_USUARIOS')">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </a>
-                                </div>
+                                    <!-- Mostrar badge para roles protegidos (excepto super-admin) -->
+                                    <span th:if="${!usuario.esSuperAdmin && (#strings.equals(rolNombre, 'ADMIN') || #strings.equals(rolNombre, 'ODONTOLOGO') || #strings.equals(rolNombre, 'PACIENTE'))}"
+                                          class="badge badge-warning">
+                                        <i class="fas fa-lock"></i> Rol Protegido
+                                    </span>
+
+                                    <!-- Mostrar acciones solo si NO es super-admin NI tiene rol protegido -->
+                                    <div th:if="${!usuario.esSuperAdmin && !(#strings.equals(rolNombre, 'ADMIN') || #strings.equals(rolNombre, 'ODONTOLOGO') || #strings.equals(rolNombre, 'PACIENTE'))}">
+                                        <label class="switch" title="Cambiar Estado">
+                                            <input type="checkbox" th:checked="${usuario.estaActivo}"
+                                                   th:attr="onchange=|location.href='@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}'|">
+                                            <span class="slider"></span>
+                                        </label>
+                                        <a th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
+                                           class="btn btn-sm btn-outline-secondary" title="Editar"
+                                           sec:authorize="hasAuthority('EDITAR_USUARIOS')">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </a>
+                                        <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
+                                           class="btn btn-sm btn-outline-danger btn-eliminar-usuario" title="Eliminar"
+                                           th:data-nombre="${usuario.nombreCompleto}"
+                                           sec:authorize="hasAuthority('ELIMINAR_USUARIOS')">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    </div>
+                                </th:block>
                             </div>
                         </div>
                     </div>
