@@ -64,7 +64,12 @@ public class UsuarioServiceImpl implements UsuarioService {
                 usuarioDTO.getTipoDocumentoId(),
                 usuarioDTO.getId());
 
-        // --- 2. VALIDACIÓN PREVIA DE EMAIL ---
+        // --- 2. VALIDACIÓN PREVIA DE TELÉFONO ---
+        validarUnicidadTelefono(
+                usuarioDTO.getTelefono(),
+                usuarioDTO.getId());
+
+        // --- 3. VALIDACIÓN PREVIA DE EMAIL ---
         Optional<Usuario> existenteConEmailOpt = usuarioRepository.findByEmailIgnorandoSoftDelete(emailNuevo);
 
         if (esNuevo) {
@@ -491,7 +496,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
     }
 
-    // Método de validación de documento (parece correcto)
+    // Método de validación de documento
     private void validarUnicidadDocumentoUsuario(String numeroDocumento, Long tipoDocumentoId, Long idUsuarioExcluir) {
         if (!StringUtils.hasText(numeroDocumento) || tipoDocumentoId == null) {
             return; // No validar si falta alguno
@@ -504,7 +509,22 @@ public class UsuarioServiceImpl implements UsuarioService {
             TipoDocumento tipoDoc = tipoDocumentoRepository.findById(tipoDocumentoId).orElse(new TipoDocumento());
             throw new DataIntegrityViolationException(
                     "El documento '" + tipoDoc.getCodigo() + " " + numeroDocumento
-                            + "' ya estÃ¡ registrado para otro usuario.");
+                            + "' ya está registrado para otro usuario.");
+        }
+    }
+
+    // Método de validación de teléfono único
+    private void validarUnicidadTelefono(String telefono, Long idUsuarioExcluir) {
+        if (!StringUtils.hasText(telefono)) {
+            return; // No validar si está vacío (campo opcional)
+        }
+        Optional<Usuario> existentePorTelefono = usuarioRepository
+                .findByTelefonoIgnorandoSoftDelete(telefono);
+
+        if (existentePorTelefono.isPresent()
+                && (idUsuarioExcluir == null || !existentePorTelefono.get().getId().equals(idUsuarioExcluir))) {
+            throw new DataIntegrityViolationException(
+                    "El teléfono '" + telefono + "' ya está registrado para otro usuario.");
         }
     }
 

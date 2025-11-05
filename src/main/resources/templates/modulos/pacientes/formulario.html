@@ -164,8 +164,13 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="fechaNacimiento">Fecha de Nacimiento</label>
-                                        <input type="date" class="form-control" th:field="*{fechaNacimiento}"
-                                            th:readonly="${pacienteDTO.id != null}">
+                                        <!-- Hidden field para enviar el valor en modo edición -->
+                                        <input th:if="${pacienteDTO.id != null}" type="hidden" th:field="*{fechaNacimiento}" />
+                                        <!-- Input visible en modo edición (texto plano) -->
+                                        <input th:if="${pacienteDTO.id != null && pacienteDTO.fechaNacimiento != null}" type="text" class="form-control bg-light"
+                                            th:value="${#temporals.format(pacienteDTO.fechaNacimiento, 'dd/MM/yyyy')}" readonly />
+                                        <!-- Input normal en modo creación -->
+                                        <input th:if="${pacienteDTO.id == null}" type="date" class="form-control" th:field="*{fechaNacimiento}">
                                         <small th:if="${pacienteDTO.id != null}" class="form-text text-muted">
                                             <i class="fas fa-lock"></i> Campo no editable
                                         </small>
