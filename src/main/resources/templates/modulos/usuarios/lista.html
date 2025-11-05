@@ -116,6 +116,14 @@
                                        sec:authorize="hasAuthority('EDITAR_USUARIOS')">
                                         <i class="fas fa-pencil-alt"></i>
                                     </a>
+                                    <!-- Botón de excepciones solo para Odontólogos -->
+                                    <button th:if="${usuario.getRoles().![nombre].contains('ODONTOLOGO')}"
+                                            type="button" class="btn btn-sm btn-outline-info btn-gestionar-excepciones"
+                                            title="Gestionar Excepciones de Horario"
+                                            th:attr="data-usuario-id=${usuario.id},data-usuario-nombre=${usuario.nombreCompleto}"
+                                            sec:authorize="hasAuthority('EDITAR_USUARIOS')">
+                                        <i class="fas fa-calendar-times"></i>
+                                    </button>
                                     <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
                                        class="btn btn-sm btn-outline-danger btn-eliminar-usuario" title="Eliminar"
                                        th:data-nombre="${usuario.nombreCompleto}"
@@ -151,6 +159,118 @@
                 </ul>
             </div>
             </div> </div> </section>
+
+    <!-- Modal para Gestionar Excepciones de Horario -->
+    <div class="modal fade" id="modalExcepciones" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-times mr-2"></i>
+                        Gestionar Excepciones de Horario
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="mb-3">
+                        <i class="fas fa-user-md mr-2"></i>
+                        Odontólogo: <strong id="nombreOdontologo"></strong>
+                    </h6>
+
+                    <!-- Formulario para agregar nueva excepción -->
+                    <div class="card card-outline card-primary mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-plus-circle mr-2"></i>
+                                Agregar Nueva Excepción
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <form id="formNuevaExcepcion">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="fechaExcepcion">Fecha <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control" id="fechaExcepcion" required>
+                                            <small class="form-text text-muted">Fecha de la excepción</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="horasExcepcion">Horario <span class="text-danger">*</span></label>
+                                            <select class="form-control" id="tipoExcepcion">
+                                                <option value="NO_LABORABLE">Día No Laborable</option>
+                                                <option value="CUSTOM">Horario Especial</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4" id="campoHorarioEspecial" style="display: none;">
+                                        <div class="form-group">
+                                            <label for="horasExcepcion">Horario Especial</label>
+                                            <input type="text" class="form-control" id="horasExcepcion"
+                                                   placeholder="ej: 08:00-12:00">
+                                            <small class="form-text text-muted">HH:mm-HH:mm</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="motivoExcepcion">Motivo</label>
+                                    <input type="text" class="form-control" id="motivoExcepcion"
+                                           placeholder="ej: Vacaciones, Permiso médico, Capacitación">
+                                    <small class="form-text text-muted">Describe el motivo de la excepción</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-plus mr-2"></i>Agregar Excepción
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Historial de Excepciones -->
+                    <div class="card card-outline card-secondary">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-history mr-2"></i>
+                                Historial de Excepciones
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="loadingExcepciones" class="text-center py-3">
+                                <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                                <p class="mt-2">Cargando excepciones...</p>
+                            </div>
+                            <div id="tablaExcepcionesContainer" style="display: none;">
+                                <table class="table table-sm table-hover">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th style="width: 20%;">Fecha</th>
+                                            <th style="width: 35%;">Horario/Estado</th>
+                                            <th style="width: 35%;">Motivo</th>
+                                            <th style="width: 10%;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaExcepciones">
+                                        <!-- Se llenará con JavaScript -->
+                                    </tbody>
+                                </table>
+                                <div id="noExcepciones" class="alert alert-info" style="display: none;">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    No hay excepciones registradas. Agregue una usando el formulario superior.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-2"></i>Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -165,6 +285,159 @@
                 window.location.href = url;
             }
         });
+    });
+
+    // === GESTIÓN DE EXCEPCIONES DE HORARIO ===
+    let usuarioIdActual = null;
+
+    // Abrir modal de excepciones
+    $(document).on('click', '.btn-gestionar-excepciones', function() {
+        usuarioIdActual = $(this).data('usuario-id');
+        const nombreUsuario = $(this).data('usuario-nombre');
+
+        $('#nombreOdontologo').text(nombreUsuario);
+        $('#modalExcepciones').modal('show');
+
+        // Limpiar formulario
+        $('#formNuevaExcepcion')[0].reset();
+        $('#campoHorarioEspecial').hide();
+
+        // Cargar excepciones
+        cargarExcepciones();
+    });
+
+    // Mostrar/ocultar campo de horario especial
+    $('#tipoExcepcion').on('change', function() {
+        if ($(this).val() === 'CUSTOM') {
+            $('#campoHorarioEspecial').show();
+            $('#horasExcepcion').attr('required', true);
+        } else {
+            $('#campoHorarioEspecial').hide();
+            $('#horasExcepcion').attr('required', false);
+        }
+    });
+
+    // Cargar excepciones de un usuario
+    function cargarExcepciones() {
+        $('#loadingExcepciones').show();
+        $('#tablaExcepcionesContainer').hide();
+
+        $.ajax({
+            url: `/usuarios/${usuarioIdActual}/excepciones`,
+            method: 'GET',
+            success: function(excepciones) {
+                $('#loadingExcepciones').hide();
+                $('#tablaExcepcionesContainer').show();
+
+                const tbody = $('#tablaExcepciones');
+                tbody.empty();
+
+                if (excepciones.length === 0) {
+                    $('#noExcepciones').show();
+                } else {
+                    $('#noExcepciones').hide();
+
+                    excepciones.forEach(exc => {
+                        const fecha = new Date(exc.fecha).toLocaleDateString('es-PE');
+                        const horasBadge = exc.horas === 'NO_LABORABLE'
+                            ? '<span class="badge badge-danger">Día No Laborable</span>'
+                            : `<span class="badge badge-info">${exc.horas}</span>`;
+
+                        const fila = `
+                            <tr>
+                                <td>${fecha}</td>
+                                <td>${horasBadge}</td>
+                                <td>${exc.motivo || '<em class="text-muted">Sin motivo</em>'}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger btn-eliminar-excepcion"
+                                            data-excepcion-id="${exc.id}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.append(fila);
+                    });
+                }
+            },
+            error: function(xhr) {
+                $('#loadingExcepciones').hide();
+                mostrarError('Error al cargar las excepciones');
+            }
+        });
+    }
+
+    // Agregar nueva excepción
+    $('#formNuevaExcepcion').on('submit', function(e) {
+        e.preventDefault();
+
+        const tipoExc = $('#tipoExcepcion').val();
+        const horas = tipoExc === 'NO_LABORABLE' ? 'NO_LABORABLE' : $('#horasExcepcion').val();
+
+        const datos = {
+            fecha: $('#fechaExcepcion').val(),
+            horas: horas,
+            motivo: $('#motivoExcepcion').val() || ''
+        };
+
+        // Validar horario especial si aplica
+        if (tipoExc === 'CUSTOM' && !horas) {
+            mostrarAdvertencia('Debe ingresar el horario especial');
+            return;
+        }
+
+        $.ajax({
+            url: `/usuarios/${usuarioIdActual}/excepciones`,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(datos),
+            success: function(response) {
+                mostrarExito('Excepción agregada correctamente');
+                $('#formNuevaExcepcion')[0].reset();
+                $('#campoHorarioEspecial').hide();
+                cargarExcepciones();
+            },
+            error: function(xhr) {
+                const error = xhr.responseJSON?.error || 'Error al agregar la excepción';
+                mostrarError(error);
+            }
+        });
+    });
+
+    // Eliminar excepción
+    $(document).on('click', '.btn-eliminar-excepcion', function() {
+        const excepcionId = $(this).data('excepcion-id');
+
+        Swal.fire({
+            title: '¿Eliminar excepción?',
+            text: 'Esta acción no se puede deshacer',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/usuarios/${usuarioIdActual}/excepciones/${excepcionId}`,
+                    method: 'DELETE',
+                    success: function(response) {
+                        mostrarExito('Excepción eliminada correctamente');
+                        cargarExcepciones();
+                    },
+                    error: function(xhr) {
+                        mostrarError('Error al eliminar la excepción');
+                    }
+                });
+            }
+        });
+    });
+
+    // Configurar fecha mínima (hoy) en el campo de fecha
+    $(document).ready(function() {
+        const hoy = new Date().toISOString().split('T')[0];
+        $('#fechaExcepcion').attr('min', hoy);
     });
 </script>
 </body>

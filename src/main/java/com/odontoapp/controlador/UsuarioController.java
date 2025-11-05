@@ -374,6 +374,100 @@ public class UsuarioController {
         }
     }
 
+    // === ENDPOINTS REST PARA GESTIONAR EXCEPCIONES DE HORARIO ===
+
+    /**
+     * Obtiene las excepciones de horario de un usuario (odontólogo)
+     */
+    @GetMapping("/{id}/excepciones")
+    @ResponseBody
+    public ResponseEntity<?> obtenerExcepciones(@PathVariable Long id) {
+        try {
+            Usuario usuario = usuarioRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            // Convertir excepciones a una lista ordenada por fecha
+            List<java.util.Map<String, Object>> excepciones = usuario.getExcepcionesHorario()
+                    .stream()
+                    .sorted((e1, e2) -> e2.getFecha().compareTo(e1.getFecha())) // Más recientes primero
+                    .map(exc -> {
+                        java.util.Map<String, Object> map = new java.util.HashMap<>();
+                        map.put("id", exc.getId());
+                        map.put("fecha", exc.getFecha().toString());
+                        map.put("horas", exc.getHoras());
+                        map.put("motivo", exc.getMotivo());
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(excepciones);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Agrega una nueva excepción de horario
+     */
+    @PostMapping("/{id}/excepciones")
+    @ResponseBody
+    public ResponseEntity<?> agregarExcepcion(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> datos) {
+        try {
+            Usuario usuario = usuarioRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            // Crear nueva excepción
+            com.odontoapp.entidad.HorarioExcepcion nuevaExcepcion = new com.odontoapp.entidad.HorarioExcepcion();
+            nuevaExcepcion.setFecha(java.time.LocalDate.parse(datos.get("fecha")));
+            nuevaExcepcion.setHoras(datos.get("horas"));
+            nuevaExcepcion.setMotivo(datos.get("motivo"));
+
+            // Agregar a la lista del usuario
+            usuario.getExcepcionesHorario().add(nuevaExcepcion);
+
+            // Guardar
+            usuarioRepository.save(usuario);
+
+            return ResponseEntity.ok(java.util.Map.of("success", true, "mensaje", "Excepción agregada correctamente"));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Elimina una excepción de horario
+     */
+    @DeleteMapping("/{usuarioId}/excepciones/{excepcionId}")
+    @ResponseBody
+    public ResponseEntity<?> eliminarExcepcion(
+            @PathVariable Long usuarioId,
+            @PathVariable Long excepcionId) {
+        try {
+            Usuario usuario = usuarioRepository.findById(usuarioId)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            // Eliminar la excepción de la lista
+            usuario.getExcepcionesHorario().removeIf(exc -> exc.getId().equals(excepcionId));
+
+            // Guardar
+            usuarioRepository.save(usuario);
+
+            return ResponseEntity.ok(java.util.Map.of("success", true, "mensaje", "Excepción eliminada correctamente"));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    // === FIN ENDPOINTS EXCEPCIONES ===
+
     // --- MÉTODO HELPER REFACTORIZADO ---
     private void cargarRolesYTiposDoc(Model model) {
         List<Rol> rolesActivos = rolRepository.findAll()
