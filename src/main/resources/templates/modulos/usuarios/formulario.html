@@ -281,29 +281,65 @@
                                 <hr>
                                 <h5 class="mt-4 mb-3 text-primary"><i class="far fa-calendar-alt mr-2"></i>Horario
                                     Laboral (Odont&oacute;logo)</h5>
-                                <p class="text-muted small">Define el horario semanal y las excepciones. Formato de
-                                    horas: HH:mm-HH:mm (ej. 09:00-13:00). M&uacute;ltiples rangos separados por coma
-                                    (ej. 09:00-13:00,15:00-19:00). Dejar vac&iacute;o si no trabaja ese d&iacute;a.</p>
+                                <p class="text-muted small">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Seleccione visualmente los bloques de horario haciendo click en ellos.
+                                    Puede usar los horarios predefinidos o seleccionar bloques individuales.
+                                </p>
 
-                                <!-- Horario Regular -->
-                                <h6>Horario Regular</h6>
-                                <div class="row mb-3">
-                                    <div th:each="dia : ${diasSemana}" class="col-md-3 col-sm-6 mb-2">
-                                        <label
-                                            th:text="${#strings.capitalize(#strings.toLowerCase(dia.getDisplayName(T(java.time.format.TextStyle).FULL, localeEs)))}"
-                                            th:for="${'hr-' + dia}"></label>
-                                        <input type="text" class="form-control form-control-sm hora-input"
-                                            th:id="${'hr-' + dia}" th:name="'horarioRegular[' + ${dia} + ']'"
-                                            th:value="*{horarioRegular != null ? horarioRegular[__${dia}__] : ''}"
-                                            placeholder="ej: 09:00-13:00,15:00-19:00"
-                                            pattern="^$|^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9](,([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9])*$"
-                                            title="Formato: HH:mm-HH:mm o HH:mm-HH:mm,HH:mm-HH:mm">
+                                <!-- Acciones Rápidas -->
+                                <div class="acciones-rapidas">
+                                    <button type="button" id="btnAplicarTodos" class="btn btn-info btn-sm">
+                                        <i class="fas fa-copy mr-2"></i>Aplicar horario del Lunes a todos los días
+                                    </button>
+                                    <button type="button" id="btnAplicarLaborables" class="btn btn-success btn-sm">
+                                        <i class="fas fa-business-time mr-2"></i>Aplicar solo a días laborables (Ma-Vi)
+                                    </button>
+                                </div>
+
+                                <!-- Horario Regular con Selector Visual -->
+                                <h6 class="mb-3">
+                                    <i class="fas fa-clock mr-2"></i>Horario Regular Semanal
+                                </h6>
+
+                                <div class="accordion" id="accordionHorarios">
+                                    <div th:each="dia : ${diasSemana}" class="accordion-dia">
+                                        <div class="card">
+                                            <div class="card-header" th:id="'heading-' + ${dia}">
+                                                <button class="btn btn-link" type="button" data-toggle="collapse"
+                                                    th:attr="data-target='#collapse-' + ${dia}"
+                                                    aria-expanded="false">
+                                                    <span class="dia-icon" th:text="${#strings.substring(dia.toString(), 0, 2)}">L</span>
+                                                    <strong th:text="${#strings.capitalize(#strings.toLowerCase(dia.getDisplayName(T(java.time.format.TextStyle).FULL, localeEs)))}">Lunes</strong>
+                                                    <span class="badge badge-primary ml-2" th:id="'badge-' + ${dia}">Sin configurar</span>
+                                                </button>
+                                            </div>
+                                            <div th:id="'collapse-' + ${dia}" class="collapse"
+                                                th:attr="aria-labelledby='heading-' + ${dia}"
+                                                data-parent="#accordionHorarios">
+                                                <div class="card-body">
+                                                    <!-- Selector visual -->
+                                                    <div th:id="'selector-' + ${dia}"></div>
+
+                                                    <!-- Preview del horario -->
+                                                    <div class="horario-preview mt-3">
+                                                        <strong>Horario configurado:</strong>
+                                                        <div th:id="'preview-' + ${dia}" class="mt-1">
+                                                            <em class="text-muted">Sin horario configurado</em>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Input hidden para enviar el valor -->
+                                                    <input type="hidden" th:name="'horarioRegular[' + ${dia} + ']'"
+                                                        th:value="*{horarioRegular != null ? horarioRegular[__${dia}__] : ''}" />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="text-danger small" th:if="${#fields.hasErrors('horarioRegular')}"
+
+                                <div class="text-danger small mt-2" th:if="${#fields.hasErrors('horarioRegular')}"
                                     th:errors="*{horarioRegular}"></div>
-                                <!-- ***** LÍNEA ELIMINADA ***** -->
-                                <!-- <div class="text-danger small" th:if="${#fields.hasErrors('horarioRegular[*]')}" th:errors="*{horarioRegular[*]}"></div> -->
 
 
                                 <!-- Excepciones de Horario -->
