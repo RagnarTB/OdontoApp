@@ -102,7 +102,8 @@
                                             th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">
                                             <option value="">Seleccione...</option>
                                             <option th:each="tipo : ${tiposDocumento}" th:value="${tipo.id}"
-                                                th:text="${tipo.nombre}"></option>
+                                                th:text="${tipo.nombre}"
+                                                th:selected="${usuario.tipoDocumentoId != null && usuario.tipoDocumentoId == tipo.id}"></option>
                                         </select>
                                         <div th:if="${#fields.hasErrors('tipoDocumentoId')}" class="invalid-feedback"
                                             th:errors="*{tipoDocumentoId}"></div>
@@ -420,13 +421,17 @@
                 tipoDocumentoSelect.addEventListener('change', function() {
                     btnBuscarDni.style.display = esDNI() ? 'inline-block' : 'none';
 
-                    // Si cambia el tipo de documento, limpiar y desbloquear el nombre
-                    if (nombreCompletoInput.readOnly) {
-                        nombreCompletoInput.value = '';
-                        nombreCompletoInput.readOnly = false;
-                        nombreCompletoInput.classList.remove('bg-light');
+                    // ✅ SOLO limpiar campos si estamos en modo CREACIÓN (no en edición)
+                    const modoEdicion = document.querySelector('input[name="id"]')?.value;
+                    if (!modoEdicion) {
+                        // Si cambia el tipo de documento, limpiar y desbloquear el nombre
+                        if (nombreCompletoInput.readOnly) {
+                            nombreCompletoInput.value = '';
+                            nombreCompletoInput.readOnly = false;
+                            nombreCompletoInput.classList.remove('bg-light');
+                        }
+                        numeroDocumentoInput.value = ''; // Limpiar también el número de documento
                     }
-                    numeroDocumentoInput.value = ''; // Limpiar también el número de documento
                 });
 
                 // Trigger inicial para mostrar botón si ya hay DNI seleccionado
@@ -512,18 +517,22 @@
                         clearTimeout(timeoutId);
                     }
 
-                    // Si el DNI cambia, limpiar y habilitar el campo nombre para nueva búsqueda
-                    if (nombreCompletoInput.readOnly && dni.length !== 8) {
-                        nombreCompletoInput.value = '';
-                        nombreCompletoInput.readOnly = false;
-                        nombreCompletoInput.classList.remove('bg-light');
-                    }
+                    // ✅ SOLO limpiar nombre si estamos en modo CREACIÓN (no en edición)
+                    const modoEdicion = document.querySelector('input[name="id"]')?.value;
+                    if (!modoEdicion) {
+                        // Si el DNI cambia, limpiar y habilitar el campo nombre para nueva búsqueda
+                        if (nombreCompletoInput.readOnly && dni.length !== 8) {
+                            nombreCompletoInput.value = '';
+                            nombreCompletoInput.readOnly = false;
+                            nombreCompletoInput.classList.remove('bg-light');
+                        }
 
-                    // Si tiene 8 dígitos y es DNI, buscar automáticamente después de 1 segundo
-                    if (esDNI() && dni.length === 8 && /^\d{8}$/.test(dni)) {
-                        timeoutId = setTimeout(function() {
-                            buscarDatosReniec(dni);
-                        }, 1000);
+                        // Si tiene 8 dígitos y es DNI, buscar automáticamente después de 1 segundo
+                        if (esDNI() && dni.length === 8 && /^\d{8}$/.test(dni)) {
+                            timeoutId = setTimeout(function() {
+                                buscarDatosReniec(dni);
+                            }, 1000);
+                        }
                     }
                 });
 

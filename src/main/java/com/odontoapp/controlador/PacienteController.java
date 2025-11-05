@@ -74,6 +74,8 @@ public class PacienteController {
 
         // 1. Validación del DTO
         if (result.hasErrors()) {
+            // Agregar explícitamente el pacienteDTO al modelo para que persistan los datos
+            model.addAttribute("pacienteDTO", pacienteDTO);
             model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll());
             return "modulos/pacientes/formulario";
         }

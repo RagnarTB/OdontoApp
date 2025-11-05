@@ -105,6 +105,8 @@ public class UsuarioController {
             RedirectAttributes redirectAttributes) {
 
         if (result.hasErrors()) {
+            // Agregar explícitamente el usuario al modelo para que persistan los datos
+            model.addAttribute("usuario", usuarioDTO);
             cargarRolesYTiposDoc(model);
             model.addAttribute("diasSemana", DIAS_SEMANA_ORDENADOS); // <-- Añadir también en caso de error
             model.addAttribute("localeEs", new Locale("es", "ES")); // <-- Añadir también en caso de error

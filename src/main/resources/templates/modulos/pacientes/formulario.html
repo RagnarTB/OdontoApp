@@ -84,7 +84,8 @@
                                             th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">
                                             <option value="">Seleccione...</option>
                                             <option th:each="tipo : ${tiposDocumento}" th:value="${tipo.id}"
-                                                th:text="${tipo.nombre}"></option>
+                                                th:text="${tipo.nombre}"
+                                                th:selected="${pacienteDTO.tipoDocumentoId != null && pacienteDTO.tipoDocumentoId == tipo.id}"></option>
                                         </select>
                                         <div th:if="${#fields.hasErrors('tipoDocumentoId')}" class="invalid-feedback"
                                             th:errors="*{tipoDocumentoId}"></div>
