@@ -169,7 +169,7 @@
         leyenda.html(
             '<small class="mr-3"><span class="badge badge-success">Verde</span> Disponible</small>' +
             '<small class="mr-3"><span class="badge badge-secondary">Gris</span> Ocupado</small>' +
-            '<small><i class="fas fa-info-circle text-primary"></i> Mínimo 2h de anticipación</small>'
+            '<small><i class="fas fa-info-circle text-primary"></i> Mínimo 1h de anticipación</small>'
         );
         contenedor.append(leyenda);
     }
