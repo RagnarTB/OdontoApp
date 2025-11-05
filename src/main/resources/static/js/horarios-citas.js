@@ -1,0 +1,242 @@
+/**
+ * horarios-citas.js
+ * Manejo de selección de horarios disponibles para agendar citas
+ */
+
+(function() {
+    'use strict';
+
+    let horarioSeleccionado = null;
+    let fechaSeleccionada = null;
+    let odontologoSeleccionado = null;
+    let duracionProcedimiento = 30; // Por defecto 30 minutos
+
+    /**
+     * Inicializa el sistema de horarios al abrir el modal
+     */
+    function inicializarSistemaHorarios() {
+        // Limpiar estado anterior
+        horarioSeleccionado = null;
+        fechaSeleccionada = null;
+        odontologoSeleccionado = null;
+        $('#grilla-horarios-disponibles').html('');
+        $('#horario-seleccionado-texto').text('Ninguno');
+        $('#fechaHoraInicioAgendar').val('');
+
+        // Configurar fecha mínima (hoy)
+        const hoy = new Date().toISOString().split('T')[0];
+        $('#fechaCitaAgendar').attr('min', hoy);
+
+        // Establecer fecha por defecto (hoy)
+        $('#fechaCitaAgendar').val(hoy);
+    }
+
+    /**
+     * Carga los horarios disponibles desde el servidor
+     */
+    function cargarHorariosDisponibles() {
+        const fecha = $('#fechaCitaAgendar').val();
+        const odontologoId = $('#odontologoIdAgendar').val();
+        const procedimientoId = $('#procedimientoIdAgendar').val();
+
+        // Validar que tengamos odontólogo y fecha
+        if (!odontologoId || !fecha) {
+            $('#grilla-horarios-disponibles').html(
+                '<div class="alert alert-warning">' +
+                '<i class="fas fa-info-circle mr-2"></i>' +
+                'Por favor seleccione un odontólogo y una fecha' +
+                '</div>'
+            );
+            return;
+        }
+
+        // Obtener duración del procedimiento si hay uno seleccionado
+        if (procedimientoId) {
+            const procedimientoOption = $(`#procedimientoIdAgendar option[value="${procedimientoId}"]`);
+            const duracionData = procedimientoOption.data('duracion');
+            if (duracionData) {
+                duracionProcedimiento = parseInt(duracionData);
+            }
+        }
+
+        // Mostrar loading
+        $('#grilla-horarios-disponibles').html(
+            '<div class="text-center py-4">' +
+            '<i class="fas fa-spinner fa-spin fa-2x text-primary"></i>' +
+            '<p class="mt-2">Cargando horarios disponibles...</p>' +
+            '</div>'
+        );
+
+        // Hacer petición al servidor
+        $.ajax({
+            url: '/citas/api/horarios-disponibles',
+            method: 'GET',
+            data: {
+                odontologoId: odontologoId,
+                fecha: fecha,
+                duracion: duracionProcedimiento
+            },
+            success: function(response) {
+                if (response.error) {
+                    mostrarError(response.mensaje);
+                    return;
+                }
+
+                mostrarGrillaHorarios(response);
+            },
+            error: function(xhr, status, error) {
+                $('#grilla-horarios-disponibles').html(
+                    '<div class="alert alert-danger">' +
+                    '<i class="fas fa-exclamation-triangle mr-2"></i>' +
+                    'Error al cargar horarios: ' + error +
+                    '</div>'
+                );
+            }
+        });
+    }
+
+    /**
+     * Muestra la grilla de horarios disponibles
+     */
+    function mostrarGrillaHorarios(response) {
+        fechaSeleccionada = response.fecha;
+        odontologoSeleccionado = response.odontologoId;
+
+        const contenedor = $('#grilla-horarios-disponibles');
+        contenedor.empty();
+
+        // Si no hay disponibilidad
+        if (!response.disponible) {
+            contenedor.html(
+                '<div class="alert alert-warning">' +
+                '<i class="fas fa-info-circle mr-2"></i>' +
+                '<strong>No disponible:</strong> ' + response.motivo +
+                '</div>'
+            );
+            return;
+        }
+
+        // Si no hay horarios disponibles
+        if (!response.horariosDisponibles || response.horariosDisponibles.length === 0) {
+            contenedor.html(
+                '<div class="alert alert-info">' +
+                '<i class="fas fa-info-circle mr-2"></i>' +
+                'No hay horarios disponibles para esta fecha. Por favor seleccione otra fecha.' +
+                '</div>'
+            );
+            return;
+        }
+
+        // Título con información
+        let titulo = '<div class="mb-3">';
+        titulo += '<h6 class="text-primary"><i class="fas fa-calendar-day mr-2"></i>Horarios Disponibles</h6>';
+        titulo += '<small class="text-muted">';
+        titulo += `Seleccione un horario para ${response.odontologoNombre}`;
+        if (response.esExcepcion) {
+            titulo += ' <span class="badge badge-info ml-2">Horario especial</span>';
+        }
+        titulo += '</small>';
+        titulo += '</div>';
+        contenedor.append(titulo);
+
+        // Grilla de horarios
+        const grilla = $('<div class="horarios-grid"></div>');
+
+        response.horariosDisponibles.forEach(function(slot) {
+            const boton = $('<button type="button" class="horario-slot"></button>');
+            boton.addClass(slot.disponible ? 'disponible' : 'ocupado');
+            boton.text(slot.inicio);
+            boton.attr('data-inicio', slot.inicio);
+            boton.attr('data-fin', slot.fin);
+
+            if (slot.disponible) {
+                boton.on('click', function() {
+                    seleccionarHorario(slot.inicio, slot.fin);
+                });
+                boton.append('<span class="duracion-texto">' + duracionProcedimiento + 'min</span>');
+            } else {
+                boton.attr('disabled', true);
+                boton.attr('title', 'Horario ocupado');
+            }
+
+            grilla.append(boton);
+        });
+
+        contenedor.append(grilla);
+
+        // Leyenda
+        const leyenda = $('<div class="leyenda-horarios mt-3"></div>');
+        leyenda.html(
+            '<small class="mr-3"><span class="badge badge-success">Verde</span> Disponible</small>' +
+            '<small class="mr-3"><span class="badge badge-secondary">Gris</span> Ocupado</small>' +
+            '<small><i class="fas fa-info-circle text-primary"></i> Mínimo 2h de anticipación</small>'
+        );
+        contenedor.append(leyenda);
+    }
+
+    /**
+     * Maneja la selección de un horario
+     */
+    function seleccionarHorario(inicio, fin) {
+        horarioSeleccionado = inicio;
+
+        // Construir fecha y hora completa
+        const fechaHoraCompleta = fechaSeleccionada + 'T' + inicio;
+        $('#fechaHoraInicioAgendar').val(fechaHoraCompleta);
+
+        // Actualizar UI
+        $('.horario-slot').removeClass('seleccionado');
+        $(`.horario-slot[data-inicio="${inicio}"]`).addClass('seleccionado');
+
+        $('#horario-seleccionado-texto').html(
+            `<strong>${inicio}</strong> - ${fin} <i class="fas fa-check text-success ml-2"></i>`
+        );
+
+        // Mostrar mensaje de confirmación
+        mostrarInfo(`Horario seleccionado: ${inicio} - ${fin}`);
+    }
+
+    /**
+     * Validar antes de enviar el formulario
+     */
+    function validarFormularioCita() {
+        if (!horarioSeleccionado) {
+            mostrarAdvertencia('Por favor seleccione un horario disponible');
+            return false;
+        }
+
+        if (!$('#odontologoIdAgendar').val()) {
+            mostrarAdvertencia('Por favor seleccione un odontólogo');
+            return false;
+        }
+
+        if (!$('#pacienteIdAgendar').val()) {
+            mostrarAdvertencia('Por favor seleccione un paciente');
+            return false;
+        }
+
+        return true;
+    }
+
+    // Inicializar cuando el DOM esté listo
+    $(document).ready(function() {
+        // Inicializar al abrir el modal
+        $('#modalAgendarCita').on('show.bs.modal', function() {
+            inicializarSistemaHorarios();
+        });
+
+        // Cargar horarios cuando cambie la fecha u odontólogo
+        $('#fechaCitaAgendar, #odontologoIdAgendar, #procedimientoIdAgendar').on('change', function() {
+            cargarHorariosDisponibles();
+        });
+
+        // Validar antes de enviar
+        $('#modalAgendarCita form').on('submit', function(e) {
+            if (!validarFormularioCita()) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    });
+
+})();
