@@ -16,7 +16,7 @@ COPY src ./src
 RUN mvn package -DskipTests
 
 # ---- Etapa 2: Imagen Final ----
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jdk-slim
 
 WORKDIR /app
 
