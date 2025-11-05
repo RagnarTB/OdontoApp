@@ -38,6 +38,7 @@ public class UsuarioDTO {
     private LocalDate fechaNacimiento;
     private String direccion;
     private LocalDate fechaContratacion;
+    private LocalDate fechaVigencia; // Fecha de vigencia del usuario
     private LocalDateTime ultimoAcceso; // Generalmente no se envía desde el form, se muestra
 
     @NotEmpty(message = "Debe seleccionar al menos un rol")
