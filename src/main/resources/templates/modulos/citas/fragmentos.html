@@ -24,22 +24,14 @@
                         <span id="mensajeValidacionCita"></span>
                     </div>
 
+                    <!-- Campo hidden para enviar la fecha/hora seleccionada -->
+                    <input type="hidden" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
+
+                    <!-- PASO 1: Información Básica -->
+                    <h6 class="text-primary mb-3 border-bottom pb-2">
+                        <i class="fas fa-user-md mr-2"></i>Paso 1: Información Básica
+                    </h6>
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="fechaHoraInicioAgendar">Fecha y Hora de Inicio <span class="text-danger">*</span></label>
-                                <input type="datetime-local" class="form-control" id="fechaHoraInicioAgendar"
-                                       name="fechaHoraInicio"
-                                       data-validar="cita-anticipacion"
-                                       required>
-                                <div class="invalid-feedback">
-                                    La cita debe agendarse con al menos 2 horas de anticipación
-                                </div>
-                                <small class="form-text text-muted">
-                                    Mínimo 2 horas de anticipación desde ahora
-                                </small>
-                            </div>
-                        </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="pacienteIdAgendar">Paciente <span class="text-danger">*</span></label>
@@ -49,14 +41,8 @@
                                             th:value="${paciente.usuario != null ? paciente.usuario.id : ''}"
                                             th:text="${paciente.nombreCompleto}"></option>
                                 </select>
-                                <div class="invalid-feedback">
-                                    Por favor seleccione un paciente
-                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="odontologoIdAgendar">Odontólogo <span class="text-danger">*</span></label>
@@ -66,23 +52,64 @@
                                             th:value="${odontologo.id}"
                                             th:text="${odontologo.nombreCompleto}"></option>
                                 </select>
-                                <div class="invalid-feedback">
-                                    Por favor seleccione un odontólogo
-                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="procedimientoIdAgendar">Procedimiento</label>
+                                <label for="procedimientoIdAgendar">Procedimiento <small class="text-muted">(Opcional)</small></label>
                                 <select class="form-control" id="procedimientoIdAgendar" name="procedimientoId">
                                     <option value="">Seleccione un procedimiento</option>
                                     <option th:each="procedimiento : ${listaProcedimientos}"
                                             th:value="${procedimiento.id}"
-                                            th:text="${procedimiento.nombre}"></option>
+                                            th:text="${procedimiento.nombre}"
+                                            th:attr="data-duracion=${procedimiento.duracionBaseMinutos}"></option>
                                 </select>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> Influye en la duración de la cita
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="fechaCitaAgendar">Fecha de la Cita <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="fechaCitaAgendar" required>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-calendar-alt"></i> Seleccione la fecha para ver horarios
+                                </small>
                             </div>
                         </div>
                     </div>
+
+                    <hr class="my-4">
+
+                    <!-- PASO 2: Seleccionar Horario -->
+                    <h6 class="text-primary mb-3 border-bottom pb-2">
+                        <i class="fas fa-clock mr-2"></i>Paso 2: Seleccionar Horario Disponible
+                    </h6>
+
+                    <!-- Indicador de horario seleccionado -->
+                    <div class="alert alert-info" id="horario-seleccionado-info" style="display: none;">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <strong>Horario seleccionado:</strong> <span id="horario-seleccionado-texto">Ninguno</span>
+                    </div>
+
+                    <!-- Grilla de horarios disponibles -->
+                    <div id="grilla-horarios-disponibles" class="mb-3">
+                        <div class="alert alert-secondary text-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Seleccione un odontólogo y fecha para ver los horarios disponibles
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- PASO 3: Información Adicional -->
+                    <h6 class="text-primary mb-3 border-bottom pb-2">
+                        <i class="fas fa-notes-medical mr-2"></i>Paso 3: Información Adicional <small class="text-muted">(Opcional)</small>
+                    </h6>
 
                     <div class="form-group">
                         <label for="motivoConsultaAgendar">Motivo de Consulta</label>
