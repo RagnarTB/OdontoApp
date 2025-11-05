@@ -204,10 +204,10 @@
                         return;
                     }
 
-                    // ✅ VALIDAR: Mínimo 2 horas de anticipación
-                    var dosHorasAdelante = moment().add(2, 'hours');
-                    if (fechaHora.isBefore(dosHorasAdelante)) {
-                        mostrarAdvertencia('Debe agendar con al menos 2 horas de anticipación');
+                    // ✅ VALIDAR: Mínimo 1 hora de anticipación
+                    var unaHoraAdelante = moment().add(1, 'hours');
+                    if (fechaHora.isBefore(unaHoraAdelante)) {
+                        mostrarAdvertencia('Debe agendar con al menos 1 hora de anticipación');
                         return;
                     }
 

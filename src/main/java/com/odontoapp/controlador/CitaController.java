@@ -410,18 +410,18 @@ public class CitaController {
             List<Map<String, Object>> horariosDisponibles =
                     (List<Map<String, Object>>) disponibilidad.get("horariosDisponibles");
 
-            // Filtrar horarios que cumplan con la regla de 2 horas de anticipación
-            LocalDateTime dosHorasAdelante = LocalDateTime.now().plusHours(2);
+            // Filtrar horarios que cumplan con la regla de 1 hora de anticipación
+            LocalDateTime unaHoraAdelante = LocalDateTime.now().plusHours(1);
             LocalDateTime inicioDia = LocalDateTime.of(fecha, java.time.LocalTime.MIN);
 
-            // Solo aplicar la regla de 2 horas si es el día de hoy
+            // Solo aplicar la regla de 1 hora si es el día de hoy
             if (fecha.equals(LocalDate.now())) {
                 horariosDisponibles = horariosDisponibles.stream()
                         .filter(slot -> {
                             String horaInicio = (String) slot.get("inicio");
                             LocalDateTime fechaHoraSlot = LocalDateTime.of(fecha,
                                     java.time.LocalTime.parse(horaInicio));
-                            return fechaHoraSlot.isAfter(dosHorasAdelante);
+                            return fechaHoraSlot.isAfter(unaHoraAdelante);
                         })
                         .collect(Collectors.toList());
             }
@@ -429,7 +429,7 @@ public class CitaController {
             // Actualizar la lista filtrada en el resultado
             disponibilidad.put("horariosDisponibles", horariosDisponibles);
             disponibilidad.put("duracionProcedimiento", duracion);
-            disponibilidad.put("minimoAnticipacion", "2 horas");
+            disponibilidad.put("minimoAnticipacion", "1 hora");
 
             return disponibilidad;
 
