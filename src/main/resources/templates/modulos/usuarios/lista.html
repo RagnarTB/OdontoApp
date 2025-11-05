@@ -350,7 +350,7 @@
                                 <td>${exc.motivo || '<em class="text-muted">Sin motivo</em>'}</td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-danger btn-eliminar-excepcion"
-                                            data-excepcion-id="${exc.id}">
+                                            data-excepcion-fecha="${exc.fecha}">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </td>
@@ -406,7 +406,7 @@
 
     // Eliminar excepción
     $(document).on('click', '.btn-eliminar-excepcion', function() {
-        const excepcionId = $(this).data('excepcion-id');
+        const excepcionFecha = $(this).data('excepcion-fecha');
 
         Swal.fire({
             title: '¿Eliminar excepción?',
@@ -420,7 +420,7 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `/usuarios/${usuarioIdActual}/excepciones/${excepcionId}`,
+                    url: `/usuarios/${usuarioIdActual}/excepciones/${excepcionFecha}`,
                     method: 'DELETE',
                     success: function(response) {
                         mostrarExito('Excepción eliminada correctamente');

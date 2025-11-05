@@ -392,7 +392,6 @@ public class UsuarioController {
                     .sorted((e1, e2) -> e2.getFecha().compareTo(e1.getFecha())) // Más recientes primero
                     .map(exc -> {
                         java.util.Map<String, Object> map = new java.util.HashMap<>();
-                        map.put("id", exc.getId());
                         map.put("fecha", exc.getFecha().toString());
                         map.put("horas", exc.getHoras());
                         map.put("motivo", exc.getMotivo());
@@ -441,19 +440,27 @@ public class UsuarioController {
     }
 
     /**
-     * Elimina una excepción de horario
+     * Elimina una excepción de horario por fecha
      */
-    @DeleteMapping("/{usuarioId}/excepciones/{excepcionId}")
+    @DeleteMapping("/{usuarioId}/excepciones/{fecha}")
     @ResponseBody
     public ResponseEntity<?> eliminarExcepcion(
             @PathVariable Long usuarioId,
-            @PathVariable Long excepcionId) {
+            @PathVariable String fecha) {
         try {
             Usuario usuario = usuarioRepository.findById(usuarioId)
                     .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-            // Eliminar la excepción de la lista
-            usuario.getExcepcionesHorario().removeIf(exc -> exc.getId().equals(excepcionId));
+            // Parsear la fecha
+            java.time.LocalDate fechaExcepcion = java.time.LocalDate.parse(fecha);
+
+            // Eliminar la excepción de la lista por fecha
+            boolean removed = usuario.getExcepcionesHorario().removeIf(exc -> exc.getFecha().equals(fechaExcepcion));
+
+            if (!removed) {
+                return ResponseEntity.badRequest()
+                        .body(java.util.Map.of("error", "No se encontró una excepción para la fecha especificada"));
+            }
 
             // Guardar
             usuarioRepository.save(usuario);
