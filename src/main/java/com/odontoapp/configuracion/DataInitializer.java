@@ -98,13 +98,98 @@ public class DataInitializer implements CommandLineRunner {
         crearTipoDocumento("RUC", "RUC", false);
         crearTipoDocumento("Carnet de Extranjería", "C.E.", false);
 
-        // ... (Creación de Categorías y Procedimientos - sin cambios) ...
-        System.out.println(">>> Creando categorías de servicios...");
-        CategoriaProcedimiento consulta = crearCategoriaSiNoExiste("Consulta", "Diagnóstico y planificación", "fas fa-stethoscope", "#3498db");
-        // ... (otras categorías) ...
-        System.out.println(">>> Creando servicios de ejemplo...");
+        // === CREACIÓN DE CATEGORÍAS DE SERVICIOS DENTALES ===
+        System.out.println(">>> Creando categorías de servicios dentales...");
+
+        CategoriaProcedimiento consulta = crearCategoriaSiNoExiste(
+            "Consulta",
+            "Diagnóstico, evaluación y planificación de tratamiento",
+            "fas fa-user-md",
+            "#34495e"
+        );
+
+        CategoriaProcedimiento ortodoncia = crearCategoriaSiNoExiste(
+            "Ortodoncia",
+            "Corrección de malposición dental y problemas de mordida",
+            "fas fa-teeth",
+            "#3498db"
+        );
+
+        CategoriaProcedimiento endodoncia = crearCategoriaSiNoExiste(
+            "Endodoncia",
+            "Tratamiento de conductos y pulpa dental",
+            "fas fa-tooth",
+            "#e74c3c"
+        );
+
+        CategoriaProcedimiento periodoncia = crearCategoriaSiNoExiste(
+            "Periodoncia",
+            "Tratamiento de encías y tejidos de soporte",
+            "fas fa-teeth-open",
+            "#2ecc71"
+        );
+
+        CategoriaProcedimiento implantes = crearCategoriaSiNoExiste(
+            "Implantes",
+            "Implantes dentales y prótesis fijas",
+            "fas fa-tooth",
+            "#9b59b6"
+        );
+
+        CategoriaProcedimiento limpieza = crearCategoriaSiNoExiste(
+            "Profilaxis",
+            "Limpieza dental y prevención",
+            "fas fa-broom",
+            "#1abc9c"
+        );
+
+        CategoriaProcedimiento estetica = crearCategoriaSiNoExiste(
+            "Estética Dental",
+            "Blanqueamiento y tratamientos estéticos",
+            "fas fa-star",
+            "#f1c40f"
+        );
+
+        CategoriaProcedimiento cirugia = crearCategoriaSiNoExiste(
+            "Cirugía Oral",
+            "Extracciones y procedimientos quirúrgicos",
+            "fas fa-scalpel",
+            "#e67e22"
+        );
+
+        System.out.println(">>> Creando servicios de ejemplo para cada categoría...");
+
+        // Consultas
         crearProcedimientoSiNoExiste("CON-001", "Consulta General", new BigDecimal("80.00"), 30, consulta);
-        // ... (otros procedimientos) ...
+        crearProcedimientoSiNoExiste("CON-002", "Consulta de Emergencia", new BigDecimal("100.00"), 20, consulta);
+
+        // Ortodoncia
+        crearProcedimientoSiNoExiste("ORT-001", "Instalación de Brackets Metálicos", new BigDecimal("1500.00"), 90, ortodoncia);
+        crearProcedimientoSiNoExiste("ORT-002", "Control de Ortodoncia", new BigDecimal("120.00"), 30, ortodoncia);
+
+        // Endodoncia
+        crearProcedimientoSiNoExiste("END-001", "Tratamiento de Conducto Molar", new BigDecimal("450.00"), 90, endodoncia);
+        crearProcedimientoSiNoExiste("END-002", "Tratamiento de Conducto Premolar", new BigDecimal("350.00"), 60, endodoncia);
+
+        // Periodoncia
+        crearProcedimientoSiNoExiste("PER-001", "Raspado y Alisado Radicular", new BigDecimal("200.00"), 45, periodoncia);
+        crearProcedimientoSiNoExiste("PER-002", "Cirugía Periodontal", new BigDecimal("600.00"), 90, periodoncia);
+
+        // Implantes
+        crearProcedimientoSiNoExiste("IMP-001", "Colocación de Implante Dental", new BigDecimal("2500.00"), 120, implantes);
+        crearProcedimientoSiNoExiste("IMP-002", "Corona sobre Implante", new BigDecimal("1200.00"), 60, implantes);
+
+        // Limpieza/Profilaxis
+        crearProcedimientoSiNoExiste("PRO-001", "Limpieza Dental Completa", new BigDecimal("150.00"), 45, limpieza);
+        crearProcedimientoSiNoExiste("PRO-002", "Fluorización", new BigDecimal("80.00"), 20, limpieza);
+
+        // Estética
+        crearProcedimientoSiNoExiste("EST-001", "Blanqueamiento Dental Láser", new BigDecimal("800.00"), 60, estetica);
+        crearProcedimientoSiNoExiste("EST-002", "Carilla de Porcelana", new BigDecimal("1000.00"), 45, estetica);
+
+        // Cirugía
+        crearProcedimientoSiNoExiste("CIR-001", "Extracción Simple", new BigDecimal("120.00"), 30, cirugia);
+        crearProcedimientoSiNoExiste("CIR-002", "Extracción de Muela del Juicio", new BigDecimal("300.00"), 60, cirugia);
 
         // ... (Creación de Unidades y Categorías de Insumo - sin cambios) ...
         UnidadMedida unidad = crearUnidadSiNoExiste("Unidad", "und");
