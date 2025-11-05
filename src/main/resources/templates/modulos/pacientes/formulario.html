@@ -77,6 +77,8 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="tipoDocumentoId">Tipo Documento</label>
+                                        <!-- Hidden field para enviar el valor en modo edición -->
+                                        <input th:if="${pacienteDTO.id != null}" type="hidden" th:field="*{tipoDocumentoId}" />
                                         <select class="form-control" th:field="*{tipoDocumentoId}" id="tipoDocumentoId"
                                             th:disabled="${pacienteDTO.id != null}"
                                             th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">

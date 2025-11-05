@@ -94,7 +94,10 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="tipoDocumentoId">Tipo Documento <span class="text-danger">*</span></label>
+                                        <!-- Hidden field para enviar el valor en modo edición -->
+                                        <input th:if="${usuario.id != null}" type="hidden" th:field="*{tipoDocumentoId}" />
                                         <select class="form-control" th:field="*{tipoDocumentoId}" id="tipoDocumentoId"
+                                            th:disabled="${usuario.id != null}"
                                             required
                                             th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">
                                             <option value="">Seleccione...</option>
@@ -416,6 +419,14 @@
                 // Mostrar/ocultar botón de búsqueda según tipo de documento
                 tipoDocumentoSelect.addEventListener('change', function() {
                     btnBuscarDni.style.display = esDNI() ? 'inline-block' : 'none';
+
+                    // Si cambia el tipo de documento, limpiar y desbloquear el nombre
+                    if (nombreCompletoInput.readOnly) {
+                        nombreCompletoInput.value = '';
+                        nombreCompletoInput.readOnly = false;
+                        nombreCompletoInput.classList.remove('bg-light');
+                    }
+                    numeroDocumentoInput.value = ''; // Limpiar también el número de documento
                 });
 
                 // Trigger inicial para mostrar botón si ya hay DNI seleccionado
@@ -455,16 +466,22 @@
                             cerrarCargando();
                             if (response.nombreCompleto) {
                                 nombreCompletoInput.value = response.nombreCompleto;
-                                nombreCompletoInput.disabled = false;
+                                // BLOQUEAR el campo nombre después de buscar (datos de RENIEC no editables)
+                                nombreCompletoInput.readOnly = true;
+                                nombreCompletoInput.classList.add('bg-light');
                                 mostrarExito('Datos encontrados correctamente');
                             } else {
                                 nombreCompletoInput.disabled = false;
+                                nombreCompletoInput.readOnly = false;
+                                nombreCompletoInput.classList.remove('bg-light');
                                 mostrarAdvertencia('No se encontraron datos para este DNI');
                             }
                         },
                         error: function(xhr) {
                             cerrarCargando();
                             nombreCompletoInput.disabled = false;
+                            nombreCompletoInput.readOnly = false;
+                            nombreCompletoInput.classList.remove('bg-light');
                             let errorMsg = 'Error al consultar RENIEC';
                             if (xhr.responseJSON && xhr.responseJSON.error) {
                                 errorMsg = xhr.responseJSON.error;
@@ -493,6 +510,13 @@
                     // Limpiar timeout anterior
                     if (timeoutId) {
                         clearTimeout(timeoutId);
+                    }
+
+                    // Si el DNI cambia, limpiar y habilitar el campo nombre para nueva búsqueda
+                    if (nombreCompletoInput.readOnly && dni.length !== 8) {
+                        nombreCompletoInput.value = '';
+                        nombreCompletoInput.readOnly = false;
+                        nombreCompletoInput.classList.remove('bg-light');
                     }
 
                     // Si tiene 8 dígitos y es DNI, buscar automáticamente después de 1 segundo
