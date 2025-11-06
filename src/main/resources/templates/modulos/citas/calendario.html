@@ -247,6 +247,7 @@
                     document.getElementById('detalleCitaId').value = evento.id;
                     document.getElementById('detallePaciente').textContent = evento.title;
                     document.getElementById('detalleOdontologo').textContent = props.odontologoNombre || 'N/A';
+                    document.getElementById('detalleOdontologoId').value = props.odontologoId || '';
                     document.getElementById('detalleProcedimiento').textContent = props.procedimientoNombre || 'N/A';
                     document.getElementById('detalleEstado').textContent = props.estadoNombre || 'N/A';
                     document.getElementById('detalleFechaHoraInicio').textContent = moment(evento.start).format('DD/MM/YYYY HH:mm');

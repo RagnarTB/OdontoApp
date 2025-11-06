@@ -185,6 +185,16 @@ public class UsuarioController {
         Optional<Usuario> usuarioOpt = usuarioService.buscarPorId(id);
         if (usuarioOpt.isPresent()) {
             Usuario usuario = usuarioOpt.get();
+
+            // Verificar que el usuario no sea SOLO un paciente
+            boolean esSoloPaciente = usuario.getRoles().stream()
+                    .allMatch(rol -> "PACIENTE".equals(rol.getNombre()));
+
+            if (esSoloPaciente) {
+                redirectAttributes.addFlashAttribute("error",
+                    "Los pacientes solo pueden editarse desde la sección de Pacientes.");
+                return "redirect:/usuarios";
+            }
             UsuarioDTO usuarioDTO = new UsuarioDTO();
 
             // --- Mapear campos básicos ---

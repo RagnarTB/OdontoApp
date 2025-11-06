@@ -135,9 +135,13 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="nombreCompleto">Nombre Completo <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="nombreCompleto"
+                                        <!-- En modo edición: campo readonly + hidden para enviar valor -->
+                                        <input th:if="${usuario.id != null}" type="hidden" th:field="*{nombreCompleto}" />
+                                        <input th:if="${usuario.id != null}" type="text" class="form-control bg-light" id="nombreCompleto"
+                                            th:value="*{nombreCompleto}" readonly>
+                                        <!-- En modo creación: campo normal -->
+                                        <input th:if="${usuario.id == null}" type="text" class="form-control" id="nombreCompleto"
                                             th:field="*{nombreCompleto}" placeholder="Nombre completo"
-                                            th:readonly="${usuario.id != null}"
                                             data-validar="nombre"
                                             required
                                             th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
@@ -188,7 +192,7 @@
                                         <input th:if="${usuario.id != null}" type="hidden" th:field="*{fechaNacimiento}" />
                                         <!-- Input visible en modo edición (texto plano) -->
                                         <input th:if="${usuario.id != null}" type="text" class="form-control bg-light"
-                                            th:value="${#temporals.format(usuario.fechaNacimiento, 'dd/MM/yyyy')}" readonly />
+                                            th:value="${usuario.fechaNacimiento != null ? #temporals.format(usuario.fechaNacimiento, 'dd/MM/yyyy') : ''}" readonly />
                                         <!-- Input normal en modo creación -->
                                         <input th:if="${usuario.id == null}" type="date" class="form-control" id="fechaNacimiento"
                                             th:field="*{fechaNacimiento}"
@@ -215,7 +219,7 @@
                                         <input th:if="${usuario.id != null}" type="hidden" th:field="*{fechaContratacion}" />
                                         <!-- Input visible en modo edición (texto plano) -->
                                         <input th:if="${usuario.id != null}" type="text" class="form-control bg-light"
-                                            th:value="${#temporals.format(usuario.fechaContratacion, 'dd/MM/yyyy')}" readonly />
+                                            th:value="${usuario.fechaContratacion != null ? #temporals.format(usuario.fechaContratacion, 'dd/MM/yyyy') : ''}" readonly />
                                         <!-- Input normal en modo creación -->
                                         <input th:if="${usuario.id == null}" type="date" class="form-control" id="fechaContratacion"
                                             th:field="*{fechaContratacion}"

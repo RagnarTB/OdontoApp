@@ -152,9 +152,18 @@
                                     <div class="form-group">
                                         <label for="telefono">Teléfono</label>
                                         <input type="text" class="form-control" th:field="*{telefono}"
-                                            placeholder="987654321">
+                                            placeholder="987654321"
+                                            data-validar="telefono"
+                                            maxlength="9"
+                                            pattern="[0-9]{9}"
+                                            th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid' : ''">
+                                        <div th:if="${#fields.hasErrors('telefono')}" class="invalid-feedback"
+                                            th:errors="*{telefono}"></div>
                                         <small th:if="${pacienteDTO.id != null}" class="form-text text-success">
-                                            <i class="fas fa-edit"></i> Campo editable
+                                            <i class="fas fa-edit"></i> Campo editable - 9 dígitos
+                                        </small>
+                                        <small th:if="${pacienteDTO.id == null}" class="form-text text-muted">
+                                            9 dígitos - Solo números
                                         </small>
                                     </div>
                                 </div>

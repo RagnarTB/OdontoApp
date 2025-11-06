@@ -239,4 +239,177 @@
         });
     });
 
+    // =====================================================
+    // MANEJO DE REPROGRAMACIÓN DE CITAS
+    // =====================================================
+
+    let horarioSeleccionadoReprogramar = null;
+    let odontologoIdReprogramar = null;
+    let duracionReprogramar = 30;
+
+    /**
+     * Inicializa el modal de reprogramación cuando se abre
+     */
+    $('#btnReprogramar').on('click', function() {
+        // Obtener datos de la cita del modal de detalle
+        const citaId = $('#detalleCitaId').val();
+        const paciente = $('#detallePaciente').text();
+        const odontologo = $('#detalleOdontologo').text();
+        const odontologoId = $('#detalleOdontologoId').val();
+        const fechaHoraInicio = $('#detalleFechaHoraInicio').text();
+
+        // Llenar campos del modal de reprogramación
+        $('#reprogramarCitaId').val(citaId);
+        $('#reprogramarPaciente').text(paciente);
+        $('#reprogramarOdontologo').text(odontologo);
+        $('#reprogramarFechaActual').text(fechaHoraInicio);
+        $('#reprogramarOdontologoId').val(odontologoId);
+
+        // Guardar odontólogo ID para las consultas
+        odontologoIdReprogramar = odontologoId;
+
+        // Limpiar estado anterior
+        horarioSeleccionadoReprogramar = null;
+        $('#grilla-horarios-disponibles-reprogramar').html(
+            '<div class="alert alert-secondary text-center">' +
+            '<i class="fas fa-info-circle mr-2"></i>' +
+            'Seleccione una fecha para ver los horarios disponibles del odontólogo' +
+            '</div>'
+        );
+        $('#horario-seleccionado-texto-reprogramar').text('Ninguno');
+        $('#horario-seleccionado-info-reprogramar').hide();
+        $('#nuevaFechaHoraInicioReprogramar').val('');
+
+        // Configurar fecha mínima (hoy)
+        const hoy = new Date().toISOString().split('T')[0];
+        $('#fechaCitaReprogramar').attr('min', hoy);
+        $('#fechaCitaReprogramar').val('');
+    });
+
+    /**
+     * Cargar horarios cuando cambia la fecha en reprogramación
+     */
+    $('#fechaCitaReprogramar').on('change', function() {
+        const fecha = $(this).val();
+        if (!fecha || !odontologoIdReprogramar) {
+            return;
+        }
+
+        // Mostrar loading
+        $('#grilla-horarios-disponibles-reprogramar').html(
+            '<div class="text-center py-4">' +
+            '<i class="fas fa-spinner fa-spin fa-2x text-primary"></i>' +
+            '<p class="mt-2">Cargando horarios disponibles...</p>' +
+            '</div>'
+        );
+
+        // Hacer petición al servidor
+        $.ajax({
+            url: '/citas/api/horarios-disponibles',
+            method: 'GET',
+            data: {
+                odontologoId: odontologoIdReprogramar,
+                fecha: fecha,
+                duracion: duracionReprogramar
+            },
+            success: function(response) {
+                if (response.error) {
+                    $('#grilla-horarios-disponibles-reprogramar').html(
+                        '<div class="alert alert-danger">' +
+                        '<i class="fas fa-exclamation-triangle mr-2"></i>' +
+                        response.mensaje +
+                        '</div>'
+                    );
+                    return;
+                }
+
+                mostrarGrillaHorariosReprogramar(response);
+            },
+            error: function(xhr, status, error) {
+                $('#grilla-horarios-disponibles-reprogramar').html(
+                    '<div class="alert alert-danger">' +
+                    '<i class="fas fa-exclamation-triangle mr-2"></i>' +
+                    'Error al cargar horarios' +
+                    '</div>'
+                );
+            }
+        });
+    });
+
+    /**
+     * Muestra la grilla de horarios para reprogramación
+     */
+    function mostrarGrillaHorariosReprogramar(response) {
+        const container = $('#grilla-horarios-disponibles-reprogramar');
+        container.empty();
+
+        if (!response.disponible) {
+            container.html(
+                '<div class="alert alert-warning">' +
+                '<i class="fas fa-exclamation-triangle mr-2"></i>' +
+                '<strong>No disponible:</strong> ' + (response.motivo || 'El odontólogo no trabaja en esta fecha') +
+                '</div>'
+            );
+            return;
+        }
+
+        const horarios = response.horariosDisponibles || [];
+        if (horarios.length === 0) {
+            container.html(
+                '<div class="alert alert-warning">' +
+                '<i class="fas fa-info-circle mr-2"></i>' +
+                'No hay horarios disponibles para esta fecha' +
+                '</div>'
+            );
+            return;
+        }
+
+        // Crear grilla
+        let html = '<div class="horarios-grid">';
+        horarios.forEach(function(slot) {
+            html += '<button type="button" class="btn btn-outline-primary btn-horario-slot-reprogramar" ' +
+                   'data-hora="' + slot.inicio + '">' +
+                   '<i class="far fa-clock mr-1"></i>' + slot.inicio +
+                   '</button>';
+        });
+        html += '</div>';
+
+        container.html(html);
+
+        // Agregar event listeners
+        $('.btn-horario-slot-reprogramar').on('click', function() {
+            const hora = $(this).data('hora');
+            seleccionarHorarioReprogramar(hora);
+
+            // Resaltar selección
+            $('.btn-horario-slot-reprogramar').removeClass('active btn-primary').addClass('btn-outline-primary');
+            $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+        });
+    }
+
+    /**
+     * Selecciona un horario para reprogramación
+     */
+    function seleccionarHorarioReprogramar(hora) {
+        const fecha = $('#fechaCitaReprogramar').val();
+        horarioSeleccionadoReprogramar = hora;
+
+        // Actualizar campos hidden y visuales
+        const fechaHoraCompleta = fecha + 'T' + hora;
+        $('#nuevaFechaHoraInicioReprogramar').val(fechaHoraCompleta);
+        $('#horario-seleccionado-texto-reprogramar').text(hora + ' - ' + fecha);
+        $('#horario-seleccionado-info-reprogramar').show();
+    }
+
+    /**
+     * Validar antes de enviar reprogramación
+     */
+    $('#modalReprogramarCita form').on('submit', function(e) {
+        if (!horarioSeleccionadoReprogramar) {
+            e.preventDefault();
+            mostrarError('Por favor seleccione un horario para la reprogramación');
+            return false;
+        }
+    });
+
 })();

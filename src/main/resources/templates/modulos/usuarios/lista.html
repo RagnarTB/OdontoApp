@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      th:replace="~{layout/base :: layout(titulo='Gestión de Usuarios', contenido=~{::#contenido-principal})}">
+      th:replace="~{layout/base :: layout(titulo='Gestión de Usuarios', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
 
 <body>
 <div id="contenido-principal">
@@ -111,7 +111,9 @@
                                                th:attr="onchange=|location.href='@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}'|">
                                         <span class="slider"></span>
                                     </label>
-                                    <a th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
+                                    <!-- Botón de editar solo para usuarios que NO son solo pacientes -->
+                                    <a th:if="${!usuario.getRoles().![nombre].contains('PACIENTE') || usuario.getRoles().size() > 1}"
+                                       th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
                                        class="btn btn-sm btn-outline-secondary" title="Editar"
                                        sec:authorize="hasAuthority('EDITAR_USUARIOS')">
                                         <i class="fas fa-pencil-alt"></i>
@@ -273,6 +275,7 @@
     </div>
 </div>
 
+<div id="page-scripts" th:fragment="scripts">
 <script>
     // Confirmación de eliminación de usuario con SweetAlert2
     $(document).on('click', '.btn-eliminar-usuario', function(e) {
@@ -440,5 +443,6 @@
         $('#fechaExcepcion').attr('min', hoy);
     });
 </script>
+</div>
 </body>
 </html>
