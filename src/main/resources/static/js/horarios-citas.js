@@ -15,20 +15,29 @@
      * Inicializa el sistema de horarios al abrir el modal
      */
     function inicializarSistemaHorarios() {
+        // Verificar si ya hay una fecha pre-cargada (viene del calendario)
+        const fechaActual = $('#fechaCitaAgendar').val();
+        const fechaHoraActual = $('#fechaHoraInicioAgendar').val();
+
         // Limpiar estado anterior
         horarioSeleccionado = null;
         fechaSeleccionada = null;
         odontologoSeleccionado = null;
         $('#grilla-horarios-disponibles').html('');
         $('#horario-seleccionado-texto').text('Ninguno');
-        $('#fechaHoraInicioAgendar').val('');
 
         // Configurar fecha mínima (hoy)
         const hoy = new Date().toISOString().split('T')[0];
         $('#fechaCitaAgendar').attr('min', hoy);
 
-        // Establecer fecha por defecto (hoy)
-        $('#fechaCitaAgendar').val(hoy);
+        // Si NO hay fecha pre-cargada desde el calendario, usar hoy por defecto
+        if (!fechaActual) {
+            $('#fechaCitaAgendar').val(hoy);
+        }
+        // Si NO hay fecha/hora pre-cargada, limpiar el campo
+        if (!fechaHoraActual) {
+            $('#fechaHoraInicioAgendar').val('');
+        }
     }
 
     /**
@@ -409,6 +418,23 @@
             e.preventDefault();
             mostrarError('Por favor seleccione un horario para la reprogramación');
             return false;
+        }
+
+        // Bloquear el botón para evitar doble clic
+        const btnReprogramar = $('#btnConfirmarReprogramar');
+        if (btnReprogramar.prop('disabled')) {
+            e.preventDefault();
+            return false;
+        }
+
+        btnReprogramar.prop('disabled', true);
+        btnReprogramar.html('<i class="fas fa-spinner fa-spin mr-1"></i>Reprogramando...');
+
+        // Si hay algún error de validación del navegador, desbloquear el botón
+        if (!this.checkValidity()) {
+            btnReprogramar.prop('disabled', false);
+            btnReprogramar.html('<i class="fas fa-check mr-1"></i>Reprogramar');
+            return true; // Dejar que el navegador maneje la validación
         }
     });
 
