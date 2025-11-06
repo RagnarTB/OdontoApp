@@ -487,6 +487,93 @@ public class UsuarioController {
 
     // === FIN ENDPOINTS EXCEPCIONES ===
 
+    /**
+     * Valida si un DNI ya existe en la base de datos
+     */
+    @GetMapping("/api/validar-dni")
+    @ResponseBody
+    public ResponseEntity<?> validarDniDuplicado(
+            @RequestParam String dni,
+            @RequestParam(required = false) Long usuarioId) {
+        try {
+            Optional<Usuario> usuarioExistente = usuarioRepository.findByNumeroDocumentoIgnorandoSoftDelete(dni);
+
+            if (usuarioExistente.isPresent()) {
+                // Si es el mismo usuario que está editando, no es duplicado
+                if (usuarioId != null && usuarioExistente.get().getId().equals(usuarioId)) {
+                    return ResponseEntity.ok(java.util.Map.of("disponible", true));
+                }
+                return ResponseEntity.ok(java.util.Map.of(
+                    "disponible", false,
+                    "mensaje", "El DNI ya está registrado en el sistema"
+                ));
+            }
+
+            return ResponseEntity.ok(java.util.Map.of("disponible", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", "Error al validar DNI"));
+        }
+    }
+
+    /**
+     * Valida si un email ya existe en la base de datos
+     */
+    @GetMapping("/api/validar-email")
+    @ResponseBody
+    public ResponseEntity<?> validarEmailDuplicado(
+            @RequestParam String email,
+            @RequestParam(required = false) Long usuarioId) {
+        try {
+            Optional<Usuario> usuarioExistente = usuarioRepository.findByEmailIgnorandoSoftDelete(email);
+
+            if (usuarioExistente.isPresent()) {
+                // Si es el mismo usuario que está editando, no es duplicado
+                if (usuarioId != null && usuarioExistente.get().getId().equals(usuarioId)) {
+                    return ResponseEntity.ok(java.util.Map.of("disponible", true));
+                }
+                return ResponseEntity.ok(java.util.Map.of(
+                    "disponible", false,
+                    "mensaje", "El email ya está registrado en el sistema"
+                ));
+            }
+
+            return ResponseEntity.ok(java.util.Map.of("disponible", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", "Error al validar email"));
+        }
+    }
+
+    /**
+     * Valida si un teléfono ya existe en la base de datos
+     */
+    @GetMapping("/api/validar-telefono")
+    @ResponseBody
+    public ResponseEntity<?> validarTelefonoDuplicado(
+            @RequestParam String telefono,
+            @RequestParam(required = false) Long usuarioId) {
+        try {
+            Optional<Usuario> usuarioExistente = usuarioRepository.findByTelefonoIgnorandoSoftDelete(telefono);
+
+            if (usuarioExistente.isPresent()) {
+                // Si es el mismo usuario que está editando, no es duplicado
+                if (usuarioId != null && usuarioExistente.get().getId().equals(usuarioId)) {
+                    return ResponseEntity.ok(java.util.Map.of("disponible", true));
+                }
+                return ResponseEntity.ok(java.util.Map.of(
+                    "disponible", false,
+                    "mensaje", "El teléfono ya está registrado en el sistema"
+                ));
+            }
+
+            return ResponseEntity.ok(java.util.Map.of("disponible", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", "Error al validar teléfono"));
+        }
+    }
+
     // --- MÉTODO HELPER REFACTORIZADO ---
     private void cargarRolesYTiposDoc(Model model) {
         List<Rol> rolesActivos = rolRepository.findAll()

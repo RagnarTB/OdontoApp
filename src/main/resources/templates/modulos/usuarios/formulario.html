@@ -135,16 +135,12 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="nombreCompleto">Nombre Completo <span class="text-danger">*</span></label>
-                                        <!-- En modo edición: campo readonly + hidden para enviar valor -->
-                                        <input th:if="${usuario.id != null}" type="hidden" th:field="*{nombreCompleto}" />
-                                        <input th:if="${usuario.id != null}" type="text" class="form-control bg-light" id="nombreCompleto"
-                                            th:value="*{nombreCompleto}" readonly>
-                                        <!-- En modo creación: campo normal -->
-                                        <input th:if="${usuario.id == null}" type="text" class="form-control" id="nombreCompleto"
-                                            th:field="*{nombreCompleto}" placeholder="Nombre completo"
+                                        <input type="text" class="form-control" th:field="*{nombreCompleto}"
+                                            id="nombreCompleto" placeholder="Nombre completo"
+                                            th:readonly="${usuario.id != null}"
                                             data-validar="nombre"
-                                            required
-                                            th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
+                                            th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''"
+                                            required>
                                         <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
                                             th:errors="*{nombreCompleto}"></div>
                                         <small th:if="${usuario.id != null}" class="form-text text-muted">
@@ -827,6 +823,114 @@
             //     });
             //     excepcionIndex = filas.length;
             // }
+
+            // === VALIDACIONES EN TIEMPO REAL ===
+
+            // Obtener ID del usuario si estamos en modo edición
+            const usuarioIdInput = document.querySelector('input[name="id"]');
+            const usuarioIdActual = usuarioIdInput ? usuarioIdInput.value : null;
+
+            // Validar DNI duplicado
+            let dniTimeout;
+            numeroDocumentoInput.addEventListener('blur', function() {
+                const dni = this.value.trim();
+                const docError = document.getElementById('doc-error');
+
+                if (dni.length === 8 && /^\d{8}$/.test(dni) && !usuarioIdActual) {
+                    clearTimeout(dniTimeout);
+                    dniTimeout = setTimeout(function() {
+                        $.ajax({
+                            url: '/usuarios/api/validar-dni',
+                            method: 'GET',
+                            data: {
+                                dni: dni,
+                                usuarioId: usuarioIdActual
+                            },
+                            success: function(response) {
+                                if (!response.disponible) {
+                                    docError.textContent = response.mensaje;
+                                    numeroDocumentoInput.classList.add('is-invalid');
+                                } else {
+                                    docError.textContent = '';
+                                    numeroDocumentoInput.classList.remove('is-invalid');
+                                }
+                            }
+                        });
+                    }, 500);
+                }
+            });
+
+            // Validar email duplicado
+            let emailTimeout;
+            const emailInput = document.getElementById('email');
+            const emailFeedback = document.createElement('small');
+            emailFeedback.className = 'form-text text-danger';
+            emailFeedback.id = 'email-error';
+            emailInput.parentNode.appendChild(emailFeedback);
+
+            emailInput.addEventListener('blur', function() {
+                const email = this.value.trim();
+
+                if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    clearTimeout(emailTimeout);
+                    emailTimeout = setTimeout(function() {
+                        $.ajax({
+                            url: '/usuarios/api/validar-email',
+                            method: 'GET',
+                            data: {
+                                email: email,
+                                usuarioId: usuarioIdActual
+                            },
+                            success: function(response) {
+                                if (!response.disponible) {
+                                    emailFeedback.textContent = response.mensaje;
+                                    emailInput.classList.add('is-invalid');
+                                } else {
+                                    emailFeedback.textContent = '';
+                                    emailInput.classList.remove('is-invalid');
+                                }
+                            }
+                        });
+                    }, 500);
+                }
+            });
+
+            // Validar teléfono duplicado
+            let telefonoTimeout;
+            const telefonoInput = document.getElementById('telefono');
+            const telefonoFeedback = document.createElement('small');
+            telefonoFeedback.className = 'form-text text-danger';
+            telefonoFeedback.id = 'telefono-error';
+            telefonoInput.parentNode.appendChild(telefonoFeedback);
+
+            telefonoInput.addEventListener('blur', function() {
+                const telefono = this.value.trim();
+
+                if (telefono && /^\d{9}$/.test(telefono)) {
+                    clearTimeout(telefonoTimeout);
+                    telefonoTimeout = setTimeout(function() {
+                        $.ajax({
+                            url: '/usuarios/api/validar-telefono',
+                            method: 'GET',
+                            data: {
+                                telefono: telefono,
+                                usuarioId: usuarioIdActual
+                            },
+                            success: function(response) {
+                                if (!response.disponible) {
+                                    telefonoFeedback.textContent = response.mensaje;
+                                    telefonoInput.classList.add('is-invalid');
+                                } else {
+                                    telefonoFeedback.textContent = '';
+                                    telefonoInput.classList.remove('is-invalid');
+                                }
+                            }
+                        });
+                    }, 500);
+                }
+            });
+
+            // === FIN VALIDACIONES EN TIEMPO REAL ===
 
         </script>
     </th:block>
