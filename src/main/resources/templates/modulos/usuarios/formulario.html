@@ -115,13 +115,21 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="numeroDocumento">N&uacute;mero Documento <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" th:field="*{numeroDocumento}"
-                                            id="numeroDocumento" placeholder="Ej: 12345678"
-                                            th:readonly="${usuario.id != null}"
-                                            data-validar="dni"
-                                            maxlength="8"
-                                            required
-                                            th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" th:field="*{numeroDocumento}"
+                                                id="numeroDocumento" placeholder="Número de Documento"
+                                                th:readonly="${usuario.id != null}"
+                                                maxlength="8"
+                                                required
+                                                th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary" type="button"
+                                                    id="btn-buscar-dni" th:disabled="${usuario.id != null}">
+                                                    <i class="fas fa-search"></i> Buscar
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <small id="doc-error" class="form-text text-danger"></small>
                                         <div th:if="${#fields.hasErrors('numeroDocumento')}"
                                             class="invalid-feedback d-block" th:errors="*{numeroDocumento}"></div>
                                         <small th:if="${usuario.id != null}" class="form-text text-muted">
@@ -440,22 +448,75 @@
 
     <th:block id="page-scripts">
         <script>
+            // === FUNCIONES UTILITY PARA ALERTAS ===
+            function mostrarExito(mensaje) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: mensaje,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
+            }
+
+            function mostrarError(mensaje) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: mensaje,
+                    confirmButtonText: 'Entendido'
+                });
+            }
+
+            function mostrarAdvertencia(mensaje) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Advertencia',
+                    text: mensaje,
+                    confirmButtonText: 'Entendido'
+                });
+            }
+
+            function mostrarInfo(mensaje) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Información',
+                    text: mensaje,
+                    confirmButtonText: 'Entendido'
+                });
+            }
+
+            let loadingAlert = null;
+
+            function mostrarCargando(mensaje) {
+                loadingAlert = Swal.fire({
+                    title: 'Procesando...',
+                    text: mensaje,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            }
+
+            function cerrarCargando() {
+                if (loadingAlert) {
+                    Swal.close();
+                    loadingAlert = null;
+                }
+            }
+
             document.addEventListener('DOMContentLoaded', function () {
                 // --- FUNCIONALIDAD DE BÚSQUEDA DE DNI ---
                 const tipoDocumentoSelect = document.getElementById('tipoDocumentoId');
                 const numeroDocumentoInput = document.getElementById('numeroDocumento');
                 const nombreCompletoInput = document.getElementById('nombreCompleto');
+                const btnBuscarDni = document.getElementById('btn-buscar-dni');
+                const docError = document.getElementById('doc-error');
                 let timeoutId = null; // Para debounce
-
-                // Agregar botón de búsqueda al lado del input de documento
-                const divNumeroDocumento = numeroDocumentoInput.closest('.form-group');
-                const btnBuscarDni = document.createElement('button');
-                btnBuscarDni.type = 'button';
-                btnBuscarDni.className = 'btn btn-sm btn-info mt-1';
-                btnBuscarDni.innerHTML = '<i class="fas fa-search"></i> Buscar DNI';
-                btnBuscarDni.id = 'btnBuscarDni';
-                btnBuscarDni.style.display = 'none'; // Oculto por defecto
-                divNumeroDocumento.appendChild(btnBuscarDni);
 
                 // Función para verificar si el tipo de documento es DNI
                 function esDNI() {
@@ -463,10 +524,8 @@
                     return selectedOption && selectedOption.text.toUpperCase().includes('DNI');
                 }
 
-                // Mostrar/ocultar botón de búsqueda según tipo de documento
+                // Limpiar campos si cambia el tipo de documento (solo en modo creación)
                 tipoDocumentoSelect.addEventListener('change', function() {
-                    btnBuscarDni.style.display = esDNI() ? 'inline-block' : 'none';
-
                     // ✅ SOLO limpiar campos si estamos en modo CREACIÓN (no en edición)
                     const modoEdicion = document.querySelector('input[name="id"]')?.value;
                     if (!modoEdicion) {
@@ -479,11 +538,6 @@
                         numeroDocumentoInput.value = ''; // Limpiar también el número de documento
                     }
                 });
-
-                // Trigger inicial para mostrar botón si ya hay DNI seleccionado
-                if (esDNI()) {
-                    btnBuscarDni.style.display = 'inline-block';
-                }
 
                 // Función para buscar DNI
                 function buscarDatosReniec(dni) {
@@ -499,11 +553,19 @@
                         return;
                     }
 
+                    // Limpiar mensajes previos
+                    docError.textContent = '';
+                    docError.classList.remove('text-success');
+                    docError.classList.add('text-danger');
+                    docError.textContent = 'Buscando en RENIEC...';
+
                     // Mostrar indicador de carga
                     mostrarCargando('Buscando datos en RENIEC...');
 
-                    // Deshabilitar el campo de nombre mientras se busca
-                    nombreCompletoInput.disabled = true;
+                    // ✅ FIX CRÍTICO: Usar readOnly en lugar de disabled
+                    // disabled impide que el valor se envíe en el formulario
+                    numeroDocumentoInput.readOnly = true;
+                    nombreCompletoInput.readOnly = true;
 
                     // Llamar al endpoint REST con los parámetros correctos
                     $.ajax({
@@ -517,21 +579,25 @@
                             cerrarCargando();
                             if (response.nombreCompleto) {
                                 nombreCompletoInput.value = response.nombreCompleto;
-                                // NO hacemos readonly para que el valor persista si hay error de validación
-                                // Solo agregamos estilo visual de RENIEC
+                                // ✅ Mantener readOnly para evitar edición accidental
+                                nombreCompletoInput.readOnly = true;
                                 nombreCompletoInput.classList.add('bg-light');
                                 nombreCompletoInput.setAttribute('data-from-reniec', 'true');
+                                docError.textContent = 'Datos cargados con éxito.';
+                                docError.classList.remove('text-danger');
+                                docError.classList.add('text-success');
                                 mostrarExito('Datos encontrados correctamente desde RENIEC');
                             } else {
-                                nombreCompletoInput.disabled = false;
+                                nombreCompletoInput.readOnly = false;
                                 nombreCompletoInput.classList.remove('bg-light');
                                 nombreCompletoInput.removeAttribute('data-from-reniec');
+                                docError.textContent = 'No se encontraron datos para este DNI';
                                 mostrarAdvertencia('No se encontraron datos para este DNI');
                             }
                         },
                         error: function(xhr) {
                             cerrarCargando();
-                            nombreCompletoInput.disabled = false;
+                            nombreCompletoInput.readOnly = false;
                             nombreCompletoInput.classList.remove('bg-light');
                             nombreCompletoInput.removeAttribute('data-from-reniec');
                             let errorMsg = 'Error al consultar RENIEC';
@@ -540,7 +606,15 @@
                             } else if (xhr.status === 404) {
                                 errorMsg = 'No se encontraron datos para este DNI';
                             }
+                            docError.textContent = errorMsg;
                             mostrarAdvertencia(errorMsg);
+                        },
+                        complete: function() {
+                            // Re-habilitar el input de número de documento solo en modo creación
+                            const modoEdicion = document.querySelector('input[name="id"]')?.value;
+                            if (!modoEdicion) {
+                                numeroDocumentoInput.readOnly = false;
+                            }
                         }
                     });
                 }
