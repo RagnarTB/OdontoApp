@@ -22,12 +22,18 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.odontoapp.dto.PacienteDTO;
 import com.odontoapp.dto.ReniecResponseDTO;
+import com.odontoapp.entidad.Cita;
+import com.odontoapp.entidad.OdontogramaDiente;
 import com.odontoapp.entidad.Paciente;
 import com.odontoapp.entidad.TipoDocumento;
+import com.odontoapp.repositorio.CitaRepository;
+import com.odontoapp.repositorio.OdontogramaDienteRepository;
 import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.TipoDocumentoRepository; // NUEVO
 import com.odontoapp.servicio.PacienteService;
 import com.odontoapp.servicio.ReniecService;
+
+import java.time.format.DateTimeFormatter;
 
 import jakarta.validation.Valid;
 
@@ -37,14 +43,19 @@ public class PacienteController {
     private final PacienteService pacienteService;
     private final ReniecService reniecService;
     private final PacienteRepository pacienteRepository;
-    private final TipoDocumentoRepository tipoDocumentoRepository; // NUEVO
+    private final TipoDocumentoRepository tipoDocumentoRepository;
+    private final CitaRepository citaRepository;
+    private final OdontogramaDienteRepository odontogramaDienteRepository;
 
     public PacienteController(PacienteService pacienteService, ReniecService reniecService,
-            PacienteRepository pacienteRepository, TipoDocumentoRepository tipoDocumentoRepository) {
+            PacienteRepository pacienteRepository, TipoDocumentoRepository tipoDocumentoRepository,
+            CitaRepository citaRepository, OdontogramaDienteRepository odontogramaDienteRepository) {
         this.pacienteService = pacienteService;
         this.reniecService = reniecService;
         this.pacienteRepository = pacienteRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
+        this.citaRepository = citaRepository;
+        this.odontogramaDienteRepository = odontogramaDienteRepository;
     }
 
     @GetMapping("/pacientes")
@@ -268,25 +279,52 @@ public class PacienteController {
         detalle.put("antecedentes", paciente.getAntecedentesMedicos());
         detalle.put("tratamientosActuales", paciente.getTratamientosActuales());
 
-        // Historial de citas (obtener del repositorio)
+        // Historial de citas (cargar desde CitaRepository)
         java.util.List<Map<String, Object>> historialCitas = new java.util.ArrayList<>();
-        // TODO: Cargar citas reales del paciente desde CitaRepository
-        // Por ahora retornamos vacío
+        if (paciente.getUsuario() != null) {
+            java.util.List<Cita> citas = citaRepository.findByPacienteId(paciente.getUsuario().getId(),
+                    PageRequest.of(0, 10)).getContent(); // Últimas 10 citas
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+            for (Cita cita : citas) {
+                Map<String, Object> citaMap = new java.util.HashMap<>();
+                citaMap.put("fecha", cita.getFechaHoraInicio().format(formatter));
+                citaMap.put("odontologo", cita.getOdontologo() != null ? cita.getOdontologo().getNombreCompleto() : "N/A");
+                citaMap.put("procedimiento", cita.getProcedimiento() != null ? cita.getProcedimiento().getNombre() : "N/A");
+                citaMap.put("estado", cita.getEstadoCita() != null ? cita.getEstadoCita().getNombre() : "PENDIENTE");
+                citaMap.put("motivo", cita.getMotivoConsulta());
+                historialCitas.add(citaMap);
+            }
+        }
         detalle.put("historialCitas", historialCitas);
 
-        // Odontograma (obtener del repositorio)
+        // Odontograma (cargar desde OdontogramaDienteRepository)
         java.util.List<Map<String, Object>> odontograma = new java.util.ArrayList<>();
-        // TODO: Cargar odontograma real desde OdontogramaDienteRepository
-        // Por ahora retornamos todos los dientes como SANO
-        for (int cuadrante = 1; cuadrante <= 4; cuadrante++) {
-            int inicio = cuadrante == 1 ? 11 : cuadrante == 2 ? 21 : cuadrante == 3 ? 31 : 41;
-            int fin = cuadrante == 1 ? 18 : cuadrante == 2 ? 28 : cuadrante == 3 ? 38 : 48;
+        if (paciente.getUsuario() != null) {
+            java.util.List<OdontogramaDiente> dientes = odontogramaDienteRepository.findByPaciente(paciente.getUsuario());
 
-            for (int num = inicio; num <= fin; num++) {
-                Map<String, Object> diente = new java.util.HashMap<>();
-                diente.put("numero", num);
-                diente.put("estado", "SANO");
-                odontograma.add(diente);
+            for (OdontogramaDiente diente : dientes) {
+                Map<String, Object> dienteMap = new java.util.HashMap<>();
+                dienteMap.put("numero", diente.getNumeroDiente());
+                dienteMap.put("estado", diente.getEstado());
+                dienteMap.put("notas", diente.getNotas());
+                odontograma.add(dienteMap);
+            }
+        }
+
+        // Si no hay registros de odontograma, retornar todos los dientes como SANO
+        if (odontograma.isEmpty()) {
+            for (int cuadrante = 1; cuadrante <= 4; cuadrante++) {
+                int inicio = cuadrante == 1 ? 11 : cuadrante == 2 ? 21 : cuadrante == 3 ? 31 : 41;
+                int fin = cuadrante == 1 ? 18 : cuadrante == 2 ? 28 : cuadrante == 3 ? 38 : 48;
+
+                for (int num = inicio; num <= fin; num++) {
+                    Map<String, Object> diente = new java.util.HashMap<>();
+                    diente.put("numero", String.valueOf(num));
+                    diente.put("estado", "SANO");
+                    diente.put("notas", "");
+                    odontograma.add(diente);
+                }
             }
         }
         detalle.put("odontograma", odontograma);

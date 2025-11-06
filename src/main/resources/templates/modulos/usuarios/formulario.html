@@ -246,11 +246,19 @@
                                 <div class="col-md-4">
                                     <div class="form-group" id="grupoFechaVigencia">
                                         <label for="fechaVigencia">Fecha de Vigencia <span class="text-danger" id="vigenciaRequired">*</span></label>
-                                        <input type="date" class="form-control" id="fechaVigencia"
+
+                                        <!-- En modo edición: campo hidden para binding + campo texto readonly para mostrar -->
+                                        <input th:if="${usuario.id != null}" type="hidden" id="fechaVigenciaHidden" th:field="*{fechaVigencia}" />
+                                        <input th:if="${usuario.id != null}" type="text" class="form-control" id="fechaVigenciaDisplay"
+                                            th:value="${usuario.fechaVigencia != null ? #temporals.format(usuario.fechaVigencia, 'dd/MM/yyyy') : 'No establecida'}"
+                                            readonly style="background-color: #e9ecef;" />
+
+                                        <!-- En modo creación: input date normal -->
+                                        <input th:if="${usuario.id == null}" type="date" class="form-control" id="fechaVigencia"
                                             th:field="*{fechaVigencia}"
                                             data-validar="fecha-no-pasada"
-                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('fechaVigencia')} ? 'is-invalid' : ''">
+
                                         <div th:if="${#fields.hasErrors('fechaVigencia')}" class="invalid-feedback"
                                             th:errors="*{fechaVigencia}"></div>
 
@@ -261,6 +269,12 @@
                                                 <i class="fas fa-unlock-alt"></i> Permitir editar fecha de vigencia
                                             </label>
                                         </div>
+
+                                        <!-- Campo date que aparece solo cuando se marca el checkbox -->
+                                        <input th:if="${usuario.id != null}" type="date" class="form-control mt-2" id="fechaVigenciaEdit"
+                                            th:value="${usuario.fechaVigencia}"
+                                            style="display: none;"
+                                            data-validar="fecha-no-pasada">
 
                                         <small th:if="${usuario.id == null}" class="form-text text-info">
                                             <i class="fas fa-info-circle"></i> Fecha hasta la cual el usuario tendrá acceso (no requerido para ADMIN)
@@ -600,7 +614,8 @@
                 // --- FIN FUNCIONALIDAD DNI ---
 
                 // --- FUNCIONALIDAD DE FECHA DE VIGENCIA Y ROL ADMIN ---
-                const fechaVigenciaInput = document.getElementById('fechaVigencia');
+                // En modo creación: fechaVigencia; En modo edición: fechaVigenciaEdit
+                const fechaVigenciaInput = document.getElementById('fechaVigencia') || document.getElementById('fechaVigenciaEdit');
                 const grupoFechaVigencia = document.getElementById('grupoFechaVigencia');
                 const vigenciaRequired = document.getElementById('vigenciaRequired');
                 let rolAdminId = null;
@@ -749,14 +764,36 @@
 
                 // Manejar checkbox de edición de fecha de vigencia
                 const checkEditarFechaVigencia = document.getElementById('checkEditarFechaVigencia');
-                if (checkEditarFechaVigencia) {
+                const fechaVigenciaDisplay = document.getElementById('fechaVigenciaDisplay');
+                const fechaVigenciaEdit = document.getElementById('fechaVigenciaEdit');
+                const fechaVigenciaHidden = document.getElementById('fechaVigenciaHidden');
+
+                if (checkEditarFechaVigencia && fechaVigenciaDisplay && fechaVigenciaEdit && fechaVigenciaHidden) {
                     checkEditarFechaVigencia.addEventListener('change', function() {
-                        fechaVigenciaInput.readOnly = !this.checked;
                         if (this.checked) {
-                            fechaVigenciaInput.classList.add('border-warning');
+                            // Mostrar campo de edición
+                            fechaVigenciaDisplay.style.display = 'none';
+                            fechaVigenciaEdit.style.display = 'block';
+                            fechaVigenciaEdit.classList.add('border-warning');
                         } else {
-                            fechaVigenciaInput.classList.remove('border-warning');
+                            // Ocultar campo de edición y actualizar display
+                            fechaVigenciaEdit.style.display = 'none';
+                            fechaVigenciaDisplay.style.display = 'block';
+                            fechaVigenciaEdit.classList.remove('border-warning');
+
+                            // Actualizar el hidden field con el valor editado
+                            if (fechaVigenciaEdit.value) {
+                                fechaVigenciaHidden.value = fechaVigenciaEdit.value;
+                                // Formatear y mostrar la nueva fecha
+                                const fecha = new Date(fechaVigenciaEdit.value + 'T00:00:00');
+                                fechaVigenciaDisplay.value = fecha.toLocaleDateString('es-ES');
+                            }
                         }
+                    });
+
+                    // Sincronizar cambios del campo edit al hidden
+                    fechaVigenciaEdit.addEventListener('change', function() {
+                        fechaVigenciaHidden.value = this.value;
                     });
                 }
 
