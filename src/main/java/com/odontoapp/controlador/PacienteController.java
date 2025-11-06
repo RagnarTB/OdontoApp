@@ -237,4 +237,61 @@ public class PacienteController {
         return "modulos/pacientes/historial";
     }
 
+    /**
+     * API REST para obtener el detalle completo de un paciente
+     * Usado por el modal "Ver Detalle" en la lista de pacientes
+     */
+    @GetMapping("/pacientes/api/detalle/{id}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> obtenerDetallePaciente(@PathVariable Long id) {
+        Optional<Paciente> pacienteOpt = pacienteService.buscarPorId(id);
+
+        if (pacienteOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Paciente paciente = pacienteOpt.get();
+        Map<String, Object> detalle = new java.util.HashMap<>();
+
+        // Datos personales
+        detalle.put("nombreCompleto", paciente.getNombreCompleto());
+        detalle.put("tipoDocumento", paciente.getTipoDocumento().getNombre());
+        detalle.put("numeroDocumento", paciente.getNumeroDocumento());
+        detalle.put("email", paciente.getEmail());
+        detalle.put("telefono", paciente.getTelefono());
+        detalle.put("fechaNacimiento", paciente.getFechaNacimiento() != null ?
+            paciente.getFechaNacimiento().toString() : null);
+        detalle.put("direccion", paciente.getDireccion());
+
+        // Información médica
+        detalle.put("alergias", paciente.getAlergias());
+        detalle.put("antecedentes", paciente.getAntecedentes());
+        detalle.put("tratamientosActuales", paciente.getTratamientosActuales());
+
+        // Historial de citas (obtener del repositorio)
+        java.util.List<Map<String, Object>> historialCitas = new java.util.ArrayList<>();
+        // TODO: Cargar citas reales del paciente desde CitaRepository
+        // Por ahora retornamos vacío
+        detalle.put("historialCitas", historialCitas);
+
+        // Odontograma (obtener del repositorio)
+        java.util.List<Map<String, Object>> odontograma = new java.util.ArrayList<>();
+        // TODO: Cargar odontograma real desde OdontogramaDienteRepository
+        // Por ahora retornamos todos los dientes como SANO
+        for (int cuadrante = 1; cuadrante <= 4; cuadrante++) {
+            int inicio = cuadrante == 1 ? 11 : cuadrante == 2 ? 21 : cuadrante == 3 ? 31 : 41;
+            int fin = cuadrante == 1 ? 18 : cuadrante == 2 ? 28 : cuadrante == 3 ? 38 : 48;
+
+            for (int num = inicio; num <= fin; num++) {
+                Map<String, Object> diente = new java.util.HashMap<>();
+                diente.put("numero", num);
+                diente.put("estado", "SANO");
+                odontograma.add(diente);
+            }
+        }
+        detalle.put("odontograma", odontograma);
+
+        return ResponseEntity.ok(detalle);
+    }
+
 }
