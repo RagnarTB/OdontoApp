@@ -265,7 +265,7 @@ public class PacienteController {
 
         // Información médica
         detalle.put("alergias", paciente.getAlergias());
-        detalle.put("antecedentes", paciente.getAntecedentes());
+        detalle.put("antecedentes", paciente.getAntecedentesMedicos());
         detalle.put("tratamientosActuales", paciente.getTratamientosActuales());
 
         // Historial de citas (obtener del repositorio)
