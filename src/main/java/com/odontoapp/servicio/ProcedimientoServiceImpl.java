@@ -45,7 +45,7 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
         if (keyword != null && !keyword.isBlank()) {
             return procedimientoRepository.findByKeyword(keyword, pageable);
         }
-        return procedimientoRepository.findAll(pageable);
+        return procedimientoRepository.findAllWithRelations(pageable);
     }
 
     @Override
