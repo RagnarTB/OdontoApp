@@ -73,23 +73,23 @@
                                         <button type="button" class="btn btn-sm btn-primary btn-ver-detalle"
                                             title="Ver Detalle Completo del Paciente"
                                             th:attr="data-paciente-id=${paciente.id}"
-                                            sec:authorize="hasAuthority('VER_PACIENTES')">
+                                            sec:authorize="hasAnyAuthority('VER_DETALLE_PACIENTES', 'ADMIN')">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         <a th:href="@{/pacientes/historial/{id}(id=${paciente.id})}"
                                             class="btn btn-sm btn-info" title="Ver Historial Clínico"
-                                            sec:authorize="hasAuthority('VER_PACIENTES')">
+                                            sec:authorize="hasAnyAuthority('VER_DETALLE_PACIENTES', 'ADMIN')">
                                             <i class="fas fa-notes-medical"></i>
                                         </a>
                                         <a th:href="@{/pacientes/editar/{id}(id=${paciente.id})}"
                                             class="btn btn-sm btn-warning" title="Editar Datos del Paciente"
-                                            sec:authorize="hasAuthority('EDITAR_PACIENTES')">
+                                            sec:authorize="hasAnyAuthority('EDITAR_PACIENTES', 'ADMIN')">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <a th:href="@{/pacientes/eliminar/{id}(id=${paciente.id})}"
                                             class="btn btn-sm btn-danger btn-eliminar-paciente" title="Eliminar Paciente (Lógico)"
                                             th:data-nombre="${paciente.nombreCompleto}"
-                                            sec:authorize="hasAuthority('ELIMINAR_PACIENTES')">
+                                            sec:authorize="hasAnyAuthority('ELIMINAR_PACIENTES', 'ADMIN')">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </td>
