@@ -574,6 +574,62 @@ public class UsuarioController {
         }
     }
 
+    /**
+     * Obtiene los horarios regulares de un usuario
+     */
+    @GetMapping("/{id}/horarios")
+    @ResponseBody
+    public ResponseEntity<?> obtenerHorarios(@PathVariable Long id) {
+        try {
+            Usuario usuario = usuarioRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            return ResponseEntity.ok(java.util.Map.of(
+                "horarioRegular", usuario.getHorarioRegular() != null ? usuario.getHorarioRegular() : new java.util.HashMap<>()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Actualiza los horarios regulares de un usuario
+     */
+    @PostMapping("/{id}/horarios")
+    @ResponseBody
+    public ResponseEntity<?> actualizarHorarios(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> horarios) {
+        try {
+            Usuario usuario = usuarioRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            // Convertir Map<String, String> a Map<DayOfWeek, String>
+            java.util.Map<java.time.DayOfWeek, String> horarioRegular = new java.util.EnumMap<>(java.time.DayOfWeek.class);
+
+            for (java.util.Map.Entry<String, String> entry : horarios.entrySet()) {
+                try {
+                    java.time.DayOfWeek dia = java.time.DayOfWeek.valueOf(entry.getKey().toUpperCase());
+                    horarioRegular.put(dia, entry.getValue());
+                } catch (IllegalArgumentException e) {
+                    // Ignorar días inválidos
+                }
+            }
+
+            usuario.setHorarioRegular(horarioRegular);
+            usuarioRepository.save(usuario);
+
+            return ResponseEntity.ok(java.util.Map.of(
+                "success", true,
+                "mensaje", "Horarios actualizados correctamente"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
     // --- MÉTODO HELPER REFACTORIZADO ---
     private void cargarRolesYTiposDoc(Model model) {
         List<Rol> rolesActivos = rolRepository.findAll()

@@ -36,6 +36,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByNumeroDocumentoAndTipoDocumentoIdIgnorandoSoftDelete(
             @Param("numDoc") String numDoc, @Param("tipoDocId") Long tipoDocId);
 
+    // --- NUEVO MÉTODO PARA NÚMERO DE DOCUMENTO ---
+    @Query("SELECT u FROM Usuario u WHERE u.numeroDocumento = :numeroDocumento")
+    Optional<Usuario> findByNumeroDocumentoIgnorandoSoftDelete(@Param("numeroDocumento") String numeroDocumento);
+
     // Buscar usuario por número de documento y tipo (respetando soft delete)
     Optional<Usuario> findByNumeroDocumentoAndTipoDocumento_Id(String numeroDocumento, Long tipoDocumentoId);
 
