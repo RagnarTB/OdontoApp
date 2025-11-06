@@ -333,28 +333,19 @@
         function cargarInsumosExistentes(procedimientoId) {
             $.get(`/procedimientos/${procedimientoId}/insumos`, function(data) {
                 if (data && data.length > 0) {
-                    // Necesitamos obtener el ID del insumo, pero la API solo devuelve el nombre
-                    // Vamos a buscar en el selector
                     data.forEach(function(insumoData) {
-                        // Buscar el insumo en el selector por nombre
-                        const option = $('#insumoSelector option').filter(function() {
-                            return $(this).text().includes(insumoData.insumoNombre);
-                        }).first();
-
-                        if (option.length > 0) {
-                            insumosAgregados.push({
-                                insumoId: option.val(),
-                                insumoNombre: insumoData.insumoNombre,
-                                cantidad: insumoData.cantidadDefecto,
-                                unidad: insumoData.unidad,
-                                esObligatorio: insumoData.esObligatorio
-                            });
-                        }
+                        insumosAgregados.push({
+                            insumoId: insumoData.insumoId,
+                            insumoNombre: insumoData.insumoNombre,
+                            cantidad: insumoData.cantidadDefecto,
+                            unidad: insumoData.unidad,
+                            esObligatorio: insumoData.esObligatorio
+                        });
                     });
                     actualizarTablaInsumos();
                 }
-            }).fail(function() {
-                console.log('No se pudieron cargar los insumos existentes');
+            }).fail(function(xhr, status, error) {
+                console.error('Error al cargar insumos existentes:', error);
             });
         }
     });

@@ -125,8 +125,8 @@ public class ProcedimientoController {
                     .collect(Collectors.toList());
             model.addAttribute("categorias", categorias);
 
-            // Cargar insumos
-            List<Insumo> insumos = insumoRepository.findAll();
+            // Cargar insumos con sus relaciones
+            List<Insumo> insumos = insumoRepository.findAllWithRelations();
             model.addAttribute("insumos", insumos);
 
             return "modulos/servicios/formulario";
@@ -154,8 +154,8 @@ public class ProcedimientoController {
                 .collect(Collectors.toList());
         model.addAttribute("categorias", categorias);
 
-        // Cargar todos los insumos activos
-        List<Insumo> insumos = insumoRepository.findAll();
+        // Cargar todos los insumos activos con sus relaciones (categoria y unidadMedida)
+        List<Insumo> insumos = insumoRepository.findAllWithRelations();
         model.addAttribute("insumos", insumos);
     }
 }

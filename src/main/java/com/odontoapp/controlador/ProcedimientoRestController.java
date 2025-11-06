@@ -42,6 +42,7 @@ public class ProcedimientoRestController {
         List<Map<String, Object>> resultado = insumos.stream()
                 .map(pi -> {
                     Map<String, Object> insumoData = new HashMap<>();
+                    insumoData.put("insumoId", pi.getInsumo().getId());
                     insumoData.put("insumoNombre", pi.getInsumo().getNombre());
                     insumoData.put("cantidadDefecto", pi.getCantidadDefecto());
                     insumoData.put("unidad", pi.getUnidad());
