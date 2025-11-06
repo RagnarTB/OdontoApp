@@ -218,8 +218,8 @@ public class DataInitializer implements CommandLineRunner {
         CategoriaInsumo instrumental = crearCategoriaInsumoSiNoExiste("Instrumental", "Fresas, agujas y puntas");
         CategoriaInsumo desinfeccion = crearCategoriaInsumoSiNoExiste("Desinfección y Esterilización", "Productos de limpieza y desinfección");
         CategoriaInsumo profilaxis = crearCategoriaInsumoSiNoExiste("Profilaxis", "Pastas, fluoruros y materiales de limpieza");
-        CategoriaInsumo ortodoncia = crearCategoriaInsumoSiNoExiste("Ortodoncia", "Brackets, arcos y ligaduras");
-        CategoriaInsumo cirugia = crearCategoriaInsumoSiNoExiste("Cirugía", "Suturas, bisturís y materiales quirúrgicos");
+        CategoriaInsumo insumosOrtodoncia = crearCategoriaInsumoSiNoExiste("Ortodoncia", "Brackets, arcos y ligaduras");
+        CategoriaInsumo insumosCirugia = crearCategoriaInsumoSiNoExiste("Cirugía", "Suturas, bisturís y materiales quirúrgicos");
 
         // === CREACIÓN DE INSUMOS ===
         System.out.println(">>> Creando insumos...");
@@ -285,17 +285,17 @@ public class DataInitializer implements CommandLineRunner {
         crearInsumoSiNoExiste("PROF-HILO-01", "Hilo Dental", "Oral-B", new BigDecimal("50"), new BigDecimal("3.50"), profilaxis, unidad);
 
         // Ortodoncia
-        crearInsumoSiNoExiste("ORTO-BRAC-01", "Brackets Metálicos Kit", "American Orthodontics", new BigDecimal("5"), new BigDecimal("450.00"), ortodoncia, unidad);
-        crearInsumoSiNoExiste("ORTO-ARCO-01", "Arcos de Níquel-Titanio", "3M Unitek", new BigDecimal("10"), new BigDecimal("35.00"), ortodoncia, unidad);
-        crearInsumoSiNoExiste("ORTO-LIGA-01", "Ligaduras Elásticas", "Morelli", new BigDecimal("20"), new BigDecimal("12.00"), ortodoncia, paquete);
-        crearInsumoSiNoExiste("ORTO-CEME-01", "Cemento para Ortodoncia", "Transbond XT", new BigDecimal("5"), new BigDecimal("180.00"), ortodoncia, unidad);
+        crearInsumoSiNoExiste("ORTO-BRAC-01", "Brackets Metálicos Kit", "American Orthodontics", new BigDecimal("5"), new BigDecimal("450.00"), insumosOrtodoncia, unidad);
+        crearInsumoSiNoExiste("ORTO-ARCO-01", "Arcos de Níquel-Titanio", "3M Unitek", new BigDecimal("10"), new BigDecimal("35.00"), insumosOrtodoncia, unidad);
+        crearInsumoSiNoExiste("ORTO-LIGA-01", "Ligaduras Elásticas", "Morelli", new BigDecimal("20"), new BigDecimal("12.00"), insumosOrtodoncia, paquete);
+        crearInsumoSiNoExiste("ORTO-CEME-01", "Cemento para Ortodoncia", "Transbond XT", new BigDecimal("5"), new BigDecimal("180.00"), insumosOrtodoncia, unidad);
 
         // Cirugía
-        crearInsumoSiNoExiste("CIRU-SUTU-01", "Sutura Seda 3-0", "Ethicon", new BigDecimal("20"), new BigDecimal("8.50"), cirugia, unidad);
-        crearInsumoSiNoExiste("CIRU-SUTU-02", "Sutura Reabsorbible 4-0", "Vicryl", new BigDecimal("15"), new BigDecimal("12.00"), cirugia, unidad);
-        crearInsumoSiNoExiste("CIRU-BIST-01", "Hojas de Bisturí #15", "Feather", new BigDecimal("30"), new BigDecimal("1.20"), cirugia, unidad);
-        crearInsumoSiNoExiste("CIRU-GASA-01", "Gasas Hemostáticas", "Gelfoam", new BigDecimal("10"), new BigDecimal("22.00"), cirugia, caja);
-        crearInsumoSiNoExiste("CIRU-ESPO-01", "Esponja de Colágeno", "CollaCote", new BigDecimal("8"), new BigDecimal("35.00"), cirugia, unidad);
+        crearInsumoSiNoExiste("CIRU-SUTU-01", "Sutura Seda 3-0", "Ethicon", new BigDecimal("20"), new BigDecimal("8.50"), insumosCirugia, unidad);
+        crearInsumoSiNoExiste("CIRU-SUTU-02", "Sutura Reabsorbible 4-0", "Vicryl", new BigDecimal("15"), new BigDecimal("12.00"), insumosCirugia, unidad);
+        crearInsumoSiNoExiste("CIRU-BIST-01", "Hojas de Bisturí #15", "Feather", new BigDecimal("30"), new BigDecimal("1.20"), insumosCirugia, unidad);
+        crearInsumoSiNoExiste("CIRU-GASA-01", "Gasas Hemostáticas", "Gelfoam", new BigDecimal("10"), new BigDecimal("22.00"), insumosCirugia, caja);
+        crearInsumoSiNoExiste("CIRU-ESPO-01", "Esponja de Colágeno", "CollaCote", new BigDecimal("8"), new BigDecimal("35.00"), insumosCirugia, unidad);
 
         // === CREACIÓN DE RELACIONES PROCEDIMIENTO-INSUMO ===
         System.out.println(">>> Creando relaciones procedimiento-insumo...");

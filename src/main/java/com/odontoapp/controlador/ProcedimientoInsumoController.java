@@ -282,7 +282,7 @@ public class ProcedimientoInsumoController {
         dto.setId(entidad.getId());
         dto.setProcedimientoId(entidad.getProcedimiento().getId());
         dto.setInsumoId(entidad.getInsumo().getId());
-        dto.setCantidadDefault(entidad.getCantidadDefault());
+        dto.setCantidadDefault(entidad.getCantidadDefecto());
 
         // Campos de solo lectura (información adicional)
         dto.setProcedimientoNombre(entidad.getProcedimiento().getNombre());

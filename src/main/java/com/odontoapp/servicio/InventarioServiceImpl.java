@@ -138,7 +138,7 @@ public class InventarioServiceImpl implements InventarioService {
 
             // Descontar cada insumo según la cantidad por defecto configurada
             for (ProcedimientoInsumo pi : insumosDelProcedimiento) {
-                descontarInsumo(pi.getInsumo(), pi.getCantidadDefault(), tipoSalida, motivoProcedimiento,
+                descontarInsumo(pi.getInsumo(), pi.getCantidadDefecto(), tipoSalida, motivoProcedimiento,
                         referenciaCita);
             }
         }

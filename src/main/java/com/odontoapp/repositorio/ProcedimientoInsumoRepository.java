@@ -37,4 +37,22 @@ public interface ProcedimientoInsumoRepository extends JpaRepository<Procedimien
      * Eliminar relación específica
      */
     void deleteByProcedimientoAndInsumo(Procedimiento procedimiento, Insumo insumo);
+
+    /**
+     * Obtener todos los insumos de un procedimiento por ID
+     */
+    @Query("SELECT pi FROM ProcedimientoInsumo pi WHERE pi.procedimiento.id = :procedimientoId")
+    List<ProcedimientoInsumo> findByProcedimientoId(@Param("procedimientoId") Long procedimientoId);
+
+    /**
+     * Obtener procedimientos que usan un insumo específico por ID
+     */
+    @Query("SELECT pi FROM ProcedimientoInsumo pi WHERE pi.insumo.id = :insumoId")
+    List<ProcedimientoInsumo> findByInsumoId(@Param("insumoId") Long insumoId);
+
+    /**
+     * Verificar si existe relación específica por IDs
+     */
+    @Query("SELECT pi FROM ProcedimientoInsumo pi WHERE pi.procedimiento.id = :procedimientoId AND pi.insumo.id = :insumoId")
+    Optional<ProcedimientoInsumo> findByProcedimientoIdAndInsumoId(@Param("procedimientoId") Long procedimientoId, @Param("insumoId") Long insumoId);
 }
