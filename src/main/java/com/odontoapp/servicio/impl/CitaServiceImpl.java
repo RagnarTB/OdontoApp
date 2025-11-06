@@ -3,14 +3,19 @@ package com.odontoapp.servicio.impl;
 import com.odontoapp.entidad.Cita;
 import com.odontoapp.entidad.EstadoCita;
 import com.odontoapp.entidad.HorarioExcepcion;
+import com.odontoapp.entidad.Insumo;
 import com.odontoapp.entidad.Procedimiento;
+import com.odontoapp.entidad.ProcedimientoInsumo;
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.EstadoCitaRepository;
+import com.odontoapp.repositorio.InsumoRepository;
+import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.EmailService;
+import java.math.BigDecimal;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,17 +54,23 @@ public class CitaServiceImpl implements CitaService {
     private final ProcedimientoRepository procedimientoRepository;
     private final EstadoCitaRepository estadoCitaRepository;
     private final EmailService emailService;
+    private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
+    private final InsumoRepository insumoRepository;
 
     public CitaServiceImpl(CitaRepository citaRepository,
                           UsuarioRepository usuarioRepository,
                           ProcedimientoRepository procedimientoRepository,
                           EstadoCitaRepository estadoCitaRepository,
-                          EmailService emailService) {
+                          EmailService emailService,
+                          ProcedimientoInsumoRepository procedimientoInsumoRepository,
+                          InsumoRepository insumoRepository) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
         this.estadoCitaRepository = estadoCitaRepository;
         this.emailService = emailService;
+        this.procedimientoInsumoRepository = procedimientoInsumoRepository;
+        this.insumoRepository = insumoRepository;
     }
 
     @Override
@@ -441,7 +452,41 @@ public class CitaServiceImpl implements CitaService {
             cita.setNotas(notasActuales + "Asistencia: " + notas);
         }
 
+        // Si el paciente asistió, descontar insumos asociados al procedimiento
+        if (asistio && cita.getProcedimiento() != null) {
+            descontarInsumosDelProcedimiento(cita.getProcedimiento().getId());
+        }
+
         return citaRepository.save(cita);
+    }
+
+    /**
+     * Descuenta los insumos asociados a un procedimiento del inventario.
+     * Se utiliza cuando un paciente asiste a una cita y se consume el procedimiento.
+     *
+     * @param procedimientoId ID del procedimiento
+     */
+    private void descontarInsumosDelProcedimiento(Long procedimientoId) {
+        // Obtener todos los insumos asociados al procedimiento
+        List<ProcedimientoInsumo> procedimientoInsumos = procedimientoInsumoRepository
+                .findByProcedimientoId(procedimientoId);
+
+        for (ProcedimientoInsumo pi : procedimientoInsumos) {
+            Insumo insumo = pi.getInsumo();
+            BigDecimal cantidadADescontar = pi.getCantidadDefecto();
+
+            // Verificar que haya suficiente stock
+            if (insumo.getStockActual().compareTo(cantidadADescontar) < 0) {
+                throw new IllegalStateException(
+                        "Stock insuficiente del insumo: " + insumo.getNombre() +
+                        " (Disponible: " + insumo.getStockActual() + ", Requerido: " + cantidadADescontar + ")"
+                );
+            }
+
+            // Descontar del stock
+            insumo.setStockActual(insumo.getStockActual().subtract(cantidadADescontar));
+            insumoRepository.save(insumo);
+        }
     }
 
     @Override

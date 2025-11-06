@@ -591,6 +591,8 @@ public class DataInitializer implements CommandLineRunner {
             insumo.setNombre(nombre);
             insumo.setMarca(marca);
             insumo.setStockMinimo(stockMinimo);
+            // Establecer stock actual inicial (10x el stock mínimo para tener suficiente inventario)
+            insumo.setStockActual(stockMinimo.multiply(BigDecimal.valueOf(10)));
             insumo.setPrecioUnitario(precio);
             insumo.setCategoria(categoria);
             insumo.setUnidadMedida(unidad);
