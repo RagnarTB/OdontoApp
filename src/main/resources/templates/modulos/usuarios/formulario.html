@@ -250,7 +250,7 @@
                                         <div th:if="${#fields.hasErrors('fechaVigencia')}" class="invalid-feedback"
                                             th:errors="*{fechaVigencia}"></div>
                                         <small th:if="${usuario.id != null}" class="form-text text-success">
-                                            <i class="fas fa-edit"></i> Campo editable - Fecha actual: <strong th:text="${usuario.fechaVigencia != null ? #temporals.format(usuario.fechaVigencia, 'dd/MM/yyyy') : 'No establecida'}">-</strong>
+                                            <i class="fas fa-edit"></i> Campo editable - Puede modificar la fecha de vigencia
                                         </small>
                                         <small th:if="${usuario.id == null}" class="form-text text-info">
                                             <i class="fas fa-info-circle"></i> Fecha hasta la cual el usuario tendrá acceso (no requerido para ADMIN)

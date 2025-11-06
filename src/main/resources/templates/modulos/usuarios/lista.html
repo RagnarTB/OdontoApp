@@ -398,19 +398,29 @@
     let usuarioIdActual = null;
 
     // Abrir modal de excepciones
-    $(document).on('click', '.btn-gestionar-excepciones', function() {
+    $(document).on('click', '.btn-gestionar-excepciones', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Cerrar cualquier otro modal primero para evitar conflictos
+        $('.modal').modal('hide');
+
         usuarioIdActual = $(this).data('usuario-id');
         const nombreUsuario = $(this).data('usuario-nombre');
 
         $('#nombreOdontologo').text(nombreUsuario);
-        $('#modalExcepciones').modal('show');
 
-        // Limpiar formulario
-        $('#formNuevaExcepcion')[0].reset();
-        $('#campoHorarioEspecial').hide();
+        // Abrir modal después de un pequeño delay para asegurar que otros modales se cierren
+        setTimeout(function() {
+            $('#modalExcepciones').modal('show');
 
-        // Cargar excepciones
-        cargarExcepciones();
+            // Limpiar formulario
+            $('#formNuevaExcepcion')[0].reset();
+            $('#campoHorarioEspecial').hide();
+
+            // Cargar excepciones
+            cargarExcepciones();
+        }, 300);
     });
 
     // Mostrar/ocultar campo de horario especial
@@ -583,6 +593,7 @@
     // Abrir modal de horarios
     $(document).on('click', '.btn-editar-horarios', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         console.log('Botón horarios clicked');
 
         usuarioIdHorarios = $(this).data('usuario-id');
@@ -595,16 +606,22 @@
             return;
         }
 
+        // Cerrar cualquier otro modal primero
+        $('.modal').modal('hide');
+
         $('#nombreOdontologoHorarios').text(nombre);
         $('#loadingHorarios').show();
         $('#contenedorHorarios').hide();
 
         try {
-            $('#modalEditarHorarios').modal('show');
-            console.log('Modal show ejecutado');
+            // Abrir modal después de un pequeño delay
+            setTimeout(function() {
+                $('#modalEditarHorarios').modal('show');
+                console.log('Modal show ejecutado');
 
-            // Cargar horarios actuales
-            cargarHorariosActuales();
+                // Cargar horarios actuales
+                cargarHorariosActuales();
+            }, 300);
         } catch (error) {
             console.error('Error al abrir modal:', error);
             mostrarError('Error al abrir el modal de horarios: ' + error.message);
