@@ -16,8 +16,12 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.odontoapp.dto.CategoriaServicioDTO;
+import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
+import com.odontoapp.entidad.ProcedimientoInsumo;
+import org.springframework.http.ResponseEntity;
 import java.util.stream.Collectors;
-
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 @Controller
@@ -27,13 +31,16 @@ public class ProcedimientoController {
     private final ProcedimientoService procedimientoService;
     private final CategoriaProcedimientoRepository categoriaRepository;
     private final ProcedimientoRepository procedimientoRepository;
+    private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
 
     public ProcedimientoController(ProcedimientoService procedimientoService,
             CategoriaProcedimientoRepository categoriaRepository,
-            ProcedimientoRepository procedimientoRepository) {
+            ProcedimientoRepository procedimientoRepository,
+            ProcedimientoInsumoRepository procedimientoInsumoRepository) {
         this.procedimientoService = procedimientoService;
         this.categoriaRepository = categoriaRepository;
         this.procedimientoRepository = procedimientoRepository;
+        this.procedimientoInsumoRepository = procedimientoInsumoRepository;
     }
 
     @GetMapping

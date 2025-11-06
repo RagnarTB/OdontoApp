@@ -1,0 +1,765 @@
+<!-- Modal Registrar Tratamiento AVANZADO -->
+<div th:fragment="modalRegistrarTratamientoAvanzado" class="modal fade" id="modalRegistrarTratamiento" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-tooth mr-2"></i>Registrar Tratamiento Dental
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="tratamientoCitaId" name="citaId">
+
+                <!-- Información Precargada de la Cita -->
+                <div class="alert alert-info mb-3">
+                    <strong><i class="fas fa-info-circle mr-2"></i>Cita:</strong>
+                    <span id="infoCitaPaciente"></span> |
+                    Odontólogo: <span id="infoCitaOdontologo"></span> |
+                    Fecha: <span id="infoCitaFecha"></span>
+                </div>
+
+                <!-- Procedimiento Selection -->
+                <div class="form-group">
+                    <label for="tratamientoProcedimientoId">Procedimiento <span class="text-danger">*</span></label>
+                    <select class="form-control" id="tratamientoProcedimientoId" required>
+                        <option value="">Seleccione un procedimiento...</option>
+                        <option th:each="proc : ${listaProcedimientos}"
+                                th:value="${proc.id}"
+                                th:data-codigo="${proc.codigo}"
+                                th:text="${proc.codigo + ' - ' + proc.nombre}"></option>
+                    </select>
+                </div>
+
+                <!-- Selector Visual de Dientes (FDI) -->
+                <div class="card card-outline card-primary mb-3" id="selectorDientes" style="display:none;">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-teeth mr-2"></i>Seleccione Pieza(s) Dental(es)</h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <!-- Maxilar Superior -->
+                        <small class="text-muted d-block mb-2">MAXILAR SUPERIOR</small>
+                        <div class="mb-3">
+                            <div class="btn-group mr-2" id="cuadrante-1"></div>
+                            <span class="mx-2">|</span>
+                            <div class="btn-group" id="cuadrante-2"></div>
+                        </div>
+                        <hr>
+                        <!-- Maxilar Inferior -->
+                        <small class="text-muted d-block mb-2">MAXILAR INFERIOR</small>
+                        <div>
+                            <div class="btn-group mr-2" id="cuadrante-4"></div>
+                            <span class="mx-2">|</span>
+                            <div class="btn-group" id="cuadrante-3"></div>
+                        </div>
+                        <input type="hidden" id="tratamientoPiezasDentales" name="piezasDentales">
+                        <small class="form-text text-muted mt-2">
+                            <strong>Seleccionados:</strong> <span id="dientesSeleccionados">Ninguno</span>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Campos Dinámicos por Procedimiento -->
+                <div id="camposDinamicos"></div>
+
+                <!-- Insumos Incluidos en el Procedimiento -->
+                <div class="card card-outline card-secondary mb-3" id="seccionInsumos" style="display:none;">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-box mr-2"></i>Insumos del Procedimiento</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Insumo</th>
+                                        <th>Cantidad</th>
+                                        <th>Unidad</th>
+                                        <th>Tipo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaInsumosDefault">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">
+                                            Seleccione un procedimiento para ver los insumos
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarInsumoAdicional">
+                            <i class="fas fa-plus mr-1"></i>Agregar Insumo Adicional
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Descripción General -->
+                <div class="form-group">
+                    <label for="tratamientoDescripcion">Observaciones Generales</label>
+                    <textarea class="form-control" id="tratamientoDescripcion" rows="2"
+                              placeholder="Observaciones adicionales del tratamiento"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-info" id="btnPlanificarTratamiento">
+                    <i class="fas fa-calendar-plus mr-1"></i>Planificar para Después
+                </button>
+                <button type="button" class="btn btn-success" id="btnRealizarInmediato">
+                    <i class="fas fa-check-circle mr-1"></i>Tratamiento Realizado Ahora
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+$(document).ready(function() {
+    let citaDatos = {};
+    let dientesSeleccionadosArray = [];
+
+    // FDI Tooth Structure
+    const cuadrantes = {
+        1: [18, 17, 16, 15, 14, 13, 12, 11],
+        2: [21, 22, 23, 24, 25, 26, 27, 28],
+        3: [31, 32, 33, 34, 35, 36, 37, 38],
+        4: [48, 47, 46, 45, 44, 43, 42, 41]
+    };
+
+    // Procedimientos que requieren selector de dientes
+    // Todos excepto blanqueamiento (EST-001) y controles generales
+    const procedimientosConDientes = ['END-001', 'END-002', 'IMP-001', 'IMP-002',
+                                       'EST-002', 'CIR-001', 'CIR-002'];
+
+    // Generar selector de dientes
+    function generarSelectorDientes() {
+        Object.keys(cuadrantes).forEach(function(cuad) {
+            let html = '';
+            cuadrantes[cuad].forEach(function(num) {
+                html += `<button type="button" class="btn btn-outline-secondary btn-sm btn-diente"
+                                data-diente="${num}">${num}</button>`;
+            });
+            $(`#cuadrante-${cuad}`).html(html);
+        });
+    }
+
+    // Click en diente
+    $(document).on('click', '.btn-diente', function() {
+        const diente = $(this).data('diente');
+        if ($(this).hasClass('active')) {
+            $(this).removeClass('active');
+            dientesSeleccionadosArray = dientesSeleccionadosArray.filter(d => d != diente);
+        } else {
+            $(this).addClass('active');
+            dientesSeleccionadosArray.push(diente);
+        }
+        $('#dientesSeleccionados').text(dientesSeleccionadosArray.length > 0 ?
+            dientesSeleccionadosArray.join(', ') : 'Ninguno');
+        $('#tratamientoPiezasDentales').val(dientesSeleccionadosArray.join(','));
+    });
+
+    // Al abrir modal (desde detalle de cita)
+    $('#modalRegistrarTratamiento').on('show.bs.modal', function() {
+        // Limpiar form
+        $('#tratamientoProcedimientoId').val('');
+        $('#camposDinamicos').html('');
+        $('#selectorDientes').hide();
+        $('#seccionInsumos').hide();
+        dientesSeleccionadosArray = [];
+        $('.btn-diente').removeClass('active');
+
+        // Intentar cargar datos de la cita si están disponibles
+        const citaId = $('#detalleCitaId').val();
+        if (citaId) {
+            $('#tratamientoCitaId').val(citaId);
+            $('#infoCitaPaciente').text($('#detallePaciente').text());
+            $('#infoCitaOdontologo').text($('#detalleOdontologo').text());
+            $('#infoCitaFecha').text($('#detalleFecha').text() + ' ' + $('#detalleHora').text());
+        }
+    });
+
+    // Cambio de procedimiento
+    $('#tratamientoProcedimientoId').on('change', function() {
+        const codigo = $(this).find(':selected').data('codigo');
+        const procId = $(this).val();
+
+        // Mostrar selector de dientes si aplica
+        if (procedimientosConDientes.includes(codigo)) {
+            $('#selectorDientes').show();
+            generarSelectorDientes();
+        } else {
+            $('#selectorDientes').hide();
+        }
+
+        // Cargar campos dinámicos
+        cargarCamposDinamicos(codigo);
+
+        // Cargar insumos del procedimiento
+        if (procId) {
+            cargarInsumosProcedimiento(procId);
+        }
+    });
+
+    // Campos dinámicos por procedimiento
+    function cargarCamposDinamicos(codigo) {
+        let html = '';
+
+        switch(codigo) {
+            case 'CON-001': // Consulta General
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Motivo Consulta</label>
+                                <input type="text" class="form-control" name="motivo" placeholder="Ej: Dolor molar">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Diagnóstico</label>
+                                <input type="text" class="form-control" name="diagnostico">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Observaciones</label>
+                        <textarea class="form-control" name="observaciones" rows="2"></textarea>
+                    </div>
+                `;
+                break;
+
+            case 'CON-002': // Consulta Emergencia
+                html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Motivo Emergencia</label>
+                                <input type="text" class="form-control" name="motivo" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Nivel Dolor (1-10)</label>
+                                <input type="number" class="form-control" name="nivelDolor" min="1" max="10" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Tratamiento Inmediato</label>
+                                <input type="text" class="form-control" name="tratamientoInmediato">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'END-001': // Endodoncia Molar
+                html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Nº Conductos</label>
+                                <input type="number" class="form-control" name="numConductos" value="3" min="1" max="5">
+                                <small class="text-muted">Molares: 3-4 conductos típicamente</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Técnica</label>
+                                <select class="form-control" name="tecnica">
+                                    <option>Convencional</option>
+                                    <option>Rotatoria</option>
+                                    <option>Mixta</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Radiografía</label>
+                                <select class="form-control" name="radiografia">
+                                    <option value="SI">Sí - Tomada</option>
+                                    <option value="NO">No</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'ORT-001': // Instalación Brackets
+                html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Tipo Brackets</label>
+                                <select class="form-control" name="tipoBrackets">
+                                    <option>Metálicos</option>
+                                    <option>Cerámicos</option>
+                                    <option>Zafiro</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Arcada</label>
+                                <select class="form-control" name="arcada">
+                                    <option>Superior</option>
+                                    <option>Inferior</option>
+                                    <option>Ambas</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Plan Tratamiento</label>
+                                <input type="text" class="form-control" name="planTratamiento" placeholder="Ej: 18 meses">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'END-002': // Endodoncia Unirradicular
+                html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Nº Conductos</label>
+                                <input type="number" class="form-control" name="numConductos" value="1" min="1" max="2">
+                                <small class="text-muted">Anteriores/Premolares: 1-2 conductos</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Técnica</label>
+                                <select class="form-control" name="tecnica">
+                                    <option>Convencional</option>
+                                    <option>Rotatoria</option>
+                                    <option>Mixta</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Obturación</label>
+                                <select class="form-control" name="obturacion">
+                                    <option>Gutapercha</option>
+                                    <option>Resina Termoplástica</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'ORT-002': // Control Ortodoncia
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Actividades Realizadas</label>
+                                <select class="form-control" name="actividades" multiple size="3">
+                                    <option>Cambio de arco</option>
+                                    <option>Ajuste de ligaduras</option>
+                                    <option>Colocación de elásticos</option>
+                                    <option>Revisión general</option>
+                                </select>
+                                <small class="text-muted">Mantenga Ctrl para seleccionar varios</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Avance del Tratamiento</label>
+                                <input type="number" class="form-control" name="avancePorcentaje" min="0" max="100" placeholder="%">
+                                <small class="text-muted">Porcentaje completado</small>
+                            </div>
+                            <div class="form-group mt-2">
+                                <label>Próximo Control</label>
+                                <input type="date" class="form-control" name="proximoControl">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'PER-001': // Limpieza Dental Básica
+                html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Técnica Utilizada</label>
+                                <select class="form-control" name="tecnica">
+                                    <option>Ultrasonido</option>
+                                    <option>Manual</option>
+                                    <option>Combinada</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Nivel de Placa</label>
+                                <select class="form-control" name="nivelPlaca">
+                                    <option>Bajo</option>
+                                    <option>Moderado</option>
+                                    <option>Alto</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Aplicación de Flúor</label>
+                                <select class="form-control" name="fluor">
+                                    <option value="SI">Sí</option>
+                                    <option value="NO">No</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'PER-002': // Limpieza Profunda (Curetaje)
+                html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Cuadrantes Tratados</label>
+                                <select class="form-control" name="cuadrantes" multiple size="4">
+                                    <option value="1">Cuadrante 1 (Superior Derecho)</option>
+                                    <option value="2">Cuadrante 2 (Superior Izquierdo)</option>
+                                    <option value="3">Cuadrante 3 (Inferior Izquierdo)</option>
+                                    <option value="4">Cuadrante 4 (Inferior Derecho)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Anestesia</label>
+                                <select class="form-control" name="anestesia">
+                                    <option>Local infiltrativa</option>
+                                    <option>Troncular</option>
+                                    <option>No se requirió</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Profundidad Bolsas (mm)</label>
+                                <input type="number" class="form-control" name="profundidadBolsas" min="1" max="15" placeholder="Ej: 5">
+                                <small class="text-muted">Promedio de profundidad</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'IMP-001': // Instalación de Implante
+                html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Marca del Implante</label>
+                                <select class="form-control" name="marca">
+                                    <option>Straumann</option>
+                                    <option>Nobel Biocare</option>
+                                    <option>Zimmer</option>
+                                    <option>Otra</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Diámetro (mm)</label>
+                                <input type="number" class="form-control" name="diametro" step="0.1" placeholder="Ej: 4.0">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Longitud (mm)</label>
+                                <input type="number" class="form-control" name="longitud" step="0.5" placeholder="Ej: 10.0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Injerto Óseo</label>
+                                <select class="form-control" name="injertoOseo">
+                                    <option value="NO">No requerido</option>
+                                    <option value="SI">Sí - Realizado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Torque de Inserción (Ncm)</label>
+                                <input type="number" class="form-control" name="torque" placeholder="Ej: 35">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'IMP-002': // Corona sobre Implante
+                html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Tipo de Corona</label>
+                                <select class="form-control" name="tipoCorona">
+                                    <option>Porcelana</option>
+                                    <option>Zirconio</option>
+                                    <option>Metal-Porcelana</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Color</label>
+                                <input type="text" class="form-control" name="color" placeholder="Ej: A2">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Tipo de Fijación</label>
+                                <select class="form-control" name="fijacion">
+                                    <option>Atornillada</option>
+                                    <option>Cementada</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'EST-001': // Blanqueamiento Dental
+                html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Tipo de Blanqueamiento</label>
+                                <select class="form-control" name="tipoBlanqueamiento">
+                                    <option>LED (consultorio)</option>
+                                    <option>Láser (consultorio)</option>
+                                    <option>Ambulatorio (férulas)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Concentración Gel</label>
+                                <select class="form-control" name="concentracion">
+                                    <option>10% Peróxido Carbamida</option>
+                                    <option>16% Peróxido Carbamida</option>
+                                    <option>35% Peróxido Hidrógeno</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Sesiones Programadas</label>
+                                <input type="number" class="form-control" name="sesiones" min="1" max="6" value="3">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'EST-002': // Carillas de Resina
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Material Utilizado</label>
+                                <select class="form-control" name="material">
+                                    <option>Resina Nanoparticulada</option>
+                                    <option>Resina Microhíbrida</option>
+                                    <option>Resina Nanocerámica</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Color/Tono</label>
+                                <input type="text" class="form-control" name="color" placeholder="Ej: A2, B1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Técnica de Adhesión</label>
+                        <input type="text" class="form-control" name="tecnicaAdhesion" placeholder="Ej: Grabado ácido + adhesivo universal">
+                    </div>
+                `;
+                break;
+
+            case 'CIR-001': // Extracción Simple
+                html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Motivo Extracción</label>
+                                <select class="form-control" name="motivo">
+                                    <option>Caries avanzada</option>
+                                    <option>Fractura</option>
+                                    <option>Movilidad</option>
+                                    <option>Periodontal</option>
+                                    <option>Ortodóntico</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Tipo Anestesia</label>
+                                <select class="form-control" name="anestesia">
+                                    <option>Local infiltrativa</option>
+                                    <option>Troncular</option>
+                                    <option>Ambas</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Sutura</label>
+                                <select class="form-control" name="sutura">
+                                    <option value="NO">No requerida</option>
+                                    <option value="SI">Sí - Realizada</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'CIR-002': // Extracción Quirúrgica
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Tipo de Extracción</label>
+                                <select class="form-control" name="tipoExtraccion">
+                                    <option>Cordal incluido</option>
+                                    <option>Cordal semi-incluido</option>
+                                    <option>Quiste dentígero</option>
+                                    <option>Resto radicular</option>
+                                    <option>Otra cirugía compleja</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Incisión Realizada</label>
+                                <select class="form-control" name="incision">
+                                    <option>Colgajo triangular</option>
+                                    <option>Colgajo trapezoidal</option>
+                                    <option>Colgajo rectangular</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Osteotomía</label>
+                                <select class="form-control" name="osteotomia">
+                                    <option value="NO">No</option>
+                                    <option value="SI">Sí</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Odontosección</label>
+                                <select class="form-control" name="odontoseccion">
+                                    <option value="NO">No</option>
+                                    <option value="SI">Sí</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Puntos de Sutura</label>
+                                <input type="number" class="form-control" name="puntosSutura" min="0" placeholder="Ej: 3">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+        }
+
+        $('#camposDinamicos').html(html);
+    }
+
+    // Cargar insumos del procedimiento
+    function cargarInsumosProcedimiento(procId) {
+        $.get(`/procedimientos/${procId}/insumos`, function(insumos) {
+            if (insumos && insumos.length > 0) {
+                let html = '';
+                insumos.forEach(function(ins) {
+                    const tipo = ins.esObligatorio ? '<span class="badge badge-danger">Obligatorio</span>' :
+                                                     '<span class="badge badge-secondary">Opcional</span>';
+                    html += `
+                        <tr>
+                            <td>${ins.insumoNombre}</td>
+                            <td>${ins.cantidadDefecto}</td>
+                            <td>${ins.unidad}</td>
+                            <td>${tipo}</td>
+                        </tr>
+                    `;
+                });
+                $('#tablaInsumosDefault').html(html);
+                $('#seccionInsumos').show();
+            } else {
+                $('#seccionInsumos').hide();
+            }
+        }).fail(function() {
+            $('#seccionInsumos').hide();
+        });
+    }
+
+    // Botón Tratamiento Inmediato
+    $('#btnRealizarInmediato').on('click', function() {
+        // TODO: Enviar datos al backend como TratamientoRealizado
+        const datos = recopilarDatosTratamiento('INMEDIATO');
+        console.log('Tratamiento Inmediato:', datos);
+
+        $.post('/tratamientos/realizar-inmediato', datos, function() {
+            Swal.fire('Éxito', 'Tratamiento registrado correctamente', 'success');
+            $('#modalRegistrarTratamiento').modal('hide');
+            location.reload();
+        }).fail(function() {
+            Swal.fire('Error', 'No se pudo registrar el tratamiento', 'error');
+        });
+    });
+
+    // Botón Planificar
+    $('#btnPlanificarTratamiento').on('click', function() {
+        const datos = recopilarDatosTratamiento('PLANIFICADO');
+        console.log('Tratamiento Planificado:', datos);
+
+        $.post('/tratamientos/planificar', datos, function() {
+            Swal.fire('Éxito', 'Tratamiento planificado correctamente', 'success');
+            $('#modalRegistrarTratamiento').modal('hide');
+            location.reload();
+        }).fail(function() {
+            Swal.fire('Error', 'No se pudo planificar el tratamiento', 'error');
+        });
+    });
+
+    function recopilarDatosTratamiento(tipo) {
+        return {
+            citaId: $('#tratamientoCitaId').val(),
+            procedimientoId: $('#tratamientoProcedimientoId').val(),
+            piezasDentales: $('#tratamientoPiezasDentales').val(),
+            descripcion: $('#tratamientoDescripcion').val(),
+            tipo: tipo,
+            camposDinamicos: $('#camposDinamicos').find('input, select, textarea').serializeArray()
+        };
+    }
+});
+/*]]>*/
+</script>
