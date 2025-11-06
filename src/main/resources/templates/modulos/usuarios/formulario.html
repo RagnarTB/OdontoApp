@@ -249,12 +249,19 @@
                                         <input type="date" class="form-control" id="fechaVigencia"
                                             th:field="*{fechaVigencia}"
                                             data-validar="fecha-no-pasada"
+                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('fechaVigencia')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('fechaVigencia')}" class="invalid-feedback"
                                             th:errors="*{fechaVigencia}"></div>
-                                        <small th:if="${usuario.id != null}" class="form-text text-success">
-                                            <i class="fas fa-edit"></i> Campo editable - Puede modificar la fecha de vigencia
-                                        </small>
+
+                                        <!-- Checkbox para habilitar edición en modo editar -->
+                                        <div th:if="${usuario.id != null}" class="custom-control custom-checkbox mt-2">
+                                            <input type="checkbox" class="custom-control-input" id="checkEditarFechaVigencia">
+                                            <label class="custom-control-label" for="checkEditarFechaVigencia">
+                                                <i class="fas fa-unlock-alt"></i> Permitir editar fecha de vigencia
+                                            </label>
+                                        </div>
+
                                         <small th:if="${usuario.id == null}" class="form-text text-info">
                                             <i class="fas fa-info-circle"></i> Fecha hasta la cual el usuario tendrá acceso (no requerido para ADMIN)
                                         </small>
@@ -739,6 +746,19 @@
                 // Llamar al inicio para establecer el estado inicial correcto
                 toggleSeccionHorarios();
                 toggleFechaVigencia();
+
+                // Manejar checkbox de edición de fecha de vigencia
+                const checkEditarFechaVigencia = document.getElementById('checkEditarFechaVigencia');
+                if (checkEditarFechaVigencia) {
+                    checkEditarFechaVigencia.addEventListener('change', function() {
+                        fechaVigenciaInput.readOnly = !this.checked;
+                        if (this.checked) {
+                            fechaVigenciaInput.classList.add('border-warning');
+                        } else {
+                            fechaVigenciaInput.classList.remove('border-warning');
+                        }
+                    });
+                }
 
                 // Validar formato de hora en inputs (existentes y nuevos)
                 function addHoraInputValidation(inputElement) {
