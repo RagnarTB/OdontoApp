@@ -476,6 +476,22 @@
 <!-- Script de validaciones inline para modal de citas -->
 <script th:fragment="scriptValidacionesCita">
 $(document).ready(function() {
+    // Inicializar Select2 para buscador de pacientes
+    $('#pacienteIdAgendar').select2({
+        dropdownParent: $('#modalAgendarCita'),
+        placeholder: 'Busque y seleccione un paciente',
+        allowClear: true,
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "No se encontraron pacientes";
+            },
+            searching: function() {
+                return "Buscando...";
+            }
+        }
+    });
+
     // Referencias a elementos del formulario
     const formAgendar = $('#modalAgendarCita form');
     const fechaInput = $('#fechaHoraInicioAgendar');

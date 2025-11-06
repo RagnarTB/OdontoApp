@@ -389,11 +389,20 @@
             return;
         }
 
+        // Obtener token CSRF
+        const token = $('meta[name="_csrf"]').attr('content');
+        const header = $('meta[name="_csrf_header"]').attr('content');
+
         $.ajax({
             url: `/usuarios/${usuarioIdActual}/excepciones`,
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(datos),
+            beforeSend: function(xhr) {
+                if (token && header) {
+                    xhr.setRequestHeader(header, token);
+                }
+            },
             success: function(response) {
                 mostrarExito('Excepción agregada correctamente');
                 $('#formNuevaExcepcion')[0].reset();
@@ -422,9 +431,18 @@
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
+                // Obtener token CSRF
+                const token = $('meta[name="_csrf"]').attr('content');
+                const header = $('meta[name="_csrf_header"]').attr('content');
+
                 $.ajax({
                     url: `/usuarios/${usuarioIdActual}/excepciones/${excepcionFecha}`,
                     method: 'DELETE',
+                    beforeSend: function(xhr) {
+                        if (token && header) {
+                            xhr.setRequestHeader(header, token);
+                        }
+                    },
                     success: function(response) {
                         mostrarExito('Excepción eliminada correctamente');
                         cargarExcepciones();
