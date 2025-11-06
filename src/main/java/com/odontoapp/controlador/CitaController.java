@@ -412,7 +412,6 @@ public class CitaController {
 
             // Filtrar horarios que cumplan con la regla de 1 hora de anticipación
             LocalDateTime unaHoraAdelante = LocalDateTime.now().plusHours(1);
-            LocalDateTime inicioDia = LocalDateTime.of(fecha, java.time.LocalTime.MIN);
 
             // Solo aplicar la regla de 1 hora si es el día de hoy
             if (fecha.equals(LocalDate.now())) {
@@ -421,7 +420,8 @@ public class CitaController {
                             String horaInicio = (String) slot.get("inicio");
                             LocalDateTime fechaHoraSlot = LocalDateTime.of(fecha,
                                     java.time.LocalTime.parse(horaInicio));
-                            return fechaHoraSlot.isAfter(unaHoraAdelante);
+                            // Usar !isBefore en lugar de isAfter para incluir el slot exacto a 1 hora
+                            return !fechaHoraSlot.isBefore(unaHoraAdelante);
                         })
                         .collect(Collectors.toList());
             }
