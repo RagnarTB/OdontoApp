@@ -144,13 +144,16 @@
                                     <div class="form-group">
                                         <label for="nombreCompleto">Nombre Completo <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" th:field="*{nombreCompleto}"
-                                            id="nombreCompleto" placeholder="Nombre completo"
-                                            th:readonly="${usuario.id != null}"
+                                            id="nombreCompleto" placeholder="Busque DNI para autocompletar"
+                                            readonly
                                             data-validar="nombre"
                                             th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''"
                                             required>
                                         <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
                                             th:errors="*{nombreCompleto}"></div>
+                                        <small class="form-text text-info">
+                                            <i class="fas fa-info-circle"></i> Se autocompleta al buscar DNI
+                                        </small>
                                         <small th:if="${usuario.id != null}" class="form-text text-muted">
                                             <i class="fas fa-lock"></i> Campo no editable (obtenido de RENIEC)
                                         </small>
@@ -531,13 +534,28 @@
                     // ✅ SOLO limpiar campos si estamos en modo CREACIÓN (no en edición)
                     const modoEdicion = document.querySelector('input[name="id"]')?.value;
                     if (!modoEdicion) {
-                        // Si cambia el tipo de documento, limpiar y desbloquear el nombre
-                        if (nombreCompletoInput.readOnly) {
+                        // Si cambia el tipo de documento, limpiar nombre y DNI
+                        nombreCompletoInput.value = '';
+                        nombreCompletoInput.readOnly = true; // Volver a bloquear
+                        nombreCompletoInput.classList.remove('bg-light');
+                        numeroDocumentoInput.value = '';
+                    }
+                });
+
+                // Si se cambia o borra el DNI, limpiar el nombre automáticamente
+                numeroDocumentoInput.addEventListener('input', function() {
+                    const modoEdicion = document.querySelector('input[name="id"]')?.value;
+                    if (!modoEdicion) {
+                        // Solo si estamos en modo creación
+                        const dniActual = this.value.trim();
+
+                        // Si se borra o cambia el DNI, borrar el nombre
+                        if (dniActual.length !== 8 || !/^\d{8}$/.test(dniActual)) {
                             nombreCompletoInput.value = '';
-                            nombreCompletoInput.readOnly = false;
+                            nombreCompletoInput.readOnly = true;
                             nombreCompletoInput.classList.remove('bg-light');
+                            docError.textContent = '';
                         }
-                        numeroDocumentoInput.value = ''; // Limpiar también el número de documento
                     }
                 });
 

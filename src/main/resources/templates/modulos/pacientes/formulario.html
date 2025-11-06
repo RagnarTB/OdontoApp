@@ -128,12 +128,13 @@
                                         <label for="nombreCompleto">Nombre Completo</label>
                                         <input type="text" class="form-control" th:field="*{nombreCompleto}"
                                             id="nombreCompleto"
-                                            th:readonly="${pacienteDTO.id != null}"
+                                            readonly
+                                            placeholder="Busque DNI para autocompletar"
                                             th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback"
                                             th:errors="*{nombreCompleto}"></div>
-                                        <small th:if="${pacienteDTO.id != null}" class="form-text text-muted">
-                                            <i class="fas fa-lock"></i> Campo no editable
+                                        <small class="form-text text-info">
+                                            <i class="fas fa-info-circle"></i> Se autocompleta al buscar DNI
                                         </small>
                                     </div>
                                 </div>

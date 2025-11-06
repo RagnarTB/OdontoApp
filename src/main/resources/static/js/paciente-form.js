@@ -4,6 +4,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Identifica el botón de búsqueda. Puede ser btn-buscar-dni (admin) o btn-buscar-reniec-registro (self-service)
     const btnBuscarDni = document.getElementById('btn-buscar-dni') || document.getElementById('btn-buscar-reniec-registro');
+    const numeroDocumentoInput = document.getElementById('numeroDocumento');
+    const nombreCompletoInput = document.getElementById('nombreCompleto');
+
+    // Si se cambia o borra el DNI, limpiar el nombre automáticamente
+    if (numeroDocumentoInput && nombreCompletoInput) {
+        numeroDocumentoInput.addEventListener('input', function() {
+            const pacienteId = document.querySelector('input[name="id"]')?.value;
+            if (!pacienteId) {
+                // Solo en modo creación
+                const dniActual = this.value.trim();
+                const errorSpan = document.getElementById('doc-error');
+
+                // Si se borra o cambia el DNI, borrar el nombre
+                if (dniActual.length !== 8 || !/^\d{8}$/.test(dniActual)) {
+                    nombreCompletoInput.value = '';
+                    nombreCompletoInput.readOnly = true;
+                    if (errorSpan) errorSpan.textContent = '';
+                }
+            }
+        });
+    }
 
     if (btnBuscarDni) {
         btnBuscarDni.addEventListener('click', function () {
