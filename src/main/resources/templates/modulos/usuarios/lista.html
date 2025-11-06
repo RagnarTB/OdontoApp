@@ -118,6 +118,14 @@
                                        sec:authorize="hasAuthority('EDITAR_USUARIOS')">
                                         <i class="fas fa-pencil-alt"></i>
                                     </a>
+                                    <!-- Botón de horarios solo para Odontólogos -->
+                                    <button th:if="${usuario.getRoles().![nombre].contains('ODONTOLOGO')}"
+                                            type="button" class="btn btn-sm btn-outline-primary btn-editar-horarios"
+                                            title="Editar Horarios Regulares"
+                                            th:attr="data-usuario-id=${usuario.id},data-usuario-nombre=${usuario.nombreCompleto}"
+                                            sec:authorize="hasAuthority('EDITAR_USUARIOS')">
+                                        <i class="fas fa-clock"></i>
+                                    </button>
                                     <!-- Botón de excepciones solo para Odontólogos -->
                                     <button th:if="${usuario.getRoles().![nombre].contains('ODONTOLOGO')}"
                                             type="button" class="btn btn-sm btn-outline-info btn-gestionar-excepciones"
