@@ -64,7 +64,7 @@
                                     <option value="">Seleccione un procedimiento</option>
                                     <option th:each="procedimiento : ${listaProcedimientos}"
                                             th:value="${procedimiento.id}"
-                                            th:text="${procedimiento.nombre}"
+                                            th:text="${procedimiento.nombre} + ' (' + ${procedimiento.duracionBaseMinutos} + ' min)'"
                                             th:attr="data-duracion=${procedimiento.duracionBaseMinutos}"></option>
                                 </select>
                                 <small class="form-text text-muted">
@@ -581,7 +581,17 @@ $(document).ready(function() {
         $('#stockWarning').addClass('d-none');
         $('#stockDisponibleText').text('');
         $('#tratamientoCantidadAjustada').prop('disabled', true).removeClass('is-invalid');
-        $(this).find('form')[0].reset();
+
+        // Resetear formulario si existe
+        const formulario = $(this).find('form')[0];
+        if (formulario) {
+            formulario.reset();
+        }
+
+        // Limpiar campos manualmente
+        $('#tratamientoProcedimientoId').val('');
+        $('#tratamientoPiezasDentales').val('');
+        $('#tratamientoDescripcion').val('');
     });
 });
 </script>

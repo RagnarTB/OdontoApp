@@ -410,18 +410,18 @@ public class CitaController {
             List<Map<String, Object>> horariosDisponibles =
                     (List<Map<String, Object>>) disponibilidad.get("horariosDisponibles");
 
-            // Filtrar horarios que cumplan con la regla de 1 hora de anticipación
-            LocalDateTime unaHoraAdelante = LocalDateTime.now().plusHours(1);
-
             // Solo aplicar la regla de 1 hora si es el día de hoy
             if (fecha.equals(LocalDate.now())) {
+                LocalDateTime unaHoraAdelante = LocalDateTime.now().plusHours(1);
+
                 horariosDisponibles = horariosDisponibles.stream()
                         .filter(slot -> {
                             String horaInicio = (String) slot.get("inicio");
                             LocalDateTime fechaHoraSlot = LocalDateTime.of(fecha,
                                     java.time.LocalTime.parse(horaInicio));
-                            // Usar !isBefore en lugar de isAfter para incluir el slot exacto a 1 hora
-                            return !fechaHoraSlot.isBefore(unaHoraAdelante);
+                            // Incluir slots que inician en o después de 1 hora desde ahora
+                            return fechaHoraSlot.isAfter(unaHoraAdelante) ||
+                                   fechaHoraSlot.equals(unaHoraAdelante);
                         })
                         .collect(Collectors.toList());
             }
