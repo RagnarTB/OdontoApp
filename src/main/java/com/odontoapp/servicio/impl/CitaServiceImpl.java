@@ -135,9 +135,12 @@ public class CitaServiceImpl implements CitaService {
             List<Cita> citasEnIntervalo = citaRepository.findConflictingCitas(
                     odontologo.getId(), inicioIntervalo, finIntervalo);
 
-            // Filtrar solo citas no canceladas
+            // Filtrar solo citas activas (excluir canceladas y reprogramadas)
             citasEnIntervalo = citasEnIntervalo.stream()
-                    .filter(c -> !c.getEstadoCita().getNombre().startsWith("CANCELADA"))
+                    .filter(c -> {
+                        String estado = c.getEstadoCita().getNombre();
+                        return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+                    })
                     .collect(Collectors.toList());
 
             // Generar slots de tiempo

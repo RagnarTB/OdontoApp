@@ -50,7 +50,7 @@ public class PacienteController {
     @GetMapping("/pacientes")
     public String listarPacientes(Model model,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "15") int size,
             @RequestParam(required = false) String keyword) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Paciente> paginaPacientes = pacienteService.listarTodosLosPacientes(keyword, pageable);
