@@ -191,7 +191,7 @@
                     </form>
 
                     <!-- Botones Marcar Asistencia -->
-                    <div id="divAsistencia" style="display: none;">
+                    <div id="divAsistencia" style="display: none;" sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
                         <form th:action="@{/citas/marcar-asistencia}" method="post" style="display: inline-block;">
                             <input type="hidden" name="citaId" class="citaIdField">
                             <input type="hidden" name="asistio" value="true">
@@ -209,17 +209,20 @@
                     </div>
 
                     <!-- Botón Reprogramar -->
-                    <button type="button" class="btn btn-warning" id="btnReprogramar" data-dismiss="modal" data-toggle="modal" data-target="#modalReprogramarCita">
+                    <button type="button" class="btn btn-warning" id="btnReprogramar" data-dismiss="modal" data-toggle="modal" data-target="#modalReprogramarCita"
+                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
                         <i class="fas fa-calendar-alt mr-1"></i>Reprogramar
                     </button>
 
                     <!-- Botón Cancelar -->
-                    <button type="button" class="btn btn-danger" id="btnCancelar" data-dismiss="modal" data-toggle="modal" data-target="#modalCancelarCita">
+                    <button type="button" class="btn btn-danger" id="btnCancelar" data-dismiss="modal" data-toggle="modal" data-target="#modalCancelarCita"
+                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ELIMINAR_CITAS', 'ADMIN')">
                         <i class="fas fa-ban mr-1"></i>Cancelar
                     </button>
 
                     <!-- Botón Registrar Tratamiento -->
-                    <button type="button" class="btn btn-primary" id="btnRegistrarTratamiento" data-dismiss="modal" data-toggle="modal" data-target="#modalRegistrarTratamiento">
+                    <button type="button" class="btn btn-primary" id="btnRegistrarTratamiento" data-dismiss="modal" data-toggle="modal" data-target="#modalRegistrarTratamiento"
+                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
                         <i class="fas fa-notes-medical mr-1"></i>Registrar Tratamiento
                     </button>
                 </div>
@@ -366,8 +369,9 @@
 <!-- ========================================== -->
 <!-- MODAL: Registrar Tratamiento -->
 <!-- ========================================== -->
-<!-- Modal Registrar Tratamiento AVANZADO: Incluido desde archivo separado -->
-<div th:replace="~{modulos/citas/modal-tratamiento-avanzado :: modalRegistrarTratamiento}"></div>
+<th:block th:fragment="modalRegistrarTratamiento">
+    <div th:replace="~{modulos/citas/modal-tratamiento-avanzado :: modalRegistrarTratamiento}"></div>
+</th:block>
 
 <!-- Script de validaciones inline para modal de citas -->
 <script th:fragment="scriptValidacionesCita">
