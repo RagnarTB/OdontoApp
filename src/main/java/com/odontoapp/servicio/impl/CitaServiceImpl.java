@@ -76,6 +76,12 @@ public class CitaServiceImpl implements CitaService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> buscarDisponibilidad(Long odontologoId, LocalDate fecha) {
+        return buscarDisponibilidad(odontologoId, fecha, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> buscarDisponibilidad(Long odontologoId, LocalDate fecha, Long citaIdExcluir) {
         Usuario odontologo = usuarioRepository.findById(odontologoId)
                 .orElseThrow(() -> new EntityNotFoundException("Odontólogo no encontrado con ID: " + odontologoId));
 
@@ -102,7 +108,7 @@ public class CitaServiceImpl implements CitaService {
             resultado.put("esExcepcion", true);
             resultado.put("motivoExcepcion", excepcion.getMotivo());
             resultado.put("horariosDisponibles", calcularHorariosDisponibles(
-                    odontologo, fecha, excepcion.getHoras()));
+                    odontologo, fecha, excepcion.getHoras(), citaIdExcluir));
             return resultado;
         }
 
@@ -119,14 +125,15 @@ public class CitaServiceImpl implements CitaService {
 
         resultado.put("disponible", true);
         resultado.put("esExcepcion", false);
-        resultado.put("horariosDisponibles", calcularHorariosDisponibles(odontologo, fecha, horarioDelDia));
+        resultado.put("horariosDisponibles", calcularHorariosDisponibles(odontologo, fecha, horarioDelDia, citaIdExcluir));
         return resultado;
     }
 
     /**
      * Calcula los horarios disponibles considerando las citas ya agendadas.
+     * @param citaIdExcluir ID de cita a excluir (puede ser null)
      */
-    private List<Map<String, Object>> calcularHorariosDisponibles(Usuario odontologo, LocalDate fecha, String horarioStr) {
+    private List<Map<String, Object>> calcularHorariosDisponibles(Usuario odontologo, LocalDate fecha, String horarioStr, Long citaIdExcluir) {
         List<Map<String, Object>> slots = new ArrayList<>();
 
         // Parsear los intervalos del horario (ej: "09:00-13:00,15:00-19:00")
@@ -146,11 +153,18 @@ public class CitaServiceImpl implements CitaService {
             List<Cita> citasEnIntervalo = citaRepository.findConflictingCitas(
                     odontologo.getId(), inicioIntervalo, finIntervalo);
 
-            // Filtrar solo citas activas (excluir canceladas y reprogramadas)
+            // Filtrar solo citas activas (excluir canceladas, reprogramadas y la cita a excluir)
             citasEnIntervalo = citasEnIntervalo.stream()
                     .filter(c -> {
                         String estado = c.getEstadoCita().getNombre();
-                        return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+                        boolean esActiva = !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+
+                        // Excluir la cita específica si se proporcionó un ID
+                        if (citaIdExcluir != null && c.getId().equals(citaIdExcluir)) {
+                            return false;
+                        }
+
+                        return esActiva;
                     })
                     .collect(Collectors.toList());
 

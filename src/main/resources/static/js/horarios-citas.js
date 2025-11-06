@@ -312,14 +312,16 @@
             '</div>'
         );
 
-        // Hacer petición al servidor
+        // Hacer petición al servidor (excluir cita actual)
+        const citaIdActual = $('#reprogramarCitaId').val();
         $.ajax({
             url: '/citas/api/horarios-disponibles',
             method: 'GET',
             data: {
                 odontologoId: odontologoIdReprogramar,
                 fecha: fecha,
-                duracion: duracionReprogramar
+                duracion: duracionReprogramar,
+                citaIdExcluir: citaIdActual  // Excluir cita actual para que su horario aparezca disponible
             },
             success: function(response) {
                 if (response.error) {

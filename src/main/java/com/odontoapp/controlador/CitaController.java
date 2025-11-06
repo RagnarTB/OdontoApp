@@ -399,11 +399,12 @@ public class CitaController {
     public Map<String, Object> obtenerHorariosDisponibles(
             @RequestParam Long odontologoId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
-            @RequestParam(required = false, defaultValue = "30") Integer duracion) {
+            @RequestParam(required = false, defaultValue = "30") Integer duracion,
+            @RequestParam(required = false) Long citaIdExcluir) {
 
         try {
-            // Llamar al servicio para obtener disponibilidad
-            Map<String, Object> disponibilidad = citaService.buscarDisponibilidad(odontologoId, fecha);
+            // Llamar al servicio para obtener disponibilidad (excluir cita si se proporciona ID)
+            Map<String, Object> disponibilidad = citaService.buscarDisponibilidad(odontologoId, fecha, citaIdExcluir);
 
             // Obtener horarios disponibles
             @SuppressWarnings("unchecked")
