@@ -233,6 +233,14 @@
 
                     // Abrir el modal
                     $('#modalAgendarCita').modal('show');
+
+                    // Si hay un odontólogo seleccionado, cargar horarios automáticamente
+                    // Si no hay odontólogo, se cargará cuando seleccione uno
+                    const odontologoSelect = document.getElementById('odontologoIdAgendar');
+                    if (odontologoSelect && odontologoSelect.value) {
+                        // Trigger change event to load available time slots
+                        $(odontologoSelect).trigger('change');
+                    }
                 },
 
                 // Clic en un evento existente (ver detalles)
