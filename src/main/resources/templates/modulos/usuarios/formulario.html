@@ -249,7 +249,10 @@
                                             th:classappend="${#fields.hasErrors('fechaVigencia')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('fechaVigencia')}" class="invalid-feedback"
                                             th:errors="*{fechaVigencia}"></div>
-                                        <small class="form-text text-info">
+                                        <small th:if="${usuario.id != null}" class="form-text text-success">
+                                            <i class="fas fa-edit"></i> Campo editable - Fecha actual: <strong th:text="${usuario.fechaVigencia != null ? #temporals.format(usuario.fechaVigencia, 'dd/MM/yyyy') : 'No establecida'}">-</strong>
+                                        </small>
+                                        <small th:if="${usuario.id == null}" class="form-text text-info">
                                             <i class="fas fa-info-circle"></i> Fecha hasta la cual el usuario tendrá acceso (no requerido para ADMIN)
                                         </small>
                                     </div>
@@ -392,8 +395,8 @@
                                                     th:field="*{excepcionesHorario[__${iterStat.index}__].motivo}">
                                             </td>
                                             <td class="text-center">
-                                                <button type="button" class="btn btn-danger btn-sm"
-                                                    title="Eliminar Excepción" onclick="eliminarExcepcion(this)">
+                                                <button type="button" class="btn btn-danger btn-sm btn-eliminar-excepcion-form"
+                                                    title="Eliminar Excepción">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </td>
@@ -403,7 +406,7 @@
                                 <div th:if="${#fields.hasErrors('excepcionesHorario') && !#fields.hasErrors('excepcionesHorario[*]')}"
                                     class="alert alert-danger" th:errors="*{excepcionesHorario}"></div>
 
-                                <button type="button" class="btn btn-success btn-sm mt-2" onclick="agregarExcepcion()">
+                                <button type="button" class="btn btn-success btn-sm mt-2" id="btnAgregarExcepcion">
                                     <i class="fas fa-plus"></i> Añadir Excepci&oacute;n
                                 </button>
                             </div> <!-- Fin #seccionHorarios -->
@@ -438,8 +441,7 @@
                     placeholder="ej: Vacaciones, Congreso">
             </td>
             <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm" title="Eliminar Excepción"
-                    onclick="eliminarExcepcion(this)">
+                <button type="button" class="btn btn-danger btn-sm btn-eliminar-excepcion-form" title="Eliminar Excepción">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -840,12 +842,25 @@
 
                 document.querySelectorAll('.hora-input').forEach(addHoraInputValidation);
 
+                // === GESTIÓN DE EXCEPCIONES ===
+                let excepcionIndex = document.querySelectorAll('#tablaExcepciones tbody tr').length;
 
-            }); // Fin DOMContentLoaded
+                // Event listener para agregar excepción
+                const btnAgregarExcepcion = document.getElementById('btnAgregarExcepcion');
+                if (btnAgregarExcepcion) {
+                    btnAgregarExcepcion.addEventListener('click', function() {
+                        agregarExcepcion();
+                    });
+                }
 
-            let excepcionIndex = document.querySelectorAll('#tablaExcepciones tbody tr').length;
+                // Event delegation para eliminar excepciones
+                document.addEventListener('click', function(e) {
+                    if (e.target.closest('.btn-eliminar-excepcion-form')) {
+                        eliminarExcepcion(e.target.closest('.btn-eliminar-excepcion-form'));
+                    }
+                });
 
-            function agregarExcepcion() {
+                function agregarExcepcion() {
                 const tbody = document.getElementById('tablaExcepciones').querySelector('tbody');
                 const plantilla = document.getElementById('plantillaExcepcion');
                 const nuevaFila = plantilla.cloneNode(true); // Clonar la fila plantilla
@@ -1005,6 +1020,8 @@
             });
 
             // === FIN VALIDACIONES EN TIEMPO REAL ===
+
+            }); // Fin DOMContentLoaded
 
         </script>
     </th:block>

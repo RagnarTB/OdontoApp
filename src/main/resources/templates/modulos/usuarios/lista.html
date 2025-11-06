@@ -581,25 +581,44 @@
     };
 
     // Abrir modal de horarios
-    $(document).on('click', '.btn-editar-horarios', function() {
+    $(document).on('click', '.btn-editar-horarios', function(e) {
+        e.preventDefault();
+        console.log('Botón horarios clicked');
+
         usuarioIdHorarios = $(this).data('usuario-id');
         const nombre = $(this).data('usuario-nombre');
+
+        console.log('Usuario ID:', usuarioIdHorarios, 'Nombre:', nombre);
+
+        if (!usuarioIdHorarios) {
+            mostrarError('No se pudo obtener el ID del usuario');
+            return;
+        }
 
         $('#nombreOdontologoHorarios').text(nombre);
         $('#loadingHorarios').show();
         $('#contenedorHorarios').hide();
 
-        $('#modalEditarHorarios').modal('show');
+        try {
+            $('#modalEditarHorarios').modal('show');
+            console.log('Modal show ejecutado');
 
-        // Cargar horarios actuales
-        cargarHorariosActuales();
+            // Cargar horarios actuales
+            cargarHorariosActuales();
+        } catch (error) {
+            console.error('Error al abrir modal:', error);
+            mostrarError('Error al abrir el modal de horarios: ' + error.message);
+        }
     });
 
     function cargarHorariosActuales() {
+        console.log('Cargando horarios para usuario:', usuarioIdHorarios);
+
         $.ajax({
             url: `/usuarios/${usuarioIdHorarios}/horarios`,
             method: 'GET',
             success: function(response) {
+                console.log('Horarios cargados:', response);
                 $('#loadingHorarios').hide();
                 $('#contenedorHorarios').show();
 
@@ -653,9 +672,10 @@
                     `);
                 });
             },
-            error: function(xhr) {
+            error: function(xhr, status, error) {
+                console.error('Error al cargar horarios:', status, error, xhr);
                 $('#loadingHorarios').hide();
-                mostrarError('Error al cargar los horarios');
+                mostrarError('Error al cargar los horarios: ' + (xhr.responseJSON?.error || error));
             }
         });
     }

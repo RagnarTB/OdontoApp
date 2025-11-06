@@ -102,6 +102,9 @@
                                             <input type="text" class="form-control" th:field="*{numeroDocumento}"
                                                 id="numeroDocumento" placeholder="Número de Documento"
                                                 th:readonly="${pacienteDTO.id != null}"
+                                                pattern="^\d{8}$"
+                                                maxlength="8"
+                                                title="El documento debe tener exactamente 8 dígitos numéricos"
                                                 th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
                                             <div class="input-group-append">
                                                 <button class="btn btn-outline-secondary" type="button"
@@ -113,6 +116,9 @@
                                             class="invalid-feedback d-block" th:errors="*{numeroDocumento}"></div>
                                         <small th:if="${pacienteDTO.id != null}" class="form-text text-muted">
                                             <i class="fas fa-lock"></i> Campo no editable
+                                        </small>
+                                        <small th:if="${pacienteDTO.id == null}" class="form-text text-muted">
+                                            8 dígitos numéricos
                                         </small>
                                     </div>
                                 </div>
@@ -178,8 +184,9 @@
                                         <!-- Input visible en modo edición (texto plano) -->
                                         <input th:if="${pacienteDTO.id != null && pacienteDTO.fechaNacimiento != null}" type="text" class="form-control bg-light"
                                             th:value="${#temporals.format(pacienteDTO.fechaNacimiento, 'dd/MM/yyyy')}" readonly />
-                                        <!-- Input normal en modo creación -->
-                                        <input th:if="${pacienteDTO.id == null}" type="date" class="form-control" id="fechaNacimiento"
+                                        <!-- Input normal en modo creación - SIEMPRE visible -->
+                                        <input th:if="${pacienteDTO.id == null || pacienteDTO.fechaNacimiento == null}"
+                                            type="date" class="form-control" id="fechaNacimiento"
                                             th:field="*{fechaNacimiento}"
                                             data-validar="fecha-no-futura"
                                             th:classappend="${#fields.hasErrors('fechaNacimiento')} ? 'is-invalid' : ''">
