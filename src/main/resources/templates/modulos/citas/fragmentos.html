@@ -240,7 +240,7 @@
 <!-- MODAL: Reprogramar Cita -->
 <!-- ========================================== -->
 <div th:fragment="modalReprogramarCita" class="modal fade" id="modalReprogramarCita" tabindex="-1" role="dialog" aria-labelledby="modalReprogramarCitaLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document" style="max-width: 650px;">
+    <div class="modal-dialog modal-lg" role="document" style="max-width: 850px;">
         <div class="modal-content">
             <form th:action="@{/citas/reprogramar}" method="post">
                 <div class="modal-header bg-warning text-dark">
@@ -257,59 +257,60 @@
                     <input type="hidden" id="nuevaFechaHoraInicioReprogramar" name="nuevaFechaHoraInicio" required>
 
                     <!-- Información de la cita actual -->
-                    <div class="alert alert-info">
+                    <div class="alert alert-info mb-3">
                         <h6><i class="fas fa-info-circle mr-2"></i>Cita Actual</h6>
                         <p class="mb-1"><strong>Paciente:</strong> <span id="reprogramarPaciente"></span></p>
                         <p class="mb-1"><strong>Odontólogo:</strong> <span id="reprogramarOdontologo"></span></p>
                         <p class="mb-0"><strong>Fecha/Hora:</strong> <span id="reprogramarFechaActual"></span></p>
                     </div>
 
-                    <hr class="my-4">
+                    <!-- Layout horizontal: 2 columnas -->
+                    <div class="row">
+                        <!-- Columna Izquierda: Selección de Fecha y Motivo -->
+                        <div class="col-md-5">
+                            <!-- Seleccionar Nueva Fecha -->
+                            <h6 class="text-primary mb-3 border-bottom pb-2">
+                                <i class="fas fa-calendar-alt mr-2"></i>Nueva Fecha
+                            </h6>
+                            <div class="form-group">
+                                <label for="fechaCitaReprogramar">Fecha <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="fechaCitaReprogramar" required>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios
+                                </small>
+                            </div>
 
-                    <!-- PASO 1: Seleccionar Nueva Fecha -->
-                    <h6 class="text-primary mb-3 border-bottom pb-2">
-                        <i class="fas fa-calendar-alt mr-2"></i>Nueva Fecha
-                    </h6>
+                            <!-- Indicador de horario seleccionado -->
+                            <div class="alert alert-success" id="horario-seleccionado-info-reprogramar" style="display: none;">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <strong>Horario:</strong> <span id="horario-seleccionado-texto-reprogramar">Ninguno</span>
+                            </div>
 
-                    <div class="form-group">
-                        <label for="fechaCitaReprogramar">Seleccione Nueva Fecha <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" id="fechaCitaReprogramar" required>
-                        <small class="form-text text-muted">
-                            <i class="fas fa-calendar-alt"></i> Seleccione la fecha para ver horarios disponibles
-                        </small>
-                    </div>
+                            <hr class="my-3">
 
-                    <hr class="my-4">
-
-                    <!-- PASO 2: Seleccionar Nuevo Horario -->
-                    <h6 class="text-primary mb-3 border-bottom pb-2">
-                        <i class="fas fa-clock mr-2"></i>Seleccionar Nuevo Horario
-                    </h6>
-
-                    <!-- Indicador de horario seleccionado -->
-                    <div class="alert alert-info" id="horario-seleccionado-info-reprogramar" style="display: none;">
-                        <i class="fas fa-check-circle mr-2"></i>
-                        <strong>Nuevo horario:</strong> <span id="horario-seleccionado-texto-reprogramar">Ninguno</span>
-                    </div>
-
-                    <!-- Grilla de horarios disponibles -->
-                    <div id="grilla-horarios-disponibles-reprogramar" class="mb-3">
-                        <div class="alert alert-secondary text-center">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            Seleccione una fecha para ver los horarios disponibles del odontólogo
+                            <!-- Motivo -->
+                            <h6 class="text-primary mb-3 border-bottom pb-2">
+                                <i class="fas fa-comment mr-2"></i>Motivo
+                            </h6>
+                            <div class="form-group">
+                                <label for="motivoReprogramacion">Motivo <small class="text-muted">(Opcional)</small></label>
+                                <textarea class="form-control" id="motivoReprogramacion" name="motivo" rows="3" placeholder="Indique el motivo"></textarea>
+                            </div>
                         </div>
-                    </div>
 
-                    <hr class="my-4">
-
-                    <!-- PASO 3: Motivo -->
-                    <h6 class="text-primary mb-3 border-bottom pb-2">
-                        <i class="fas fa-comment mr-2"></i>Motivo de Reprogramación
-                    </h6>
-
-                    <div class="form-group">
-                        <label for="motivoReprogramacion">Motivo <small class="text-muted">(Opcional)</small></label>
-                        <textarea class="form-control" id="motivoReprogramacion" name="motivo" rows="3" placeholder="Indique el motivo de la reprogramación"></textarea>
+                        <!-- Columna Derecha: Horarios Disponibles -->
+                        <div class="col-md-7">
+                            <h6 class="text-primary mb-3 border-bottom pb-2">
+                                <i class="fas fa-clock mr-2"></i>Horarios Disponibles
+                            </h6>
+                            <!-- Grilla de horarios disponibles con scroll -->
+                            <div id="grilla-horarios-disponibles-reprogramar" class="mb-3" style="max-height: 320px; overflow-y: auto;">
+                                <div class="alert alert-secondary text-center">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    Seleccione una fecha para ver los horarios
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

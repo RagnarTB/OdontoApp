@@ -277,6 +277,12 @@
 
                     // Rellenar el modal de registrar tratamiento
                     document.getElementById('tratamientoCitaId').value = evento.id;
+                    // También llenar el procedimientoId si existe
+                    if (props.procedimientoId) {
+                        document.getElementById('tratamientoProcedimientoId').value = props.procedimientoId;
+                        // Trigger change para cargar insumos asociados
+                        $('#tratamientoProcedimientoId').trigger('change');
+                    }
 
                     // Mostrar/ocultar botones según el estado
                     mostrarBotonesSegunEstado(props.estadoNombre);

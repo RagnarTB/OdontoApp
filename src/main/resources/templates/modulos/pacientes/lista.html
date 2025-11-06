@@ -190,17 +190,16 @@
                                     <table class="table table-sm table-hover table-bordered">
                                         <thead class="thead-light">
                                             <tr>
-                                                <th>Fecha</th>
-                                                <th>Hora</th>
-                                                <th>Servicio</th>
+                                                <th>Fecha y Hora</th>
+                                                <th>Procedimiento</th>
                                                 <th>Odontólogo</th>
                                                 <th>Estado</th>
-                                                <th>Precio</th>
+                                                <th>Motivo</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tablaHistorialCitas">
                                             <tr>
-                                                <td colspan="6" class="text-center text-muted">Cargando historial...</td>
+                                                <td colspan="5" class="text-center text-muted">Cargando historial...</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -316,7 +315,7 @@
 
             // Limpiar datos anteriores
             $('#modalPacienteNombre').text('Cargando...');
-            $('#tablaHistorialCitas').html('<tr><td colspan="6" class="text-center text-muted">Cargando historial...</td></tr>');
+            $('#tablaHistorialCitas').html('<tr><td colspan="5" class="text-center text-muted">Cargando historial...</td></tr>');
 
             // Resetear a la primera pestaña
             $('#pacienteDetailTabs a[href="#tab-info"]').tab('show');
@@ -349,17 +348,16 @@
                             html += `
                                 <tr>
                                     <td>${cita.fecha}</td>
-                                    <td>${cita.hora}</td>
-                                    <td>${cita.servicio}</td>
+                                    <td>${cita.procedimiento || 'N/A'}</td>
                                     <td>${cita.odontologo}</td>
                                     <td>${estadoBadge}</td>
-                                    <td>S/. ${cita.precio}</td>
+                                    <td>${cita.motivo || '-'}</td>
                                 </tr>
                             `;
                         });
                         $('#tablaHistorialCitas').html(html);
                     } else {
-                        $('#tablaHistorialCitas').html('<tr><td colspan="6" class="text-center text-muted">No hay citas registradas</td></tr>');
+                        $('#tablaHistorialCitas').html('<tr><td colspan="5" class="text-center text-muted">No hay citas registradas</td></tr>');
                     }
 
                     // Tab 4: Odontograma (generar dientes)
