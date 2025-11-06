@@ -127,7 +127,7 @@
                                             <option th:each="insumo : ${insumos}"
                                                 th:value="${insumo.id}"
                                                 th:text="${insumo.nombre + ' (' + insumo.codigo + ')'}"
-                                                th:attr="data-unidad=${insumo.unidadMedida.simbolo}"></option>
+                                                th:attr="data-unidad=${insumo.unidadMedida.abreviatura}"></option>
                                         </select>
                                     </div>
                                 </div>
