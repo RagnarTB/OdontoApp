@@ -723,16 +723,23 @@ $(document).ready(function() {
 
     // Botón Tratamiento Inmediato
     $('#btnRealizarInmediato').on('click', function() {
-        // TODO: Enviar datos al backend como TratamientoRealizado
         const datos = recopilarDatosTratamiento('INMEDIATO');
         console.log('Tratamiento Inmediato:', datos);
 
-        $.post('/tratamientos/realizar-inmediato', datos, function() {
-            Swal.fire('Éxito', 'Tratamiento registrado correctamente', 'success');
-            $('#modalRegistrarTratamiento').modal('hide');
-            location.reload();
-        }).fail(function() {
-            Swal.fire('Error', 'No se pudo registrar el tratamiento', 'error');
+        $.ajax({
+            url: '/tratamientos/realizar-inmediato',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(datos),
+            success: function(response) {
+                Swal.fire('Éxito', response.mensaje || 'Tratamiento registrado correctamente', 'success');
+                $('#modalRegistrarTratamiento').modal('hide');
+                location.reload();
+            },
+            error: function(xhr) {
+                const mensaje = xhr.responseJSON?.mensaje || 'No se pudo registrar el tratamiento';
+                Swal.fire('Error', mensaje, 'error');
+            }
         });
     });
 
@@ -741,12 +748,20 @@ $(document).ready(function() {
         const datos = recopilarDatosTratamiento('PLANIFICADO');
         console.log('Tratamiento Planificado:', datos);
 
-        $.post('/tratamientos/planificar', datos, function() {
-            Swal.fire('Éxito', 'Tratamiento planificado correctamente', 'success');
-            $('#modalRegistrarTratamiento').modal('hide');
-            location.reload();
-        }).fail(function() {
-            Swal.fire('Error', 'No se pudo planificar el tratamiento', 'error');
+        $.ajax({
+            url: '/tratamientos/planificar',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(datos),
+            success: function(response) {
+                Swal.fire('Éxito', response.mensaje || 'Tratamiento planificado correctamente', 'success');
+                $('#modalRegistrarTratamiento').modal('hide');
+                location.reload();
+            },
+            error: function(xhr) {
+                const mensaje = xhr.responseJSON?.mensaje || 'No se pudo planificar el tratamiento';
+                Swal.fire('Error', mensaje, 'error');
+            }
         });
     });
 
