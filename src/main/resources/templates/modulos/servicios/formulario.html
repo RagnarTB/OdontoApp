@@ -107,6 +107,93 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Sección de Insumos -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h5 class="border-bottom pb-2 mb-3">
+                                        <i class="fas fa-box-open mr-2"></i>Insumos del Procedimiento
+                                    </h5>
+                                    <p class="text-muted small">Configure los insumos que se utilizan por defecto en este procedimiento</p>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="insumoSelector">Insumo</label>
+                                        <select class="form-control" id="insumoSelector">
+                                            <option value="">-- Seleccione un insumo --</option>
+                                            <option th:each="insumo : ${insumos}"
+                                                th:value="${insumo.id}"
+                                                th:text="${insumo.nombre + ' (' + insumo.codigo + ')'}"
+                                                th:attr="data-unidad=${insumo.unidadMedida.simbolo}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label for="cantidadInsumo">Cantidad</label>
+                                        <input type="number" class="form-control" id="cantidadInsumo"
+                                            placeholder="1.0" step="0.01" min="0.01">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label for="unidadInsumo">Unidad</label>
+                                        <input type="text" class="form-control" id="unidadInsumo"
+                                            placeholder="unid" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label class="d-block">&nbsp;</label>
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input"
+                                                id="esObligatorioInsumo" checked>
+                                            <label class="custom-control-label" for="esObligatorioInsumo">
+                                                Obligatorio
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label class="d-block">&nbsp;</label>
+                                        <button type="button" class="btn btn-success btn-block" id="btnAgregarInsumo">
+                                            <i class="fas fa-plus"></i> Agregar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover table-bordered">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Insumo</th>
+                                                    <th width="100">Cantidad</th>
+                                                    <th width="80">Unidad</th>
+                                                    <th width="100">Tipo</th>
+                                                    <th width="80">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tablaInsumosBody">
+                                                <tr id="msgSinInsumos">
+                                                    <td colspan="5" class="text-center text-muted">
+                                                        <i class="fas fa-info-circle"></i> No se han agregado insumos
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Hidden inputs para los insumos que se enviarán con el formulario -->
+                            <div id="insumosHiddenInputs"></div>
                         </div>
 
                         <div class="card-footer">
@@ -120,6 +207,159 @@
             </div>
         </section>
     </div>
+
+    <script th:inline="javascript">
+    /*<![CDATA[*/
+    $(document).ready(function() {
+        // Array para mantener los insumos agregados
+        let insumosAgregados = [];
+
+        // Cargar insumos existentes si estamos editando
+        const procedimientoId = /*[[${procedimientoDTO.id}]]*/ null;
+        if (procedimientoId) {
+            cargarInsumosExistentes(procedimientoId);
+        }
+
+        // Cuando se selecciona un insumo, cargar su unidad
+        $('#insumoSelector').on('change', function() {
+            const unidad = $(this).find(':selected').data('unidad');
+            $('#unidadInsumo').val(unidad || '');
+        });
+
+        // Botón agregar insumo
+        $('#btnAgregarInsumo').on('click', function() {
+            const insumoId = $('#insumoSelector').val();
+            const insumoNombre = $('#insumoSelector option:selected').text();
+            const cantidad = parseFloat($('#cantidadInsumo').val());
+            const unidad = $('#unidadInsumo').val();
+            const esObligatorio = $('#esObligatorioInsumo').is(':checked');
+
+            // Validaciones
+            if (!insumoId) {
+                Swal.fire('Error', 'Debe seleccionar un insumo', 'error');
+                return;
+            }
+            if (!cantidad || cantidad <= 0) {
+                Swal.fire('Error', 'Debe ingresar una cantidad válida', 'error');
+                return;
+            }
+
+            // Verificar si ya existe
+            if (insumosAgregados.find(i => i.insumoId == insumoId)) {
+                Swal.fire('Error', 'Este insumo ya ha sido agregado', 'error');
+                return;
+            }
+
+            // Agregar al array
+            insumosAgregados.push({
+                insumoId: insumoId,
+                insumoNombre: insumoNombre,
+                cantidad: cantidad,
+                unidad: unidad,
+                esObligatorio: esObligatorio
+            });
+
+            // Actualizar tabla
+            actualizarTablaInsumos();
+
+            // Limpiar campos
+            $('#insumoSelector').val('');
+            $('#cantidadInsumo').val('');
+            $('#unidadInsumo').val('');
+            $('#esObligatorioInsumo').prop('checked', true);
+        });
+
+        // Función para actualizar la tabla de insumos
+        function actualizarTablaInsumos() {
+            const tbody = $('#tablaInsumosBody');
+            tbody.empty();
+
+            if (insumosAgregados.length === 0) {
+                tbody.append(`
+                    <tr id="msgSinInsumos">
+                        <td colspan="5" class="text-center text-muted">
+                            <i class="fas fa-info-circle"></i> No se han agregado insumos
+                        </td>
+                    </tr>
+                `);
+            } else {
+                insumosAgregados.forEach((insumo, index) => {
+                    const tipoBadge = insumo.esObligatorio
+                        ? '<span class="badge badge-danger">Obligatorio</span>'
+                        : '<span class="badge badge-secondary">Opcional</span>';
+
+                    tbody.append(`
+                        <tr>
+                            <td>${insumo.insumoNombre}</td>
+                            <td>${insumo.cantidad}</td>
+                            <td>${insumo.unidad}</td>
+                            <td>${tipoBadge}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarInsumo(${index})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            }
+
+            // Actualizar hidden inputs
+            actualizarHiddenInputs();
+        }
+
+        // Función para eliminar insumo (global para que pueda ser llamada desde onclick)
+        window.eliminarInsumo = function(index) {
+            insumosAgregados.splice(index, 1);
+            actualizarTablaInsumos();
+        };
+
+        // Función para actualizar los hidden inputs que se enviarán con el formulario
+        function actualizarHiddenInputs() {
+            const container = $('#insumosHiddenInputs');
+            container.empty();
+
+            insumosAgregados.forEach((insumo, index) => {
+                container.append(`
+                    <input type="hidden" name="insumos[${index}].insumoId" value="${insumo.insumoId}" />
+                    <input type="hidden" name="insumos[${index}].cantidad" value="${insumo.cantidad}" />
+                    <input type="hidden" name="insumos[${index}].unidad" value="${insumo.unidad}" />
+                    <input type="hidden" name="insumos[${index}].esObligatorio" value="${insumo.esObligatorio}" />
+                `);
+            });
+        }
+
+        // Cargar insumos existentes al editar
+        function cargarInsumosExistentes(procedimientoId) {
+            $.get(`/procedimientos/${procedimientoId}/insumos`, function(data) {
+                if (data && data.length > 0) {
+                    // Necesitamos obtener el ID del insumo, pero la API solo devuelve el nombre
+                    // Vamos a buscar en el selector
+                    data.forEach(function(insumoData) {
+                        // Buscar el insumo en el selector por nombre
+                        const option = $('#insumoSelector option').filter(function() {
+                            return $(this).text().includes(insumoData.insumoNombre);
+                        }).first();
+
+                        if (option.length > 0) {
+                            insumosAgregados.push({
+                                insumoId: option.val(),
+                                insumoNombre: insumoData.insumoNombre,
+                                cantidad: insumoData.cantidadDefecto,
+                                unidad: insumoData.unidad,
+                                esObligatorio: insumoData.esObligatorio
+                            });
+                        }
+                    });
+                    actualizarTablaInsumos();
+                }
+            }).fail(function() {
+                console.log('No se pudieron cargar los insumos existentes');
+            });
+        }
+    });
+    /*]]>*/
+    </script>
 </body>
 
 </html>

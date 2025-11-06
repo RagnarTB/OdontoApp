@@ -3,8 +3,10 @@ package com.odontoapp.controlador;
 import com.odontoapp.dto.ProcedimientoDTO;
 import com.odontoapp.entidad.CategoriaProcedimiento;
 import com.odontoapp.entidad.Procedimiento;
+import com.odontoapp.entidad.Insumo;
 import com.odontoapp.repositorio.CategoriaProcedimientoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
+import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.servicio.ProcedimientoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -32,15 +34,18 @@ public class ProcedimientoController {
     private final CategoriaProcedimientoRepository categoriaRepository;
     private final ProcedimientoRepository procedimientoRepository;
     private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
+    private final InsumoRepository insumoRepository;
 
     public ProcedimientoController(ProcedimientoService procedimientoService,
             CategoriaProcedimientoRepository categoriaRepository,
             ProcedimientoRepository procedimientoRepository,
-            ProcedimientoInsumoRepository procedimientoInsumoRepository) {
+            ProcedimientoInsumoRepository procedimientoInsumoRepository,
+            InsumoRepository insumoRepository) {
         this.procedimientoService = procedimientoService;
         this.categoriaRepository = categoriaRepository;
         this.procedimientoRepository = procedimientoRepository;
         this.procedimientoInsumoRepository = procedimientoInsumoRepository;
+        this.insumoRepository = insumoRepository;
     }
 
     @GetMapping
@@ -75,7 +80,7 @@ public class ProcedimientoController {
     @GetMapping("/nuevo")
     public String mostrarFormularioNuevo(Model model) {
         model.addAttribute("procedimientoDTO", new ProcedimientoDTO());
-        cargarCategorias(model);
+        cargarDatosFormulario(model);
         return "modulos/servicios/formulario";
     }
 
@@ -85,7 +90,7 @@ public class ProcedimientoController {
             Model model,
             RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
-            cargarCategorias(model);
+            cargarDatosFormulario(model);
             return "modulos/servicios/formulario";
         }
         try {
@@ -94,7 +99,7 @@ public class ProcedimientoController {
             return "redirect:/servicios";
         } catch (Exception e) {
             model.addAttribute("error", e.getMessage());
-            cargarCategorias(model);
+            cargarDatosFormulario(model);
             return "modulos/servicios/formulario";
         }
     }
@@ -120,6 +125,10 @@ public class ProcedimientoController {
                     .collect(Collectors.toList());
             model.addAttribute("categorias", categorias);
 
+            // Cargar insumos
+            List<Insumo> insumos = insumoRepository.findAll();
+            model.addAttribute("insumos", insumos);
+
             return "modulos/servicios/formulario";
         }).orElseGet(() -> {
             redirectAttributes.addFlashAttribute("error", "Servicio no encontrado.");
@@ -138,11 +147,15 @@ public class ProcedimientoController {
         return "redirect:/servicios";
     }
 
-    private void cargarCategorias(Model model) {
+    private void cargarDatosFormulario(Model model) {
         // Cargar solo categorías activas para formularios
         List<CategoriaProcedimiento> categorias = categoriaRepository.findAll().stream()
                 .filter(CategoriaProcedimiento::isEstaActiva)
                 .collect(Collectors.toList());
         model.addAttribute("categorias", categorias);
+
+        // Cargar todos los insumos activos
+        List<Insumo> insumos = insumoRepository.findAll();
+        model.addAttribute("insumos", insumos);
     }
 }
