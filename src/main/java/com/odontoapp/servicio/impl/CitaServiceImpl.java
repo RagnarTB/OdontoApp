@@ -3,14 +3,19 @@ package com.odontoapp.servicio.impl;
 import com.odontoapp.entidad.Cita;
 import com.odontoapp.entidad.EstadoCita;
 import com.odontoapp.entidad.HorarioExcepcion;
+import com.odontoapp.entidad.Insumo;
 import com.odontoapp.entidad.Procedimiento;
+import com.odontoapp.entidad.ProcedimientoInsumo;
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.EstadoCitaRepository;
+import com.odontoapp.repositorio.InsumoRepository;
+import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.EmailService;
+import java.math.BigDecimal;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,22 +54,34 @@ public class CitaServiceImpl implements CitaService {
     private final ProcedimientoRepository procedimientoRepository;
     private final EstadoCitaRepository estadoCitaRepository;
     private final EmailService emailService;
+    private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
+    private final InsumoRepository insumoRepository;
 
     public CitaServiceImpl(CitaRepository citaRepository,
                           UsuarioRepository usuarioRepository,
                           ProcedimientoRepository procedimientoRepository,
                           EstadoCitaRepository estadoCitaRepository,
-                          EmailService emailService) {
+                          EmailService emailService,
+                          ProcedimientoInsumoRepository procedimientoInsumoRepository,
+                          InsumoRepository insumoRepository) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
         this.estadoCitaRepository = estadoCitaRepository;
         this.emailService = emailService;
+        this.procedimientoInsumoRepository = procedimientoInsumoRepository;
+        this.insumoRepository = insumoRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> buscarDisponibilidad(Long odontologoId, LocalDate fecha) {
+        return buscarDisponibilidad(odontologoId, fecha, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> buscarDisponibilidad(Long odontologoId, LocalDate fecha, Long citaIdExcluir) {
         Usuario odontologo = usuarioRepository.findById(odontologoId)
                 .orElseThrow(() -> new EntityNotFoundException("Odontólogo no encontrado con ID: " + odontologoId));
 
@@ -91,7 +108,7 @@ public class CitaServiceImpl implements CitaService {
             resultado.put("esExcepcion", true);
             resultado.put("motivoExcepcion", excepcion.getMotivo());
             resultado.put("horariosDisponibles", calcularHorariosDisponibles(
-                    odontologo, fecha, excepcion.getHoras()));
+                    odontologo, fecha, excepcion.getHoras(), citaIdExcluir));
             return resultado;
         }
 
@@ -108,14 +125,15 @@ public class CitaServiceImpl implements CitaService {
 
         resultado.put("disponible", true);
         resultado.put("esExcepcion", false);
-        resultado.put("horariosDisponibles", calcularHorariosDisponibles(odontologo, fecha, horarioDelDia));
+        resultado.put("horariosDisponibles", calcularHorariosDisponibles(odontologo, fecha, horarioDelDia, citaIdExcluir));
         return resultado;
     }
 
     /**
      * Calcula los horarios disponibles considerando las citas ya agendadas.
+     * @param citaIdExcluir ID de cita a excluir (puede ser null)
      */
-    private List<Map<String, Object>> calcularHorariosDisponibles(Usuario odontologo, LocalDate fecha, String horarioStr) {
+    private List<Map<String, Object>> calcularHorariosDisponibles(Usuario odontologo, LocalDate fecha, String horarioStr, Long citaIdExcluir) {
         List<Map<String, Object>> slots = new ArrayList<>();
 
         // Parsear los intervalos del horario (ej: "09:00-13:00,15:00-19:00")
@@ -135,9 +153,19 @@ public class CitaServiceImpl implements CitaService {
             List<Cita> citasEnIntervalo = citaRepository.findConflictingCitas(
                     odontologo.getId(), inicioIntervalo, finIntervalo);
 
-            // Filtrar solo citas no canceladas
+            // Filtrar solo citas activas (excluir canceladas, reprogramadas y la cita a excluir)
             citasEnIntervalo = citasEnIntervalo.stream()
-                    .filter(c -> !c.getEstadoCita().getNombre().startsWith("CANCELADA"))
+                    .filter(c -> {
+                        String estado = c.getEstadoCita().getNombre();
+                        boolean esActiva = !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+
+                        // Excluir la cita específica si se proporcionó un ID
+                        if (citaIdExcluir != null && c.getId().equals(citaIdExcluir)) {
+                            return false;
+                        }
+
+                        return esActiva;
+                    })
                     .collect(Collectors.toList());
 
             // Generar slots de tiempo
@@ -438,7 +466,41 @@ public class CitaServiceImpl implements CitaService {
             cita.setNotas(notasActuales + "Asistencia: " + notas);
         }
 
+        // Si el paciente asistió, descontar insumos asociados al procedimiento
+        if (asistio && cita.getProcedimiento() != null) {
+            descontarInsumosDelProcedimiento(cita.getProcedimiento().getId());
+        }
+
         return citaRepository.save(cita);
+    }
+
+    /**
+     * Descuenta los insumos asociados a un procedimiento del inventario.
+     * Se utiliza cuando un paciente asiste a una cita y se consume el procedimiento.
+     *
+     * @param procedimientoId ID del procedimiento
+     */
+    private void descontarInsumosDelProcedimiento(Long procedimientoId) {
+        // Obtener todos los insumos asociados al procedimiento
+        List<ProcedimientoInsumo> procedimientoInsumos = procedimientoInsumoRepository
+                .findByProcedimientoId(procedimientoId);
+
+        for (ProcedimientoInsumo pi : procedimientoInsumos) {
+            Insumo insumo = pi.getInsumo();
+            BigDecimal cantidadADescontar = pi.getCantidadDefecto();
+
+            // Verificar que haya suficiente stock
+            if (insumo.getStockActual().compareTo(cantidadADescontar) < 0) {
+                throw new IllegalStateException(
+                        "Stock insuficiente del insumo: " + insumo.getNombre() +
+                        " (Disponible: " + insumo.getStockActual() + ", Requerido: " + cantidadADescontar + ")"
+                );
+            }
+
+            // Descontar del stock
+            insumo.setStockActual(insumo.getStockActual().subtract(cantidadADescontar));
+            insumoRepository.save(insumo);
+        }
     }
 
     @Override

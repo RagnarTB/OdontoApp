@@ -3,8 +3,10 @@ package com.odontoapp.controlador;
 import com.odontoapp.dto.ProcedimientoDTO;
 import com.odontoapp.entidad.CategoriaProcedimiento;
 import com.odontoapp.entidad.Procedimiento;
+import com.odontoapp.entidad.Insumo;
 import com.odontoapp.repositorio.CategoriaProcedimientoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
+import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.servicio.ProcedimientoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -16,8 +18,12 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.odontoapp.dto.CategoriaServicioDTO;
+import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
+import com.odontoapp.entidad.ProcedimientoInsumo;
+import org.springframework.http.ResponseEntity;
 import java.util.stream.Collectors;
-
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 @Controller
@@ -27,19 +33,25 @@ public class ProcedimientoController {
     private final ProcedimientoService procedimientoService;
     private final CategoriaProcedimientoRepository categoriaRepository;
     private final ProcedimientoRepository procedimientoRepository;
+    private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
+    private final InsumoRepository insumoRepository;
 
     public ProcedimientoController(ProcedimientoService procedimientoService,
             CategoriaProcedimientoRepository categoriaRepository,
-            ProcedimientoRepository procedimientoRepository) {
+            ProcedimientoRepository procedimientoRepository,
+            ProcedimientoInsumoRepository procedimientoInsumoRepository,
+            InsumoRepository insumoRepository) {
         this.procedimientoService = procedimientoService;
         this.categoriaRepository = categoriaRepository;
         this.procedimientoRepository = procedimientoRepository;
+        this.procedimientoInsumoRepository = procedimientoInsumoRepository;
+        this.insumoRepository = insumoRepository;
     }
 
     @GetMapping
     public String listarProcedimientos(Model model,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "15") int size,
             @RequestParam(required = false) String keyword) {
 
         // Cargar resumen de categorías
@@ -68,7 +80,7 @@ public class ProcedimientoController {
     @GetMapping("/nuevo")
     public String mostrarFormularioNuevo(Model model) {
         model.addAttribute("procedimientoDTO", new ProcedimientoDTO());
-        cargarCategorias(model);
+        cargarDatosFormulario(model);
         return "modulos/servicios/formulario";
     }
 
@@ -78,7 +90,7 @@ public class ProcedimientoController {
             Model model,
             RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
-            cargarCategorias(model);
+            cargarDatosFormulario(model);
             return "modulos/servicios/formulario";
         }
         try {
@@ -87,7 +99,7 @@ public class ProcedimientoController {
             return "redirect:/servicios";
         } catch (Exception e) {
             model.addAttribute("error", e.getMessage());
-            cargarCategorias(model);
+            cargarDatosFormulario(model);
             return "modulos/servicios/formulario";
         }
     }
@@ -113,6 +125,10 @@ public class ProcedimientoController {
                     .collect(Collectors.toList());
             model.addAttribute("categorias", categorias);
 
+            // Cargar insumos con sus relaciones
+            List<Insumo> insumos = insumoRepository.findAllWithRelations();
+            model.addAttribute("insumos", insumos);
+
             return "modulos/servicios/formulario";
         }).orElseGet(() -> {
             redirectAttributes.addFlashAttribute("error", "Servicio no encontrado.");
@@ -131,11 +147,15 @@ public class ProcedimientoController {
         return "redirect:/servicios";
     }
 
-    private void cargarCategorias(Model model) {
+    private void cargarDatosFormulario(Model model) {
         // Cargar solo categorías activas para formularios
         List<CategoriaProcedimiento> categorias = categoriaRepository.findAll().stream()
                 .filter(CategoriaProcedimiento::isEstaActiva)
                 .collect(Collectors.toList());
         model.addAttribute("categorias", categorias);
+
+        // Cargar todos los insumos activos con sus relaciones (categoria y unidadMedida)
+        List<Insumo> insumos = insumoRepository.findAllWithRelations();
+        model.addAttribute("insumos", insumos);
     }
 }

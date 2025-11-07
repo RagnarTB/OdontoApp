@@ -36,10 +36,27 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByNumeroDocumentoAndTipoDocumentoIdIgnorandoSoftDelete(
             @Param("numDoc") String numDoc, @Param("tipoDocId") Long tipoDocId);
 
+    // --- NUEVO MÉTODO PARA NÚMERO DE DOCUMENTO ---
+    @Query("SELECT u FROM Usuario u WHERE u.numeroDocumento = :numeroDocumento")
+    Optional<Usuario> findByNumeroDocumentoIgnorandoSoftDelete(@Param("numeroDocumento") String numeroDocumento);
+
     // Buscar usuario por número de documento y tipo (respetando soft delete)
     Optional<Usuario> findByNumeroDocumentoAndTipoDocumento_Id(String numeroDocumento, Long tipoDocumentoId);
+
+    // --- NUEVO MÉTODO PARA TELÉFONO ---
+    @Query("SELECT u FROM Usuario u WHERE u.telefono = :telefono AND u.telefono IS NOT NULL")
+    Optional<Usuario> findByTelefonoIgnorandoSoftDelete(@Param("telefono") String telefono);
 
     // Buscar usuarios por nombre de rol
     @Query("SELECT u FROM Usuario u JOIN u.roles r WHERE r.nombre = :rolNombre")
     java.util.List<Usuario> findByRolesNombre(@Param("rolNombre") String rolNombre);
+
+    /**
+     * Busca usuarios activos cuya fecha de vigencia ha vencido.
+     * Usado por el scheduler para desactivar usuarios automáticamente.
+     *
+     * @param fecha Fecha de referencia (típicamente la fecha actual)
+     * @return Lista de usuarios con vigencia vencida
+     */
+    java.util.List<Usuario> findByFechaVigenciaBeforeAndEstaActivoTrue(java.time.LocalDate fecha);
 }

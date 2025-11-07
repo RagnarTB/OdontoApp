@@ -111,6 +111,9 @@ public class Usuario extends EntidadAuditable { // Extiende EntidadAuditable
     @Column(name = "password_temporal")
     private String passwordTemporal;
 
+    @Column(name = "fecha_vigencia")
+    private LocalDate fechaVigencia; // Fecha hasta la cual el usuario tiene acceso al sistema
+
     // --- NUEVOS CAMPOS PARA HORARIO (Odontólogo) ---
 
     /**

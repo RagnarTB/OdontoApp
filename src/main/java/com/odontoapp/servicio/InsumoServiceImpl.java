@@ -36,7 +36,7 @@ public class InsumoServiceImpl implements InsumoService {
         if (keyword != null && !keyword.isBlank()) {
             return insumoRepository.findByKeyword(keyword, pageable);
         }
-        return insumoRepository.findAll(pageable);
+        return insumoRepository.findAllWithRelations(pageable);
     }
     
     @Override

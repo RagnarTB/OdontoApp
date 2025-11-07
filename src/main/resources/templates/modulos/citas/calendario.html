@@ -4,6 +4,31 @@
 
 <body>
 <div id="contenido-principal">
+
+    <style>
+        /* Estilo para fechas y horarios pasados en el calendario */
+        .fc-day-past {
+            background-color: #f5f5f5 !important;
+            opacity: 0.6;
+        }
+
+        .fc-timegrid-slot.fc-timegrid-slot-past {
+            background-color: #fafafa !important;
+            opacity: 0.5;
+        }
+
+        /* Hacer que los slots pasados no sean clickeables visualmente */
+        .fc-timegrid-slot-past {
+            cursor: not-allowed !important;
+        }
+
+        /* Badge personalizado para estado "Reprogramada" (naranja) */
+        .badge-orange {
+            background-color: #fd7e14;
+            color: white;
+        }
+    </style>
+
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
@@ -12,7 +37,8 @@
                     <p class="text-muted">Visualiza y gestiona las citas de la clínica</p>
                 </div>
                 <div class="col-sm-6">
-                    <button type="button" class="btn btn-primary float-sm-right" data-toggle="modal" data-target="#modalAgendarCita">
+                    <button type="button" class="btn btn-primary float-sm-right" data-toggle="modal" data-target="#modalAgendarCita"
+                            sec:authorize="hasAnyAuthority('CREAR_CITAS', 'ADMIN')">
                         <i class="fas fa-plus"></i> Nueva Cita
                     </button>
                 </div>
@@ -132,6 +158,18 @@
                 dayMaxEvents: true,
                 weekends: true,
 
+                // ✅ BLOQUEAR FECHAS PASADAS VISUALMENTE
+                validRange: {
+                    start: moment().format('YYYY-MM-DD') // Solo desde hoy en adelante
+                },
+
+                // ✅ BLOQUEAR SLOTS PASADOS (background events para fechas pasadas)
+                businessHours: {
+                    daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // Todos los días
+                    startTime: '08:00',
+                    endTime: '20:00'
+                },
+
                 // Cargar eventos desde el backend
                 events: function(info, successCallback, failureCallback) {
                     var odontologoId = document.getElementById('filtroOdontologo').value;
@@ -157,8 +195,22 @@
 
                 // Clic en un espacio vacío (agendar cita)
                 dateClick: function(info) {
-                    // Obtener la fecha/hora del clic y redondear a intervalos de 30 minutos
+                    // Obtener la fecha/hora del clic
                     var fechaHora = moment(info.date);
+                    var ahora = moment();
+
+                    // ✅ VALIDAR: No permitir agendar en el pasado
+                    if (fechaHora.isBefore(ahora)) {
+                        mostrarAdvertencia('No se pueden agendar citas en fechas u horas pasadas');
+                        return;
+                    }
+
+                    // ✅ VALIDAR: Mínimo 1 hora de anticipación
+                    var unaHoraAdelante = moment().add(1, 'hours');
+                    if (fechaHora.isBefore(unaHoraAdelante)) {
+                        mostrarAdvertencia('Debe agendar con al menos 1 hora de anticipación');
+                        return;
+                    }
 
                     // Redondear minutos a 0 o 30
                     var minutos = fechaHora.minutes();
@@ -172,11 +224,23 @@
                     // Formato datetime-local (YYYY-MM-DDTHH:mm)
                     var fechaHoraFormateada = fechaHora.format('YYYY-MM-DDTHH:mm');
 
-                    // Rellenar la fecha en el formulario de agendar
+                    // Extraer solo la fecha para el campo de fecha
+                    var fechaSola = fechaHora.format('YYYY-MM-DD');
+
+                    // Rellenar los campos en el formulario de agendar
                     document.getElementById('fechaHoraInicioAgendar').value = fechaHoraFormateada;
+                    document.getElementById('fechaCitaAgendar').value = fechaSola;
 
                     // Abrir el modal
                     $('#modalAgendarCita').modal('show');
+
+                    // Si hay un odontólogo seleccionado, cargar horarios automáticamente
+                    // Si no hay odontólogo, se cargará cuando seleccione uno
+                    const odontologoSelect = document.getElementById('odontologoIdAgendar');
+                    if (odontologoSelect && odontologoSelect.value) {
+                        // Trigger change event to load available time slots
+                        $(odontologoSelect).trigger('change');
+                    }
                 },
 
                 // Clic en un evento existente (ver detalles)
@@ -192,6 +256,7 @@
                     document.getElementById('detalleCitaId').value = evento.id;
                     document.getElementById('detallePaciente').textContent = evento.title;
                     document.getElementById('detalleOdontologo').textContent = props.odontologoNombre || 'N/A';
+                    document.getElementById('detalleOdontologoId').value = props.odontologoId || '';
                     document.getElementById('detalleProcedimiento').textContent = props.procedimientoNombre || 'N/A';
                     document.getElementById('detalleEstado').textContent = props.estadoNombre || 'N/A';
                     document.getElementById('detalleFechaHoraInicio').textContent = moment(evento.start).format('DD/MM/YYYY HH:mm');
@@ -212,6 +277,12 @@
 
                     // Rellenar el modal de registrar tratamiento
                     document.getElementById('tratamientoCitaId').value = evento.id;
+                    // También llenar el procedimientoId si existe
+                    if (props.procedimientoId) {
+                        document.getElementById('tratamientoProcedimientoId').value = props.procedimientoId;
+                        // Trigger change para cargar insumos asociados
+                        $('#tratamientoProcedimientoId').trigger('change');
+                    }
 
                     // Mostrar/ocultar botones según el estado
                     mostrarBotonesSegunEstado(props.estadoNombre);

@@ -19,10 +19,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -72,7 +74,7 @@ public class UsuarioController {
     @GetMapping
     public String listarUsuarios(Model model,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "15") int size,
             @RequestParam(required = false) String keyword) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Usuario> paginaUsuarios = usuarioService.listarTodosLosUsuarios(keyword, pageable);
@@ -105,6 +107,8 @@ public class UsuarioController {
             RedirectAttributes redirectAttributes) {
 
         if (result.hasErrors()) {
+            // Agregar explícitamente el usuario al modelo para que persistan los datos
+            model.addAttribute("usuario", usuarioDTO);
             cargarRolesYTiposDoc(model);
             model.addAttribute("diasSemana", DIAS_SEMANA_ORDENADOS); // <-- Añadir también en caso de error
             model.addAttribute("localeEs", new Locale("es", "ES")); // <-- Añadir también en caso de error
@@ -181,6 +185,16 @@ public class UsuarioController {
         Optional<Usuario> usuarioOpt = usuarioService.buscarPorId(id);
         if (usuarioOpt.isPresent()) {
             Usuario usuario = usuarioOpt.get();
+
+            // Verificar que el usuario no sea SOLO un paciente
+            boolean esSoloPaciente = usuario.getRoles().stream()
+                    .allMatch(rol -> "PACIENTE".equals(rol.getNombre()));
+
+            if (esSoloPaciente) {
+                redirectAttributes.addFlashAttribute("error",
+                    "Los pacientes solo pueden editarse desde la sección de Pacientes.");
+                return "redirect:/usuarios";
+            }
             UsuarioDTO usuarioDTO = new UsuarioDTO();
 
             // --- Mapear campos básicos ---
@@ -195,6 +209,7 @@ public class UsuarioController {
             usuarioDTO.setFechaNacimiento(usuario.getFechaNacimiento());
             usuarioDTO.setDireccion(usuario.getDireccion());
             usuarioDTO.setFechaContratacion(usuario.getFechaContratacion());
+            usuarioDTO.setFechaVigencia(usuario.getFechaVigencia());
             usuarioDTO.setUltimoAcceso(usuario.getUltimoAcceso());
             usuarioDTO.setRoles(usuario.getRoles().stream()
                     .map(Rol::getId)
@@ -368,6 +383,250 @@ public class UsuarioController {
             e.printStackTrace();
             return ResponseEntity.status(500)
                     .body(java.util.Map.of("error", "Error al consultar el servicio de RENIEC"));
+        }
+    }
+
+    // === ENDPOINTS REST PARA GESTIONAR EXCEPCIONES DE HORARIO ===
+
+    /**
+     * Obtiene las excepciones de horario de un usuario (odontólogo)
+     */
+    @GetMapping("/{id}/excepciones")
+    @ResponseBody
+    public ResponseEntity<?> obtenerExcepciones(@PathVariable Long id) {
+        try {
+            Usuario usuario = usuarioRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            // Convertir excepciones a una lista ordenada por fecha
+            List<java.util.Map<String, Object>> excepciones = usuario.getExcepcionesHorario()
+                    .stream()
+                    .sorted((e1, e2) -> e2.getFecha().compareTo(e1.getFecha())) // Más recientes primero
+                    .map(exc -> {
+                        java.util.Map<String, Object> map = new java.util.HashMap<>();
+                        map.put("fecha", exc.getFecha().toString());
+                        map.put("horas", exc.getHoras());
+                        map.put("motivo", exc.getMotivo());
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(excepciones);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Agrega una nueva excepción de horario
+     */
+    @PostMapping("/{id}/excepciones")
+    @ResponseBody
+    public ResponseEntity<?> agregarExcepcion(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> datos) {
+        try {
+            Usuario usuario = usuarioRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            // Crear nueva excepción
+            com.odontoapp.entidad.HorarioExcepcion nuevaExcepcion = new com.odontoapp.entidad.HorarioExcepcion();
+            nuevaExcepcion.setFecha(java.time.LocalDate.parse(datos.get("fecha")));
+            nuevaExcepcion.setHoras(datos.get("horas"));
+            nuevaExcepcion.setMotivo(datos.get("motivo"));
+
+            // Agregar a la lista del usuario
+            usuario.getExcepcionesHorario().add(nuevaExcepcion);
+
+            // Guardar
+            usuarioRepository.save(usuario);
+
+            return ResponseEntity.ok(java.util.Map.of("success", true, "mensaje", "Excepción agregada correctamente"));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Elimina una excepción de horario por fecha
+     */
+    @DeleteMapping("/{usuarioId}/excepciones/{fecha}")
+    @ResponseBody
+    public ResponseEntity<?> eliminarExcepcion(
+            @PathVariable Long usuarioId,
+            @PathVariable String fecha) {
+        try {
+            Usuario usuario = usuarioRepository.findById(usuarioId)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            // Parsear la fecha
+            java.time.LocalDate fechaExcepcion = java.time.LocalDate.parse(fecha);
+
+            // Eliminar la excepción de la lista por fecha
+            boolean removed = usuario.getExcepcionesHorario().removeIf(exc -> exc.getFecha().equals(fechaExcepcion));
+
+            if (!removed) {
+                return ResponseEntity.badRequest()
+                        .body(java.util.Map.of("error", "No se encontró una excepción para la fecha especificada"));
+            }
+
+            // Guardar
+            usuarioRepository.save(usuario);
+
+            return ResponseEntity.ok(java.util.Map.of("success", true, "mensaje", "Excepción eliminada correctamente"));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    // === FIN ENDPOINTS EXCEPCIONES ===
+
+    /**
+     * Valida si un DNI ya existe en la base de datos
+     */
+    @GetMapping("/api/validar-dni")
+    @ResponseBody
+    public ResponseEntity<?> validarDniDuplicado(
+            @RequestParam String dni,
+            @RequestParam(required = false) Long usuarioId) {
+        try {
+            Optional<Usuario> usuarioExistente = usuarioRepository.findByNumeroDocumentoIgnorandoSoftDelete(dni);
+
+            if (usuarioExistente.isPresent()) {
+                // Si es el mismo usuario que está editando, no es duplicado
+                if (usuarioId != null && usuarioExistente.get().getId().equals(usuarioId)) {
+                    return ResponseEntity.ok(java.util.Map.of("disponible", true));
+                }
+                return ResponseEntity.ok(java.util.Map.of(
+                    "disponible", false,
+                    "mensaje", "El DNI ya está registrado en el sistema"
+                ));
+            }
+
+            return ResponseEntity.ok(java.util.Map.of("disponible", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", "Error al validar DNI"));
+        }
+    }
+
+    /**
+     * Valida si un email ya existe en la base de datos
+     */
+    @GetMapping("/api/validar-email")
+    @ResponseBody
+    public ResponseEntity<?> validarEmailDuplicado(
+            @RequestParam String email,
+            @RequestParam(required = false) Long usuarioId) {
+        try {
+            Optional<Usuario> usuarioExistente = usuarioRepository.findByEmailIgnorandoSoftDelete(email);
+
+            if (usuarioExistente.isPresent()) {
+                // Si es el mismo usuario que está editando, no es duplicado
+                if (usuarioId != null && usuarioExistente.get().getId().equals(usuarioId)) {
+                    return ResponseEntity.ok(java.util.Map.of("disponible", true));
+                }
+                return ResponseEntity.ok(java.util.Map.of(
+                    "disponible", false,
+                    "mensaje", "El email ya está registrado en el sistema"
+                ));
+            }
+
+            return ResponseEntity.ok(java.util.Map.of("disponible", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", "Error al validar email"));
+        }
+    }
+
+    /**
+     * Valida si un teléfono ya existe en la base de datos
+     */
+    @GetMapping("/api/validar-telefono")
+    @ResponseBody
+    public ResponseEntity<?> validarTelefonoDuplicado(
+            @RequestParam String telefono,
+            @RequestParam(required = false) Long usuarioId) {
+        try {
+            Optional<Usuario> usuarioExistente = usuarioRepository.findByTelefonoIgnorandoSoftDelete(telefono);
+
+            if (usuarioExistente.isPresent()) {
+                // Si es el mismo usuario que está editando, no es duplicado
+                if (usuarioId != null && usuarioExistente.get().getId().equals(usuarioId)) {
+                    return ResponseEntity.ok(java.util.Map.of("disponible", true));
+                }
+                return ResponseEntity.ok(java.util.Map.of(
+                    "disponible", false,
+                    "mensaje", "El teléfono ya está registrado en el sistema"
+                ));
+            }
+
+            return ResponseEntity.ok(java.util.Map.of("disponible", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", "Error al validar teléfono"));
+        }
+    }
+
+    /**
+     * Obtiene los horarios regulares de un usuario
+     */
+    @GetMapping("/{id}/horarios")
+    @ResponseBody
+    public ResponseEntity<?> obtenerHorarios(@PathVariable Long id) {
+        try {
+            Usuario usuario = usuarioRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            return ResponseEntity.ok(java.util.Map.of(
+                "horarioRegular", usuario.getHorarioRegular() != null ? usuario.getHorarioRegular() : new java.util.HashMap<>()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Actualiza los horarios regulares de un usuario
+     */
+    @PostMapping("/{id}/horarios")
+    @ResponseBody
+    public ResponseEntity<?> actualizarHorarios(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> horarios) {
+        try {
+            Usuario usuario = usuarioRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            // Convertir Map<String, String> a Map<DayOfWeek, String>
+            java.util.Map<java.time.DayOfWeek, String> horarioRegular = new java.util.EnumMap<>(java.time.DayOfWeek.class);
+
+            for (java.util.Map.Entry<String, String> entry : horarios.entrySet()) {
+                try {
+                    java.time.DayOfWeek dia = java.time.DayOfWeek.valueOf(entry.getKey().toUpperCase());
+                    horarioRegular.put(dia, entry.getValue());
+                } catch (IllegalArgumentException e) {
+                    // Ignorar días inválidos
+                }
+            }
+
+            usuario.setHorarioRegular(horarioRegular);
+            usuarioRepository.save(usuario);
+
+            return ResponseEntity.ok(java.util.Map.of(
+                "success", true,
+                "mensaje", "Horarios actualizados correctamente"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
         }
     }
 

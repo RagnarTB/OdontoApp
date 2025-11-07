@@ -1,0 +1,224 @@
+/**
+ * selector-horarios.css
+ * Estilos para el selector visual de horarios
+ */
+
+/* Contenedor principal de bloques */
+.bloques-horario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 5px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    user-select: none;
+}
+
+/* Cada bloque de tiempo */
+.bloque-horario {
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #6c757d;
+}
+
+.bloque-horario:hover {
+    border-color: #007bff;
+    background-color: #e7f3ff;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+/* Bloque seleccionado */
+.bloque-horario.seleccionado {
+    background-color: #007bff;
+    border-color: #0056b3;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.bloque-horario.seleccionado:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+}
+
+/* Card para cada día */
+.card-dia-horario {
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.card-dia-horario .card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    padding: 12px 15px;
+    border-bottom: none;
+}
+
+.card-dia-horario .card-body {
+    padding: 15px;
+}
+
+/* Preview del horario */
+.horario-preview {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #007bff;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+/* Accordion para días de la semana */
+.accordion-dia {
+    margin-bottom: 10px;
+}
+
+.accordion-dia .card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.accordion-dia .card-header {
+    background-color: #ffffff;
+    padding: 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.accordion-dia .btn-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 15px 20px;
+    text-decoration: none;
+    color: #495057;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.accordion-dia .btn-link:hover {
+    background-color: #f8f9fa;
+    color: #007bff;
+}
+
+.accordion-dia .btn-link[aria-expanded="true"] {
+    background-color: #007bff;
+    color: #ffffff;
+}
+
+.accordion-dia .btn-link .badge {
+    margin-left: auto;
+    margin-right: 10px;
+}
+
+/* Botones de acción rápida */
+.acciones-rapidas {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px dashed #dee2e6;
+}
+
+.acciones-rapidas .btn {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Iconos de día de semana */
+.dia-icon {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    background-color: #007bff;
+    color: white;
+    border-radius: 50%;
+    margin-right: 10px;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+/* Scrollbar personalizado para la grilla */
+.bloques-horario-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.bloques-horario-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.bloques-horario-grid::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.bloques-horario-grid::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .bloques-horario-grid {
+        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+        gap: 4px;
+    }
+
+    .bloque-horario {
+        padding: 6px 2px;
+        font-size: 0.7rem;
+    }
+
+    .acciones-rapidas .btn {
+        min-width: 100%;
+    }
+}
+
+/* Animación de entrada */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card-dia-horario {
+    animation: fadeInUp 0.3s ease;
+}
+
+/* Estado deshabilitado */
+.bloque-horario.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #e9ecef;
+}
+
+.bloque-horario.disabled:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: #dee2e6;
+}

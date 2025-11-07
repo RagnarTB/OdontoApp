@@ -33,7 +33,7 @@ public class InsumoController {
     @GetMapping
     public String listarInsumos(Model model,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "15") int size,
             @RequestParam(required = false) String keyword) {
 
         // 🔥 LÍNEA CLAVE: Carga las alertas de stock bajo y las envía a la vista

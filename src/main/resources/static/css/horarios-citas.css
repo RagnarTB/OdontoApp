@@ -1,0 +1,161 @@
+/**
+ * horarios-citas.css
+ * Estilos para el sistema de selección de horarios de citas
+ */
+
+/* Grilla de horarios */
+.horarios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    padding: 15px 0;
+}
+
+/* Botón de horario individual */
+.horario-slot {
+    position: relative;
+    padding: 12px 8px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    background-color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Horario disponible */
+.horario-slot.disponible {
+    border-color: #28a745;
+    color: #28a745;
+    background-color: #f1f9f3;
+}
+
+.horario-slot.disponible:hover {
+    background-color: #28a745;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+/* Horario ocupado */
+.horario-slot.ocupado {
+    border-color: #6c757d;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Horario seleccionado */
+.horario-slot.seleccionado {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+    transform: scale(1.05);
+}
+
+.horario-slot.seleccionado::after {
+    content: "\f00c"; /* FontAwesome check icon */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 12px;
+}
+
+/* Texto de duración */
+.horario-slot .duracion-texto {
+    font-size: 10px;
+    font-weight: normal;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+
+/* Leyenda */
+.leyenda-horarios {
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+/* Contenedor de información del horario seleccionado */
+.horario-seleccionado-info {
+    padding: 15px;
+    background-color: #e7f3ff;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.horario-seleccionado-info .icono-check {
+    color: #28a745;
+    font-size: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .horarios-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 8px;
+    }
+
+    .horario-slot {
+        padding: 10px 6px;
+        font-size: 12px;
+        min-height: 50px;
+    }
+
+    .horario-slot .duracion-texto {
+        font-size: 9px;
+    }
+}
+
+/* Animación de carga */
+@keyframes pulsar {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.cargando-horarios {
+    animation: pulsar 1.5s ease-in-out infinite;
+}
+
+/* Estilos para el selector de fecha */
+#fechaCitaAgendar {
+    font-size: 16px;
+    padding: 10px;
+}
+
+/* Badge de horario especial */
+.badge-horario-especial {
+    font-size: 11px;
+    padding: 3px 8px;
+    margin-left: 8px;
+}
+
+/* Mensaje de no disponibilidad */
+.sin-horarios-disponibles {
+    padding: 30px;
+    text-align: center;
+    color: #6c757d;
+}
+
+.sin-horarios-disponibles .icono {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}

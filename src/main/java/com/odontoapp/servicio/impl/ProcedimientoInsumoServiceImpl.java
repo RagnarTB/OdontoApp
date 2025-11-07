@@ -80,7 +80,7 @@ public class ProcedimientoInsumoServiceImpl implements ProcedimientoInsumoServic
         ProcedimientoInsumo nuevaRelacion = new ProcedimientoInsumo();
         nuevaRelacion.setProcedimiento(procedimiento);
         nuevaRelacion.setInsumo(insumo);
-        nuevaRelacion.setCantidadDefault(dto.getCantidadDefault());
+        nuevaRelacion.setCantidadDefecto(dto.getCantidadDefault());
 
         // Guardar y retornar
         return procedimientoInsumoRepository.save(nuevaRelacion);
@@ -105,7 +105,7 @@ public class ProcedimientoInsumoServiceImpl implements ProcedimientoInsumoServic
                 "No se encontró la relación procedimiento-insumo con ID: " + procedimientoInsumoId));
 
         // Actualizar la cantidad
-        relacion.setCantidadDefault(nuevaCantidad);
+        relacion.setCantidadDefecto(nuevaCantidad);
 
         // Guardar y retornar
         return procedimientoInsumoRepository.save(relacion);

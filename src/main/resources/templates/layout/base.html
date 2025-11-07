@@ -4,6 +4,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title th:text="'OdontoApp | ' + ${titulo}">OdontoApp</title>
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"
@@ -13,6 +15,12 @@
     <!-- Theme style -->
     <link rel="stylesheet" th:href="@{/adminlte/dist/css/adminlte.min.css}">
     <link rel="stylesheet" th:href="@{/css/custom-styles.css}">
+    <!-- Sistema de Horarios de Citas -->
+    <link rel="stylesheet" th:href="@{/css/horarios-citas.css}">
+    <!-- Selector Visual de Horarios -->
+    <link rel="stylesheet" th:href="@{/css/selector-horarios.css}">
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
 </head>
 
@@ -35,6 +43,8 @@
     <!-- SCRIPTS -->
     <!-- jQuery -->
     <script th:src="@{/adminlte/plugins/jquery/jquery.min.js}"></script>
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- Bootstrap 4 -->
     <script th:src="@{/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
     <!-- AdminLTE App -->
@@ -45,6 +55,12 @@
 
     <!-- Custom Utilities -->
     <script th:src="@{/js/notificaciones.js}"></script>
+    <!-- Validaciones de Input -->
+    <script th:src="@{/js/validaciones-input.js}"></script>
+    <!-- Sistema de Horarios de Citas -->
+    <script th:src="@{/js/horarios-citas.js}"></script>
+    <!-- Selector Visual de Horarios -->
+    <script th:src="@{/js/selector-horarios.js}"></script>
 
     <!-- Mostrar alertas flash de Spring Boot -->
     <script th:inline="javascript">

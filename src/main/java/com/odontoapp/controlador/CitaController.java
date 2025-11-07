@@ -386,6 +386,63 @@ public class CitaController {
     }
 
     /**
+     * API REST: Obtiene los horarios disponibles para un odontólogo en una fecha específica.
+     * Considera el horario del odontólogo, citas existentes, y reglas de agendamiento.
+     *
+     * @param odontologoId ID del odontólogo
+     * @param fecha Fecha para consultar disponibilidad (formato: yyyy-MM-dd)
+     * @param duracion Duración estimada del procedimiento en minutos (opcional, default: 30)
+     * @return JSON con horarios disponibles
+     */
+    @GetMapping("/api/horarios-disponibles")
+    @ResponseBody
+    public Map<String, Object> obtenerHorariosDisponibles(
+            @RequestParam Long odontologoId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(required = false, defaultValue = "30") Integer duracion,
+            @RequestParam(required = false) Long citaIdExcluir) {
+
+        try {
+            // Llamar al servicio para obtener disponibilidad (excluir cita si se proporciona ID)
+            Map<String, Object> disponibilidad = citaService.buscarDisponibilidad(odontologoId, fecha, citaIdExcluir);
+
+            // Obtener horarios disponibles
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> horariosDisponibles =
+                    (List<Map<String, Object>>) disponibilidad.get("horariosDisponibles");
+
+            // Solo aplicar la regla de 1 hora si es el día de hoy
+            if (fecha.equals(LocalDate.now())) {
+                LocalDateTime unaHoraAdelante = LocalDateTime.now().plusHours(1);
+
+                horariosDisponibles = horariosDisponibles.stream()
+                        .filter(slot -> {
+                            String horaInicio = (String) slot.get("inicio");
+                            LocalDateTime fechaHoraSlot = LocalDateTime.of(fecha,
+                                    java.time.LocalTime.parse(horaInicio));
+                            // Incluir slots que inician en o después de 1 hora desde ahora
+                            return fechaHoraSlot.isAfter(unaHoraAdelante) ||
+                                   fechaHoraSlot.equals(unaHoraAdelante);
+                        })
+                        .collect(Collectors.toList());
+            }
+
+            // Actualizar la lista filtrada en el resultado
+            disponibilidad.put("horariosDisponibles", horariosDisponibles);
+            disponibilidad.put("duracionProcedimiento", duracion);
+            disponibilidad.put("minimoAnticipacion", "1 hora");
+
+            return disponibilidad;
+
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", true);
+            error.put("mensaje", "Error al obtener horarios disponibles: " + e.getMessage());
+            return error;
+        }
+    }
+
+    /**
      * Obtiene el color asociado a un estado de cita.
      *
      * @param estadoCita Estado de la cita

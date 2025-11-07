@@ -56,61 +56,74 @@
                         </a>
                     </li>
 
-                    <!-- ADMINISTRACIÓN -->
-                    <li class="nav-header"
-                        sec:authorize="hasAuthority('VER_LISTA_USUARIOS') or hasAuthority('VER_LISTA_ROLES')">
+                    <!-- ADMINISTRACIÓN - Solo ADMIN -->
+                    <li class="nav-header" sec:authorize="hasRole('ADMIN')">
                         ADMINISTRACIÓN
                     </li>
 
-                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_USUARIOS')">
+                    <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                         <a th:href="@{/usuarios}" class="nav-link">
                             <i class="nav-icon fas fa-users"></i>
                             <p>Usuarios</p>
                         </a>
                     </li>
 
-                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_ROLES')">
+                    <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                         <a th:href="@{/roles}" class="nav-link">
                             <i class="nav-icon fas fa-user-shield"></i>
                             <p>Roles y Permisos</p>
                         </a>
                     </li>
 
-                    <!-- GESTIÓN CLÍNICA -->
-                    <li class="nav-header" sec:authorize="hasAuthority('VER_LISTA_PACIENTES')">GESTIÓN CLÍNICA</li>
+                    <!-- GESTIÓN CLÍNICA - ADMIN, ODONTOLOGO, RECEPCIONISTA -->
+                    <li class="nav-header" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
+                        GESTIÓN CLÍNICA
+                    </li>
 
-                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_PACIENTES')">
+                    <!-- Pacientes - ADMIN, ODONTOLOGO, RECEPCIONISTA -->
+                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
                         <a th:href="@{/pacientes}" class="nav-link">
                             <i class="nav-icon fas fa-procedures"></i>
                             <p>Pacientes</p>
                         </a>
                     </li>
 
-                    <li class="nav-item">
+                    <!-- Agenda de Citas - ADMIN, ODONTOLOGO, RECEPCIONISTA, PACIENTE -->
+                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA','PACIENTE')">
                         <a th:href="@{/citas}" class="nav-link">
                             <i class="nav-icon fas fa-calendar-alt"></i>
-                            <p>Agenda de Citas</p>
+                            <p sec:authorize="hasRole('PACIENTE')">Mis Citas</p>
+                            <p sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">Agenda de Citas</p>
                         </a>
                     </li>
 
-                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_SERVICIOS')">
+                    <!-- Servicios - Solo ADMIN y ODONTOLOGO -->
+                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO')">
                         <a th:href="@{/servicios}" class="nav-link">
                             <i class="nav-icon fas fa-clipboard-list"></i>
                             <p>Servicios</p>
                         </a>
                     </li>
 
-                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_INVENTARIO')">
+                    <!-- INVENTARIO - ADMIN, ODONTOLOGO, ALMACEN -->
+                    <li class="nav-header" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','ALMACEN')">
+                        INVENTARIO
+                    </li>
+
+                    <!-- Stock e Insumos - ADMIN, ODONTOLOGO, ALMACEN -->
+                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','ALMACEN')">
                         <a th:href="@{/insumos}" class="nav-link">
                             <i class="nav-icon fas fa-boxes"></i>
                             <p>Stock e Insumos</p>
                         </a>
                     </li>
 
-                    <!-- FACTURACIÓN -->
-                    <li class="nav-header">FACTURACIÓN</li>
+                    <!-- FACTURACIÓN - ADMIN, ODONTOLOGO, RECEPCIONISTA -->
+                    <li class="nav-header" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
+                        FACTURACIÓN
+                    </li>
 
-                    <li class="nav-item has-treeview">
+                    <li class="nav-item has-treeview" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
                         <a href="#" class="nav-link">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>

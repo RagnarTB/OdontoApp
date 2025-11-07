@@ -3,6 +3,8 @@ package com.odontoapp.dto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class ProcedimientoDTO {
@@ -29,4 +31,18 @@ public class ProcedimientoDTO {
 
     @NotNull(message = "Debe seleccionar una categoría")
     private Long categoriaId;
+
+    // Lista de insumos asociados al procedimiento
+    private List<InsumoItemDTO> insumos = new ArrayList<>();
+
+    /**
+     * DTO interno para representar un insumo en el formulario
+     */
+    @Data
+    public static class InsumoItemDTO {
+        private Long insumoId;
+        private BigDecimal cantidad;
+        private String unidad;
+        private boolean esObligatorio = true;
+    }
 }

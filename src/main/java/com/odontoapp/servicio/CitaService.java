@@ -26,6 +26,17 @@ public interface CitaService {
     Map<String, Object> buscarDisponibilidad(Long odontologoId, LocalDate fecha);
 
     /**
+     * Busca los horarios disponibles de un odontólogo en una fecha específica,
+     * excluyendo una cita específica (útil para reprogramación).
+     *
+     * @param odontologoId ID del odontólogo
+     * @param fecha Fecha para buscar disponibilidad
+     * @param citaIdExcluir ID de la cita a excluir (puede ser null)
+     * @return Mapa con los horarios disponibles y ocupados
+     */
+    Map<String, Object> buscarDisponibilidad(Long odontologoId, LocalDate fecha, Long citaIdExcluir);
+
+    /**
      * Agenda una nueva cita para un paciente.
      * Valida la disponibilidad del odontólogo y detecta conflictos de horario.
      *

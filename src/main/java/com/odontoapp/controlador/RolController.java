@@ -49,7 +49,7 @@ public class RolController {
     @GetMapping
     public String listarRoles(Model model,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "15") int size,
             @RequestParam(required = false) String keyword) {
         Pageable pageable = PageRequest.of(page, size);
         // Búsqueda insensible a mayúsculas si los nombres se guardan en mayúsculas

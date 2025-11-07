@@ -75,9 +75,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     private Collection<? extends GrantedAuthority> getAuthorities(Set<Rol> roles) {
         Set<GrantedAuthority> authorities = new HashSet<>();
         for (Rol rol : roles) {
-            // Añadimos el nombre del rol (ej. "ROLE_ADMIN")
-            authorities.add(new SimpleGrantedAuthority(rol.getNombre()));
+            // Añadimos el nombre del rol con prefijo ROLE_ (ej. "ROLE_ADMIN")
+            // Esto permite usar hasRole('ADMIN') en SecurityConfig y menús
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + rol.getNombre()));
+
             // Añadimos todos los permisos asociados a ese rol
+            // Formato: ACCION_MODULO (ej. "VER_LISTA_PACIENTES")
             if (rol.getPermisos() != null) {
                 for (Permiso permiso : rol.getPermisos()) {
                     authorities.add(new SimpleGrantedAuthority(permiso.getAccion() + "_" + permiso.getModulo()));

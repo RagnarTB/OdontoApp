@@ -95,9 +95,13 @@
                                     <div class="form-group">
                                         <label for="stockMinimo">Stock Mínimo de Alerta</label>
                                         <input type="number" step="1" class="form-control" id="stockMinimo"
-                                            th:field="*{stockMinimo}" placeholder="Ej: 10" required>
+                                            th:field="*{stockMinimo}" placeholder="Ej: 10"
+                                            data-validar="numeros"
+                                            min="0"
+                                            required>
                                         <div class="text-danger" th:if="${#fields.hasErrors('stockMinimo')}"
                                             th:errors="*{stockMinimo}"></div>
+                                        <small class="form-text text-muted">Solo números enteros positivos</small>
                                     </div>
                                 </div>
                             </div>
@@ -107,9 +111,14 @@
                                     <div class="form-group">
                                         <label for="precioUnitario">Precio Unitario (S/.)</label>
                                         <input type="number" step="0.01" class="form-control" id="precioUnitario"
-                                            th:field="*{precioUnitario}" placeholder="Ej: 5.50" required>
+                                            th:field="*{precioUnitario}" placeholder="Ej: 5.50"
+                                            data-validar="decimal"
+                                            data-max-decimals="2"
+                                            min="0"
+                                            required>
                                         <div class="text-danger" th:if="${#fields.hasErrors('precioUnitario')}"
                                             th:errors="*{precioUnitario}"></div>
+                                        <small class="form-text text-muted">Números con hasta 2 decimales</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">

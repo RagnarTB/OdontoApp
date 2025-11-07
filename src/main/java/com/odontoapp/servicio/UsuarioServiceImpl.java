@@ -64,7 +64,12 @@ public class UsuarioServiceImpl implements UsuarioService {
                 usuarioDTO.getTipoDocumentoId(),
                 usuarioDTO.getId());
 
-        // --- 2. VALIDACIÓN PREVIA DE EMAIL ---
+        // --- 2. VALIDACIÓN PREVIA DE TELÉFONO ---
+        validarUnicidadTelefono(
+                usuarioDTO.getTelefono(),
+                usuarioDTO.getId());
+
+        // --- 3. VALIDACIÓN PREVIA DE EMAIL ---
         Optional<Usuario> existenteConEmailOpt = usuarioRepository.findByEmailIgnorandoSoftDelete(emailNuevo);
 
         if (esNuevo) {
@@ -148,10 +153,25 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setTelefono(usuarioDTO.getTelefono());
         usuario.setFechaNacimiento(usuarioDTO.getFechaNacimiento());
         usuario.setDireccion(usuarioDTO.getDireccion());
-        // La fecha de contratación solo se establece al crear
-        if (!esNuevo && usuarioDTO.getFechaContratacion() != null) {
-            // Permitir actualizar fecha de contratación si viene en el DTO (opcional)
-            usuario.setFechaContratacion(usuarioDTO.getFechaContratacion());
+
+        // Validar fecha de contratación no futura
+        if (usuarioDTO.getFechaContratacion() != null) {
+            if (usuarioDTO.getFechaContratacion().isAfter(java.time.LocalDate.now())) {
+                throw new IllegalArgumentException("La fecha de contratación no puede ser futura.");
+            }
+            if (esNuevo) {
+                usuario.setFechaContratacion(usuarioDTO.getFechaContratacion());
+            }
+        } else if (esNuevo) {
+            usuario.setFechaContratacion(java.time.LocalDate.now());
+        }
+
+        // Validar edad mínima (18 años) para empleados
+        if (usuarioDTO.getFechaNacimiento() != null) {
+            java.time.Period edad = java.time.Period.between(usuarioDTO.getFechaNacimiento(), java.time.LocalDate.now());
+            if (edad.getYears() < 18) {
+                throw new IllegalArgumentException("El trabajador debe ser mayor de 18 años.");
+            }
         }
 
         // --- ContraseÃ±a SOLO si es nuevo ---
@@ -179,6 +199,24 @@ public class UsuarioServiceImpl implements UsuarioService {
         // Obtener los roles seleccionados desde la base de datos
         List<Rol> rolesSeleccionados = rolRepository.findAllById(usuarioDTO.getRoles());
         usuario.setRoles(new HashSet<>(rolesSeleccionados));
+
+        // --- VALIDAR Y ESTABLECER FECHA DE VIGENCIA ---
+        boolean tieneRolAdmin = rolesSeleccionados.stream().anyMatch(r -> "ADMIN".equals(r.getNombre()));
+
+        if (tieneRolAdmin) {
+            // Si tiene rol ADMIN, la fecha de vigencia no es requerida (puede ser null o infinita)
+            usuario.setFechaVigencia(usuarioDTO.getFechaVigencia()); // Puede ser null
+        } else {
+            // Para cualquier otro rol, fecha de vigencia ES OBLIGATORIA
+            if (usuarioDTO.getFechaVigencia() == null) {
+                throw new IllegalArgumentException("La fecha de vigencia es obligatoria para usuarios sin rol ADMIN.");
+            }
+            // Validar que no sea pasada
+            if (usuarioDTO.getFechaVigencia().isBefore(java.time.LocalDate.now())) {
+                throw new IllegalArgumentException("La fecha de vigencia no puede ser pasada.");
+            }
+            usuario.setFechaVigencia(usuarioDTO.getFechaVigencia());
+        }
 
         // --- 5. ACTUALIZAR HORARIOS (SI APLICA) ---
         // Limpiamos los horarios existentes antes de añadir los nuevos (importante para
@@ -458,7 +496,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
     }
 
-    // Método de validación de documento (parece correcto)
+    // Método de validación de documento
     private void validarUnicidadDocumentoUsuario(String numeroDocumento, Long tipoDocumentoId, Long idUsuarioExcluir) {
         if (!StringUtils.hasText(numeroDocumento) || tipoDocumentoId == null) {
             return; // No validar si falta alguno
@@ -471,7 +509,22 @@ public class UsuarioServiceImpl implements UsuarioService {
             TipoDocumento tipoDoc = tipoDocumentoRepository.findById(tipoDocumentoId).orElse(new TipoDocumento());
             throw new DataIntegrityViolationException(
                     "El documento '" + tipoDoc.getCodigo() + " " + numeroDocumento
-                            + "' ya estÃ¡ registrado para otro usuario.");
+                            + "' ya está registrado para otro usuario.");
+        }
+    }
+
+    // Método de validación de teléfono único
+    private void validarUnicidadTelefono(String telefono, Long idUsuarioExcluir) {
+        if (!StringUtils.hasText(telefono)) {
+            return; // No validar si está vacío (campo opcional)
+        }
+        Optional<Usuario> existentePorTelefono = usuarioRepository
+                .findByTelefonoIgnorandoSoftDelete(telefono);
+
+        if (existentePorTelefono.isPresent()
+                && (idUsuarioExcluir == null || !existentePorTelefono.get().getId().equals(idUsuarioExcluir))) {
+            throw new DataIntegrityViolationException(
+                    "El teléfono '" + telefono + "' ya está registrado para otro usuario.");
         }
     }
 

@@ -83,9 +83,14 @@
                                         <option value="">Buscar insumo...</option>
                                         <option th:each="insumo : ${listaInsumos}"
                                                 th:value="${insumo.id}"
-                                                th:text="${insumo.nombre + ' (Stock: ' + insumo.stockActual + ')'}"
-                                                th:attr="data-price=${insumo.precioUnitario},data-nombre=${insumo.nombre}"></option>
+                                                th:text="${insumo.stockActual > 0 ? (insumo.nombre + ' (Stock: ' + insumo.stockActual + ')') : (insumo.nombre + ' (SIN STOCK)')}"
+                                                th:attr="data-price=${insumo.precioUnitario},data-nombre=${insumo.nombre},data-stock=${insumo.stockActual}"
+                                                th:disabled="${insumo.stockActual <= 0}"
+                                                th:classappend="${insumo.stockActual <= 0} ? 'text-muted'"></option>
                                     </select>
+                                    <small class="form-text text-info">
+                                        <i class="fas fa-info-circle"></i> Los insumos sin stock aparecen deshabilitados
+                                    </small>
                                 </div>
 
                                 <button type="button" id="btnAgregarItem" class="btn btn-success btn-block">
@@ -205,10 +210,24 @@
                     let option = $('#selectInsumo option:selected');
                     descripcion = option.attr('data-nombre');
                     precio = parseFloat(option.attr('data-price') || 0);
+                    let stockDisponible = parseInt(option.attr('data-stock') || 0);
+
+                    // Validar stock disponible
+                    if (stockDisponible <= 0) {
+                        mostrarError('Este insumo no tiene stock disponible.');
+                        return;
+                    }
                 }
                 else {
-                    alert('Por favor, selecciona un procedimiento o un insumo.');
+                    mostrarAdvertencia('Por favor, selecciona un procedimiento o un insumo.');
                     return;
+                }
+
+                // Obtener stock si es insumo
+                let stockDisponible = null;
+                if (tipoItem === 'INSUMO') {
+                    let option = $('#selectInsumo option:selected');
+                    stockDisponible = parseInt(option.attr('data-stock') || 0);
                 }
 
                 // Crear objeto detalle
@@ -219,7 +238,8 @@
                     descripcionItem: descripcion,
                     cantidad: 1,
                     precioUnitario: precio,
-                    subtotal: precio * 1
+                    subtotal: precio * 1,
+                    stockDisponible: stockDisponible
                 };
 
                 // Agregar a la lista
@@ -272,6 +292,22 @@
                 // Actualizar detalle en el array
                 let detalle = detalles.find(d => d.index === index);
                 if (detalle) {
+                    // Validar stock si es insumo
+                    if (detalle.tipoItem === 'INSUMO' && detalle.stockDisponible !== null) {
+                        if (nuevaCantidad > detalle.stockDisponible) {
+                            mostrarError(`Stock insuficiente. Disponible: ${detalle.stockDisponible} unidades`);
+                            $(this).val(detalle.cantidad); // Restaurar valor anterior
+                            return;
+                        }
+                    }
+
+                    // Validar que sea positivo
+                    if (nuevaCantidad <= 0) {
+                        mostrarAdvertencia('La cantidad debe ser mayor a 0');
+                        $(this).val(detalle.cantidad);
+                        return;
+                    }
+
                     detalle.cantidad = nuevaCantidad;
                     detalle.subtotal = detalle.precioUnitario * nuevaCantidad;
 

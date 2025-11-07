@@ -24,16 +24,14 @@
                         <span id="mensajeValidacionCita"></span>
                     </div>
 
+                    <!-- Campo hidden para enviar la fecha/hora seleccionada -->
+                    <input type="hidden" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
+
+                    <!-- PASO 1: Información Básica -->
+                    <h6 class="text-primary mb-3 border-bottom pb-2">
+                        <i class="fas fa-user-md mr-2"></i>Paso 1: Información Básica
+                    </h6>
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="fechaHoraInicioAgendar">Fecha y Hora de Inicio <span class="text-danger">*</span></label>
-                                <input type="datetime-local" class="form-control" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
-                                <div class="invalid-feedback">
-                                    Por favor seleccione una fecha y hora válida (no puede ser en el pasado)
-                                </div>
-                            </div>
-                        </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="pacienteIdAgendar">Paciente <span class="text-danger">*</span></label>
@@ -43,14 +41,8 @@
                                             th:value="${paciente.usuario != null ? paciente.usuario.id : ''}"
                                             th:text="${paciente.nombreCompleto}"></option>
                                 </select>
-                                <div class="invalid-feedback">
-                                    Por favor seleccione un paciente
-                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="odontologoIdAgendar">Odontólogo <span class="text-danger">*</span></label>
@@ -60,23 +52,64 @@
                                             th:value="${odontologo.id}"
                                             th:text="${odontologo.nombreCompleto}"></option>
                                 </select>
-                                <div class="invalid-feedback">
-                                    Por favor seleccione un odontólogo
-                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="procedimientoIdAgendar">Procedimiento</label>
+                                <label for="procedimientoIdAgendar">Procedimiento <small class="text-muted">(Opcional)</small></label>
                                 <select class="form-control" id="procedimientoIdAgendar" name="procedimientoId">
                                     <option value="">Seleccione un procedimiento</option>
                                     <option th:each="procedimiento : ${listaProcedimientos}"
                                             th:value="${procedimiento.id}"
-                                            th:text="${procedimiento.nombre}"></option>
+                                            th:text="${procedimiento.nombre} + ' (' + ${procedimiento.duracionBaseMinutos} + ' min)'"
+                                            th:attr="data-duracion=${procedimiento.duracionBaseMinutos}"></option>
                                 </select>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> Influye en la duración de la cita
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="fechaCitaAgendar">Fecha de la Cita <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="fechaCitaAgendar" required>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-calendar-alt"></i> Seleccione la fecha para ver horarios
+                                </small>
                             </div>
                         </div>
                     </div>
+
+                    <hr class="my-4">
+
+                    <!-- PASO 2: Seleccionar Horario -->
+                    <h6 class="text-primary mb-3 border-bottom pb-2">
+                        <i class="fas fa-clock mr-2"></i>Paso 2: Seleccionar Horario Disponible
+                    </h6>
+
+                    <!-- Indicador de horario seleccionado -->
+                    <div class="alert alert-info" id="horario-seleccionado-info" style="display: none;">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <strong>Horario seleccionado:</strong> <span id="horario-seleccionado-texto">Ninguno</span>
+                    </div>
+
+                    <!-- Grilla de horarios disponibles -->
+                    <div id="grilla-horarios-disponibles" class="mb-3">
+                        <div class="alert alert-secondary text-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Seleccione un odontólogo y fecha para ver los horarios disponibles
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- PASO 3: Información Adicional -->
+                    <h6 class="text-primary mb-3 border-bottom pb-2">
+                        <i class="fas fa-notes-medical mr-2"></i>Paso 3: Información Adicional <small class="text-muted">(Opcional)</small>
+                    </h6>
 
                     <div class="form-group">
                         <label for="motivoConsultaAgendar">Motivo de Consulta</label>
@@ -117,6 +150,7 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="detalleCitaId" class="citaIdField">
+                <input type="hidden" id="detalleOdontologoId">
 
                 <div class="row">
                     <div class="col-md-6">
@@ -157,7 +191,7 @@
                     </form>
 
                     <!-- Botones Marcar Asistencia -->
-                    <div id="divAsistencia" style="display: none;">
+                    <div id="divAsistencia" style="display: none;" sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
                         <form th:action="@{/citas/marcar-asistencia}" method="post" style="display: inline-block;">
                             <input type="hidden" name="citaId" class="citaIdField">
                             <input type="hidden" name="asistio" value="true">
@@ -175,17 +209,20 @@
                     </div>
 
                     <!-- Botón Reprogramar -->
-                    <button type="button" class="btn btn-warning" id="btnReprogramar" data-dismiss="modal" data-toggle="modal" data-target="#modalReprogramarCita">
+                    <button type="button" class="btn btn-warning" id="btnReprogramar" data-dismiss="modal" data-toggle="modal" data-target="#modalReprogramarCita"
+                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
                         <i class="fas fa-calendar-alt mr-1"></i>Reprogramar
                     </button>
 
                     <!-- Botón Cancelar -->
-                    <button type="button" class="btn btn-danger" id="btnCancelar" data-dismiss="modal" data-toggle="modal" data-target="#modalCancelarCita">
+                    <button type="button" class="btn btn-danger" id="btnCancelar" data-dismiss="modal" data-toggle="modal" data-target="#modalCancelarCita"
+                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ELIMINAR_CITAS', 'ADMIN')">
                         <i class="fas fa-ban mr-1"></i>Cancelar
                     </button>
 
                     <!-- Botón Registrar Tratamiento -->
-                    <button type="button" class="btn btn-primary" id="btnRegistrarTratamiento" data-dismiss="modal" data-toggle="modal" data-target="#modalRegistrarTratamiento">
+                    <button type="button" class="btn btn-primary" id="btnRegistrarTratamiento" data-dismiss="modal" data-toggle="modal" data-target="#modalRegistrarTratamiento"
+                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
                         <i class="fas fa-notes-medical mr-1"></i>Registrar Tratamiento
                     </button>
                 </div>
@@ -203,7 +240,7 @@
 <!-- MODAL: Reprogramar Cita -->
 <!-- ========================================== -->
 <div th:fragment="modalReprogramarCita" class="modal fade" id="modalReprogramarCita" tabindex="-1" role="dialog" aria-labelledby="modalReprogramarCitaLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document" style="max-width: 850px;">
         <div class="modal-content">
             <form th:action="@{/citas/reprogramar}" method="post">
                 <div class="modal-header bg-warning text-dark">
@@ -216,22 +253,71 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="reprogramarCitaId" name="citaId">
+                    <input type="hidden" id="reprogramarOdontologoId" name="odontologoUsuarioId">
+                    <input type="hidden" id="nuevaFechaHoraInicioReprogramar" name="nuevaFechaHoraInicio" required>
 
-                    <div class="form-group">
-                        <label for="nuevaFechaHoraInicio">Nueva Fecha y Hora <span class="text-danger">*</span></label>
-                        <input type="datetime-local" class="form-control" id="nuevaFechaHoraInicio" name="nuevaFechaHoraInicio" required>
+                    <!-- Información de la cita actual -->
+                    <div class="alert alert-info mb-3">
+                        <h6><i class="fas fa-info-circle mr-2"></i>Cita Actual</h6>
+                        <p class="mb-1"><strong>Paciente:</strong> <span id="reprogramarPaciente"></span></p>
+                        <p class="mb-1"><strong>Odontólogo:</strong> <span id="reprogramarOdontologo"></span></p>
+                        <p class="mb-0"><strong>Fecha/Hora:</strong> <span id="reprogramarFechaActual"></span></p>
                     </div>
 
-                    <div class="form-group">
-                        <label for="motivoReprogramacion">Motivo de la Reprogramación</label>
-                        <textarea class="form-control" id="motivoReprogramacion" name="motivo" rows="3" placeholder="Indique el motivo de la reprogramación"></textarea>
+                    <!-- Layout horizontal: 2 columnas -->
+                    <div class="row">
+                        <!-- Columna Izquierda: Selección de Fecha y Motivo -->
+                        <div class="col-md-5">
+                            <!-- Seleccionar Nueva Fecha -->
+                            <h6 class="text-primary mb-3 border-bottom pb-2">
+                                <i class="fas fa-calendar-alt mr-2"></i>Nueva Fecha
+                            </h6>
+                            <div class="form-group">
+                                <label for="fechaCitaReprogramar">Fecha <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="fechaCitaReprogramar" required>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios
+                                </small>
+                            </div>
+
+                            <!-- Indicador de horario seleccionado -->
+                            <div class="alert alert-success" id="horario-seleccionado-info-reprogramar" style="display: none;">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <strong>Horario:</strong> <span id="horario-seleccionado-texto-reprogramar">Ninguno</span>
+                            </div>
+
+                            <hr class="my-3">
+
+                            <!-- Motivo -->
+                            <h6 class="text-primary mb-3 border-bottom pb-2">
+                                <i class="fas fa-comment mr-2"></i>Motivo
+                            </h6>
+                            <div class="form-group">
+                                <label for="motivoReprogramacion">Motivo <small class="text-muted">(Opcional)</small></label>
+                                <textarea class="form-control" id="motivoReprogramacion" name="motivo" rows="3" placeholder="Indique el motivo"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Columna Derecha: Horarios Disponibles -->
+                        <div class="col-md-7">
+                            <h6 class="text-primary mb-3 border-bottom pb-2">
+                                <i class="fas fa-clock mr-2"></i>Horarios Disponibles
+                            </h6>
+                            <!-- Grilla de horarios disponibles con scroll -->
+                            <div id="grilla-horarios-disponibles-reprogramar" class="mb-3" style="max-height: 320px; overflow-y: auto;">
+                                <div class="alert alert-secondary text-center">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    Seleccione una fecha para ver los horarios
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i>Cancelar
                     </button>
-                    <button type="submit" class="btn btn-warning">
+                    <button type="submit" class="btn btn-warning" id="btnConfirmarReprogramar">
                         <i class="fas fa-check mr-1"></i>Reprogramar
                     </button>
                 </div>
@@ -284,116 +370,29 @@
 <!-- ========================================== -->
 <!-- MODAL: Registrar Tratamiento -->
 <!-- ========================================== -->
-<div th:fragment="modalRegistrarTratamiento" class="modal fade" id="modalRegistrarTratamiento" tabindex="-1" role="dialog" aria-labelledby="modalRegistrarTratamientoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <form th:action="@{/tratamientos/registrar}" method="post">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="modalRegistrarTratamientoLabel">
-                        <i class="fas fa-notes-medical mr-2"></i>Registrar Tratamiento
-                    </h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="tratamientoCitaId" name="citaId">
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="tratamientoProcedimientoId">Procedimiento <span class="text-danger">*</span></label>
-                                <select class="form-control" id="tratamientoProcedimientoId" name="procedimientoId" required>
-                                    <option value="">Seleccione un procedimiento</option>
-                                    <option th:each="procedimiento : ${listaProcedimientos}"
-                                            th:value="${procedimiento.id}"
-                                            th:text="${procedimiento.nombre}"></option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="tratamientoOdontologoId">Odontólogo <span class="text-danger">*</span></label>
-                                <select class="form-control" id="tratamientoOdontologoId" name="odontologoUsuarioId" required>
-                                    <option value="">Seleccione un odontólogo</option>
-                                    <option th:each="odontologo : ${listaOdontologos}"
-                                            th:value="${odontologo.id}"
-                                            th:text="${odontologo.nombreCompleto}"></option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="tratamientoPiezaDental">Pieza Dental</label>
-                                <input type="text" class="form-control" id="tratamientoPiezaDental" name="piezaDental" placeholder="Ej: 16, 21, 34...">
-                                <small class="form-text text-muted">Número de la pieza dental tratada</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="tratamientoFechaRealizacion">Fecha de Realización <span class="text-danger">*</span></label>
-                                <input type="datetime-local" class="form-control" id="tratamientoFechaRealizacion" name="fechaRealizacion" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="tratamientoDescripcion">Descripción del Trabajo</label>
-                        <textarea class="form-control" id="tratamientoDescripcion" name="descripcionTrabajo" rows="3" placeholder="Describa el tratamiento realizado"></textarea>
-                    </div>
-
-                    <hr>
-                    <h6 class="text-muted">Insumo Ajustado (Opcional)</h6>
-                    <div class="alert alert-info alert-sm">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        <small>El stock del insumo seleccionado se descontará automáticamente al registrar el tratamiento.</small>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="form-group">
-                                <label for="tratamientoInsumoId">Insumo</label>
-                                <select class="form-control" id="tratamientoInsumoId" name="insumoAjustadoId">
-                                    <option value="">Ninguno</option>
-                                    <option th:each="insumo : ${listaInsumos}"
-                                            th:value="${insumo.id}"
-                                            th:text="${insumo.nombre + ' (Stock: ' + insumo.stockActual + ' ' + insumo.unidadMedida.abreviatura + ')'}"></option>
-                                </select>
-                                <small class="form-text text-muted">Si se usó un insumo, el stock se descontará automáticamente</small>
-                                <div id="stockWarning" class="alert alert-warning mt-2 d-none">
-                                    <i class="fas fa-exclamation-triangle mr-1"></i>
-                                    <span id="stockWarningText"></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="tratamientoCantidadAjustada">Cantidad</label>
-                                <input type="number" class="form-control" id="tratamientoCantidadAjustada" name="cantidadInsumoAjustada" step="0.01" min="0.01" placeholder="0.00">
-                                <small class="form-text text-muted" id="stockDisponibleText"></small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        <i class="fas fa-times mr-1"></i>Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save mr-1"></i>Registrar Tratamiento
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<th:block th:fragment="modalRegistrarTratamiento">
+    <div th:replace="~{modulos/citas/modal-tratamiento-avanzado :: modalRegistrarTratamiento}"></div>
+</th:block>
 
 <!-- Script de validaciones inline para modal de citas -->
 <script th:fragment="scriptValidacionesCita">
 $(document).ready(function() {
+    // Inicializar Select2 para buscador de pacientes
+    $('#pacienteIdAgendar').select2({
+        dropdownParent: $('#modalAgendarCita'),
+        placeholder: 'Busque y seleccione un paciente',
+        allowClear: true,
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "No se encontraron pacientes";
+            },
+            searching: function() {
+                return "Buscando...";
+            }
+        }
+    });
+
     // Referencias a elementos del formulario
     const formAgendar = $('#modalAgendarCita form');
     const fechaInput = $('#fechaHoraInicioAgendar');
@@ -582,7 +581,17 @@ $(document).ready(function() {
         $('#stockWarning').addClass('d-none');
         $('#stockDisponibleText').text('');
         $('#tratamientoCantidadAjustada').prop('disabled', true).removeClass('is-invalid');
-        $(this).find('form')[0].reset();
+
+        // Resetear formulario si existe
+        const formulario = $(this).find('form')[0];
+        if (formulario) {
+            formulario.reset();
+        }
+
+        // Limpiar campos manualmente
+        $('#tratamientoProcedimientoId').val('');
+        $('#tratamientoPiezasDentales').val('');
+        $('#tratamientoDescripcion').val('');
     });
 });
 </script>

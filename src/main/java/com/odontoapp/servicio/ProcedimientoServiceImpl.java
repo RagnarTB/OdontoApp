@@ -3,14 +3,20 @@ package com.odontoapp.servicio;
 import com.odontoapp.dto.ProcedimientoDTO;
 import com.odontoapp.entidad.CategoriaProcedimiento;
 import com.odontoapp.entidad.Procedimiento;
+import com.odontoapp.entidad.ProcedimientoInsumo;
+import com.odontoapp.entidad.Insumo;
 import com.odontoapp.repositorio.CategoriaProcedimientoRepository;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
+import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
+import com.odontoapp.repositorio.InsumoRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -19,13 +25,19 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
     private final ProcedimientoRepository procedimientoRepository;
     private final CategoriaProcedimientoRepository categoriaRepository;
     private final CitaRepository citaRepository;
+    private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
+    private final InsumoRepository insumoRepository;
 
     public ProcedimientoServiceImpl(ProcedimientoRepository procedimientoRepository,
                                      CategoriaProcedimientoRepository categoriaRepository,
-                                     CitaRepository citaRepository) {
+                                     CitaRepository citaRepository,
+                                     ProcedimientoInsumoRepository procedimientoInsumoRepository,
+                                     InsumoRepository insumoRepository) {
         this.procedimientoRepository = procedimientoRepository;
         this.categoriaRepository = categoriaRepository;
         this.citaRepository = citaRepository;
+        this.procedimientoInsumoRepository = procedimientoInsumoRepository;
+        this.insumoRepository = insumoRepository;
     }
 
     @Override
@@ -33,7 +45,7 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
         if (keyword != null && !keyword.isBlank()) {
             return procedimientoRepository.findByKeyword(keyword, pageable);
         }
-        return procedimientoRepository.findAll(pageable);
+        return procedimientoRepository.findAllWithRelations(pageable);
     }
 
     @Override
@@ -42,6 +54,7 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
     }
 
     @Override
+    @Transactional
     public void guardar(ProcedimientoDTO dto) {
         // Validación de código único
         Optional<Procedimiento> existente = procedimientoRepository.findByCodigo(dto.getCodigo());
@@ -68,7 +81,32 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
         procedimiento.setDuracionBaseMinutos(dto.getDuracionBaseMinutos());
         procedimiento.setCategoria(categoria);
 
-        procedimientoRepository.save(procedimiento);
+        // Guardar el procedimiento primero
+        procedimiento = procedimientoRepository.save(procedimiento);
+
+        // Gestionar insumos asociados
+        if (dto.getInsumos() != null && !dto.getInsumos().isEmpty()) {
+            // Si estamos editando, eliminar las relaciones existentes
+            if (dto.getId() != null) {
+                List<ProcedimientoInsumo> insumosExistentes = procedimientoInsumoRepository.findByProcedimientoId(dto.getId());
+                procedimientoInsumoRepository.deleteAll(insumosExistentes);
+            }
+
+            // Crear nuevas relaciones
+            for (ProcedimientoDTO.InsumoItemDTO insumoItem : dto.getInsumos()) {
+                Insumo insumo = insumoRepository.findById(insumoItem.getInsumoId())
+                        .orElseThrow(() -> new IllegalStateException("Insumo no encontrado: " + insumoItem.getInsumoId()));
+
+                ProcedimientoInsumo procedimientoInsumo = new ProcedimientoInsumo();
+                procedimientoInsumo.setProcedimiento(procedimiento);
+                procedimientoInsumo.setInsumo(insumo);
+                procedimientoInsumo.setCantidadDefecto(insumoItem.getCantidad());
+                procedimientoInsumo.setUnidad(insumoItem.getUnidad());
+                procedimientoInsumo.setEsObligatorio(insumoItem.isEsObligatorio());
+
+                procedimientoInsumoRepository.save(procedimientoInsumo);
+            }
+        }
     }
 
     @Override

@@ -43,6 +43,8 @@ public class Paciente extends EntidadAuditable {
     private String alergias;
     @Lob
     private String antecedentesMedicos;
+    @Lob
+    private String tratamientosActuales;
 
     @Column(columnDefinition = "json")
     private String estadoOdontograma;

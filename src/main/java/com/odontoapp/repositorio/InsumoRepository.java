@@ -15,15 +15,20 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
 
     Optional<Insumo> findByCodigo(String codigo);
 
-    @Query("SELECT i FROM Insumo i WHERE i.nombre LIKE %:keyword% OR i.codigo LIKE %:keyword% OR i.marca LIKE %:keyword%")
+    @Query("SELECT DISTINCT i FROM Insumo i LEFT JOIN FETCH i.categoria LEFT JOIN FETCH i.unidadMedida WHERE i.nombre LIKE %:keyword% OR i.codigo LIKE %:keyword% OR i.marca LIKE %:keyword%")
     Page<Insumo> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT i FROM Insumo i WHERE i.stockActual <= i.stockMinimo AND i.stockMinimo > 0")
+    @Query("SELECT i FROM Insumo i LEFT JOIN FETCH i.categoria LEFT JOIN FETCH i.unidadMedida WHERE i.stockActual <= i.stockMinimo AND i.stockMinimo > 0")
     List<Insumo> findInsumosConStockBajo();
 
     // Método para cargar insumos con sus relaciones (EAGER fetch)
     @Query("SELECT i FROM Insumo i LEFT JOIN FETCH i.categoria LEFT JOIN FETCH i.unidadMedida")
     List<Insumo> findAllWithRelations();
+
+    // Método paginado para cargar insumos con sus relaciones
+    @Query(value = "SELECT DISTINCT i FROM Insumo i LEFT JOIN FETCH i.categoria LEFT JOIN FETCH i.unidadMedida",
+           countQuery = "SELECT COUNT(i) FROM Insumo i")
+    Page<Insumo> findAllWithRelations(Pageable pageable);
 
     // --- NUEVO MÉTODO AÑADIDO ---
     /**
