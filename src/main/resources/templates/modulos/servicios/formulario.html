@@ -227,27 +227,36 @@
         });
 
         // Botón agregar insumo
-        $('#btnAgregarInsumo').on('click', function() {
+        $('#btnAgregarInsumo').on('click', function(e) {
+            e.preventDefault(); // Prevenir submit del formulario
+            console.log('Botón agregar insumo clickeado');
+
             const insumoId = $('#insumoSelector').val();
             const insumoNombre = $('#insumoSelector option:selected').text();
             const cantidad = parseFloat($('#cantidadInsumo').val());
             const unidad = $('#unidadInsumo').val();
             const esObligatorio = $('#esObligatorioInsumo').is(':checked');
 
+            console.log('Datos:', { insumoId, insumoNombre, cantidad, unidad, esObligatorio });
+
             // Validaciones
             if (!insumoId) {
-                Swal.fire('Error', 'Debe seleccionar un insumo', 'error');
-                return;
+                alert('Debe seleccionar un insumo');
+                return false;
             }
             if (!cantidad || cantidad <= 0) {
-                Swal.fire('Error', 'Debe ingresar una cantidad válida', 'error');
-                return;
+                alert('Debe ingresar una cantidad válida');
+                return false;
+            }
+            if (!unidad) {
+                alert('La unidad de medida no está definida');
+                return false;
             }
 
             // Verificar si ya existe
             if (insumosAgregados.find(i => i.insumoId == insumoId)) {
-                Swal.fire('Error', 'Este insumo ya ha sido agregado', 'error');
-                return;
+                alert('Este insumo ya ha sido agregado');
+                return false;
             }
 
             // Agregar al array
@@ -259,6 +268,8 @@
                 esObligatorio: esObligatorio
             });
 
+            console.log('Insumo agregado. Total:', insumosAgregados.length);
+
             // Actualizar tabla
             actualizarTablaInsumos();
 
@@ -267,6 +278,8 @@
             $('#cantidadInsumo').val('');
             $('#unidadInsumo').val('');
             $('#esObligatorioInsumo').prop('checked', true);
+
+            return false;
         });
 
         // Función para actualizar la tabla de insumos
