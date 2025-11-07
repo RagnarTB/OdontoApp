@@ -37,12 +37,42 @@ public class SecurityConfig {
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
                                 .authorizeHttpRequests(authorize -> authorize
+                                                // Recursos públicos
                                                 .requestMatchers("/login", "/adminlte/**", "/css/**", "/js/**",
                                                                 "/activar-cuenta", "/establecer-password",
                                                                 "/resultado-activacion", "/registro/**",
                                                                 "/api/reniec")
                                                 .permitAll()
+
+                                                // Cambiar password obligatorio - todos autenticados
                                                 .requestMatchers("/cambiar-password-obligatorio").authenticated()
+
+                                                // ADMIN: Acceso total
+                                                .requestMatchers("/usuarios/**", "/roles/**").hasRole("ADMIN")
+
+                                                // PACIENTE: Solo citas propias y perfil
+                                                .requestMatchers("/citas/mis-citas/**", "/perfil/**").hasAnyRole("PACIENTE", "ADMIN", "ODONTOLOGO", "RECEPCIONISTA")
+
+                                                // ODONTOLOGO: Todo menos usuarios/roles
+                                                .requestMatchers("/pacientes/**", "/servicios/**", "/facturacion/**",
+                                                                "/insumos/**", "/categorias-insumo/**", "/unidades-medida/**",
+                                                                "/reportes/**", "/configuracion/**", "/tratamientos/**")
+                                                .hasAnyRole("ODONTOLOGO", "ADMIN")
+
+                                                // RECEPCIONISTA: Citas, pacientes y facturación
+                                                .requestMatchers("/citas/**", "/agenda/**").hasAnyRole("RECEPCIONISTA", "ADMIN", "ODONTOLOGO")
+                                                .requestMatchers("/pacientes/**").hasAnyRole("RECEPCIONISTA", "ADMIN", "ODONTOLOGO")
+                                                .requestMatchers("/facturacion/**").hasAnyRole("RECEPCIONISTA", "ADMIN", "ODONTOLOGO")
+
+                                                // ALMACEN: Solo inventario
+                                                .requestMatchers("/insumos/**", "/categorias-insumo/**",
+                                                                "/unidades-medida/**", "/movimientos-inventario/**")
+                                                .hasAnyRole("ALMACEN", "ADMIN", "ODONTOLOGO")
+
+                                                // Dashboard y home - todos autenticados
+                                                .requestMatchers("/", "/home", "/dashboard").authenticated()
+
+                                                // Cualquier otra petición requiere autenticación
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form
                                                 .loginPage("/login")

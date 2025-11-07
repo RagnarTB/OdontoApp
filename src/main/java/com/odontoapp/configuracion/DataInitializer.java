@@ -496,10 +496,38 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // ... (Creación de Roles y Usuario Admin - sin cambios) ...
-        crearRolSiNoExiste("PACIENTE", permisoRepository.findByModuloAndAccion("CITAS", "VER_LISTA").map(Set::of).orElse(Set.of()));
-        crearRolSiNoExiste("ODONTOLOGO", new HashSet<>(permisoRepository.findAll()));
-        crearRolSiNoExiste("RECEPCIONISTA", new HashSet<>(permisoRepository.findAll()));
-        crearRolSiNoExiste("ALMACEN", new HashSet<>(permisoRepository.findAll()));
+        // PACIENTE: Solo puede ver su perfil y sus citas
+        Set<Permiso> permisosPaciente = new HashSet<>();
+        permisoRepository.findByModuloAndAccion("CITAS", "VER_LISTA").ifPresent(permisosPaciente::add);
+        permisoRepository.findByModuloAndAccion("CITAS", "VER_DETALLE").ifPresent(permisosPaciente::add);
+        crearRolSiNoExiste("PACIENTE", permisosPaciente);
+
+        // ODONTOLOGO: Todo menos USUARIOS y ROLES
+        Set<Permiso> permisosOdontologo = new HashSet<>();
+        List<String> modulosOdontologo = Arrays.asList("PACIENTES", "CITAS", "SERVICIOS", "FACTURACION", "INVENTARIO", "REPORTES", "CONFIGURACION");
+        for (String modulo : modulosOdontologo) {
+            for (String accion : acciones) {
+                permisoRepository.findByModuloAndAccion(modulo, accion).ifPresent(permisosOdontologo::add);
+            }
+        }
+        crearRolSiNoExiste("ODONTOLOGO", permisosOdontologo);
+
+        // RECEPCIONISTA: Solo CITAS, PACIENTES y FACTURACION
+        Set<Permiso> permisosRecepcionista = new HashSet<>();
+        List<String> modulosRecepcionista = Arrays.asList("CITAS", "PACIENTES", "FACTURACION");
+        for (String modulo : modulosRecepcionista) {
+            for (String accion : acciones) {
+                permisoRepository.findByModuloAndAccion(modulo, accion).ifPresent(permisosRecepcionista::add);
+            }
+        }
+        crearRolSiNoExiste("RECEPCIONISTA", permisosRecepcionista);
+
+        // ALMACEN: Solo INVENTARIO
+        Set<Permiso> permisosAlmacen = new HashSet<>();
+        for (String accion : acciones) {
+            permisoRepository.findByModuloAndAccion("INVENTARIO", accion).ifPresent(permisosAlmacen::add);
+        }
+        crearRolSiNoExiste("ALMACEN", permisosAlmacen);
 
         Rol adminRol = rolRepository.findByNombre("ADMIN").orElseGet(() -> {
             Rol nuevoRol = new Rol();
