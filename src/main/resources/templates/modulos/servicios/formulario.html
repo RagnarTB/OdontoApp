@@ -344,7 +344,7 @@
 
         // Cargar insumos existentes al editar
         function cargarInsumosExistentes(procedimientoId) {
-            $.get(`/procedimientos/${procedimientoId}/insumos`, function(data) {
+            $.get(`/servicios/${procedimientoId}/insumos`, function(data) {
                 if (data && data.length > 0) {
                     data.forEach(function(insumoData) {
                         insumosAgregados.push({
