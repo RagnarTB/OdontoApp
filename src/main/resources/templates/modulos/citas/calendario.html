@@ -486,9 +486,13 @@
 
             citas.forEach(function(cita) {
                 const fechaHora = new Date(cita.fechaHoraInicio);
+                const fechaHoraFin = new Date(cita.fechaHoraFin);
                 const fechaFormateada = fechaHora.toLocaleDateString('es-PE');
                 const horaFormateada = fechaHora.toLocaleTimeString('es-PE', {hour: '2-digit', minute: '2-digit'});
                 const estadoBadge = obtenerBadgeEstado(cita.estadoNombre, cita.estadoColor);
+
+                // Serializar datos de la cita para los botones
+                const citaData = encodeURIComponent(JSON.stringify(cita));
 
                 const fila = `
                     <tr>
@@ -503,13 +507,13 @@
                         <td><span class="badge badge-secondary">${cita.duracion} min</span></td>
                         <td>${estadoBadge}</td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-info btn-ver-cita" data-cita-id="${cita.id}" title="Ver Detalle">
+                            <button class="btn btn-sm btn-info btn-ver-cita" data-cita='${citaData}' title="Ver Detalle">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button class="btn btn-sm btn-warning btn-reprogramar-cita" data-cita-id="${cita.id}" title="Reprogramar">
+                            <button class="btn btn-sm btn-warning btn-reprogramar-cita" data-cita='${citaData}' title="Reprogramar">
                                 <i class="fas fa-calendar"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger btn-cancelar-cita" data-cita-id="${cita.id}" title="Cancelar">
+                            <button class="btn btn-sm btn-danger btn-cancelar-cita" data-cita='${citaData}' title="Cancelar">
                                 <i class="fas fa-ban"></i>
                             </button>
                         </td>
@@ -520,11 +524,58 @@
 
             // Agregar eventos a los botones
             $('.btn-ver-cita').off('click').on('click', function() {
-                const citaId = $(this).data('cita-id');
-                // Simular click en el calendario para abrir el modal de detalle
-                // (reutilizar la lógica existente)
-                window.location.href = `/citas?citaId=${citaId}`;
+                const cita = JSON.parse(decodeURIComponent($(this).data('cita')));
+                abrirModalDetalle(cita);
             });
+
+            $('.btn-reprogramar-cita').off('click').on('click', function() {
+                const cita = JSON.parse(decodeURIComponent($(this).data('cita')));
+                abrirModalDetalle(cita);
+                // Dar tiempo para que se llenen los datos del modal de detalle
+                setTimeout(function() {
+                    $('#btnReprogramar').click();
+                }, 300);
+            });
+
+            $('.btn-cancelar-cita').off('click').on('click', function() {
+                const cita = JSON.parse(decodeURIComponent($(this).data('cita')));
+                abrirModalDetalle(cita);
+                // Dar tiempo para que se llenen los datos del modal de detalle
+                setTimeout(function() {
+                    $('#btnCancelar').click();
+                }, 300);
+            });
+        }
+
+        function abrirModalDetalle(cita) {
+            // Rellenar el modal de detalles
+            $('#detalleCitaId').val(cita.id);
+            $('#detallePaciente').text(cita.pacienteNombre);
+            $('#detalleOdontologo').text(cita.odontologoNombre);
+            $('#detalleOdontologoId').val(cita.odontologoId || '');
+            $('#detalleProcedimiento').text(cita.procedimientoNombre);
+            $('#detalleEstado').text(cita.estadoNombre);
+
+            // Formatear fechas
+            const inicio = new Date(cita.fechaHoraInicio);
+            const fin = new Date(cita.fechaHoraFin);
+            $('#detalleFechaHoraInicio').text(moment(inicio).format('DD/MM/YYYY HH:mm'));
+            $('#detalleFechaHoraFin').text(moment(fin).format('DD/MM/YYYY HH:mm'));
+
+            $('#detalleMotivoConsulta').text(cita.motivoConsulta || '-');
+            $('#detalleNotasInternas').text(cita.notasInternas || '-');
+
+            // Actualizar campos hidden
+            $('.citaIdField').val(cita.id);
+            $('#reprogramarCitaId').val(cita.id);
+            $('#cancelarCitaId').val(cita.id);
+            $('#tratamientoCitaId').val(cita.id);
+
+            // Mostrar/ocultar botones según estado
+            mostrarBotonesSegunEstado(cita.estadoNombre);
+
+            // Abrir modal
+            $('#modalDetalleCita').modal('show');
         }
 
         function renderizarPaginacion(paginaActual, totalPaginas) {

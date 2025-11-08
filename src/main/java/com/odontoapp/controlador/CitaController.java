@@ -474,11 +474,16 @@ public class CitaController {
                     citaMap.put("fechaHoraFin", cita.getFechaHoraFin().toString());
                     citaMap.put("pacienteNombre", cita.getPaciente().getNombreCompleto());
                     citaMap.put("odontologoNombre", cita.getOdontologo().getNombreCompleto());
+                    citaMap.put("odontologoId", cita.getOdontologo().getId());
                     citaMap.put("procedimientoNombre", cita.getProcedimiento() != null ?
                         cita.getProcedimiento().getNombre() : "Sin procedimiento");
+                    citaMap.put("procedimientoId", cita.getProcedimiento() != null ?
+                        cita.getProcedimiento().getId() : null);
                     citaMap.put("duracion", cita.getDuracionEstimadaMinutos());
                     citaMap.put("estadoNombre", cita.getEstadoCita().getNombre());
                     citaMap.put("estadoColor", obtenerColorPorEstado(cita.getEstadoCita()));
+                    citaMap.put("motivoConsulta", cita.getMotivoConsulta());
+                    citaMap.put("notasInternas", cita.getNotas());
                     return citaMap;
                 })
                 .collect(Collectors.toList());
