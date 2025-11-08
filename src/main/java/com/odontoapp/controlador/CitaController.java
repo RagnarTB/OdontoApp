@@ -443,6 +443,64 @@ public class CitaController {
     }
 
     /**
+     * API REST para obtener lista de citas con paginación y búsqueda.
+     * Usado por la vista de lista de citas en el calendario.
+     *
+     * @param page Número de página (0-indexed)
+     * @param size Cantidad de elementos por página
+     * @param keyword Palabra clave para buscar
+     * @return JSON con citas paginadas
+     */
+    @GetMapping("/api/lista")
+    @ResponseBody
+    public Map<String, Object> obtenerListaCitas(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String keyword) {
+
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("fechaHoraInicio").descending());
+
+            // Listar todas las citas sin filtros (keyword se puede implementar en futuras versiones)
+            // Por ahora mostramos todas las citas paginadas
+            Page<Cita> paginaCitas = citaService.listarCitasConFiltros(null, null, null, null, pageable);
+
+            // Convertir a formato para la tabla
+            List<Map<String, Object>> citasDTO = paginaCitas.getContent().stream()
+                .map(cita -> {
+                    Map<String, Object> citaMap = new HashMap<>();
+                    citaMap.put("id", cita.getId());
+                    citaMap.put("fechaHoraInicio", cita.getFechaHoraInicio().toString());
+                    citaMap.put("fechaHoraFin", cita.getFechaHoraFin().toString());
+                    citaMap.put("pacienteNombre", cita.getPaciente().getNombreCompleto());
+                    citaMap.put("odontologoNombre", cita.getOdontologo().getNombreCompleto());
+                    citaMap.put("procedimientoNombre", cita.getProcedimiento() != null ?
+                        cita.getProcedimiento().getNombre() : "Sin procedimiento");
+                    citaMap.put("duracion", cita.getDuracionEstimadaMinutos());
+                    citaMap.put("estadoNombre", cita.getEstadoCita().getNombre());
+                    citaMap.put("estadoColor", obtenerColorPorEstado(cita.getEstadoCita()));
+                    return citaMap;
+                })
+                .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("citas", citasDTO);
+            response.put("currentPage", paginaCitas.getNumber());
+            response.put("totalPages", paginaCitas.getTotalPages());
+            response.put("totalElements", paginaCitas.getTotalElements());
+            response.put("size", paginaCitas.getSize());
+
+            return response;
+
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", true);
+            error.put("mensaje", "Error al obtener lista de citas: " + e.getMessage());
+            return error;
+        }
+    }
+
+    /**
      * Obtiene el color asociado a un estado de cita.
      *
      * @param estadoCita Estado de la cita

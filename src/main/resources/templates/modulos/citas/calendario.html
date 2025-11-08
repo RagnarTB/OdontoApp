@@ -72,8 +72,28 @@
                 </button>
             </div>
 
+            <!-- Navegación de pestañas -->
+            <ul class="nav nav-tabs" id="citasTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="calendario-tab" data-toggle="tab" href="#tab-calendario" role="tab">
+                        <i class="far fa-calendar-alt mr-2"></i>Vista Calendario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="lista-tab" data-toggle="tab" href="#tab-lista" role="tab">
+                        <i class="fas fa-list mr-2"></i>Vista Lista
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Contenido de pestañas -->
+            <div class="tab-content" id="citasTabContent">
+
+                <!-- TAB: Vista Calendario -->
+                <div class="tab-pane fade show active" id="tab-calendario" role="tabpanel">
+
             <!-- Filtros -->
-            <div class="card card-outline card-info mb-3">
+            <div class="card card-outline card-info mb-3 mt-3">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
@@ -105,6 +125,63 @@
                     <div id="calendario" style="padding: 15px;"></div>
                 </div>
             </div>
+
+                </div>
+                <!-- FIN TAB: Vista Calendario -->
+
+                <!-- TAB: Vista Lista -->
+                <div class="tab-pane fade" id="tab-lista" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-list mr-2"></i>Listado de Citas
+                            </h3>
+                            <div class="card-tools">
+                                <div class="input-group input-group-sm" style="width: 300px;">
+                                    <input type="text" id="buscarCita" class="form-control" placeholder="Buscar por paciente, odontólogo...">
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-default" id="btnBuscarCita">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-responsive p-0" style="max-height: 600px;">
+                            <table class="table table-hover table-striped table-head-fixed text-nowrap">
+                                <thead>
+                                    <tr>
+                                        <th width="100">ID</th>
+                                        <th width="150">Fecha y Hora</th>
+                                        <th>Paciente</th>
+                                        <th>Odontólogo</th>
+                                        <th>Procedimiento</th>
+                                        <th width="100">Duración</th>
+                                        <th width="120">Estado</th>
+                                        <th width="200" class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaCitasBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">
+                                            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                            <p>Cargando citas...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer clearfix">
+                            <ul class="pagination pagination-sm m-0 float-right" id="paginacionCitas">
+                                <!-- Paginación dinámica -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <!-- FIN TAB: Vista Lista -->
+
+            </div>
+            <!-- FIN Contenido de pestañas -->
 
         </div>
     </section>
@@ -339,6 +416,188 @@
             }
         }
         /*]]>*/
+    </script>
+
+    <!-- Script para lista de citas -->
+    <script>
+    /*<![CDATA[*/
+    $(document).ready(function() {
+        let paginaActual = 0;
+        const tamanoPagina = 15;
+
+        // Cargar citas cuando se activa la pestaña de lista
+        $('#lista-tab').on('shown.bs.tab', function() {
+            cargarCitas(0);
+        });
+
+        // Evento de búsqueda
+        $('#btnBuscarCita').on('click', function() {
+            cargarCitas(0);
+        });
+
+        $('#buscarCita').on('keypress', function(e) {
+            if (e.which === 13) {
+                cargarCitas(0);
+            }
+        });
+
+        function cargarCitas(pagina) {
+            const keyword = $('#buscarCita').val();
+
+            $.ajax({
+                url: '/citas/api/lista',
+                method: 'GET',
+                data: {
+                    page: pagina,
+                    size: tamanoPagina,
+                    keyword: keyword
+                },
+                success: function(response) {
+                    if (response.error) {
+                        mostrarError(response.mensaje);
+                        return;
+                    }
+
+                    paginaActual = response.currentPage;
+                    renderizarTabla(response.citas);
+                    renderizarPaginacion(response.currentPage, response.totalPages);
+                },
+                error: function(xhr, status, error) {
+                    mostrarError('Error al cargar las citas: ' + error);
+                }
+            });
+        }
+
+        function renderizarTabla(citas) {
+            const tbody = $('#tablaCitasBody');
+            tbody.empty();
+
+            if (citas.length === 0) {
+                tbody.append(`
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No se encontraron citas</p>
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            citas.forEach(function(cita) {
+                const fechaHora = new Date(cita.fechaHoraInicio);
+                const fechaFormateada = fechaHora.toLocaleDateString('es-PE');
+                const horaFormateada = fechaHora.toLocaleTimeString('es-PE', {hour: '2-digit', minute: '2-digit'});
+                const estadoBadge = obtenerBadgeEstado(cita.estadoNombre, cita.estadoColor);
+
+                const fila = `
+                    <tr>
+                        <td><b>#${cita.id}</b></td>
+                        <td>
+                            <span class="text-primary">${fechaFormateada}</span><br>
+                            <small class="text-muted">${horaFormateada}</small>
+                        </td>
+                        <td>${cita.pacienteNombre}</td>
+                        <td>${cita.odontologoNombre}</td>
+                        <td>${cita.procedimientoNombre}</td>
+                        <td><span class="badge badge-secondary">${cita.duracion} min</span></td>
+                        <td>${estadoBadge}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-info btn-ver-cita" data-cita-id="${cita.id}" title="Ver Detalle">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-warning btn-reprogramar-cita" data-cita-id="${cita.id}" title="Reprogramar">
+                                <i class="fas fa-calendar"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger btn-cancelar-cita" data-cita-id="${cita.id}" title="Cancelar">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(fila);
+            });
+
+            // Agregar eventos a los botones
+            $('.btn-ver-cita').off('click').on('click', function() {
+                const citaId = $(this).data('cita-id');
+                // Simular click en el calendario para abrir el modal de detalle
+                // (reutilizar la lógica existente)
+                window.location.href = `/citas?citaId=${citaId}`;
+            });
+        }
+
+        function renderizarPaginacion(paginaActual, totalPaginas) {
+            const paginacion = $('#paginacionCitas');
+            paginacion.empty();
+
+            if (totalPaginas <= 1) return;
+
+            // Botón anterior
+            const anteriorDisabled = paginaActual === 0 ? 'disabled' : '';
+            paginacion.append(`
+                <li class="page-item ${anteriorDisabled}">
+                    <a class="page-link" href="#" data-pagina="${paginaActual - 1}">«</a>
+                </li>
+            `);
+
+            // Números de página
+            const inicio = Math.max(0, paginaActual - 2);
+            const fin = Math.min(totalPaginas, inicio + 5);
+
+            for (let i = inicio; i < fin; i++) {
+                const activo = i === paginaActual ? 'active' : '';
+                paginacion.append(`
+                    <li class="page-item ${activo}">
+                        <a class="page-link" href="#" data-pagina="${i}">${i + 1}</a>
+                    </li>
+                `);
+            }
+
+            // Botón siguiente
+            const siguienteDisabled = paginaActual === totalPaginas - 1 ? 'disabled' : '';
+            paginacion.append(`
+                <li class="page-item ${siguienteDisabled}">
+                    <a class="page-link" href="#" data-pagina="${paginaActual + 1}">»</a>
+                </li>
+            `);
+
+            // Eventos de paginación
+            $('.page-link').off('click').on('click', function(e) {
+                e.preventDefault();
+                const pagina = $(this).data('pagina');
+                if (pagina !== undefined && pagina >= 0 && pagina < totalPaginas) {
+                    cargarCitas(pagina);
+                }
+            });
+        }
+
+        function obtenerBadgeEstado(estado, color) {
+            const etiquetas = {
+                'PENDIENTE': 'Pendiente',
+                'CONFIRMADA': 'Confirmada',
+                'ASISTIO': 'Asistió',
+                'NO_ASISTIO': 'No Asistió',
+                'CANCELADA_PACIENTE': 'Cancelada',
+                'CANCELADA_CLINICA': 'Cancelada',
+                'REPROGRAMADA': 'Reprogramada'
+            };
+
+            return `<span class="badge" style="background-color: ${color}; color: white;">${etiquetas[estado] || estado}</span>`;
+        }
+
+        function mostrarError(mensaje) {
+            $('#tablaCitasBody').html(`
+                <tr>
+                    <td colspan="8" class="text-center text-danger py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <p>${mensaje}</p>
+                    </td>
+                </tr>
+            `);
+        }
+    });
+    /*]]>*/
     </script>
 
     <!-- Incluir script de validaciones de citas -->
