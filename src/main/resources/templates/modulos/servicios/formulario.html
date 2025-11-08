@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-    th:replace="~{layout/base :: layout(titulo='Formulario de Servicio', contenido=~{::#contenido-principal})}">
+    th:replace="~{layout/base :: layout(titulo='Formulario de Servicio', contenido=~{::#contenido-principal}, scripts=~{::#scripts-personalizados})}">
 
 <body>
     <div id="contenido-principal">
@@ -206,8 +206,10 @@
                 </div>
             </div>
         </section>
+    </div>
 
-        <!-- JavaScript para manejo de insumos -->
+    <!-- Scripts personalizados que se cargarán después de jQuery -->
+    <th:block id="scripts-personalizados">
         <script th:inline="javascript">
         /*<![CDATA[*/
         $(document).ready(function() {
@@ -364,7 +366,7 @@
         });
         /*]]>*/
         </script>
-    </div>
+    </th:block>
 </body>
 
 </html>
