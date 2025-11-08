@@ -18,9 +18,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     Optional<Usuario> findByEmail(String email);
 
-    // --- MÉTODO PARA BÚSQUEDA Y PAGINACIÓN ---
-    @Query("SELECT u FROM Usuario u WHERE u.nombreCompleto LIKE %:keyword% OR u.email LIKE %:keyword%")
+    // --- MÉTODO PARA BÚSQUEDA Y PAGINACIÓN CON ROLES ---
+    @Query("SELECT DISTINCT u FROM Usuario u LEFT JOIN FETCH u.roles WHERE u.nombreCompleto LIKE %:keyword% OR u.email LIKE %:keyword%")
     Page<Usuario> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    // --- MÉTODO PARA LISTADO COMPLETO CON ROLES ---
+    @Query("SELECT DISTINCT u FROM Usuario u LEFT JOIN FETCH u.roles")
+    Page<Usuario> findAllWithRoles(Pageable pageable);
 
     Optional<Usuario> findByVerificationToken(String verificationToken);
 

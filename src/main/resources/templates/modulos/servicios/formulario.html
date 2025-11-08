@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-    th:replace="~{layout/base :: layout(titulo='Formulario de Servicio', contenido=~{::#contenido-principal})}">
+    th:replace="~{layout/base :: layout(titulo='Formulario de Servicio', contenido=~{::#contenido-principal}, scripts=~{::#scripts-personalizados})}">
 
 <body>
     <div id="contenido-principal">
@@ -208,9 +208,11 @@
         </section>
     </div>
 
-    <script th:inline="javascript">
-    /*<![CDATA[*/
-    $(document).ready(function() {
+    <!-- Scripts personalizados que se cargarán después de jQuery -->
+    <th:block id="scripts-personalizados">
+        <script th:inline="javascript">
+        /*<![CDATA[*/
+        $(document).ready(function() {
         // Array para mantener los insumos agregados
         let insumosAgregados = [];
 
@@ -344,7 +346,7 @@
 
         // Cargar insumos existentes al editar
         function cargarInsumosExistentes(procedimientoId) {
-            $.get(`/procedimientos/${procedimientoId}/insumos`, function(data) {
+            $.get(`/servicios/${procedimientoId}/insumos`, function(data) {
                 if (data && data.length > 0) {
                     data.forEach(function(insumoData) {
                         insumosAgregados.push({
@@ -361,9 +363,10 @@
                 console.error('Error al cargar insumos existentes:', error);
             });
         }
-    });
-    /*]]>*/
-    </script>
+        });
+        /*]]>*/
+        </script>
+    </th:block>
 </body>
 
 </html>

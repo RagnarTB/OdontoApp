@@ -147,6 +147,33 @@ public class ProcedimientoController {
         return "redirect:/servicios";
     }
 
+    /**
+     * Endpoint para obtener insumos de un procedimiento (usado por el formulario)
+     */
+    @GetMapping("/{id}/insumos")
+    @ResponseBody
+    public ResponseEntity<?> obtenerInsumosDeProcedimiento(@PathVariable Long id) {
+        try {
+            List<ProcedimientoInsumo> insumos = procedimientoInsumoRepository.findByProcedimientoId(id);
+
+            List<Map<String, Object>> resultado = insumos.stream()
+                .map(pi -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("insumoId", pi.getInsumo().getId());
+                    map.put("insumoNombre", pi.getInsumo().getNombre() + " (" + pi.getInsumo().getCodigo() + ")");
+                    map.put("cantidadDefecto", pi.getCantidadDefecto());
+                    map.put("unidad", pi.getUnidad());
+                    map.put("esObligatorio", pi.isEsObligatorio());
+                    return map;
+                })
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok(resultado);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     private void cargarDatosFormulario(Model model) {
         // Cargar solo categorías activas para formularios
         List<CategoriaProcedimiento> categorias = categoriaRepository.findAll().stream()

@@ -4,12 +4,14 @@ import com.odontoapp.dto.TratamientoRealizadoDTO;
 import com.odontoapp.entidad.Cita;
 import com.odontoapp.entidad.Insumo;
 import com.odontoapp.entidad.Procedimiento;
+import com.odontoapp.entidad.ProcedimientoInsumo;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.entidad.TratamientoRealizado;
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
+import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
 import com.odontoapp.repositorio.TratamientoRealizadoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.servicio.TratamientoRealizadoService;
@@ -33,17 +35,20 @@ public class TratamientoRealizadoServiceImpl implements TratamientoRealizadoServ
     private final ProcedimientoRepository procedimientoRepository;
     private final UsuarioRepository usuarioRepository;
     private final InsumoRepository insumoRepository;
+    private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
 
     public TratamientoRealizadoServiceImpl(TratamientoRealizadoRepository tratamientoRealizadoRepository,
                                           CitaRepository citaRepository,
                                           ProcedimientoRepository procedimientoRepository,
                                           UsuarioRepository usuarioRepository,
-                                          InsumoRepository insumoRepository) {
+                                          InsumoRepository insumoRepository,
+                                          ProcedimientoInsumoRepository procedimientoInsumoRepository) {
         this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
         this.citaRepository = citaRepository;
         this.procedimientoRepository = procedimientoRepository;
         this.usuarioRepository = usuarioRepository;
         this.insumoRepository = insumoRepository;
+        this.procedimientoInsumoRepository = procedimientoInsumoRepository;
     }
 
     @Override
@@ -121,6 +126,54 @@ public class TratamientoRealizadoServiceImpl implements TratamientoRealizadoServ
             System.out.println("✓ Stock actualizado: " + insumoAjustado.getNombre() +
                 " | Cantidad utilizada: " + dto.getCantidadInsumoAjustada() +
                 " | Nuevo stock: " + nuevoStock);
+        }
+
+        // ✅ DESCONTAR AUTOMÁTICAMENTE LOS INSUMOS PREDETERMINADOS DEL PROCEDIMIENTO
+        // (Excepto si es "Consulta General" - CON-001)
+        if (!procedimiento.getCodigo().equals("CON-001")) {
+            List<ProcedimientoInsumo> insumosPredeterminados =
+                procedimientoInsumoRepository.findByProcedimientoId(procedimiento.getId());
+
+            if (!insumosPredeterminados.isEmpty()) {
+                System.out.println("✓ Descontando " + insumosPredeterminados.size() +
+                    " insumos predeterminados del procedimiento: " + procedimiento.getNombre());
+
+                for (ProcedimientoInsumo pi : insumosPredeterminados) {
+                    Insumo insumo = pi.getInsumo();
+                    BigDecimal cantidadRequerida = pi.getCantidadDefecto();
+
+                    // Validar stock disponible
+                    if (insumo.getStockActual().compareTo(cantidadRequerida) < 0) {
+                        // Si es obligatorio, lanzar excepción
+                        if (pi.isEsObligatorio()) {
+                            throw new IllegalStateException(
+                                String.format("Stock insuficiente del insumo obligatorio '%s'. " +
+                                    "Disponible: %.2f %s, Requerido: %.2f %s",
+                                    insumo.getNombre(),
+                                    insumo.getStockActual(),
+                                    insumo.getUnidadMedida().getAbreviatura(),
+                                    cantidadRequerida,
+                                    insumo.getUnidadMedida().getAbreviatura()));
+                        } else {
+                            // Si es opcional, solo advertir y continuar
+                            System.out.println("⚠ Advertencia: Stock insuficiente del insumo opcional '" +
+                                insumo.getNombre() + "'. Se omitirá el descuento.");
+                            continue;
+                        }
+                    }
+
+                    // Descontar stock
+                    BigDecimal nuevoStock = insumo.getStockActual().subtract(cantidadRequerida);
+                    insumo.setStockActual(nuevoStock);
+                    insumoRepository.save(insumo);
+
+                    System.out.println("  ✓ " + insumo.getNombre() +
+                        " | Cantidad: " + cantidadRequerida + " " + insumo.getUnidadMedida().getAbreviatura() +
+                        " | Nuevo stock: " + nuevoStock);
+                }
+            }
+        } else {
+            System.out.println("ℹ Consulta General detectada - No se descontarán insumos predeterminados");
         }
 
         // Crear la nueva instancia de TratamientoRealizado

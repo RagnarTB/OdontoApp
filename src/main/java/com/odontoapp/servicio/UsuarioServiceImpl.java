@@ -309,7 +309,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             // // Necesitarías crear este método
             return usuarioRepository.findByKeyword(keyword, pageable);
         }
-        return usuarioRepository.findAll(pageable);
+        // Usar findAllWithRoles para cargar roles con JOIN FETCH
+        return usuarioRepository.findAllWithRoles(pageable);
     }
 
     @Override

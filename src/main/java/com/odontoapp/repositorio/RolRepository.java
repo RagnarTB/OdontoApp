@@ -14,4 +14,11 @@ public interface RolRepository extends JpaRepository<Rol, Long> {
     // --- MÉTODO PARA BÚSQUEDA Y PAGINACIÓN ---
     @Query("SELECT r FROM Rol r WHERE r.nombre LIKE %:keyword%")
     Page<Rol> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    // --- MÉTODOS PARA CONTAR USUARIOS SIN CARGAR LA COLECCIÓN ---
+    @Query("SELECT COUNT(u) FROM Usuario u JOIN u.roles r WHERE r.id = :rolId AND u.eliminado = false")
+    long countUsuariosActivosByRolId(@Param("rolId") Long rolId);
+
+    @Query("SELECT COUNT(u) FROM Usuario u JOIN u.roles r WHERE r.id = :rolId AND u.eliminado = false AND NOT EXISTS (SELECT 1 FROM Usuario u2 JOIN u2.roles r2 WHERE u2.id = u.id AND r2.id <> :rolId AND r2.estaActivo = true)")
+    long countUsuariosSinOtrosRolesActivosByRolId(@Param("rolId") Long rolId);
 }
