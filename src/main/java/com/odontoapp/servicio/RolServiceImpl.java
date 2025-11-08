@@ -122,27 +122,12 @@ public class RolServiceImpl implements RolService {
                     "No se puede eliminar el rol del sistema '" + rol.getNombre() + "'.");
         }
 
-        // Validar si tiene usuarios asociados (importante cargar la colección)
-        // Forzar carga si es LAZY (aunque en tu entidad Rol es EAGER por defecto para
-        // usuarios, lo cual no es ideal)
-        // Si fuera LAZY, necesitarías algo como
-        // Hibernate.initialize(rol.getUsuarios());
-        // O mejor, añadir un método al repositorio: @Query("SELECT COUNT(u) FROM
-        // Usuario u JOIN u.roles r WHERE r.id = :rolId") long
-        // countUsuariosByRolId(@Param("rolId") Long rolId);
-        // Y usar: if (rolRepository.countUsuariosByRolId(id) > 0) { ... }
-
-        // Dado que usuarios es EAGER (según tu entidad Rol), podemos chequear el
-        // tamaño:
-        if (rol.getUsuarios() != null && !rol.getUsuarios().isEmpty()) {
-            // Podríamos ser más específicos y contar solo usuarios activos/no eliminados si
-            // es necesario
-            long usuariosActivos = rol.getUsuarios().stream().filter(u -> !u.isEliminado()).count();
-            if (usuariosActivos > 0) {
-                throw new DataIntegrityViolationException(
-                        "El rol tiene " + usuariosActivos
-                                + " usuario(s) activo(s) asignado(s) y no puede ser eliminado.");
-            }
+        // Validar si tiene usuarios asociados usando query optimizada
+        long usuariosActivos = rolRepository.countUsuariosActivosByRolId(id);
+        if (usuariosActivos > 0) {
+            throw new DataIntegrityViolationException(
+                    "El rol tiene " + usuariosActivos
+                            + " usuario(s) activo(s) asignado(s) y no puede ser eliminado.");
         }
 
         // Llama al deleteById que activarÃ¡ @SQLDelete
@@ -163,25 +148,13 @@ public class RolServiceImpl implements RolService {
 
         // VALIDACIÓN MEJORADA: Evitar desactivar si deja usuarios sin roles activos
         if (rol.isEstaActivo()) { // Solo validar al intentar desactivar
-            // Forzar carga de usuarios si fuera LAZY
-            // Hibernate.initialize(rol.getUsuarios());
-            if (rol.getUsuarios() != null && !rol.getUsuarios().isEmpty()) {
-                long usuariosSinOtrosRolesActivos = rol.getUsuarios().stream()
-                        .filter(u -> !u.isEliminado()) // Considerar solo usuarios no eliminados
-                        .filter(usuario -> {
-                            // Verificar si todos los OTROS roles del usuario están inactivos o son este
-                            // mismo rol
-                            return usuario.getRoles().stream()
-                                    .filter(r -> !r.getId().equals(id)) // Excluir el rol actual
-                                    .allMatch(otroRol -> !otroRol.isEstaActivo()); // Todos los demás están inactivos?
-                        })
-                        .count();
+            // Usar query optimizada para contar usuarios que quedarían sin roles activos
+            long usuariosSinOtrosRolesActivos = rolRepository.countUsuariosSinOtrosRolesActivosByRolId(id);
 
-                if (usuariosSinOtrosRolesActivos > 0) {
-                    throw new DataIntegrityViolationException(
-                            usuariosSinOtrosRolesActivos + " usuario(s) quedarían sin roles activos. " +
-                                    "Asígnales otros roles activos antes de desactivar este.");
-                }
+            if (usuariosSinOtrosRolesActivos > 0) {
+                throw new DataIntegrityViolationException(
+                        usuariosSinOtrosRolesActivos + " usuario(s) quedarían sin roles activos. " +
+                                "Asígnales otros roles activos antes de desactivar este.");
             }
         }
 
