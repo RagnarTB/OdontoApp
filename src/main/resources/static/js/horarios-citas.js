@@ -261,6 +261,18 @@
             cargarHorariosDisponibles();
         });
 
+        // Botón manual de refrescar horarios (útil cuando se edita el horario del odontólogo)
+        $('#btnRefrescarHorarios').on('click', function() {
+            // Animar el ícono de refrescar
+            $(this).find('i').addClass('fa-spin');
+            setTimeout(() => {
+                $(this).find('i').removeClass('fa-spin');
+            }, 1000);
+
+            // Recargar horarios disponibles
+            cargarHorariosDisponibles();
+        });
+
         // Validar antes de enviar
         $('#modalAgendarCita form').on('submit', function(e) {
             if (!validarFormularioCita()) {
