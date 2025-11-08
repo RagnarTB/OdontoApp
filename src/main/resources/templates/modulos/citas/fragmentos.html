@@ -372,6 +372,8 @@
 <!-- ========================================== -->
 <th:block th:fragment="modalRegistrarTratamiento">
     <div th:replace="~{modulos/citas/modal-tratamiento-avanzado :: modalRegistrarTratamiento}"></div>
+    <!-- Incluir el script del modal -->
+    <th:block th:replace="~{modulos/citas/modal-tratamiento-avanzado :: scriptModalTratamiento}"></th:block>
 </th:block>
 
 <!-- Script de validaciones inline para modal de citas -->

@@ -26,6 +26,28 @@
         $('#grilla-horarios-disponibles').html('');
         $('#horario-seleccionado-texto').text('Ninguno');
 
+        // Inicializar Select2 para mejorar experiencia de usuario y corregir bug de selección
+        if (!$('#pacienteIdAgendar').hasClass('select2-hidden-accessible')) {
+            $('#pacienteIdAgendar').select2({
+                placeholder: 'Seleccione un paciente',
+                allowClear: true,
+                dropdownParent: $('#modalAgendarCita'),
+                language: {
+                    noResults: function() {
+                        return "No se encontraron pacientes";
+                    }
+                }
+            });
+        }
+
+        if (!$('#odontologoIdAgendar').hasClass('select2-hidden-accessible')) {
+            $('#odontologoIdAgendar').select2({
+                placeholder: 'Seleccione un odontólogo',
+                allowClear: true,
+                dropdownParent: $('#modalAgendarCita')
+            });
+        }
+
         // Configurar fecha mínima (hoy)
         const hoy = new Date().toISOString().split('T')[0];
         $('#fechaCitaAgendar').attr('min', hoy);
