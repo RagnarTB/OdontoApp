@@ -178,19 +178,37 @@ $(document).ready(function() {
     $('#modalRegistrarTratamiento').on('show.bs.modal', function() {
         // Limpiar form
         $('#tratamientoProcedimientoId').val('');
+        $('#tratamientoDescripcion').val('');
         $('#camposDinamicos').html('');
         $('#selectorDientes').hide();
         $('#seccionInsumos').hide();
         dientesSeleccionadosArray = [];
         $('.btn-diente').removeClass('active');
+        $('#dientesSeleccionados').text('Ninguno');
+        $('#tratamientoPiezasDentales').val('');
 
         // Intentar cargar datos de la cita si están disponibles
         const citaId = $('#detalleCitaId').val();
         if (citaId) {
             $('#tratamientoCitaId').val(citaId);
-            $('#infoCitaPaciente').text($('#detallePaciente').text());
-            $('#infoCitaOdontologo').text($('#detalleOdontologo').text());
-            $('#infoCitaFecha').text($('#detalleFecha').text() + ' ' + $('#detalleHora').text());
+
+            // Cargar información de la cita
+            const paciente = $('#detallePaciente').text();
+            const odontologo = $('#detalleOdontologo').text();
+            const fecha = $('#detalleFecha').val();
+            const hora = $('#detalleHora').val();
+            const procedimientoId = $('#detalleProcedimientoId').val();
+
+            $('#infoCitaPaciente').text(paciente);
+            $('#infoCitaOdontologo').text(odontologo);
+            $('#infoCitaFecha').text(fecha + ' ' + hora);
+
+            // Si hay procedimiento asociado, pre-seleccionarlo
+            if (procedimientoId) {
+                $('#tratamientoProcedimientoId').val(procedimientoId);
+                // Trigger change para cargar campos dinámicos e insumos
+                $('#tratamientoProcedimientoId').trigger('change');
+            }
         }
     });
 

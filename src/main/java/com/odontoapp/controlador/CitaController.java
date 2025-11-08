@@ -404,7 +404,8 @@ public class CitaController {
 
         try {
             // Llamar al servicio para obtener disponibilidad (excluir cita si se proporciona ID)
-            Map<String, Object> disponibilidad = citaService.buscarDisponibilidad(odontologoId, fecha, citaIdExcluir);
+            // Pasar la duración del procedimiento para filtrar horarios adecuadamente
+            Map<String, Object> disponibilidad = citaService.buscarDisponibilidad(odontologoId, fecha, duracion, citaIdExcluir);
 
             // Obtener horarios disponibles
             @SuppressWarnings("unchecked")

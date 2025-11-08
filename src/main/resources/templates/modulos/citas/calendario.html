@@ -334,10 +334,13 @@
                     document.getElementById('detallePaciente').textContent = evento.title;
                     document.getElementById('detalleOdontologo').textContent = props.odontologoNombre || 'N/A';
                     document.getElementById('detalleOdontologoId').value = props.odontologoId || '';
+                    document.getElementById('detalleProcedimientoId').value = props.procedimientoId || '';
                     document.getElementById('detalleProcedimiento').textContent = props.procedimientoNombre || 'N/A';
                     document.getElementById('detalleEstado').textContent = props.estadoNombre || 'N/A';
                     document.getElementById('detalleFechaHoraInicio').textContent = moment(evento.start).format('DD/MM/YYYY HH:mm');
                     document.getElementById('detalleFechaHoraFin').textContent = moment(evento.end).format('DD/MM/YYYY HH:mm');
+                    document.getElementById('detalleFecha').value = moment(evento.start).format('DD/MM/YYYY');
+                    document.getElementById('detalleHora').value = moment(evento.start).format('HH:mm');
                     document.getElementById('detalleMotivoConsulta').textContent = props.motivoConsulta || '-';
                     document.getElementById('detalleNotasInternas').textContent = props.notasInternas || '-';
 
@@ -439,6 +442,15 @@
             if (e.which === 13) {
                 cargarCitas(0);
             }
+        });
+
+        // Búsqueda en tiempo real
+        let timeoutBusquedaCitas = null;
+        $('#buscarCita').on('input', function() {
+            clearTimeout(timeoutBusquedaCitas);
+            timeoutBusquedaCitas = setTimeout(function() {
+                cargarCitas(0);
+            }, 500); // Esperar 500ms después de que el usuario deje de escribir
         });
 
         function cargarCitas(pagina) {
@@ -553,6 +565,7 @@
             $('#detallePaciente').text(cita.pacienteNombre);
             $('#detalleOdontologo').text(cita.odontologoNombre);
             $('#detalleOdontologoId').val(cita.odontologoId || '');
+            $('#detalleProcedimientoId').val(cita.procedimientoId || '');
             $('#detalleProcedimiento').text(cita.procedimientoNombre);
             $('#detalleEstado').text(cita.estadoNombre);
 
@@ -561,6 +574,8 @@
             const fin = new Date(cita.fechaHoraFin);
             $('#detalleFechaHoraInicio').text(moment(inicio).format('DD/MM/YYYY HH:mm'));
             $('#detalleFechaHoraFin').text(moment(fin).format('DD/MM/YYYY HH:mm'));
+            $('#detalleFecha').val(moment(inicio).format('DD/MM/YYYY'));
+            $('#detalleHora').val(moment(inicio).format('HH:mm'));
 
             $('#detalleMotivoConsulta').text(cita.motivoConsulta || '-');
             $('#detalleNotasInternas').text(cita.notasInternas || '-');

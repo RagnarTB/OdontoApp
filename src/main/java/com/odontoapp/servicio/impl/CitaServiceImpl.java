@@ -82,13 +82,27 @@ public class CitaServiceImpl implements CitaService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> buscarDisponibilidad(Long odontologoId, LocalDate fecha, Long citaIdExcluir) {
+        return buscarDisponibilidad(odontologoId, fecha, INTERVALO_MINUTOS, citaIdExcluir);
+    }
+
+    /**
+     * Buscar disponibilidad de horarios considerando la duración del procedimiento
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> buscarDisponibilidad(Long odontologoId, LocalDate fecha, Integer duracionMinutos, Long citaIdExcluir) {
         Usuario odontologo = usuarioRepository.findById(odontologoId)
                 .orElseThrow(() -> new EntityNotFoundException("Odontólogo no encontrado con ID: " + odontologoId));
+
+        // Usar duración por defecto si no se especifica o es inválida
+        if (duracionMinutos == null || duracionMinutos <= 0) {
+            duracionMinutos = INTERVALO_MINUTOS;
+        }
 
         Map<String, Object> resultado = new HashMap<>();
         resultado.put("fecha", fecha);
         resultado.put("odontologoId", odontologoId);
         resultado.put("odontologoNombre", odontologo.getNombreCompleto());
+        resultado.put("duracionMinutos", duracionMinutos);
 
         // Verificar si hay excepción de horario para esta fecha
         HorarioExcepcion excepcion = odontologo.getExcepcionesHorario().stream()
@@ -108,7 +122,7 @@ public class CitaServiceImpl implements CitaService {
             resultado.put("esExcepcion", true);
             resultado.put("motivoExcepcion", excepcion.getMotivo());
             resultado.put("horariosDisponibles", calcularHorariosDisponibles(
-                    odontologo, fecha, excepcion.getHoras(), citaIdExcluir));
+                    odontologo, fecha, excepcion.getHoras(), duracionMinutos, citaIdExcluir));
             return resultado;
         }
 
@@ -125,16 +139,24 @@ public class CitaServiceImpl implements CitaService {
 
         resultado.put("disponible", true);
         resultado.put("esExcepcion", false);
-        resultado.put("horariosDisponibles", calcularHorariosDisponibles(odontologo, fecha, horarioDelDia, citaIdExcluir));
+        resultado.put("horariosDisponibles", calcularHorariosDisponibles(
+                odontologo, fecha, horarioDelDia, duracionMinutos, citaIdExcluir));
         return resultado;
     }
 
     /**
-     * Calcula los horarios disponibles considerando las citas ya agendadas.
+     * Calcula los horarios disponibles considerando las citas ya agendadas y la duración del procedimiento.
+     * @param duracionMinutos Duración del procedimiento en minutos
      * @param citaIdExcluir ID de cita a excluir (puede ser null)
      */
-    private List<Map<String, Object>> calcularHorariosDisponibles(Usuario odontologo, LocalDate fecha, String horarioStr, Long citaIdExcluir) {
+    private List<Map<String, Object>> calcularHorariosDisponibles(Usuario odontologo, LocalDate fecha,
+                                                                   String horarioStr, Integer duracionMinutos, Long citaIdExcluir) {
         List<Map<String, Object>> slots = new ArrayList<>();
+
+        // Usar duración por defecto si no se especifica
+        if (duracionMinutos == null || duracionMinutos <= 0) {
+            duracionMinutos = INTERVALO_MINUTOS;
+        }
 
         // Parsear los intervalos del horario (ej: "09:00-13:00,15:00-19:00")
         String[] intervalos = horarioStr.split(",");
@@ -168,13 +190,22 @@ public class CitaServiceImpl implements CitaService {
                     })
                     .collect(Collectors.toList());
 
-            // Generar slots de tiempo
+            // Generar slots de tiempo cada 30 minutos
             LocalDateTime slotActual = inicioIntervalo;
             while (slotActual.plusMinutes(INTERVALO_MINUTOS).isBefore(finIntervalo) ||
                    slotActual.plusMinutes(INTERVALO_MINUTOS).equals(finIntervalo)) {
 
                 LocalDateTime finSlot = slotActual.plusMinutes(INTERVALO_MINUTOS);
-                boolean ocupado = estaOcupado(slotActual, finSlot, citasEnIntervalo);
+
+                // Verificar si hay suficiente tiempo para el procedimiento completo
+                // El slot debe tener espacio para la duración del procedimiento + buffer
+                LocalDateTime finProcedimiento = slotActual.plusMinutes(duracionMinutos);
+
+                // Verificar que el procedimiento no exceda el horario laboral
+                boolean cabeEnHorario = !finProcedimiento.isAfter(finIntervalo);
+
+                // Verificar que no esté ocupado (esto ya considera el buffer de 15 minutos)
+                boolean ocupado = !cabeEnHorario || estaOcupado(slotActual, finProcedimiento, citasEnIntervalo);
 
                 Map<String, Object> slot = new HashMap<>();
                 slot.put("inicio", slotActual.format(DateTimeFormatter.ofPattern("HH:mm")));
