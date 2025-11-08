@@ -206,11 +206,11 @@
                 </div>
             </div>
         </section>
-    </div>
 
-    <script th:inline="javascript">
-    /*<![CDATA[*/
-    $(document).ready(function() {
+        <!-- JavaScript para manejo de insumos -->
+        <script th:inline="javascript">
+        /*<![CDATA[*/
+        $(document).ready(function() {
         // Array para mantener los insumos agregados
         let insumosAgregados = [];
 
@@ -361,9 +361,10 @@
                 console.error('Error al cargar insumos existentes:', error);
             });
         }
-    });
-    /*]]>*/
-    </script>
+        });
+        /*]]>*/
+        </script>
+    </div>
 </body>
 
 </html>
