@@ -26,6 +26,28 @@
         $('#grilla-horarios-disponibles').html('');
         $('#horario-seleccionado-texto').text('Ninguno');
 
+        // Inicializar Select2 para mejorar experiencia de usuario y corregir bug de selección
+        if (!$('#pacienteIdAgendar').hasClass('select2-hidden-accessible')) {
+            $('#pacienteIdAgendar').select2({
+                placeholder: 'Seleccione un paciente',
+                allowClear: true,
+                dropdownParent: $('#modalAgendarCita'),
+                language: {
+                    noResults: function() {
+                        return "No se encontraron pacientes";
+                    }
+                }
+            });
+        }
+
+        if (!$('#odontologoIdAgendar').hasClass('select2-hidden-accessible')) {
+            $('#odontologoIdAgendar').select2({
+                placeholder: 'Seleccione un odontólogo',
+                allowClear: true,
+                dropdownParent: $('#modalAgendarCita')
+            });
+        }
+
         // Configurar fecha mínima (hoy)
         const hoy = new Date().toISOString().split('T')[0];
         $('#fechaCitaAgendar').attr('min', hoy);
@@ -227,15 +249,109 @@
         return true;
     }
 
+    // =====================================================
+    // WIZARD DE NAVEGACIÓN
+    // =====================================================
+    let pasoActual = 1;
+    const totalPasos = 3;
+
+    function cambiarPaso(nuevoPaso) {
+        if (nuevoPaso < 1 || nuevoPaso > totalPasos) return;
+
+        // Ocultar paso actual
+        $('#wizard-step-' + pasoActual).removeClass('active');
+        $('.wizard-step[data-step="' + pasoActual + '"]').removeClass('active').addClass('completed');
+
+        // Mostrar nuevo paso
+        pasoActual = nuevoPaso;
+        $('#wizard-step-' + pasoActual).addClass('active');
+        $('.wizard-step[data-step="' + pasoActual + '"]').addClass('active').removeClass('completed');
+
+        // Actualizar botones
+        if (pasoActual === 1) {
+            $('#btnWizardAnterior').hide();
+            $('#btnWizardSiguiente').show();
+            $('#btnWizardFinalizar').hide();
+        } else if (pasoActual === totalPasos) {
+            $('#btnWizardAnterior').show();
+            $('#btnWizardSiguiente').hide();
+            $('#btnWizardFinalizar').show();
+        } else {
+            $('#btnWizardAnterior').show();
+            $('#btnWizardSiguiente').show();
+            $('#btnWizardFinalizar').hide();
+        }
+
+        // Scroll al inicio del modal
+        $('.modal-body').scrollTop(0);
+    }
+
+    function validarPasoActual() {
+        if (pasoActual === 1) {
+            // Validar paciente y odontólogo
+            if (!$('#pacienteIdAgendar').val()) {
+                mostrarAdvertencia('Por favor seleccione un paciente');
+                return false;
+            }
+            if (!$('#odontologoIdAgendar').val()) {
+                mostrarAdvertencia('Por favor seleccione un odontólogo');
+                return false;
+            }
+            if (!$('#fechaCitaAgendar').val()) {
+                mostrarAdvertencia('Por favor seleccione una fecha');
+                return false;
+            }
+        } else if (pasoActual === 2) {
+            // Validar horario seleccionado
+            if (!$('#fechaHoraInicioAgendar').val()) {
+                mostrarAdvertencia('Por favor seleccione un horario disponible');
+                return false;
+            }
+        }
+        return true;
+    }
+
     // Inicializar cuando el DOM esté listo
     $(document).ready(function() {
         // Inicializar al abrir el modal
         $('#modalAgendarCita').on('show.bs.modal', function() {
             inicializarSistemaHorarios();
+            // Resetear wizard
+            pasoActual = 1;
+            $('.wizard-content-step').removeClass('active');
+            $('#wizard-step-1').addClass('active');
+            $('.wizard-step').removeClass('active completed');
+            $('.wizard-step[data-step="1"]').addClass('active');
+            $('#btnWizardAnterior').hide();
+            $('#btnWizardSiguiente').show();
+            $('#btnWizardFinalizar').hide();
+        });
+
+        // Navegación del wizard
+        $('#btnWizardSiguiente').on('click', function() {
+            if (validarPasoActual()) {
+                cambiarPaso(pasoActual + 1);
+            }
+        });
+
+        $('#btnWizardAnterior').on('click', function() {
+            cambiarPaso(pasoActual - 1);
         });
 
         // Cargar horarios cuando cambie la fecha u odontólogo
         $('#fechaCitaAgendar, #odontologoIdAgendar, #procedimientoIdAgendar').on('change', function() {
+            cargarHorariosDisponibles();
+        });
+
+        // Botón manual de refrescar horarios (útil cuando se edita el horario del odontólogo)
+        $('#btnRefrescarHorarios').on('click', function() {
+            // Animar el ícono de refrescar
+            $(this).find('i').addClass('fa-spin');
+            setTimeout(() => {
+                $(this).find('i').removeClass('fa-spin');
+            }, 1000);
+
+            // Recargar horarios disponibles
             cargarHorariosDisponibles();
         });
 

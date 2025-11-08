@@ -284,16 +284,20 @@ public class CitaServiceImpl implements CitaService {
             throw new IllegalStateException("No se puede agendar una cita en el pasado");
         }
 
-        // Verificar disponibilidad del odontólogo (incluyendo buffer de 15 minutos)
+        // Verificar disponibilidad del odontólogo
+        // NOTA: No agregamos el buffer aquí porque estaOcupado() ya lo considera internamente
         List<Cita> citasConflictivas = citaRepository.findConflictingCitas(
-                odontologoId, fechaHoraInicio, fechaHoraFin.plusMinutes(BUFFER_MINUTOS));
+                odontologoId, fechaHoraInicio, fechaHoraFin);
 
-        // Filtrar solo citas activas (no canceladas)
+        // Filtrar solo citas activas (no canceladas ni reprogramadas)
         List<Cita> citasActivas = citasConflictivas.stream()
-                .filter(c -> !c.getEstadoCita().getNombre().startsWith("CANCELADA"))
+                .filter(c -> {
+                    String estado = c.getEstadoCita().getNombre();
+                    return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+                })
                 .collect(Collectors.toList());
 
-        // Verificar conflictos usando el método que considera el buffer
+        // Verificar conflictos usando el método que considera el buffer internamente
         if (estaOcupado(fechaHoraInicio, fechaHoraFin, citasActivas)) {
             throw new IllegalStateException(
                 "El odontólogo no está disponible en ese horario. " +

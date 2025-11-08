@@ -70,17 +70,12 @@
                                     <td th:text="${paciente.email}"></td>
                                     <td th:text="${paciente.telefono}"></td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-primary btn-ver-detalle"
+                                        <button type="button" class="btn btn-sm btn-info btn-ver-detalle"
                                             title="Ver Detalle Completo del Paciente"
                                             th:attr="data-paciente-id=${paciente.id}"
                                             sec:authorize="hasAnyAuthority('VER_DETALLE_PACIENTES', 'ADMIN')">
-                                            <i class="fas fa-eye"></i>
+                                            <i class="fas fa-file-medical"></i>
                                         </button>
-                                        <a th:href="@{/pacientes/historial/{id}(id=${paciente.id})}"
-                                            class="btn btn-sm btn-info" title="Ver Historial Clínico"
-                                            sec:authorize="hasAnyAuthority('VER_DETALLE_PACIENTES', 'ADMIN')">
-                                            <i class="fas fa-notes-medical"></i>
-                                        </a>
                                         <a th:href="@{/pacientes/editar/{id}(id=${paciente.id})}"
                                             class="btn btn-sm btn-warning" title="Editar Datos del Paciente"
                                             sec:authorize="hasAnyAuthority('EDITAR_PACIENTES', 'ADMIN')">

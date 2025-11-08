@@ -17,7 +17,106 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
+
+                <!-- Indicadores de progreso del wizard -->
+                <div class="modal-body pb-2">
+                    <div class="wizard-steps d-flex justify-content-between mb-4">
+                        <div class="wizard-step active" data-step="1">
+                            <div class="step-circle">
+                                <span class="step-number">1</span>
+                                <i class="fas fa-check step-check" style="display: none;"></i>
+                            </div>
+                            <div class="step-label">Información Básica</div>
+                        </div>
+                        <div class="wizard-line"></div>
+                        <div class="wizard-step" data-step="2">
+                            <div class="step-circle">
+                                <span class="step-number">2</span>
+                                <i class="fas fa-check step-check" style="display: none;"></i>
+                            </div>
+                            <div class="step-label">Horario</div>
+                        </div>
+                        <div class="wizard-line"></div>
+                        <div class="wizard-step" data-step="3">
+                            <div class="step-circle">
+                                <span class="step-number">3</span>
+                                <i class="fas fa-check step-check" style="display: none;"></i>
+                            </div>
+                            <div class="step-label">Detalles</div>
+                        </div>
+                    </div>
+
+                    <style>
+                        .wizard-steps {
+                            position: relative;
+                            padding: 0 20px;
+                        }
+                        .wizard-step {
+                            text-align: center;
+                            flex: 1;
+                            position: relative;
+                            z-index: 2;
+                        }
+                        .step-circle {
+                            width: 45px;
+                            height: 45px;
+                            border-radius: 50%;
+                            background: #e9ecef;
+                            color: #6c757d;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin: 0 auto 8px;
+                            font-weight: bold;
+                            border: 3px solid #e9ecef;
+                            transition: all 0.3s;
+                        }
+                        .wizard-step.active .step-circle {
+                            background: #007bff;
+                            color: white;
+                            border-color: #007bff;
+                            transform: scale(1.1);
+                        }
+                        .wizard-step.completed .step-circle {
+                            background: #28a745;
+                            color: white;
+                            border-color: #28a745;
+                        }
+                        .wizard-step.completed .step-number {
+                            display: none;
+                        }
+                        .wizard-step.completed .step-check {
+                            display: block !important;
+                        }
+                        .step-label {
+                            font-size: 12px;
+                            color: #6c757d;
+                            font-weight: 500;
+                        }
+                        .wizard-step.active .step-label {
+                            color: #007bff;
+                            font-weight: 600;
+                        }
+                        .wizard-step.completed .step-label {
+                            color: #28a745;
+                        }
+                        .wizard-line {
+                            flex: 1;
+                            height: 3px;
+                            background: #e9ecef;
+                            margin: 22px 10px 0;
+                            position: relative;
+                        }
+                        .wizard-content-step {
+                            display: none;
+                        }
+                        .wizard-content-step.active {
+                            display: block;
+                        }
+                    </style>
+                </div>
+
+                <div class="modal-body pt-0">
                     <!-- Alerta de validación -->
                     <div id="alertaValidacionCita" class="alert alert-danger d-none" role="alert">
                         <i class="fas fa-exclamation-triangle mr-2"></i>
@@ -28,9 +127,7 @@
                     <input type="hidden" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
 
                     <!-- PASO 1: Información Básica -->
-                    <h6 class="text-primary mb-3 border-bottom pb-2">
-                        <i class="fas fa-user-md mr-2"></i>Paso 1: Información Básica
-                    </h6>
+                    <div class="wizard-content-step active" id="wizard-step-1">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -82,13 +179,19 @@
                             </div>
                         </div>
                     </div>
-
-                    <hr class="my-4">
+                    </div>
+                    <!-- FIN PASO 1 -->
 
                     <!-- PASO 2: Seleccionar Horario -->
-                    <h6 class="text-primary mb-3 border-bottom pb-2">
-                        <i class="fas fa-clock mr-2"></i>Paso 2: Seleccionar Horario Disponible
-                    </h6>
+                    <div class="wizard-content-step" id="wizard-step-2">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-primary mb-0">
+                            <i class="fas fa-clock mr-2"></i>Seleccionar Horario Disponible
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnRefrescarHorarios" title="Refrescar horarios disponibles">
+                            <i class="fas fa-sync-alt"></i> Actualizar
+                        </button>
+                    </div>
 
                     <!-- Indicador de horario seleccionado -->
                     <div class="alert alert-info" id="horario-seleccionado-info" style="display: none;">
@@ -103,12 +206,13 @@
                             Seleccione un odontólogo y fecha para ver los horarios disponibles
                         </div>
                     </div>
-
-                    <hr class="my-4">
+                    </div>
+                    <!-- FIN PASO 2 -->
 
                     <!-- PASO 3: Información Adicional -->
-                    <h6 class="text-primary mb-3 border-bottom pb-2">
-                        <i class="fas fa-notes-medical mr-2"></i>Paso 3: Información Adicional <small class="text-muted">(Opcional)</small>
+                    <div class="wizard-content-step" id="wizard-step-3">
+                    <h6 class="text-primary mb-3">
+                        <i class="fas fa-notes-medical mr-2"></i>Información Adicional <small class="text-muted">(Opcional)</small>
                     </h6>
 
                     <div class="form-group">
@@ -120,14 +224,24 @@
                         <label for="notasInternasAgendar">Notas Internas</label>
                         <textarea class="form-control" id="notasInternasAgendar" name="notasInternas" rows="2" placeholder="Notas visibles solo para el personal"></textarea>
                     </div>
+                    </div>
+                    <!-- FIN PASO 3 -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i>Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-check mr-1"></i>Agendar Cita
-                    </button>
+                    <div class="ml-auto">
+                        <button type="button" class="btn btn-outline-secondary" id="btnWizardAnterior" style="display: none;">
+                            <i class="fas fa-arrow-left mr-1"></i>Anterior
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btnWizardSiguiente">
+                            Siguiente<i class="fas fa-arrow-right ml-1"></i>
+                        </button>
+                        <button type="submit" class="btn btn-success" id="btnWizardFinalizar" style="display: none;">
+                            <i class="fas fa-check mr-1"></i>Agendar Cita
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -372,6 +486,8 @@
 <!-- ========================================== -->
 <th:block th:fragment="modalRegistrarTratamiento">
     <div th:replace="~{modulos/citas/modal-tratamiento-avanzado :: modalRegistrarTratamiento}"></div>
+    <!-- Incluir el script del modal -->
+    <th:block th:replace="~{modulos/citas/modal-tratamiento-avanzado :: scriptModalTratamiento}"></th:block>
 </th:block>
 
 <!-- Script de validaciones inline para modal de citas -->
