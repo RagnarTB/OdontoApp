@@ -506,6 +506,26 @@
                 // Serializar datos de la cita para los botones
                 const citaData = encodeURIComponent(JSON.stringify(cita));
 
+                // Determinar qué botones mostrar según el estado
+                let botonesAccion = `
+                    <button class="btn btn-sm btn-info btn-ver-cita" data-cita='${citaData}' title="Ver Detalle">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                `;
+
+                // Mostrar botones de reprogramar y cancelar solo si la cita NO está en estado ASISTIO, NO_ASISTIO, CANCELADA o REPROGRAMADA
+                const estadosNoModificables = ['ASISTIO', 'NO_ASISTIO', 'CANCELADA_PACIENTE', 'CANCELADA_CLINICA', 'REPROGRAMADA'];
+                if (!estadosNoModificables.includes(cita.estadoNombre)) {
+                    botonesAccion += `
+                        <button class="btn btn-sm btn-warning btn-reprogramar-cita" data-cita='${citaData}' title="Reprogramar">
+                            <i class="fas fa-calendar"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger btn-cancelar-cita" data-cita='${citaData}' title="Cancelar">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    `;
+                }
+
                 const fila = `
                     <tr>
                         <td><b>#${cita.id}</b></td>
@@ -519,15 +539,7 @@
                         <td><span class="badge badge-secondary">${cita.duracion} min</span></td>
                         <td>${estadoBadge}</td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-info btn-ver-cita" data-cita='${citaData}' title="Ver Detalle">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-warning btn-reprogramar-cita" data-cita='${citaData}' title="Reprogramar">
-                                <i class="fas fa-calendar"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger btn-cancelar-cita" data-cita='${citaData}' title="Cancelar">
-                                <i class="fas fa-ban"></i>
-                            </button>
+                            ${botonesAccion}
                         </td>
                     </tr>
                 `;

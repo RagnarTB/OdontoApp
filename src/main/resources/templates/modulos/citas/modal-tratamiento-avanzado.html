@@ -751,9 +751,27 @@ $(document).ready(function() {
     }
 
     // Botón Tratamiento Inmediato
-    $('#btnRealizarInmediato').on('click', function() {
+    $('#btnRealizarInmediato').off('click').on('click', function() {
+        // Validar que se haya seleccionado un procedimiento
+        const procedimientoId = $('#tratamientoProcedimientoId').val();
+        if (!procedimientoId) {
+            Swal.fire('Advertencia', 'Debe seleccionar un procedimiento antes de registrar el tratamiento', 'warning');
+            return;
+        }
+
+        // Validar que haya una cita asociada
+        const citaId = $('#tratamientoCitaId').val();
+        if (!citaId) {
+            Swal.fire('Error', 'No se encontró la información de la cita', 'error');
+            return;
+        }
+
         const datos = recopilarDatosTratamiento('INMEDIATO');
         console.log('Tratamiento Inmediato:', datos);
+
+        // Deshabilitar botón mientras se procesa
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...');
 
         $.ajax({
             url: '/tratamientos/realizar-inmediato',
@@ -768,14 +786,34 @@ $(document).ready(function() {
             error: function(xhr) {
                 const mensaje = xhr.responseJSON?.mensaje || 'No se pudo registrar el tratamiento';
                 Swal.fire('Error', mensaje, 'error');
+                // Rehabilitar botón
+                $btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i>Tratamiento Realizado Ahora');
             }
         });
     });
 
     // Botón Planificar
-    $('#btnPlanificarTratamiento').on('click', function() {
+    $('#btnPlanificarTratamiento').off('click').on('click', function() {
+        // Validar que se haya seleccionado un procedimiento
+        const procedimientoId = $('#tratamientoProcedimientoId').val();
+        if (!procedimientoId) {
+            Swal.fire('Advertencia', 'Debe seleccionar un procedimiento antes de planificar el tratamiento', 'warning');
+            return;
+        }
+
+        // Validar que haya una cita asociada
+        const citaId = $('#tratamientoCitaId').val();
+        if (!citaId) {
+            Swal.fire('Error', 'No se encontró la información de la cita', 'error');
+            return;
+        }
+
         const datos = recopilarDatosTratamiento('PLANIFICADO');
         console.log('Tratamiento Planificado:', datos);
+
+        // Deshabilitar botón mientras se procesa
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...');
 
         $.ajax({
             url: '/tratamientos/planificar',
@@ -790,6 +828,8 @@ $(document).ready(function() {
             error: function(xhr) {
                 const mensaje = xhr.responseJSON?.mensaje || 'No se pudo planificar el tratamiento';
                 Swal.fire('Error', mensaje, 'error');
+                // Rehabilitar botón
+                $btn.prop('disabled', false).html('<i class="fas fa-calendar-plus mr-1"></i>Planificar para Después');
             }
         });
     });

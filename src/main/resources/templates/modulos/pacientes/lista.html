@@ -282,6 +282,7 @@
     </div>
 
     <script>
+        $(document).ready(function() {
         // Confirmación de eliminación de paciente con SweetAlert2
         $(document).on('click', '.btn-eliminar-paciente', function(e) {
             e.preventDefault();
@@ -435,6 +436,7 @@
                 $(`#cuadrante-${numCuad}`).html(html);
             });
         }
+        }); // Fin de $(document).ready()
     </script>
 </body>
 
