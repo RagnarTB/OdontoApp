@@ -1,6 +1,6 @@
 <!-- Modal Registrar Tratamiento AVANZADO -->
 <div th:fragment="modalRegistrarTratamiento" class="modal fade" id="modalRegistrarTratamiento" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title">
@@ -10,21 +10,21 @@
                     <span>&times;</span>
                 </button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                 <input type="hidden" id="tratamientoCitaId" name="citaId">
 
                 <!-- Información Precargada de la Cita -->
-                <div class="alert alert-info mb-3">
-                    <strong><i class="fas fa-info-circle mr-2"></i>Cita:</strong>
-                    <span id="infoCitaPaciente"></span> |
-                    Odontólogo: <span id="infoCitaOdontologo"></span> |
-                    Fecha: <span id="infoCitaFecha"></span>
+                <div class="alert alert-info mb-3 py-2">
+                    <small>
+                        <strong><i class="fas fa-info-circle mr-1"></i></strong>
+                        <span id="infoCitaPaciente"></span> | <span id="infoCitaOdontologo"></span> | <span id="infoCitaFecha"></span>
+                    </small>
                 </div>
 
                 <!-- Procedimiento Selection -->
                 <div class="form-group">
-                    <label for="tratamientoProcedimientoId">Procedimiento <span class="text-danger">*</span></label>
-                    <select class="form-control" id="tratamientoProcedimientoId" required>
+                    <label for="tratamientoProcedimientoId" class="font-weight-bold">Procedimiento <span class="text-danger">*</span></label>
+                    <select class="form-control form-control-sm" id="tratamientoProcedimientoId" required>
                         <option value="">Seleccione un procedimiento...</option>
                         <option th:each="proc : ${listaProcedimientos}"
                                 th:value="${proc.id}"
@@ -33,29 +33,27 @@
                     </select>
                 </div>
 
-                <!-- Selector Visual de Dientes (FDI) -->
-                <div class="card card-outline card-primary mb-3" id="selectorDientes" style="display:none;">
-                    <div class="card-header">
-                        <h6 class="mb-0"><i class="fas fa-teeth mr-2"></i>Seleccione Pieza(s) Dental(es)</h6>
+                <!-- Selector Visual de Dientes (FDI) - Compacto -->
+                <div class="card card-outline card-primary mb-2" id="selectorDientes" style="display:none;">
+                    <div class="card-header py-1">
+                        <h6 class="mb-0" style="font-size: 0.9rem;"><i class="fas fa-teeth mr-1"></i>Pieza(s) Dental(es)</h6>
                     </div>
-                    <div class="card-body text-center">
-                        <!-- Maxilar Superior -->
-                        <small class="text-muted d-block mb-2">MAXILAR SUPERIOR</small>
-                        <div class="mb-3">
-                            <div class="btn-group mr-2" id="cuadrante-1"></div>
-                            <span class="mx-2">|</span>
-                            <div class="btn-group" id="cuadrante-2"></div>
+                    <div class="card-body text-center py-2">
+                        <small class="text-muted d-block mb-1" style="font-size: 0.7rem;">MAXILAR SUPERIOR</small>
+                        <div class="mb-1">
+                            <div class="btn-group mr-1 btn-group-sm" id="cuadrante-1"></div>
+                            <span class="mx-1">|</span>
+                            <div class="btn-group btn-group-sm" id="cuadrante-2"></div>
                         </div>
-                        <hr>
-                        <!-- Maxilar Inferior -->
-                        <small class="text-muted d-block mb-2">MAXILAR INFERIOR</small>
+                        <hr class="my-1">
+                        <small class="text-muted d-block mb-1" style="font-size: 0.7rem;">MAXILAR INFERIOR</small>
                         <div>
-                            <div class="btn-group mr-2" id="cuadrante-4"></div>
-                            <span class="mx-2">|</span>
-                            <div class="btn-group" id="cuadrante-3"></div>
+                            <div class="btn-group mr-1 btn-group-sm" id="cuadrante-4"></div>
+                            <span class="mx-1">|</span>
+                            <div class="btn-group btn-group-sm" id="cuadrante-3"></div>
                         </div>
                         <input type="hidden" id="tratamientoPiezasDentales" name="piezasDentales">
-                        <small class="form-text text-muted mt-2">
+                        <small class="form-text text-muted mt-1" style="font-size: 0.75rem;">
                             <strong>Seleccionados:</strong> <span id="dientesSeleccionados">Ninguno</span>
                         </small>
                     </div>
@@ -64,42 +62,42 @@
                 <!-- Campos Dinámicos por Procedimiento -->
                 <div id="camposDinamicos"></div>
 
-                <!-- Insumos Incluidos en el Procedimiento -->
-                <div class="card card-outline card-secondary mb-3" id="seccionInsumos" style="display:none;">
-                    <div class="card-header">
-                        <h6 class="mb-0"><i class="fas fa-box mr-2"></i>Insumos del Procedimiento</h6>
+                <!-- Insumos Incluidos en el Procedimiento - Compacto -->
+                <div class="card card-outline card-secondary mb-2" id="seccionInsumos" style="display:none;">
+                    <div class="card-header py-1">
+                        <h6 class="mb-0" style="font-size: 0.9rem;"><i class="fas fa-box mr-1"></i>Insumos</h6>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
+                    <div class="card-body py-2">
+                        <div class="table-responsive" style="max-height: 150px; overflow-y: auto;">
+                            <table class="table table-sm table-bordered mb-0" style="font-size: 0.85rem;">
                                 <thead class="thead-light">
                                     <tr>
                                         <th>Insumo</th>
-                                        <th>Cantidad</th>
-                                        <th>Unidad</th>
-                                        <th>Tipo</th>
+                                        <th width="60">Cant.</th>
+                                        <th width="60">Unidad</th>
+                                        <th width="80">Tipo</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablaInsumosDefault">
                                     <tr>
                                         <td colspan="4" class="text-center text-muted">
-                                            Seleccione un procedimiento para ver los insumos
+                                            Seleccione un procedimiento
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarInsumoAdicional">
-                            <i class="fas fa-plus mr-1"></i>Agregar Insumo Adicional
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="btnAgregarInsumoAdicional">
+                            <i class="fas fa-plus mr-1"></i>Agregar Insumo
                         </button>
                     </div>
                 </div>
 
                 <!-- Descripción General -->
-                <div class="form-group">
-                    <label for="tratamientoDescripcion">Observaciones Generales</label>
-                    <textarea class="form-control" id="tratamientoDescripcion" rows="2"
-                              placeholder="Observaciones adicionales del tratamiento"></textarea>
+                <div class="form-group mb-2">
+                    <label for="tratamientoDescripcion" class="font-weight-bold">Observaciones</label>
+                    <textarea class="form-control form-control-sm" id="tratamientoDescripcion" rows="2"
+                              placeholder="Observaciones adicionales"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -762,14 +760,14 @@ function initModalTratamiento() {
             if (insumos && insumos.length > 0) {
                 let html = '';
                 insumos.forEach(function(ins) {
-                    const tipo = ins.esObligatorio ? '<span class="badge badge-danger">Obligatorio</span>' :
-                                                     '<span class="badge badge-secondary">Opcional</span>';
+                    const tipoBadge = ins.esObligatorio ? 'danger' : 'secondary';
+                    const tipoTexto = ins.esObligatorio ? 'Oblig.' : 'Opc.';
                     html += `
                         <tr>
                             <td>${ins.insumoNombre}</td>
-                            <td>${ins.cantidadDefecto}</td>
+                            <td><input type="number" class="form-control form-control-sm" value="${ins.cantidadDefecto}" min="0" style="width:50px;"></td>
                             <td>${ins.unidad}</td>
-                            <td>${tipo}</td>
+                            <td><span class="badge badge-${tipoBadge}" style="font-size:0.7rem;">${tipoTexto}</span></td>
                         </tr>
                     `;
                 });
@@ -782,6 +780,57 @@ function initModalTratamiento() {
             $('#seccionInsumos').hide();
         });
     }
+
+    // Contador para insumos adicionales
+    let contadorInsumosAdicionales = 0;
+
+    // Agregar insumo adicional
+    $(document).on('click', '#btnAgregarInsumoAdicional', function() {
+        console.log('Agregando insumo adicional...');
+        contadorInsumosAdicionales++;
+
+        const nuevaFila = `
+            <tr class="insumo-adicional" data-id="${contadorInsumosAdicionales}">
+                <td>
+                    <input type="text" class="form-control form-control-sm" placeholder="Nombre del insumo" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" value="1" min="0" style="width:50px;">
+                </td>
+                <td>
+                    <select class="form-control form-control-sm" style="width:60px;">
+                        <option>Unid.</option>
+                        <option>ml</option>
+                        <option>gr</option>
+                        <option>pza</option>
+                    </select>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger btn-eliminar-insumo" style="padding:0.1rem 0.3rem; font-size:0.7rem;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+
+        $('#tablaInsumosDefault').append(nuevaFila);
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Insumo agregado',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+    });
+
+    // Eliminar insumo adicional
+    $(document).on('click', '.btn-eliminar-insumo', function() {
+        $(this).closest('tr').remove();
+    });
 
     // Botón Tratamiento Inmediato (usar delegación de eventos)
     $(document).off('click', '#btnRealizarInmediato').on('click', '#btnRealizarInmediato', function() {
