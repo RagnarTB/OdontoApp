@@ -207,6 +207,46 @@ function initModalTratamiento() {
 
     // Al abrir modal (desde detalle de cita)
     $('#modalRegistrarTratamiento').on('show.bs.modal', function() {
+        // Intentar cargar datos de la cita si están disponibles
+        const citaId = $('#detalleCitaId').val();
+
+        if (citaId) {
+            // **VERIFICAR SI YA EXISTE TRATAMIENTO EN ESTA CITA**
+            $.get('/tratamientos/verificar-cita/' + citaId, function(response) {
+                if (response.tieneTratamiento) {
+                    // Cerrar el modal inmediatamente
+                    $('#modalRegistrarTratamiento').modal('hide');
+
+                    // Mostrar mensaje de advertencia
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Tratamiento ya registrado',
+                            html: `Esta cita ya tiene un tratamiento registrado:<br><br>
+                                   <strong>${response.procedimiento}</strong><br>
+                                   <small>${response.fecha}</small><br><br>
+                                   No se pueden registrar múltiples tratamientos en la misma cita.`,
+                            confirmButtonText: 'Entendido'
+                        });
+                    } else {
+                        alert('Esta cita ya tiene un tratamiento registrado: ' + response.procedimiento);
+                    }
+                    return;
+                }
+
+                // Si no hay tratamiento, continuar con la carga normal
+                continuarCargaModal(citaId);
+            }).fail(function() {
+                console.error('Error verificando tratamiento de la cita');
+                continuarCargaModal(citaId);
+            });
+        } else {
+            continuarCargaModal(null);
+        }
+    });
+
+    // Función auxiliar para cargar el modal
+    function continuarCargaModal(citaId) {
         // Limpiar form
         $('#tratamientoProcedimientoId').val('');
         $('#tratamientoDescripcion').val('');
@@ -218,8 +258,10 @@ function initModalTratamiento() {
         $('#dientesSeleccionados').text('Ninguno');
         $('#tratamientoPiezasDentales').val('');
 
-        // Intentar cargar datos de la cita si están disponibles
-        const citaId = $('#detalleCitaId').val();
+        // Limpiar insumos adicionales
+        $('.insumo-adicional').remove();
+        contadorInsumosAdicionales = 0;
+
         if (citaId) {
             $('#tratamientoCitaId').val(citaId);
 
@@ -241,7 +283,7 @@ function initModalTratamiento() {
                 $('#tratamientoProcedimientoId').trigger('change');
             }
         }
-    });
+    }
 
     // Cambio de procedimiento
     $('#tratamientoProcedimientoId').on('change', function() {
@@ -783,28 +825,56 @@ function initModalTratamiento() {
 
     // Contador para insumos adicionales
     let contadorInsumosAdicionales = 0;
+    let insumosDisponibles = [];
+
+    // Cargar lista de insumos al inicio
+    function cargarInsumosDisponibles() {
+        $.get('/tratamientos/insumos', function(insumos) {
+            insumosDisponibles = insumos;
+            console.log('Insumos cargados:', insumosDisponibles.length);
+        }).fail(function() {
+            console.error('Error cargando lista de insumos');
+        });
+    }
+
+    // Cargar insumos al inicializar
+    cargarInsumosDisponibles();
 
     // Agregar insumo adicional
     $(document).on('click', '#btnAgregarInsumoAdicional', function() {
         console.log('Agregando insumo adicional...');
+
+        if (insumosDisponibles.length === 0) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Advertencia', 'No hay insumos disponibles en el sistema', 'warning');
+            } else {
+                alert('No hay insumos disponibles en el sistema');
+            }
+            return;
+        }
+
         contadorInsumosAdicionales++;
+
+        // Construir options del select
+        let optionsHtml = '<option value="">Seleccione insumo...</option>';
+        insumosDisponibles.forEach(function(insumo) {
+            const stockInfo = insumo.stockActual > 0 ? `(Stock: ${insumo.stockActual})` : '(Sin stock)';
+            optionsHtml += `<option value="${insumo.id}" data-unidad="${insumo.unidad}" data-precio="${insumo.precioUnitario || 0}">
+                ${insumo.codigo} - ${insumo.nombre} ${stockInfo}
+            </option>`;
+        });
 
         const nuevaFila = `
             <tr class="insumo-adicional" data-id="${contadorInsumosAdicionales}">
                 <td>
-                    <input type="text" class="form-control form-control-sm" placeholder="Nombre del insumo" required>
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm" value="1" min="0" style="width:50px;">
-                </td>
-                <td>
-                    <select class="form-control form-control-sm" style="width:60px;">
-                        <option>Unid.</option>
-                        <option>ml</option>
-                        <option>gr</option>
-                        <option>pza</option>
+                    <select class="form-control form-control-sm select-insumo-adicional" required>
+                        ${optionsHtml}
                     </select>
                 </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm insumo-cantidad" value="1" min="0.1" step="0.1" style="width:50px;">
+                </td>
+                <td class="insumo-unidad-display">-</td>
                 <td>
                     <button type="button" class="btn btn-sm btn-danger btn-eliminar-insumo" style="padding:0.1rem 0.3rem; font-size:0.7rem;">
                         <i class="fas fa-times"></i>
@@ -825,6 +895,12 @@ function initModalTratamiento() {
                 timer: 1500
             });
         }
+    });
+
+    // Cuando se selecciona un insumo, actualizar la unidad
+    $(document).on('change', '.select-insumo-adicional', function() {
+        const unidad = $(this).find(':selected').data('unidad');
+        $(this).closest('tr').find('.insumo-unidad-display').text(unidad || '-');
     });
 
     // Eliminar insumo adicional
@@ -965,13 +1041,28 @@ function initModalTratamiento() {
     });
 
     function recopilarDatosTratamiento(tipo) {
+        // Recopilar insumos adicionales
+        const insumosAdicionales = [];
+        $('.insumo-adicional').each(function() {
+            const insumoId = $(this).find('.select-insumo-adicional').val();
+            const cantidad = $(this).find('.insumo-cantidad').val();
+
+            if (insumoId && cantidad) {
+                insumosAdicionales.push({
+                    insumoId: insumoId,
+                    cantidad: cantidad
+                });
+            }
+        });
+
         return {
             citaId: $('#tratamientoCitaId').val(),
             procedimientoId: $('#tratamientoProcedimientoId').val(),
             piezasDentales: $('#tratamientoPiezasDentales').val(),
             descripcion: $('#tratamientoDescripcion').val(),
             tipo: tipo,
-            camposDinamicos: $('#camposDinamicos').find('input, select, textarea').serializeArray()
+            camposDinamicos: $('#camposDinamicos').find('input, select, textarea').serializeArray(),
+            insumosAdicionales: insumosAdicionales
         };
     }
 } // Fin de initModalTratamiento

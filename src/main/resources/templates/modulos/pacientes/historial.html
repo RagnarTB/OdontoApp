@@ -117,15 +117,56 @@
                                 <div class="tab-content" id="custom-tabs-content">
                                     <!-- Tab Tratamientos -->
                                     <div class="tab-pane fade show active" id="tratamientos" role="tabpanel" aria-labelledby="tratamientos-tab">
-                                        <div class="alert alert-info">
-                                            <h5><i class="icon fas fa-info-circle"></i> Tratamientos Realizados</h5>
-                                            Aquí se mostrarán todos los tratamientos odontológicos realizados al paciente.
-                                            Esta funcionalidad será completada en futuras actualizaciones.
+                                        <h5 class="mb-3"><i class="fas fa-procedures mr-2"></i>Historial de Tratamientos Realizados</h5>
+
+                                        <div th:if="${tratamientos != null and !tratamientos.isEmpty()}">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-striped">
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th>Fecha</th>
+                                                            <th>Procedimiento</th>
+                                                            <th>Piezas Dentales</th>
+                                                            <th>Odontólogo</th>
+                                                            <th>Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr th:each="tratamiento : ${tratamientos}">
+                                                            <td>
+                                                                <strong th:text="${#temporals.format(tratamiento.fechaRealizacion, 'dd/MM/yyyy')}"></strong><br>
+                                                                <small class="text-muted" th:text="${#temporals.format(tratamiento.fechaRealizacion, 'HH:mm')}"></small>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge badge-info" th:text="${tratamiento.procedimiento.codigo}"></span>
+                                                                <br th:text="${tratamiento.procedimiento.nombre}"></br>
+                                                            </td>
+                                                            <td th:text="${tratamiento.piezaDental ?: 'N/A'}"></td>
+                                                            <td th:text="${tratamiento.odontologo.nombreCompleto}"></td>
+                                                            <td>
+                                                                <button type="button" class="btn btn-sm btn-primary btn-ver-tratamiento"
+                                                                        th:data-tratamiento-id="${tratamiento.id}"
+                                                                        th:data-procedimiento="${tratamiento.procedimiento.nombre}"
+                                                                        th:data-descripcion="${tratamiento.descripcionTrabajo}"
+                                                                        th:data-fecha="${#temporals.format(tratamiento.fechaRealizacion, 'dd/MM/yyyy HH:mm')}"
+                                                                        th:data-odontologo="${tratamiento.odontologo.nombreCompleto}"
+                                                                        th:data-piezas="${tratamiento.piezaDental}"
+                                                                        title="Ver Detalles">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </button>
+                                                                <a th:href="@{/citas}" class="btn btn-sm btn-success" title="Ver Cita Asociada">
+                                                                    <i class="fas fa-calendar-alt"></i>
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
-                                        <!-- Placeholder para futura implementación -->
-                                        <div class="text-center text-muted p-5">
+
+                                        <div th:if="${tratamientos == null or tratamientos.isEmpty()}" class="text-center text-muted p-5">
                                             <i class="fas fa-procedures" style="font-size: 4rem; opacity: 0.3;"></i>
-                                            <p class="mt-3">No hay tratamientos registrados</p>
+                                            <p class="mt-3">No hay tratamientos registrados para este paciente</p>
                                         </div>
                                     </div>
 
@@ -177,7 +218,77 @@
                 </div>
             </div>
         </section>
+
+        <!-- Modal Ver Detalle Tratamiento -->
+        <div class="modal fade" id="modalVerDetalleTratamiento" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-procedures mr-2"></i>Detalle del Tratamiento
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-5">Procedimiento:</dt>
+                                    <dd class="col-sm-7" id="modalProcedimiento"></dd>
+
+                                    <dt class="col-sm-5">Fecha:</dt>
+                                    <dd class="col-sm-7" id="modalFecha"></dd>
+
+                                    <dt class="col-sm-5">Odontólogo:</dt>
+                                    <dd class="col-sm-7" id="modalOdontologo"></dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-5">Piezas Dentales:</dt>
+                                    <dd class="col-sm-7" id="modalPiezas"></dd>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <h6 class="text-primary"><i class="fas fa-file-alt mr-2"></i>Descripción del Trabajo</h6>
+                        <div class="bg-light p-3 rounded" id="modalDescripcion" style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i>Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <script>
+        $(document).ready(function() {
+            // Ver detalle del tratamiento
+            $('.btn-ver-tratamiento').on('click', function() {
+                const procedimiento = $(this).data('procedimiento');
+                const descripcion = $(this).data('descripcion');
+                const fecha = $(this).data('fecha');
+                const odontologo = $(this).data('odontologo');
+                const piezas = $(this).data('piezas');
+
+                $('#modalProcedimiento').text(procedimiento);
+                $('#modalFecha').text(fecha);
+                $('#modalOdontologo').text(odontologo);
+                $('#modalPiezas').text(piezas || 'No especificado');
+                $('#modalDescripcion').text(descripcion || 'Sin observaciones adicionales');
+
+                $('#modalVerDetalleTratamiento').modal('show');
+            });
+        });
+    </script>
 </body>
 
 </html>
