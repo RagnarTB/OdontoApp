@@ -8,7 +8,7 @@
 <div th:fragment="modalAgendarCita" class="modal fade" id="modalAgendarCita" tabindex="-1" role="dialog" aria-labelledby="modalAgendarCitaLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <form th:action="@{/citas/agendar}" method="post">
+            <form th:action="@{/citas/agendar}" method="post" data-auto-loading="true">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="modalAgendarCitaLabel">
                         <i class="fas fa-calendar-plus mr-2"></i>Agendar Nueva Cita
@@ -238,7 +238,7 @@
                         <button type="button" class="btn btn-primary" id="btnWizardSiguiente">
                             Siguiente<i class="fas fa-arrow-right ml-1"></i>
                         </button>
-                        <button type="submit" class="btn btn-success" id="btnWizardFinalizar" style="display: none;">
+                        <button type="submit" class="btn btn-success" id="btnWizardFinalizar" style="display: none;" data-loading-text="Agendando cita...">
                             <i class="fas fa-check mr-1"></i>Agendar Cita
                         </button>
                     </div>
@@ -300,26 +300,26 @@
                 <!-- Botones de Acción -->
                 <div class="text-center">
                     <!-- Botón Confirmar Cita -->
-                    <form th:action="@{/citas/confirmar}" method="post" style="display: inline-block;" id="btnConfirmarCita">
+                    <form th:action="@{/citas/confirmar}" method="post" style="display: inline-block;" id="btnConfirmarCita" data-auto-loading="true">
                         <input type="hidden" name="citaId" class="citaIdField">
-                        <button type="submit" class="btn btn-success">
+                        <button type="submit" class="btn btn-success" data-loading-text="Confirmando cita...">
                             <i class="fas fa-check-circle mr-1"></i>Confirmar Cita
                         </button>
                     </form>
 
                     <!-- Botones Marcar Asistencia -->
                     <div id="divAsistencia" style="display: none;" sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
-                        <form th:action="@{/citas/marcar-asistencia}" method="post" style="display: inline-block;">
+                        <form th:action="@{/citas/marcar-asistencia}" method="post" style="display: inline-block;" data-auto-loading="true">
                             <input type="hidden" name="citaId" class="citaIdField">
                             <input type="hidden" name="asistio" value="true">
-                            <button type="submit" class="btn btn-success">
+                            <button type="submit" class="btn btn-success" data-loading-text="Registrando asistencia...">
                                 <i class="fas fa-user-check mr-1"></i>Asistió
                             </button>
                         </form>
-                        <form th:action="@{/citas/marcar-asistencia}" method="post" style="display: inline-block;">
+                        <form th:action="@{/citas/marcar-asistencia}" method="post" style="display: inline-block;" data-auto-loading="true">
                             <input type="hidden" name="citaId" class="citaIdField">
                             <input type="hidden" name="asistio" value="false">
-                            <button type="submit" class="btn btn-danger">
+                            <button type="submit" class="btn btn-danger" data-loading-text="Registrando inasistencia...">
                                 <i class="fas fa-user-times mr-1"></i>No Asistió
                             </button>
                         </form>
@@ -359,7 +359,7 @@
 <div th:fragment="modalReprogramarCita" class="modal fade" id="modalReprogramarCita" tabindex="-1" role="dialog" aria-labelledby="modalReprogramarCitaLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document" style="max-width: 850px;">
         <div class="modal-content">
-            <form th:action="@{/citas/reprogramar}" method="post">
+            <form th:action="@{/citas/reprogramar}" method="post" data-auto-loading="true">
                 <div class="modal-header bg-warning text-dark">
                     <h5 class="modal-title" id="modalReprogramarCitaLabel">
                         <i class="fas fa-calendar-alt mr-2"></i>Reprogramar Cita
@@ -434,7 +434,7 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i>Cancelar
                     </button>
-                    <button type="submit" class="btn btn-warning" id="btnConfirmarReprogramar">
+                    <button type="submit" class="btn btn-warning" id="btnConfirmarReprogramar" data-loading-text="Reprogramando cita...">
                         <i class="fas fa-check mr-1"></i>Reprogramar
                     </button>
                 </div>
@@ -449,7 +449,7 @@
 <div th:fragment="modalCancelarCita" class="modal fade" id="modalCancelarCita" tabindex="-1" role="dialog" aria-labelledby="modalCancelarCitaLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <form th:action="@{/citas/cancelar}" method="post">
+            <form th:action="@{/citas/cancelar}" method="post" data-auto-loading="true">
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title" id="modalCancelarCitaLabel">
                         <i class="fas fa-ban mr-2"></i>Cancelar Cita
@@ -475,7 +475,7 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i>No, volver
                     </button>
-                    <button type="submit" class="btn btn-danger">
+                    <button type="submit" class="btn btn-danger" data-loading-text="Cancelando cita...">
                         <i class="fas fa-ban mr-1"></i>Sí, cancelar cita
                     </button>
                 </div>

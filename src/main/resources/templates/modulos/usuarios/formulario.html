@@ -27,7 +27,7 @@
                         <h3 class="card-title">Datos del Usuario</h3>
                     </div>
 
-                    <form th:action="@{/usuarios/guardar}" th:object="${usuario}" method="post" id="usuarioForm">
+                    <form th:action="@{/usuarios/guardar}" th:object="${usuario}" method="post" id="usuarioForm" data-auto-loading="true">
                         <!-- Campo oculto para el ID (para edición) -->
                         <input type="hidden" th:field="*{id}" />
 
@@ -381,7 +381,7 @@
                         </div> <!-- Fin .card-body -->
 
                         <div class="card-footer">
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-2"></i>Guardar
+                            <button type="submit" class="btn btn-primary" data-loading-text="Guardando usuario..."><i class="fas fa-save mr-2"></i>Guardar
                                 Usuario</button>
                             <a th:href="@{/usuarios}" class="btn btn-secondary">Cancelar</a>
                         </div>

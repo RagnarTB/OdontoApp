@@ -104,10 +104,10 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
                     <i class="fas fa-times mr-1"></i>Cancelar
                 </button>
-                <button type="button" class="btn btn-info" id="btnPlanificarTratamiento">
+                <button type="button" class="btn btn-info" id="btnPlanificarTratamiento" data-loading-text="Planificando tratamiento...">
                     <i class="fas fa-calendar-plus mr-1"></i>Planificar para Después
                 </button>
-                <button type="button" class="btn btn-success" id="btnRealizarInmediato">
+                <button type="button" class="btn btn-success" id="btnRealizarInmediato" data-loading-text="Registrando tratamiento...">
                     <i class="fas fa-check-circle mr-1"></i>Tratamiento Realizado Ahora
                 </button>
             </div>
@@ -217,16 +217,32 @@ function initModalTratamiento() {
                     // Cerrar el modal inmediatamente
                     $('#modalRegistrarTratamiento').modal('hide');
 
-                    // Mostrar mensaje de advertencia
+                    // Mostrar mensaje de advertencia bonito
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
-                            icon: 'warning',
-                            title: 'Tratamiento ya registrado',
-                            html: `Esta cita ya tiene un tratamiento registrado:<br><br>
-                                   <strong>${response.procedimiento}</strong><br>
-                                   <small>${response.fecha}</small><br><br>
-                                   No se pueden registrar múltiples tratamientos en la misma cita.`,
-                            confirmButtonText: 'Entendido'
+                            icon: 'info',
+                            title: '<i class="fas fa-info-circle text-info"></i> Tratamiento Ya Registrado',
+                            html: `
+                                <div class="text-left">
+                                    <p class="mb-3">Esta cita ya tiene un tratamiento registrado:</p>
+                                    <div class="card bg-light">
+                                        <div class="card-body py-2">
+                                            <p class="mb-1"><i class="fas fa-procedures text-primary mr-2"></i><strong>Procedimiento:</strong></p>
+                                            <p class="mb-2 ml-4">${response.procedimiento}</p>
+                                            <p class="mb-0"><i class="fas fa-calendar text-success mr-2"></i><strong>Fecha:</strong> ${response.fecha}</p>
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-warning mt-3 mb-0" role="alert">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                                        <small><strong>Nota:</strong> Solo se permite un tratamiento por cita.</small>
+                                    </div>
+                                </div>
+                            `,
+                            confirmButtonText: '<i class="fas fa-check mr-1"></i> Entendido',
+                            confirmButtonColor: '#3085d6',
+                            customClass: {
+                                popup: 'swal2-lg'
+                            }
                         });
                     } else {
                         alert('Esta cita ya tiene un tratamiento registrado: ' + response.procedimiento);
@@ -941,9 +957,9 @@ function initModalTratamiento() {
         const datos = recopilarDatosTratamiento('INMEDIATO');
         console.log('Datos del tratamiento:', datos); // Debug
 
-        // Deshabilitar botón mientras se procesa
+        // Activar loading usando el sistema global
         const $btn = $(this);
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...');
+        setButtonLoading($btn, true);
 
         $.ajax({
             url: '/tratamientos/realizar-inmediato',
@@ -952,6 +968,7 @@ function initModalTratamiento() {
             data: JSON.stringify(datos),
             success: function(response) {
                 console.log('Respuesta del servidor:', response); // Debug
+                setButtonLoading($btn, false);
                 if (typeof Swal !== 'undefined') {
                     Swal.fire('Éxito', response.mensaje || 'Tratamiento registrado correctamente', 'success');
                 } else {
@@ -962,14 +979,13 @@ function initModalTratamiento() {
             },
             error: function(xhr) {
                 console.error('Error en la petición:', xhr); // Debug
+                setButtonLoading($btn, false);
                 const mensaje = xhr.responseJSON?.mensaje || 'No se pudo registrar el tratamiento';
                 if (typeof Swal !== 'undefined') {
                     Swal.fire('Error', mensaje, 'error');
                 } else {
                     alert('Error: ' + mensaje);
                 }
-                // Rehabilitar botón
-                $btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i>Tratamiento Realizado Ahora');
             }
         });
     });
@@ -1007,9 +1023,9 @@ function initModalTratamiento() {
         const datos = recopilarDatosTratamiento('PLANIFICADO');
         console.log('Datos del tratamiento planificado:', datos); // Debug
 
-        // Deshabilitar botón mientras se procesa
+        // Activar loading usando el sistema global
         const $btn = $(this);
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...');
+        setButtonLoading($btn, true);
 
         $.ajax({
             url: '/tratamientos/planificar',
@@ -1018,6 +1034,7 @@ function initModalTratamiento() {
             data: JSON.stringify(datos),
             success: function(response) {
                 console.log('Respuesta del servidor:', response); // Debug
+                setButtonLoading($btn, false);
                 if (typeof Swal !== 'undefined') {
                     Swal.fire('Éxito', response.mensaje || 'Tratamiento planificado correctamente', 'success');
                 } else {
@@ -1028,14 +1045,13 @@ function initModalTratamiento() {
             },
             error: function(xhr) {
                 console.error('Error en la petición:', xhr); // Debug
+                setButtonLoading($btn, false);
                 const mensaje = xhr.responseJSON?.mensaje || 'No se pudo planificar el tratamiento';
                 if (typeof Swal !== 'undefined') {
                     Swal.fire('Error', mensaje, 'error');
                 } else {
                     alert('Error: ' + mensaje);
                 }
-                // Rehabilitar botón
-                $btn.prop('disabled', false).html('<i class="fas fa-calendar-plus mr-1"></i>Planificar para Después');
             }
         });
     });
