@@ -307,7 +307,15 @@
 
         // Ver Detalle del Paciente
         $(document).on('click', '.btn-ver-detalle', function() {
-            const pacienteId = $(this).data('paciente-id');
+            // jQuery convierte data-paciente-id a pacienteId en camelCase
+            const pacienteId = $(this).data('pacienteId');
+
+            console.log('Paciente ID:', pacienteId); // Debug
+
+            if (!pacienteId) {
+                console.error('No se encontró el ID del paciente');
+                return;
+            }
 
             // Limpiar datos anteriores
             $('#modalPacienteNombre').text('Cargando...');

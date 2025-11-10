@@ -750,24 +750,38 @@ $(document).ready(function() {
         });
     }
 
-    // Botón Tratamiento Inmediato
-    $('#btnRealizarInmediato').off('click').on('click', function() {
+    // Botón Tratamiento Inmediato (usar delegación de eventos)
+    $(document).off('click', '#btnRealizarInmediato').on('click', '#btnRealizarInmediato', function() {
+        console.log('Botón Realizar Inmediato clickeado'); // Debug
+
         // Validar que se haya seleccionado un procedimiento
         const procedimientoId = $('#tratamientoProcedimientoId').val();
+        console.log('Procedimiento ID:', procedimientoId); // Debug
+
         if (!procedimientoId) {
-            Swal.fire('Advertencia', 'Debe seleccionar un procedimiento antes de registrar el tratamiento', 'warning');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Advertencia', 'Debe seleccionar un procedimiento antes de registrar el tratamiento', 'warning');
+            } else {
+                alert('Debe seleccionar un procedimiento antes de registrar el tratamiento');
+            }
             return;
         }
 
         // Validar que haya una cita asociada
         const citaId = $('#tratamientoCitaId').val();
+        console.log('Cita ID:', citaId); // Debug
+
         if (!citaId) {
-            Swal.fire('Error', 'No se encontró la información de la cita', 'error');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Error', 'No se encontró la información de la cita', 'error');
+            } else {
+                alert('No se encontró la información de la cita');
+            }
             return;
         }
 
         const datos = recopilarDatosTratamiento('INMEDIATO');
-        console.log('Tratamiento Inmediato:', datos);
+        console.log('Datos del tratamiento:', datos); // Debug
 
         // Deshabilitar botón mientras se procesa
         const $btn = $(this);
@@ -779,37 +793,61 @@ $(document).ready(function() {
             contentType: 'application/json',
             data: JSON.stringify(datos),
             success: function(response) {
-                Swal.fire('Éxito', response.mensaje || 'Tratamiento registrado correctamente', 'success');
+                console.log('Respuesta del servidor:', response); // Debug
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Éxito', response.mensaje || 'Tratamiento registrado correctamente', 'success');
+                } else {
+                    alert(response.mensaje || 'Tratamiento registrado correctamente');
+                }
                 $('#modalRegistrarTratamiento').modal('hide');
                 location.reload();
             },
             error: function(xhr) {
+                console.error('Error en la petición:', xhr); // Debug
                 const mensaje = xhr.responseJSON?.mensaje || 'No se pudo registrar el tratamiento';
-                Swal.fire('Error', mensaje, 'error');
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Error', mensaje, 'error');
+                } else {
+                    alert('Error: ' + mensaje);
+                }
                 // Rehabilitar botón
                 $btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i>Tratamiento Realizado Ahora');
             }
         });
     });
 
-    // Botón Planificar
-    $('#btnPlanificarTratamiento').off('click').on('click', function() {
+    // Botón Planificar (usar delegación de eventos)
+    $(document).off('click', '#btnPlanificarTratamiento').on('click', '#btnPlanificarTratamiento', function() {
+        console.log('Botón Planificar clickeado'); // Debug
+
         // Validar que se haya seleccionado un procedimiento
         const procedimientoId = $('#tratamientoProcedimientoId').val();
+        console.log('Procedimiento ID:', procedimientoId); // Debug
+
         if (!procedimientoId) {
-            Swal.fire('Advertencia', 'Debe seleccionar un procedimiento antes de planificar el tratamiento', 'warning');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Advertencia', 'Debe seleccionar un procedimiento antes de planificar el tratamiento', 'warning');
+            } else {
+                alert('Debe seleccionar un procedimiento antes de planificar el tratamiento');
+            }
             return;
         }
 
         // Validar que haya una cita asociada
         const citaId = $('#tratamientoCitaId').val();
+        console.log('Cita ID:', citaId); // Debug
+
         if (!citaId) {
-            Swal.fire('Error', 'No se encontró la información de la cita', 'error');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Error', 'No se encontró la información de la cita', 'error');
+            } else {
+                alert('No se encontró la información de la cita');
+            }
             return;
         }
 
         const datos = recopilarDatosTratamiento('PLANIFICADO');
-        console.log('Tratamiento Planificado:', datos);
+        console.log('Datos del tratamiento planificado:', datos); // Debug
 
         // Deshabilitar botón mientras se procesa
         const $btn = $(this);
@@ -821,13 +859,23 @@ $(document).ready(function() {
             contentType: 'application/json',
             data: JSON.stringify(datos),
             success: function(response) {
-                Swal.fire('Éxito', response.mensaje || 'Tratamiento planificado correctamente', 'success');
+                console.log('Respuesta del servidor:', response); // Debug
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Éxito', response.mensaje || 'Tratamiento planificado correctamente', 'success');
+                } else {
+                    alert(response.mensaje || 'Tratamiento planificado correctamente');
+                }
                 $('#modalRegistrarTratamiento').modal('hide');
                 location.reload();
             },
             error: function(xhr) {
+                console.error('Error en la petición:', xhr); // Debug
                 const mensaje = xhr.responseJSON?.mensaje || 'No se pudo planificar el tratamiento';
-                Swal.fire('Error', mensaje, 'error');
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Error', mensaje, 'error');
+                } else {
+                    alert('Error: ' + mensaje);
+                }
                 // Rehabilitar botón
                 $btn.prop('disabled', false).html('<i class="fas fa-calendar-plus mr-1"></i>Planificar para Después');
             }

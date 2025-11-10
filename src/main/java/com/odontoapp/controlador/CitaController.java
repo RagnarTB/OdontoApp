@@ -416,7 +416,7 @@ public class CitaController {
             if (fecha.equals(LocalDate.now())) {
                 LocalDateTime unaHoraAdelante = LocalDateTime.now().plusHours(1);
 
-                horariosDisponibles = horariosDisponibles.stream()
+                List<Map<String, Object>> horariosFiltrados = horariosDisponibles.stream()
                         .filter(slot -> {
                             String horaInicio = (String) slot.get("inicio");
                             LocalDateTime fechaHoraSlot = LocalDateTime.of(fecha,
@@ -426,6 +426,25 @@ public class CitaController {
                                    fechaHoraSlot.equals(unaHoraAdelante);
                         })
                         .collect(Collectors.toList());
+
+                // Si después del filtrado quedan horarios, usarlos
+                // Si no quedan horarios, verificar si había alguno disponible originalmente
+                if (!horariosFiltrados.isEmpty()) {
+                    horariosDisponibles = horariosFiltrados;
+                } else {
+                    // Verificar si había horarios disponibles antes del filtro de tiempo
+                    long horariosDisponiblesOriginales = horariosDisponibles.stream()
+                            .filter(slot -> (Boolean) slot.get("disponible"))
+                            .count();
+
+                    if (horariosDisponiblesOriginales > 0) {
+                        // Había horarios pero todos están en el pasado
+                        disponibilidad.put("disponible", false);
+                        disponibilidad.put("motivo", "Todos los horarios disponibles para hoy requieren al menos 1 hora de anticipación. Por favor seleccione otra fecha.");
+                    }
+                    // Si no había horarios disponibles originalmente, mantener la lista vacía
+                    horariosDisponibles = horariosFiltrados;
+                }
             }
 
             // Actualizar la lista filtrada en el resultado
