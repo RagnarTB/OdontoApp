@@ -166,6 +166,11 @@
         if (response.esExcepcion) {
             titulo += ' <span class="badge badge-info ml-2">Horario especial</span>';
         }
+        titulo += '</small><br>';
+        titulo += '<small class="text-info">';
+        titulo += '<i class="fas fa-info-circle mr-1"></i>';
+        titulo += `<strong>Duración:</strong> ${duracionProcedimiento} min | `;
+        titulo += '<strong>Buffer:</strong> 15 min entre citas';
         titulo += '</small>';
         titulo += '</div>';
         contenedor.append(titulo);
@@ -371,6 +376,7 @@
     let horarioSeleccionadoReprogramar = null;
     let odontologoIdReprogramar = null;
     let duracionReprogramar = 30;
+    let fechaHoraOriginalReprogramar = null; // Guardar la fecha/hora original de la cita
 
     /**
      * Inicializa el modal de reprogramación cuando se abre
@@ -390,8 +396,9 @@
         $('#reprogramarFechaActual').text(fechaHoraInicio);
         $('#reprogramarOdontologoId').val(odontologoId);
 
-        // Guardar odontólogo ID para las consultas
+        // Guardar odontólogo ID y fecha/hora original para validación
         odontologoIdReprogramar = odontologoId;
+        fechaHoraOriginalReprogramar = fechaHoraInicio; // Formato: "DD/MM/YYYY HH:mm"
 
         // Limpiar estado anterior
         horarioSeleccionadoReprogramar = null;
@@ -519,6 +526,24 @@
      */
     function seleccionarHorarioReprogramar(hora) {
         const fecha = $('#fechaCitaReprogramar').val();
+
+        // Validar que no sea la misma fecha y hora original
+        if (fechaHoraOriginalReprogramar) {
+            // Parsear la fecha/hora original (formato: "DD/MM/YYYY HH:mm")
+            const partes = fechaHoraOriginalReprogramar.split(' ');
+            if (partes.length === 2) {
+                const [dia, mes, anio] = partes[0].split('/');
+                const fechaOriginal = `${anio}-${mes}-${dia}`; // Formato ISO
+                const horaOriginal = partes[1]; // HH:mm
+
+                // Comparar con la fecha y hora seleccionada
+                if (fecha === fechaOriginal && hora === horaOriginal) {
+                    mostrarAdvertencia('No puede reprogramar la cita en el mismo horario actual. Por favor seleccione un horario diferente.');
+                    return;
+                }
+            }
+        }
+
         horarioSeleccionadoReprogramar = hora;
 
         // Actualizar campos hidden y visuales

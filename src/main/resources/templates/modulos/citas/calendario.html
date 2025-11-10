@@ -334,10 +334,13 @@
                     document.getElementById('detallePaciente').textContent = evento.title;
                     document.getElementById('detalleOdontologo').textContent = props.odontologoNombre || 'N/A';
                     document.getElementById('detalleOdontologoId').value = props.odontologoId || '';
+                    document.getElementById('detalleProcedimientoId').value = props.procedimientoId || '';
                     document.getElementById('detalleProcedimiento').textContent = props.procedimientoNombre || 'N/A';
                     document.getElementById('detalleEstado').textContent = props.estadoNombre || 'N/A';
                     document.getElementById('detalleFechaHoraInicio').textContent = moment(evento.start).format('DD/MM/YYYY HH:mm');
                     document.getElementById('detalleFechaHoraFin').textContent = moment(evento.end).format('DD/MM/YYYY HH:mm');
+                    document.getElementById('detalleFecha').value = moment(evento.start).format('DD/MM/YYYY');
+                    document.getElementById('detalleHora').value = moment(evento.start).format('HH:mm');
                     document.getElementById('detalleMotivoConsulta').textContent = props.motivoConsulta || '-';
                     document.getElementById('detalleNotasInternas').textContent = props.notasInternas || '-';
 
@@ -441,6 +444,15 @@
             }
         });
 
+        // Búsqueda en tiempo real
+        let timeoutBusquedaCitas = null;
+        $('#buscarCita').on('input', function() {
+            clearTimeout(timeoutBusquedaCitas);
+            timeoutBusquedaCitas = setTimeout(function() {
+                cargarCitas(0);
+            }, 500); // Esperar 500ms después de que el usuario deje de escribir
+        });
+
         function cargarCitas(pagina) {
             const keyword = $('#buscarCita').val();
 
@@ -494,6 +506,26 @@
                 // Serializar datos de la cita para los botones
                 const citaData = encodeURIComponent(JSON.stringify(cita));
 
+                // Determinar qué botones mostrar según el estado
+                let botonesAccion = `
+                    <button class="btn btn-sm btn-info btn-ver-cita" data-cita='${citaData}' title="Ver Detalle">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                `;
+
+                // Mostrar botones de reprogramar y cancelar solo si la cita NO está en estado ASISTIO, NO_ASISTIO, CANCELADA o REPROGRAMADA
+                const estadosNoModificables = ['ASISTIO', 'NO_ASISTIO', 'CANCELADA_PACIENTE', 'CANCELADA_CLINICA', 'REPROGRAMADA'];
+                if (!estadosNoModificables.includes(cita.estadoNombre)) {
+                    botonesAccion += `
+                        <button class="btn btn-sm btn-warning btn-reprogramar-cita" data-cita='${citaData}' title="Reprogramar">
+                            <i class="fas fa-calendar"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger btn-cancelar-cita" data-cita='${citaData}' title="Cancelar">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    `;
+                }
+
                 const fila = `
                     <tr>
                         <td><b>#${cita.id}</b></td>
@@ -507,15 +539,7 @@
                         <td><span class="badge badge-secondary">${cita.duracion} min</span></td>
                         <td>${estadoBadge}</td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-info btn-ver-cita" data-cita='${citaData}' title="Ver Detalle">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-warning btn-reprogramar-cita" data-cita='${citaData}' title="Reprogramar">
-                                <i class="fas fa-calendar"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger btn-cancelar-cita" data-cita='${citaData}' title="Cancelar">
-                                <i class="fas fa-ban"></i>
-                            </button>
+                            ${botonesAccion}
                         </td>
                     </tr>
                 `;
@@ -553,6 +577,7 @@
             $('#detallePaciente').text(cita.pacienteNombre);
             $('#detalleOdontologo').text(cita.odontologoNombre);
             $('#detalleOdontologoId').val(cita.odontologoId || '');
+            $('#detalleProcedimientoId').val(cita.procedimientoId || '');
             $('#detalleProcedimiento').text(cita.procedimientoNombre);
             $('#detalleEstado').text(cita.estadoNombre);
 
@@ -561,6 +586,8 @@
             const fin = new Date(cita.fechaHoraFin);
             $('#detalleFechaHoraInicio').text(moment(inicio).format('DD/MM/YYYY HH:mm'));
             $('#detalleFechaHoraFin').text(moment(fin).format('DD/MM/YYYY HH:mm'));
+            $('#detalleFecha').val(moment(inicio).format('DD/MM/YYYY'));
+            $('#detalleHora').val(moment(inicio).format('HH:mm'));
 
             $('#detalleMotivoConsulta').text(cita.motivoConsulta || '-');
             $('#detalleNotasInternas').text(cita.notasInternas || '-');

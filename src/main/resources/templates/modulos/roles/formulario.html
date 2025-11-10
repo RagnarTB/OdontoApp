@@ -27,7 +27,7 @@
                         <h3 class="card-title">Datos del Rol</h3>
                     </div>
                     <!-- Añadir id al form para el JS -->
-                    <form th:action="@{/roles/guardar}" th:object="${rol}" method="post" id="rolForm">
+                    <form th:action="@{/roles/guardar}" th:object="${rol}" method="post" id="rolForm" data-auto-loading="true">
                         <!-- ID Oculto para Edición -->
                         <input type="hidden" th:field="*{id}" id="rolId" />
 
@@ -98,7 +98,7 @@
 
                         <div class="card-footer">
                             <!-- Añadir id al botón para el JS -->
-                            <button type="submit" class="btn btn-primary" id="btnGuardarRol"><i
+                            <button type="submit" class="btn btn-primary" id="btnGuardarRol" data-loading-text="Guardando rol..."><i
                                     class="fas fa-save mr-2"></i>Guardar Rol</button>
                             <a th:href="@{/roles}" class="btn btn-secondary">Cancelar</a>
                         </div>

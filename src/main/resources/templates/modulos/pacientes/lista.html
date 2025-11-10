@@ -39,8 +39,8 @@
                     <div class="card-header">
                         <h3 class="card-title">Listado de Pacientes</h3>
                         <div class="card-tools">
-                            <form th:action="@{/pacientes}" method="get" class="form-inline">
-                                <input type="text" name="keyword" class="form-control form-control-sm"
+                            <form th:action="@{/pacientes}" method="get" class="form-inline" id="formBuscarPaciente">
+                                <input type="text" name="keyword" id="buscarPacienteInput" class="form-control form-control-sm"
                                     placeholder="Buscar Doc., Nombre o Email..." th:value="${keyword}"
                                     style="width: 300px;">
                                 <button type="submit" class="btn btn-sm btn-default ml-2"><i
@@ -70,12 +70,11 @@
                                     <td th:text="${paciente.email}"></td>
                                     <td th:text="${paciente.telefono}"></td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-info btn-ver-detalle"
-                                            title="Ver Detalle Completo del Paciente"
-                                            th:attr="data-paciente-id=${paciente.id}"
+                                        <a th:href="@{/pacientes/historial/{id}(id=${paciente.id})}"
+                                            class="btn btn-sm btn-info" title="Ver Detalle Completo del Paciente"
                                             sec:authorize="hasAnyAuthority('VER_DETALLE_PACIENTES', 'ADMIN')">
                                             <i class="fas fa-file-medical"></i>
-                                        </button>
+                                        </a>
                                         <a th:href="@{/pacientes/editar/{id}(id=${paciente.id})}"
                                             class="btn btn-sm btn-warning" title="Editar Datos del Paciente"
                                             sec:authorize="hasAnyAuthority('EDITAR_PACIENTES', 'ADMIN')">
@@ -100,188 +99,10 @@
                 </div>
             </div>
         </section>
-
-        <!-- Modal Ver Detalle Paciente -->
-        <div class="modal fade" id="modalVerDetallePaciente" tabindex="-1" role="dialog" aria-labelledby="modalVerDetallePacienteLabel" aria-hidden="true">
-            <div class="modal-dialog modal-xl" role="document">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title" id="modalVerDetallePacienteLabel">
-                            <i class="fas fa-user-circle mr-2"></i><span id="modalPacienteNombre">Detalle del Paciente</span>
-                        </h5>
-                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <!-- Nav Tabs -->
-                        <ul class="nav nav-tabs" id="pacienteDetailTabs" role="tablist">
-                            <li class="nav-item">
-                                <a class="nav-link active" id="info-tab" data-toggle="tab" href="#tab-info" role="tab">
-                                    <i class="fas fa-info-circle mr-1"></i>Información
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="historial-tab" data-toggle="tab" href="#tab-historial" role="tab">
-                                    <i class="fas fa-history mr-1"></i>Historial de Citas
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="imagenes-tab" data-toggle="tab" href="#tab-imagenes" role="tab">
-                                    <i class="fas fa-images mr-1"></i>Imágenes
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="odontograma-tab" data-toggle="tab" href="#tab-odontograma" role="tab">
-                                    <i class="fas fa-tooth mr-1"></i>Odontograma
-                                </a>
-                            </li>
-                        </ul>
-
-                        <!-- Tab Content -->
-                        <div class="tab-content mt-3" id="pacienteDetailTabContent">
-                            <!-- Tab 1: Información -->
-                            <div class="tab-pane fade show active" id="tab-info" role="tabpanel">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6 class="text-primary border-bottom pb-2 mb-3">
-                                            <i class="fas fa-user mr-2"></i>Datos Personales
-                                        </h6>
-                                        <dl class="row">
-                                            <dt class="col-sm-4">Documento:</dt>
-                                            <dd class="col-sm-8" id="detalleTipoDoc"></dd>
-                                            <dt class="col-sm-4">Número:</dt>
-                                            <dd class="col-sm-8" id="detalleNumDoc"></dd>
-                                            <dt class="col-sm-4">Email:</dt>
-                                            <dd class="col-sm-8" id="detalleEmail"></dd>
-                                            <dt class="col-sm-4">Teléfono:</dt>
-                                            <dd class="col-sm-8" id="detalleTelefono"></dd>
-                                            <dt class="col-sm-4">Fecha Nacimiento:</dt>
-                                            <dd class="col-sm-8" id="detalleFechaNac"></dd>
-                                            <dt class="col-sm-4">Dirección:</dt>
-                                            <dd class="col-sm-8" id="detalleDireccion"></dd>
-                                        </dl>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6 class="text-danger border-bottom pb-2 mb-3">
-                                            <i class="fas fa-heartbeat mr-2"></i>Información Médica
-                                        </h6>
-                                        <dl class="row">
-                                            <dt class="col-sm-5">Alergias:</dt>
-                                            <dd class="col-sm-7" id="detalleAlergias"><span class="text-muted">Ninguna</span></dd>
-                                            <dt class="col-sm-5">Antecedentes:</dt>
-                                            <dd class="col-sm-7" id="detalleAntecedentes"><span class="text-muted">Ninguno</span></dd>
-                                            <dt class="col-sm-5">Tratamientos Actuales:</dt>
-                                            <dd class="col-sm-7" id="detalleTratamientosActuales"><span class="text-muted">Ninguno</span></dd>
-                                        </dl>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Tab 2: Historial de Citas -->
-                            <div class="tab-pane fade" id="tab-historial" role="tabpanel">
-                                <h6 class="text-primary mb-3"><i class="fas fa-calendar-check mr-2"></i>Historial Completo de Citas</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-hover table-bordered">
-                                        <thead class="thead-light">
-                                            <tr>
-                                                <th>Fecha y Hora</th>
-                                                <th>Procedimiento</th>
-                                                <th>Odontólogo</th>
-                                                <th>Estado</th>
-                                                <th>Motivo</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="tablaHistorialCitas">
-                                            <tr>
-                                                <td colspan="5" class="text-center text-muted">Cargando historial...</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div id="paginacionHistorial" class="mt-2"></div>
-                            </div>
-
-                            <!-- Tab 3: Imágenes -->
-                            <div class="tab-pane fade" id="tab-imagenes" role="tabpanel">
-                                <h6 class="text-primary mb-3"><i class="fas fa-camera mr-2"></i>Radiografías y Fotos Clínicas</h6>
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle mr-2"></i>
-                                    <strong>Funcionalidad en desarrollo:</strong> Pronto podrás subir y visualizar radiografías y fotos clínicas del paciente.
-                                </div>
-                                <div class="row" id="galeriaImagenes">
-                                    <div class="col-12 text-center text-muted py-5">
-                                        <i class="fas fa-images fa-3x mb-3"></i>
-                                        <p>No hay imágenes cargadas aún</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Tab 4: Odontograma -->
-                            <div class="tab-pane fade" id="tab-odontograma" role="tabpanel">
-                                <h6 class="text-primary mb-3"><i class="fas fa-teeth mr-2"></i>Odontograma Interactivo</h6>
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle mr-2"></i>
-                                    <strong>Sistema FDI:</strong> Numeración internacional de 11-48 (adultos).
-                                </div>
-                                <div id="odontogramaInteractivo" class="text-center p-4">
-                                    <!-- Maxilar Superior -->
-                                    <div class="mb-4">
-                                        <small class="text-muted d-block mb-2">MAXILAR SUPERIOR</small>
-                                        <div class="d-inline-flex">
-                                            <!-- Cuadrante 1 (derecho paciente) -->
-                                            <div class="d-flex" id="cuadrante-1">
-                                                <!-- Se generará dinámicamente -->
-                                            </div>
-                                            <div class="mx-2 align-self-center">|</div>
-                                            <!-- Cuadrante 2 (izquierdo paciente) -->
-                                            <div class="d-flex" id="cuadrante-2">
-                                                <!-- Se generará dinámicamente -->
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <hr>
-                                    <!-- Maxilar Inferior -->
-                                    <div class="mt-4">
-                                        <small class="text-muted d-block mb-2">MAXILAR INFERIOR</small>
-                                        <div class="d-inline-flex">
-                                            <!-- Cuadrante 4 (derecho paciente) -->
-                                            <div class="d-flex" id="cuadrante-4">
-                                                <!-- Se generará dinámicamente -->
-                                            </div>
-                                            <div class="mx-2 align-self-center">|</div>
-                                            <!-- Cuadrante 3 (izquierdo paciente) -->
-                                            <div class="d-flex" id="cuadrante-3">
-                                                <!-- Se generará dinámicamente -->
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Leyenda de estados -->
-                                    <div class="mt-4 pt-3 border-top">
-                                        <small class="font-weight-bold">Leyenda:</small><br>
-                                        <span class="badge badge-success mr-2">Sano</span>
-                                        <span class="badge badge-danger mr-2">Caries</span>
-                                        <span class="badge badge-primary mr-2">Restaurado</span>
-                                        <span class="badge badge-purple mr-2" style="background-color: #6f42c1;">Endodoncia</span>
-                                        <span class="badge badge-warning mr-2">Corona</span>
-                                        <span class="badge badge-secondary mr-2">Extracción</span>
-                                        <span class="badge badge-info mr-2">Implante</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            <i class="fas fa-times mr-1"></i>Cerrar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
+        $(document).ready(function() {
         // Confirmación de eliminación de paciente con SweetAlert2
         $(document).on('click', '.btn-eliminar-paciente', function(e) {
             e.preventDefault();
@@ -304,125 +125,18 @@
             });
         });
 
-        // Ver Detalle del Paciente
-        $(document).on('click', '.btn-ver-detalle', function() {
-            const pacienteId = $(this).data('paciente-id');
+        // Búsqueda en tiempo real para pacientes
+        let timeoutBusqueda = null;
+        $('#buscarPacienteInput').on('input', function() {
+            // Limpiar timeout anterior
+            clearTimeout(timeoutBusqueda);
 
-            // Limpiar datos anteriores
-            $('#modalPacienteNombre').text('Cargando...');
-            $('#tablaHistorialCitas').html('<tr><td colspan="5" class="text-center text-muted">Cargando historial...</td></tr>');
-
-            // Resetear a la primera pestaña
-            $('#pacienteDetailTabs a[href="#tab-info"]').tab('show');
-
-            // Abrir modal
-            $('#modalVerDetallePaciente').modal('show');
-
-            // Cargar datos del paciente vía AJAX
-            $.ajax({
-                url: `/pacientes/api/detalle/${pacienteId}`,
-                method: 'GET',
-                success: function(data) {
-                    // Tab 1: Información
-                    $('#modalPacienteNombre').text(data.nombreCompleto);
-                    $('#detalleTipoDoc').text(data.tipoDocumento);
-                    $('#detalleNumDoc').text(data.numeroDocumento);
-                    $('#detalleEmail').text(data.email || '-');
-                    $('#detalleTelefono').text(data.telefono || '-');
-                    $('#detalleFechaNac').text(data.fechaNacimiento || '-');
-                    $('#detalleDireccion').text(data.direccion || '-');
-                    $('#detalleAlergias').html(data.alergias || '<span class="text-muted">Ninguna</span>');
-                    $('#detalleAntecedentes').html(data.antecedentes || '<span class="text-muted">Ninguno</span>');
-                    $('#detalleTratamientosActuales').html(data.tratamientosActuales || '<span class="text-muted">Ninguno</span>');
-
-                    // Tab 2: Historial de Citas
-                    if (data.historialCitas && data.historialCitas.length > 0) {
-                        let html = '';
-                        data.historialCitas.forEach(function(cita) {
-                            const estadoBadge = obtenerBadgeEstado(cita.estado);
-                            html += `
-                                <tr>
-                                    <td>${cita.fecha}</td>
-                                    <td>${cita.procedimiento || 'N/A'}</td>
-                                    <td>${cita.odontologo}</td>
-                                    <td>${estadoBadge}</td>
-                                    <td>${cita.motivo || '-'}</td>
-                                </tr>
-                            `;
-                        });
-                        $('#tablaHistorialCitas').html(html);
-                    } else {
-                        $('#tablaHistorialCitas').html('<tr><td colspan="5" class="text-center text-muted">No hay citas registradas</td></tr>');
-                    }
-
-                    // Tab 4: Odontograma (generar dientes)
-                    generarOdontograma(data.odontograma || []);
-                },
-                error: function() {
-                    Swal.fire('Error', 'No se pudo cargar la información del paciente', 'error');
-                    $('#modalVerDetallePaciente').modal('hide');
-                }
-            });
+            // Esperar 500ms después de que el usuario deje de escribir
+            timeoutBusqueda = setTimeout(function() {
+                $('#formBuscarPaciente').submit();
+            }, 500);
         });
-
-        // Función auxiliar para badges de estado
-        function obtenerBadgeEstado(estado) {
-            const badges = {
-                'PENDIENTE': '<span class="badge badge-warning">Pendiente</span>',
-                'CONFIRMADA': '<span class="badge badge-info">Confirmada</span>',
-                'ASISTIO': '<span class="badge badge-success">Asistió</span>',
-                'NO_ASISTIO': '<span class="badge badge-danger">No Asistió</span>',
-                'CANCELADA': '<span class="badge badge-secondary">Cancelada</span>',
-                'REPROGRAMADA': '<span class="badge badge-orange" style="background-color: #fd7e14;">Reprogramada</span>'
-            };
-            return badges[estado] || `<span class="badge badge-secondary">${estado}</span>`;
-        }
-
-        // Generar odontograma visual
-        function generarOdontograma(dientes) {
-            // FDI: Cuadrante 1 (18-11), Cuadrante 2 (21-28), Cuadrante 3 (31-38), Cuadrante 4 (48-41)
-            const cuadrantes = {
-                1: [18, 17, 16, 15, 14, 13, 12, 11],
-                2: [21, 22, 23, 24, 25, 26, 27, 28],
-                3: [31, 32, 33, 34, 35, 36, 37, 38],
-                4: [48, 47, 46, 45, 44, 43, 42, 41]
-            };
-
-            // Mapeo de estados a colores
-            const estadoColor = {
-                'SANO': 'success',
-                'CARIES': 'danger',
-                'RESTAURADO': 'primary',
-                'ENDODONCIA': 'purple',
-                'CORONA': 'warning',
-                'EXTRACCION': 'secondary',
-                'IMPLANTE': 'info',
-                'AUSENTE': 'dark',
-                'FRACTURADO': 'orange'
-            };
-
-            // Generar cada cuadrante
-            Object.keys(cuadrantes).forEach(function(numCuad) {
-                let html = '';
-                cuadrantes[numCuad].forEach(function(numDiente) {
-                    const diente = dientes.find(d => d.numero == numDiente) || { estado: 'SANO' };
-                    const color = estadoColor[diente.estado] || 'success';
-                    const badgeStyle = color === 'purple' ? 'style="background-color: #6f42c1;"' :
-                                      color === 'orange' ? 'style="background-color: #fd7e14;"' : '';
-
-                    html += `
-                        <div class="text-center mx-1">
-                            <div class="badge badge-${color} d-block mb-1" ${badgeStyle}
-                                 style="width: 35px; height: 35px; line-height: 35px; font-size: 13px; cursor: pointer;"
-                                 title="Diente ${numDiente}: ${diente.estado}">
-                                ${numDiente}
-                            </div>
-                        </div>
-                    `;
-                });
-                $(`#cuadrante-${numCuad}`).html(html);
-            });
-        }
+        }); // Fin de $(document).ready()
     </script>
 </body>
 

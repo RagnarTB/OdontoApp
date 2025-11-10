@@ -40,4 +40,22 @@ public class Procedimiento extends EntidadAuditable {
     private CategoriaProcedimiento categoria;
 
     private boolean eliminado = false;
+
+    /**
+     * Método alias para getPrecio() que retorna precioBase
+     * Usado para mantener compatibilidad con el código que llama getPrecio()
+     * @return El precio base del procedimiento
+     */
+    public BigDecimal getPrecio() {
+        return this.precioBase;
+    }
+
+    /**
+     * Método alias para setPrecio() que actualiza precioBase
+     * Usado para mantener compatibilidad con el código que llama setPrecio()
+     * @param precio El precio a establecer
+     */
+    public void setPrecio(BigDecimal precio) {
+        this.precioBase = precio;
+    }
 }

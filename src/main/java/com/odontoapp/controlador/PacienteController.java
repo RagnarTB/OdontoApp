@@ -26,10 +26,12 @@ import com.odontoapp.entidad.Cita;
 import com.odontoapp.entidad.OdontogramaDiente;
 import com.odontoapp.entidad.Paciente;
 import com.odontoapp.entidad.TipoDocumento;
+import com.odontoapp.entidad.TratamientoRealizado;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.OdontogramaDienteRepository;
 import com.odontoapp.repositorio.PacienteRepository;
-import com.odontoapp.repositorio.TipoDocumentoRepository; // NUEVO
+import com.odontoapp.repositorio.TipoDocumentoRepository;
+import com.odontoapp.repositorio.TratamientoRealizadoRepository;
 import com.odontoapp.servicio.PacienteService;
 import com.odontoapp.servicio.ReniecService;
 
@@ -46,16 +48,19 @@ public class PacienteController {
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final CitaRepository citaRepository;
     private final OdontogramaDienteRepository odontogramaDienteRepository;
+    private final TratamientoRealizadoRepository tratamientoRealizadoRepository;
 
     public PacienteController(PacienteService pacienteService, ReniecService reniecService,
             PacienteRepository pacienteRepository, TipoDocumentoRepository tipoDocumentoRepository,
-            CitaRepository citaRepository, OdontogramaDienteRepository odontogramaDienteRepository) {
+            CitaRepository citaRepository, OdontogramaDienteRepository odontogramaDienteRepository,
+            TratamientoRealizadoRepository tratamientoRealizadoRepository) {
         this.pacienteService = pacienteService;
         this.reniecService = reniecService;
         this.pacienteRepository = pacienteRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.citaRepository = citaRepository;
         this.odontogramaDienteRepository = odontogramaDienteRepository;
+        this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
     }
 
     @GetMapping("/pacientes")
@@ -237,13 +242,21 @@ public class PacienteController {
         Paciente paciente = pacienteOpt.get();
         model.addAttribute("paciente", paciente);
 
-        // Aquí se pueden agregar otros datos como tratamientos, citas, etc.
-        // Por ahora solo pasamos el paciente básico
-        // En futuras iteraciones se puede agregar:
-        // model.addAttribute("tratamientos", tratamientoService.listarPorPaciente(id));
-        // model.addAttribute("citas", citaService.listarPorPaciente(id));
-        // model.addAttribute("odontograma", odontogramaService.obtenerPorPaciente(id));
-        // model.addAttribute("comprobantes", comprobanteService.listarPorPaciente(id));
+        // Cargar tratamientos realizados del paciente
+        if (paciente.getUsuario() != null) {
+            // Obtener todas las citas del paciente y sus tratamientos
+            java.util.List<Cita> citas = citaRepository.findByPacienteId(paciente.getUsuario().getId(),
+                    PageRequest.of(0, 100)).getContent(); // Últimas 100 citas
+
+            java.util.List<TratamientoRealizado> tratamientos = new java.util.ArrayList<>();
+            for (Cita cita : citas) {
+                java.util.List<TratamientoRealizado> tratamientosCita =
+                        tratamientoRealizadoRepository.findByCitaId(cita.getId());
+                tratamientos.addAll(tratamientosCita);
+            }
+
+            model.addAttribute("tratamientos", tratamientos);
+        }
 
         return "modulos/pacientes/historial";
     }

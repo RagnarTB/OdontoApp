@@ -13,4 +13,12 @@ public interface TratamientoRealizadoRepository extends JpaRepository<Tratamient
      * @return Lista de tratamientos realizados ordenados por fecha de realización descendente
      */
     List<TratamientoRealizado> findByCitaIdOrderByFechaRealizacionDesc(Long citaId);
+
+    /**
+     * Busca todos los tratamientos realizados asociados a una cita específica.
+     * Método simplificado sin ordenamiento específico.
+     * @param citaId El ID de la cita
+     * @return Lista de tratamientos realizados
+     */
+    List<TratamientoRealizado> findByCitaId(Long citaId);
 }

@@ -27,7 +27,7 @@
                     <div class="card-header">
                         <h3 class="card-title">Datos del Servicio</h3>
                     </div>
-                    <form th:action="@{/servicios/guardar}" th:object="${procedimientoDTO}" method="post">
+                    <form th:action="@{/servicios/guardar}" th:object="${procedimientoDTO}" method="post" data-auto-loading="true">
                         <input type="hidden" th:field="*{id}" />
 
                         <div class="card-body">
@@ -197,7 +197,7 @@
                         </div>
 
                         <div class="card-footer">
-                            <button type="submit" class="btn btn-primary shadow-sm">
+                            <button type="submit" class="btn btn-primary shadow-sm" data-loading-text="Guardando servicio...">
                                 <i class="fas fa-save mr-2"></i> Guardar Servicio
                             </button>
                             <a th:href="@{/servicios}" class="btn btn-secondary">Cancelar</a>

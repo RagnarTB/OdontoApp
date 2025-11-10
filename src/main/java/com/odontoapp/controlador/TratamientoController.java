@@ -9,10 +9,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Controlador para la gestión de tratamientos realizados durante las citas.
@@ -27,18 +30,30 @@ public class TratamientoController {
     private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
     private final CitaRepository citaRepository;
     private final ProcedimientoRepository procedimientoRepository;
+    private final InsumoRepository insumoRepository;
+    private final ComprobanteRepository comprobanteRepository;
+    private final EstadoPagoRepository estadoPagoRepository;
+    private final DetalleComprobanteRepository detalleComprobanteRepository;
 
     public TratamientoController(
             TratamientoRealizadoService tratamientoRealizadoService,
             TratamientoRealizadoRepository tratamientoRealizadoRepository,
             TratamientoPlanificadoRepository tratamientoPlanificadoRepository,
             CitaRepository citaRepository,
-            ProcedimientoRepository procedimientoRepository) {
+            ProcedimientoRepository procedimientoRepository,
+            InsumoRepository insumoRepository,
+            ComprobanteRepository comprobanteRepository,
+            EstadoPagoRepository estadoPagoRepository,
+            DetalleComprobanteRepository detalleComprobanteRepository) {
         this.tratamientoRealizadoService = tratamientoRealizadoService;
         this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
         this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
         this.citaRepository = citaRepository;
         this.procedimientoRepository = procedimientoRepository;
+        this.insumoRepository = insumoRepository;
+        this.comprobanteRepository = comprobanteRepository;
+        this.estadoPagoRepository = estadoPagoRepository;
+        this.detalleComprobanteRepository = detalleComprobanteRepository;
     }
 
     /**
@@ -109,8 +124,57 @@ public class TratamientoController {
     }
 
     /**
+     * Obtiene la lista completa de insumos disponibles
+     * Para usar en el modal de registro de tratamiento
+     */
+    @GetMapping("/insumos")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getInsumosDisponibles() {
+        List<Insumo> insumos = insumoRepository.findAllWithRelations();
+
+        List<Map<String, Object>> insumosDTO = insumos.stream()
+                .map(insumo -> {
+                    Map<String, Object> dto = new HashMap<>();
+                    dto.put("id", insumo.getId());
+                    dto.put("codigo", insumo.getCodigo());
+                    dto.put("nombre", insumo.getNombre());
+                    dto.put("unidad", insumo.getUnidadMedida() != null ?
+                            insumo.getUnidadMedida().getAbreviatura() : "Unid.");
+                    dto.put("precioUnitario", insumo.getPrecioUnitario());
+                    dto.put("stockActual", insumo.getStockActual());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(insumosDTO);
+    }
+
+    /**
+     * Verifica si una cita ya tiene un tratamiento realizado
+     * Retorna true si ya existe, false si se puede agregar
+     */
+    @GetMapping("/verificar-cita/{citaId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> verificarTratamientoCita(@PathVariable Long citaId) {
+        List<TratamientoRealizado> tratamientos = tratamientoRealizadoRepository.findByCitaId(citaId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("tieneTratamiento", !tratamientos.isEmpty());
+        response.put("cantidad", tratamientos.size());
+
+        if (!tratamientos.isEmpty()) {
+            TratamientoRealizado tratamiento = tratamientos.get(0);
+            response.put("procedimiento", tratamiento.getProcedimiento().getNombre());
+            response.put("fecha", tratamiento.getFechaRealizacion().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Registrar tratamiento realizado inmediatamente (Modal Avanzado)
      * Se ejecuta cuando el odontólogo hace el tratamiento en la cita actual
+     * Genera automáticamente un comprobante
      */
     @PostMapping("/realizar-inmediato")
     @ResponseBody
@@ -123,10 +187,21 @@ public class TratamientoController {
             String descripcion = (String) datos.get("descripcion");
             @SuppressWarnings("unchecked")
             List<Map<String, String>> camposDinamicos = (List<Map<String, String>>) datos.get("camposDinamicos");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> insumosAdicionales = (List<Map<String, Object>>) datos.get("insumosAdicionales");
 
             // Buscar entidades relacionadas
             Cita cita = citaRepository.findById(citaId)
                     .orElseThrow(() -> new RuntimeException("Cita no encontrada"));
+
+            // **VALIDAR QUE NO EXISTA YA UN TRATAMIENTO EN ESTA CITA**
+            List<TratamientoRealizado> tratamientosExistentes = tratamientoRealizadoRepository.findByCitaId(citaId);
+            if (!tratamientosExistentes.isEmpty()) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("mensaje", "Esta cita ya tiene un tratamiento registrado. No se pueden registrar múltiples tratamientos en la misma cita.");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
 
             Procedimiento procedimiento = procedimientoRepository.findById(procedimientoId)
                     .orElseThrow(() -> new RuntimeException("Procedimiento no encontrado"));
@@ -139,20 +214,30 @@ public class TratamientoController {
             tratamiento.setCita(cita);
             tratamiento.setProcedimiento(procedimiento);
             tratamiento.setOdontologo(cita.getOdontologo());
-            tratamiento.setPiezaDental(piezasDentales); // Almacenar múltiples dientes separados por coma
+            tratamiento.setPiezaDental(piezasDentales);
             tratamiento.setDescripcionTrabajo(descripcionCompleta);
             tratamiento.setFechaRealizacion(LocalDateTime.now());
 
-            // Guardar
+            // Guardar tratamiento
             tratamientoRealizadoRepository.save(tratamiento);
+
+            // **GENERAR COMPROBANTE AUTOMÁTICAMENTE**
+            Comprobante comprobante = generarComprobante(cita, procedimiento, insumosAdicionales);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("mensaje", "Tratamiento registrado correctamente");
+            response.put("mensaje", "Tratamiento registrado correctamente y comprobante generado");
             response.put("tratamientoId", tratamiento.getId());
+            response.put("comprobanteId", comprobante.getId());
+            response.put("numeroComprobante", comprobante.getNumeroComprobante());
 
             return ResponseEntity.ok(response);
 
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("mensaje", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
@@ -301,5 +386,124 @@ public class TratamientoController {
     private String capitalize(String str) {
         if (str == null || str.isEmpty()) return str;
         return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
+
+    /**
+     * Genera automáticamente un comprobante para el tratamiento realizado
+     * Incluye el procedimiento principal y los insumos adicionales utilizados
+     */
+    private Comprobante generarComprobante(Cita cita, Procedimiento procedimiento,
+                                          List<Map<String, Object>> insumosAdicionales) {
+        // Crear comprobante
+        Comprobante comprobante = new Comprobante();
+        comprobante.setCita(cita);
+        comprobante.setPaciente(cita.getPaciente());
+        comprobante.setFechaEmision(LocalDateTime.now());
+        comprobante.setTipoComprobante("CITA");
+        comprobante.setDescripcion("Comprobante por tratamiento: " + procedimiento.getNombre());
+
+        // Generar número de comprobante único
+        String numeroComprobante = generarNumeroComprobante();
+        comprobante.setNumeroComprobante(numeroComprobante);
+
+        // Calcular monto total
+        BigDecimal montoTotal = procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO;
+
+        // Agregar insumos adicionales al monto
+        if (insumosAdicionales != null) {
+            for (Map<String, Object> insumo : insumosAdicionales) {
+                try {
+                    Long insumoId = Long.parseLong(insumo.get("insumoId").toString());
+                    BigDecimal cantidad = new BigDecimal(insumo.get("cantidad").toString());
+                    Insumo insumoEntity = insumoRepository.findById(insumoId).orElse(null);
+
+                    if (insumoEntity != null && insumoEntity.getPrecioUnitario() != null) {
+                        BigDecimal subtotalInsumo = insumoEntity.getPrecioUnitario().multiply(cantidad);
+                        montoTotal = montoTotal.add(subtotalInsumo);
+                    }
+                } catch (Exception e) {
+                    // Continuar si hay error con un insumo específico
+                    System.err.println("Error procesando insumo: " + e.getMessage());
+                }
+            }
+        }
+
+        comprobante.setMontoTotal(montoTotal);
+        comprobante.setMontoPagado(BigDecimal.ZERO);
+        comprobante.setMontoPendiente(montoTotal);
+
+        // Obtener estado "PENDIENTE"
+        EstadoPago estadoPendiente = estadoPagoRepository.findByNombre("PENDIENTE")
+                .orElseGet(() -> {
+                    // Si no existe, buscar el primero disponible
+                    List<EstadoPago> estados = estadoPagoRepository.findAll();
+                    return estados.isEmpty() ? null : estados.get(0);
+                });
+
+        if (estadoPendiente == null) {
+            throw new RuntimeException("No se encontró estado de pago disponible");
+        }
+
+        comprobante.setEstadoPago(estadoPendiente);
+
+        // Guardar comprobante
+        comprobante = comprobanteRepository.save(comprobante);
+
+        // Crear detalle del procedimiento
+        DetalleComprobante detalleProcedimiento = new DetalleComprobante();
+        detalleProcedimiento.setComprobante(comprobante);
+        detalleProcedimiento.setTipoItem("PROCEDIMIENTO");
+        detalleProcedimiento.setItemId(procedimiento.getId());
+        detalleProcedimiento.setDescripcionItem(procedimiento.getCodigo() + " - " + procedimiento.getNombre());
+        detalleProcedimiento.setCantidad(BigDecimal.ONE);
+        detalleProcedimiento.setPrecioUnitario(procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO);
+        detalleProcedimiento.setSubtotal(procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO);
+        detalleComprobanteRepository.save(detalleProcedimiento);
+
+        // Crear detalles de insumos adicionales
+        if (insumosAdicionales != null) {
+            for (Map<String, Object> insumo : insumosAdicionales) {
+                try {
+                    Long insumoId = Long.parseLong(insumo.get("insumoId").toString());
+                    BigDecimal cantidad = new BigDecimal(insumo.get("cantidad").toString());
+                    Insumo insumoEntity = insumoRepository.findById(insumoId).orElse(null);
+
+                    if (insumoEntity != null) {
+                        DetalleComprobante detalleInsumo = new DetalleComprobante();
+                        detalleInsumo.setComprobante(comprobante);
+                        detalleInsumo.setTipoItem("INSUMO");
+                        detalleInsumo.setItemId(insumoEntity.getId());
+                        detalleInsumo.setDescripcionItem(insumoEntity.getCodigo() + " - " + insumoEntity.getNombre());
+                        detalleInsumo.setCantidad(cantidad);
+                        detalleInsumo.setPrecioUnitario(insumoEntity.getPrecioUnitario() != null ?
+                                insumoEntity.getPrecioUnitario() : BigDecimal.ZERO);
+                        detalleInsumo.setSubtotal(detalleInsumo.getPrecioUnitario().multiply(cantidad));
+                        detalleComprobanteRepository.save(detalleInsumo);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error guardando detalle de insumo: " + e.getMessage());
+                }
+            }
+        }
+
+        return comprobante;
+    }
+
+    /**
+     * Genera un número de comprobante único en formato: COMP-YYYYMMDD-XXXX
+     * Donde XXXX es un correlativo del día
+     */
+    private String generarNumeroComprobante() {
+        LocalDateTime ahora = LocalDateTime.now();
+        String fecha = ahora.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        // Contar comprobantes del día
+        String prefijo = "COMP-" + fecha + "-";
+        List<Comprobante> comprobantesHoy = comprobanteRepository.findAll().stream()
+                .filter(c -> c.getNumeroComprobante().startsWith(prefijo))
+                .collect(Collectors.toList());
+
+        int correlativo = comprobantesHoy.size() + 1;
+        return prefijo + String.format("%04d", correlativo);
     }
 }

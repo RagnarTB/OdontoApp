@@ -27,7 +27,7 @@
                     <div class="card-header">
                         <h3 class="card-title">Información del Artículo</h3>
                     </div>
-                    <form th:action="@{/insumos/guardar}" th:object="${insumoDTO}" method="post">
+                    <form th:action="@{/insumos/guardar}" th:object="${insumoDTO}" method="post" data-auto-loading="true">
                         <input type="hidden" th:field="*{id}" />
 
                         <div class="card-body">
@@ -155,7 +155,7 @@
                         </div>
 
                         <div class="card-footer">
-                            <button type="submit" class="btn btn-primary shadow-sm">
+                            <button type="submit" class="btn btn-primary shadow-sm" data-loading-text="Guardando artículo...">
                                 <i class="fas fa-save mr-2"></i> Guardar Artículo
                             </button>
                             <a th:href="@{/insumos}" class="btn btn-secondary">Cancelar</a>
