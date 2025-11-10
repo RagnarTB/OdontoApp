@@ -306,14 +306,18 @@
         });
 
         // Ver Detalle del Paciente
-        $(document).on('click', '.btn-ver-detalle', function() {
-            // jQuery convierte data-paciente-id a pacienteId en camelCase
-            const pacienteId = $(this).data('pacienteId');
+        $(document).on('click', '.btn-ver-detalle', function(e) {
+            e.preventDefault();
+            // Usar attr() en lugar de data() para lectura más confiable
+            const pacienteId = $(this).attr('data-paciente-id');
 
+            console.log('Botón Ver Detalle clickeado'); // Debug
             console.log('Paciente ID:', pacienteId); // Debug
+            console.log('Elemento:', this); // Debug
 
             if (!pacienteId) {
                 console.error('No se encontró el ID del paciente');
+                console.error('Atributos del botón:', $(this).get(0).attributes);
                 return;
             }
 

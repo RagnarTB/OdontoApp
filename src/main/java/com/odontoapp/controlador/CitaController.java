@@ -412,18 +412,19 @@ public class CitaController {
             List<Map<String, Object>> horariosDisponibles =
                     (List<Map<String, Object>>) disponibilidad.get("horariosDisponibles");
 
-            // Solo aplicar la regla de 1 hora si es el día de hoy
+            // Solo aplicar filtro para el día de hoy - mostrar desde el siguiente turno disponible
             if (fecha.equals(LocalDate.now())) {
-                LocalDateTime unaHoraAdelante = LocalDateTime.now().plusHours(1);
+                // Permitir reservar desde 30 minutos adelante (un turno de anticipación)
+                LocalDateTime minimoAdelante = LocalDateTime.now().plusMinutes(30);
 
                 List<Map<String, Object>> horariosFiltrados = horariosDisponibles.stream()
                         .filter(slot -> {
                             String horaInicio = (String) slot.get("inicio");
                             LocalDateTime fechaHoraSlot = LocalDateTime.of(fecha,
                                     java.time.LocalTime.parse(horaInicio));
-                            // Incluir slots que inician en o después de 1 hora desde ahora
-                            return fechaHoraSlot.isAfter(unaHoraAdelante) ||
-                                   fechaHoraSlot.equals(unaHoraAdelante);
+                            // Incluir slots que inician en o después de 30 minutos desde ahora
+                            return fechaHoraSlot.isAfter(minimoAdelante) ||
+                                   fechaHoraSlot.equals(minimoAdelante);
                         })
                         .collect(Collectors.toList());
 
@@ -438,9 +439,9 @@ public class CitaController {
                             .count();
 
                     if (horariosDisponiblesOriginales > 0) {
-                        // Había horarios pero todos están en el pasado
+                        // Había horarios pero todos están en el pasado o muy cercanos
                         disponibilidad.put("disponible", false);
-                        disponibilidad.put("motivo", "Todos los horarios disponibles para hoy requieren al menos 1 hora de anticipación. Por favor seleccione otra fecha.");
+                        disponibilidad.put("motivo", "Los horarios disponibles para hoy requieren al menos 30 minutos de anticipación. Por favor seleccione otro horario u otra fecha.");
                     }
                     // Si no había horarios disponibles originalmente, mantener la lista vacía
                     horariosDisponibles = horariosFiltrados;
@@ -450,7 +451,7 @@ public class CitaController {
             // Actualizar la lista filtrada en el resultado
             disponibilidad.put("horariosDisponibles", horariosDisponibles);
             disponibilidad.put("duracionProcedimiento", duracion);
-            disponibilidad.put("minimoAnticipacion", "1 hora");
+            disponibilidad.put("minimoAnticipacion", "30 minutos");
 
             return disponibilidad;
 

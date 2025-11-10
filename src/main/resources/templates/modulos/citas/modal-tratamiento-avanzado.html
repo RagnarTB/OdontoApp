@@ -121,7 +121,40 @@
 <th:block th:fragment="scriptModalTratamiento">
 <script th:inline="javascript">
 /*<![CDATA[*/
-$(document).ready(function() {
+// Verificar que jQuery esté cargado antes de ejecutar
+if (typeof jQuery === 'undefined') {
+    console.error('ERROR: jQuery no está cargado. El modal de tratamiento no funcionará correctamente.');
+    console.error('Por favor, asegúrese de incluir jQuery antes de este script.');
+} else {
+    console.log('jQuery detectado correctamente, inicializando modal de tratamiento...');
+}
+
+// Usar función auto-ejecutable que espera a que jQuery y DOM estén listos
+(function() {
+    // Si jQuery no está disponible, intentar esperar un momento
+    if (typeof jQuery === 'undefined') {
+        setTimeout(function() {
+            if (typeof jQuery !== 'undefined') {
+                initModalTratamiento();
+            } else {
+                console.error('jQuery no se cargó a tiempo');
+            }
+        }, 1000);
+        return;
+    }
+
+    // Si ya está listo, inicializar inmediatamente
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        initModalTratamiento();
+    } else {
+        $(document).ready(function() {
+            initModalTratamiento();
+        });
+    }
+})();
+
+function initModalTratamiento() {
+    console.log('Inicializando modal de tratamiento...'); // Debug
     // Configurar token CSRF para todas las peticiones AJAX
     var token = $("meta[name='_csrf']").attr("content");
     var header = $("meta[name='_csrf_header']").attr("content");
@@ -892,7 +925,7 @@ $(document).ready(function() {
             camposDinamicos: $('#camposDinamicos').find('input, select, textarea').serializeArray()
         };
     }
-});
+} // Fin de initModalTratamiento
 /*]]>*/
 </script>
 </th:block>
