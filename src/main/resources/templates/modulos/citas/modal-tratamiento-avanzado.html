@@ -29,6 +29,7 @@
                         <option th:each="proc : ${listaProcedimientos}"
                                 th:value="${proc.id}"
                                 th:data-codigo="${proc.codigo}"
+                                th:attr="data-duracion=${proc.duracionBaseMinutos}"
                                 th:text="${proc.codigo + ' - ' + proc.nombre + ' (' + proc.duracionBaseMinutos + ' min)'}"></option>
                     </select>
                 </div>
