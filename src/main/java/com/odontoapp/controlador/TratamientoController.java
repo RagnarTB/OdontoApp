@@ -35,6 +35,8 @@ public class TratamientoController {
     private final ComprobanteRepository comprobanteRepository;
     private final EstadoPagoRepository estadoPagoRepository;
     private final DetalleComprobanteRepository detalleComprobanteRepository;
+    private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final TipoMovimientoRepository tipoMovimientoRepository;
 
     public TratamientoController(
             TratamientoRealizadoService tratamientoRealizadoService,
@@ -45,7 +47,9 @@ public class TratamientoController {
             InsumoRepository insumoRepository,
             ComprobanteRepository comprobanteRepository,
             EstadoPagoRepository estadoPagoRepository,
-            DetalleComprobanteRepository detalleComprobanteRepository) {
+            DetalleComprobanteRepository detalleComprobanteRepository,
+            MovimientoInventarioRepository movimientoInventarioRepository,
+            TipoMovimientoRepository tipoMovimientoRepository) {
         this.tratamientoRealizadoService = tratamientoRealizadoService;
         this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
         this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
@@ -55,6 +59,8 @@ public class TratamientoController {
         this.comprobanteRepository = comprobanteRepository;
         this.estadoPagoRepository = estadoPagoRepository;
         this.detalleComprobanteRepository = detalleComprobanteRepository;
+        this.movimientoInventarioRepository = movimientoInventarioRepository;
+        this.tipoMovimientoRepository = tipoMovimientoRepository;
     }
 
     /**
@@ -490,6 +496,10 @@ public class TratamientoController {
                                 insumoEntity.getPrecioUnitario() : BigDecimal.ZERO);
                         detalleInsumo.setSubtotal(detalleInsumo.getPrecioUnitario().multiply(cantidad));
                         detalleComprobanteRepository.save(detalleInsumo);
+
+                        // **REGISTRAR MOVIMIENTO DE INVENTARIO Y ACTUALIZAR STOCK**
+                        String referencia = "Cita #" + comprobante.getCita().getId() + " - " + comprobante.getNumeroComprobante();
+                        registrarUsoInsumo(insumoEntity, cantidad, referencia);
                     }
                 } catch (Exception e) {
                     System.err.println("Error guardando detalle de insumo: " + e.getMessage());
@@ -516,5 +526,54 @@ public class TratamientoController {
 
         int correlativo = comprobantesHoy.size() + 1;
         return prefijo + String.format("%04d", correlativo);
+    }
+
+    /**
+     * Registra el uso de insumos en el inventario
+     * Crea un movimiento de tipo SALIDA y actualiza el stock del insumo
+     *
+     * @param insumo Insumo utilizado
+     * @param cantidad Cantidad usada
+     * @param referencia Referencia del movimiento (ej: "Cita #123")
+     */
+    private void registrarUsoInsumo(Insumo insumo, BigDecimal cantidad, String referencia) {
+        try {
+            // Obtener tipo de movimiento SALIDA
+            TipoMovimiento tipoSalida = tipoMovimientoRepository.findByCodigo("SALIDA")
+                    .orElseThrow(() -> new RuntimeException("Tipo de movimiento SALIDA no encontrado"));
+
+            // Guardar stock anterior
+            BigDecimal stockAnterior = insumo.getStockActual();
+            BigDecimal stockNuevo = stockAnterior.subtract(cantidad);
+
+            // Validar que no quede stock negativo
+            if (stockNuevo.compareTo(BigDecimal.ZERO) < 0) {
+                System.err.println("Advertencia: Stock insuficiente para insumo " + insumo.getNombre() +
+                        ". Stock actual: " + stockAnterior + ", Cantidad solicitada: " + cantidad);
+                // Permitir el movimiento pero registrar como stock 0
+                stockNuevo = BigDecimal.ZERO;
+            }
+
+            // Crear movimiento de inventario
+            MovimientoInventario movimiento = new MovimientoInventario();
+            movimiento.setInsumo(insumo);
+            movimiento.setTipoMovimiento(tipoSalida);
+            movimiento.setCantidad(cantidad);
+            movimiento.setStockAnterior(stockAnterior);
+            movimiento.setStockNuevo(stockNuevo);
+            movimiento.setReferencia(referencia);
+            movimiento.setNotas("Uso en tratamiento odontológico");
+
+            // Guardar movimiento
+            movimientoInventarioRepository.save(movimiento);
+
+            // Actualizar stock del insumo
+            insumo.setStockActual(stockNuevo);
+            insumoRepository.save(insumo);
+
+        } catch (Exception e) {
+            System.err.println("Error al registrar movimiento de inventario: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
