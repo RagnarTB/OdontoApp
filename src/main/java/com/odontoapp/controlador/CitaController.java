@@ -495,13 +495,10 @@ public class CitaController {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by("fechaHoraInicio").descending());
 
-            // Convertir fechas LocalDate a LocalDateTime para filtros
-            LocalDateTime fechaHoraDesde = fechaDesde != null ? fechaDesde.atStartOfDay() : null;
-            LocalDateTime fechaHoraHasta = fechaHasta != null ? fechaHasta.atTime(23, 59, 59) : null;
-
             // Listar citas con filtros aplicados
+            // Nota: El servicio convierte internamente LocalDate a LocalDateTime
             Page<Cita> paginaCitas = citaService.listarCitasConFiltros(
-                    fechaHoraDesde, fechaHoraHasta, estadoId, odontologoId, pageable);
+                    estadoId, odontologoId, fechaDesde, fechaHasta, pageable);
 
             // Convertir a formato para la tabla
             List<Map<String, Object>> citasDTO = paginaCitas.getContent().stream()
