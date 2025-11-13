@@ -117,7 +117,8 @@
                                 <div class="tab-content" id="custom-tabs-content">
                                     <!-- Tab Tratamientos -->
                                     <div class="tab-pane fade show active" id="tratamientos" role="tabpanel" aria-labelledby="tratamientos-tab">
-                                        <h5 class="mb-3"><i class="fas fa-procedures mr-2"></i>Historial de Tratamientos Realizados</h5>
+                                        <!-- Tratamientos Realizados -->
+                                        <h5 class="mb-3"><i class="fas fa-check-circle mr-2 text-success"></i>Tratamientos Realizados</h5>
 
                                         <div th:if="${tratamientos != null and !tratamientos.isEmpty()}">
                                             <div class="table-responsive">
@@ -167,23 +168,104 @@
                                             </div>
                                         </div>
 
-                                        <div th:if="${tratamientos == null or tratamientos.isEmpty()}" class="text-center text-muted p-5">
-                                            <i class="fas fa-procedures" style="font-size: 4rem; opacity: 0.3;"></i>
-                                            <p class="mt-3">No hay tratamientos registrados para este paciente</p>
+                                        <div th:if="${tratamientos == null or tratamientos.isEmpty()}" class="text-center text-muted p-3 mb-4 border rounded">
+                                            <i class="fas fa-procedures" style="font-size: 3rem; opacity: 0.3;"></i>
+                                            <p class="mt-3">No hay tratamientos realizados para este paciente</p>
+                                        </div>
+
+                                        <!-- Tratamientos Planificados -->
+                                        <h5 class="mb-3 mt-5"><i class="fas fa-calendar-check mr-2 text-info"></i>Tratamientos Planificados</h5>
+
+                                        <div th:if="${tratamientosPlanificados != null and !tratamientosPlanificados.isEmpty()}">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-striped">
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th>Fecha Planificación</th>
+                                                            <th>Procedimiento</th>
+                                                            <th>Piezas Dentales</th>
+                                                            <th>Odontólogo</th>
+                                                            <th>Estado</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr th:each="tratamiento : ${tratamientosPlanificados}">
+                                                            <td>
+                                                                <strong th:text="${#temporals.format(tratamiento.fechaCreacion, 'dd/MM/yyyy')}"></strong><br>
+                                                                <small class="text-muted" th:text="${#temporals.format(tratamiento.fechaCreacion, 'HH:mm')}"></small>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge badge-info" th:text="${tratamiento.procedimiento.codigo}"></span>
+                                                                <br th:text="${tratamiento.procedimiento.nombre}"></br>
+                                                            </td>
+                                                            <td th:text="${tratamiento.piezasDentales ?: 'N/A'}"></td>
+                                                            <td th:text="${tratamiento.odontologo.nombreCompleto}"></td>
+                                                            <td>
+                                                                <span class="badge badge-warning" th:if="${tratamiento.estado == 'PLANIFICADO'}">PLANIFICADO</span>
+                                                                <span class="badge badge-success" th:if="${tratamiento.estado == 'COMPLETADO'}">COMPLETADO</span>
+                                                                <span class="badge badge-secondary" th:if="${tratamiento.estado == 'CANCELADO'}">CANCELADO</span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        <div th:if="${tratamientosPlanificados == null or tratamientosPlanificados.isEmpty()}" class="text-center text-muted p-3 border rounded">
+                                            <i class="fas fa-calendar-check" style="font-size: 3rem; opacity: 0.3;"></i>
+                                            <p class="mt-3">No hay tratamientos planificados para este paciente</p>
                                         </div>
                                     </div>
 
                                     <!-- Tab Citas -->
                                     <div class="tab-pane fade" id="citas" role="tabpanel" aria-labelledby="citas-tab">
-                                        <div class="alert alert-info">
-                                            <h5><i class="icon fas fa-info-circle"></i> Historial de Citas</h5>
-                                            Aquí se mostrará el historial completo de citas (pasadas, presentes y futuras).
-                                            Esta funcionalidad será completada en futuras actualizaciones.
+                                        <h5 class="mb-3"><i class="fas fa-calendar-alt mr-2"></i>Historial de Citas</h5>
+
+                                        <div th:if="${citas != null and !citas.isEmpty()}">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-striped">
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th>Fecha y Hora</th>
+                                                            <th>Odontólogo</th>
+                                                            <th>Procedimiento</th>
+                                                            <th>Estado</th>
+                                                            <th>Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr th:each="cita : ${citas}">
+                                                            <td>
+                                                                <strong th:text="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy')}"></strong><br>
+                                                                <small class="text-muted" th:text="${#temporals.format(cita.fechaHoraInicio, 'HH:mm')} + ' - ' + ${#temporals.format(cita.fechaHoraFin, 'HH:mm')}"></small>
+                                                            </td>
+                                                            <td th:text="${cita.odontologo.nombreCompleto}"></td>
+                                                            <td>
+                                                                <span th:if="${cita.procedimiento != null}" th:text="${cita.procedimiento.nombre}"></span>
+                                                                <span th:if="${cita.procedimiento == null}" class="text-muted">Sin procedimiento</span>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge badge-warning" th:if="${cita.estadoCita.nombre == 'PENDIENTE'}" th:text="${cita.estadoCita.nombre}"></span>
+                                                                <span class="badge badge-info" th:if="${cita.estadoCita.nombre == 'CONFIRMADA'}" th:text="${cita.estadoCita.nombre}"></span>
+                                                                <span class="badge badge-success" th:if="${cita.estadoCita.nombre == 'ASISTIO'}" th:text="${cita.estadoCita.nombre}"></span>
+                                                                <span class="badge badge-danger" th:if="${cita.estadoCita.nombre == 'NO_ASISTIO'}" th:text="${cita.estadoCita.nombre}"></span>
+                                                                <span class="badge badge-secondary" th:if="${#strings.startsWith(cita.estadoCita.nombre, 'CANCELADA')}" th:text="${cita.estadoCita.nombre}"></span>
+                                                                <span class="badge badge-dark" th:if="${cita.estadoCita.nombre == 'REPROGRAMADA'}" th:text="${cita.estadoCita.nombre}"></span>
+                                                            </td>
+                                                            <td>
+                                                                <a th:href="@{/citas(verCita=${cita.id})}" class="btn btn-sm btn-primary" title="Ver Detalle de Cita">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
-                                        <!-- Placeholder para futura implementación -->
-                                        <div class="text-center text-muted p-5">
+
+                                        <div th:if="${citas == null or citas.isEmpty()}" class="text-center text-muted p-5">
                                             <i class="fas fa-calendar-alt" style="font-size: 4rem; opacity: 0.3;"></i>
-                                            <p class="mt-3">No hay citas registradas</p>
+                                            <p class="mt-3">No hay citas registradas para este paciente</p>
                                         </div>
                                     </div>
 
@@ -203,15 +285,65 @@
 
                                     <!-- Tab Comprobantes -->
                                     <div class="tab-pane fade" id="comprobantes" role="tabpanel" aria-labelledby="comprobantes-tab">
-                                        <div class="alert alert-info">
-                                            <h5><i class="icon fas fa-info-circle"></i> Historial de Pagos</h5>
-                                            Aquí se mostrará el historial de comprobantes y pagos del paciente.
-                                            Esta funcionalidad será completada en futuras actualizaciones.
+                                        <h5 class="mb-3"><i class="fas fa-file-invoice-dollar mr-2"></i>Historial de Pagos y Comprobantes</h5>
+
+                                        <div th:if="${comprobantes != null and !comprobantes.isEmpty()}">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-striped">
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th>Número</th>
+                                                            <th>Fecha Emisión</th>
+                                                            <th>Descripción</th>
+                                                            <th>Monto Total</th>
+                                                            <th>Pagado</th>
+                                                            <th>Pendiente</th>
+                                                            <th>Estado</th>
+                                                            <th>Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr th:each="comprobante : ${comprobantes}">
+                                                            <td>
+                                                                <strong th:text="${comprobante.numeroComprobante}"></strong><br>
+                                                                <small class="text-muted" th:text="${comprobante.tipoComprobante}"></small>
+                                                            </td>
+                                                            <td>
+                                                                <span th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy')}"></span><br>
+                                                                <small class="text-muted" th:text="${#temporals.format(comprobante.fechaEmision, 'HH:mm')}"></small>
+                                                            </td>
+                                                            <td>
+                                                                <span th:text="${comprobante.descripcion}"></span>
+                                                            </td>
+                                                            <td>
+                                                                <strong th:text="'S/ ' + ${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}"></strong>
+                                                            </td>
+                                                            <td>
+                                                                <span class="text-success" th:text="'S/ ' + ${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}"></span>
+                                                            </td>
+                                                            <td>
+                                                                <span class="text-danger" th:if="${comprobante.montoPendiente > 0}" th:text="'S/ ' + ${#numbers.formatDecimal(comprobante.montoPendiente, 1, 2)}"></span>
+                                                                <span class="text-muted" th:if="${comprobante.montoPendiente == 0}">S/ 0.00</span>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge badge-success" th:if="${comprobante.estadoPago.nombre == 'PAGADO'}">PAGADO</span>
+                                                                <span class="badge badge-warning" th:if="${comprobante.estadoPago.nombre == 'PENDIENTE'}">PENDIENTE</span>
+                                                                <span class="badge badge-info" th:if="${comprobante.estadoPago.nombre == 'PARCIAL'}">PARCIAL</span>
+                                                            </td>
+                                                            <td>
+                                                                <a th:href="@{/facturacion/detalle/{id}(id=${comprobante.id})}" class="btn btn-sm btn-info" title="Ver Detalle">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
-                                        <!-- Placeholder para futura implementación -->
-                                        <div class="text-center text-muted p-5">
+
+                                        <div th:if="${comprobantes == null or comprobantes.isEmpty()}" class="text-center text-muted p-5">
                                             <i class="fas fa-file-invoice-dollar" style="font-size: 4rem; opacity: 0.3;"></i>
-                                            <p class="mt-3">No hay comprobantes registrados</p>
+                                            <p class="mt-3">No hay comprobantes registrados para este paciente</p>
                                         </div>
                                     </div>
                                 </div>
