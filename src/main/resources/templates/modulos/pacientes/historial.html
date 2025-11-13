@@ -271,44 +271,64 @@
             </div>
         </div>
     </div>
-
-    <script>
-        $(document).ready(function() {
-            // Ver detalle del tratamiento
-            $('.btn-ver-tratamiento').on('click', function() {
-                const procedimiento = $(this).data('procedimiento');
-                const descripcion = $(this).data('descripcion');
-                const fecha = $(this).data('fecha');
-                const odontologo = $(this).data('odontologo');
-                const piezas = $(this).data('piezas');
-
-                $('#modalProcedimiento').text(procedimiento);
-                $('#modalFecha').text(fecha);
-                $('#modalOdontologo').text(odontologo);
-                $('#modalPiezas').text(piezas || 'No especificado');
-                $('#modalDescripcion').text(descripcion || 'Sin observaciones adicionales');
-
-                $('#modalVerDetalleTratamiento').modal('show');
-            });
-
-            // Ver cita asociada al tratamiento
-            $('.btn-ver-cita-asociada').on('click', function() {
-                const citaId = $(this).data('cita-id');
-
-                if (!citaId) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire('Información', 'Este tratamiento no tiene una cita asociada', 'info');
-                    } else {
-                        alert('Este tratamiento no tiene una cita asociada');
-                    }
-                    return;
-                }
-
-                // Redirigir al calendario con parámetro para abrir el modal de detalle de cita
-                window.location.href = '/citas?verCita=' + citaId;
-            });
-        });
-    </script>
 </body>
 
 </html>
+
+<!-- Scripts específicos de la página -->
+<th:block id="page-scripts">
+<script>
+    console.log('Inicializando scripts del historial...'); // Debug
+    console.log('jQuery cargado:', typeof jQuery !== 'undefined'); // Debug
+    console.log('Botones encontrados:', $('.btn-ver-tratamiento').length); // Debug
+
+    $(document).ready(function() {
+        console.log('Document ready ejecutado'); // Debug
+
+        // Ver detalle del tratamiento
+        $(document).on('click', '.btn-ver-tratamiento', function(e) {
+            e.preventDefault();
+            console.log('Click en Ver Detalles'); // Debug
+
+            const procedimiento = $(this).data('procedimiento');
+            const descripcion = $(this).data('descripcion');
+            const fecha = $(this).data('fecha');
+            const odontologo = $(this).data('odontologo');
+            const piezas = $(this).data('piezas');
+
+            console.log('Datos del tratamiento:', { procedimiento, descripcion, fecha, odontologo, piezas }); // Debug
+
+            $('#modalProcedimiento').text(procedimiento);
+            $('#modalFecha').text(fecha);
+            $('#modalOdontologo').text(odontologo);
+            $('#modalPiezas').text(piezas || 'No especificado');
+            $('#modalDescripcion').text(descripcion || 'Sin observaciones adicionales');
+
+            $('#modalVerDetalleTratamiento').modal('show');
+        });
+
+        // Ver cita asociada al tratamiento
+        $(document).on('click', '.btn-ver-cita-asociada', function(e) {
+            e.preventDefault();
+            console.log('Click en Ver Cita Asociada'); // Debug
+
+            const citaId = $(this).data('cita-id');
+            console.log('Cita ID:', citaId); // Debug
+
+            if (!citaId || citaId === '') {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Información', 'Este tratamiento no tiene una cita asociada', 'info');
+                } else {
+                    alert('Este tratamiento no tiene una cita asociada');
+                }
+                return;
+            }
+
+            // Redirigir al calendario con parámetro para abrir el modal de detalle de cita
+            window.location.href = '/citas?verCita=' + citaId;
+        });
+
+        console.log('Event handlers registrados'); // Debug
+    });
+</script>
+</th:block>

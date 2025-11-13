@@ -991,9 +991,26 @@ function initModalTratamiento() {
                 location.reload();
             },
             error: function(xhr) {
-                console.error('Error en la petición:', xhr); // Debug
+                console.error('Error completo:', xhr); // Debug
+                console.error('Status:', xhr.status); // Debug
+                console.error('Response:', xhr.responseJSON); // Debug
+                console.error('Response Text:', xhr.responseText); // Debug
                 setButtonLoading($btn, false);
-                const mensaje = xhr.responseJSON?.mensaje || 'No se pudo registrar el tratamiento';
+
+                let mensaje = 'No se pudo registrar el tratamiento';
+
+                // Intentar obtener el mensaje de error del servidor
+                if (xhr.responseJSON) {
+                    mensaje = xhr.responseJSON.mensaje || xhr.responseJSON.error || mensaje;
+                } else if (xhr.responseText) {
+                    try {
+                        const errorObj = JSON.parse(xhr.responseText);
+                        mensaje = errorObj.mensaje || errorObj.error || mensaje;
+                    } catch (e) {
+                        mensaje = xhr.responseText.substring(0, 200); // Primeros 200 caracteres
+                    }
+                }
+
                 if (typeof Swal !== 'undefined') {
                     Swal.fire('Error', mensaje, 'error');
                 } else {
