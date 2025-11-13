@@ -37,6 +37,7 @@ public class TratamientoController {
     private final DetalleComprobanteRepository detalleComprobanteRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final TipoMovimientoRepository tipoMovimientoRepository;
+    private final EstadoCitaRepository estadoCitaRepository;
 
     public TratamientoController(
             TratamientoRealizadoService tratamientoRealizadoService,
@@ -49,7 +50,8 @@ public class TratamientoController {
             EstadoPagoRepository estadoPagoRepository,
             DetalleComprobanteRepository detalleComprobanteRepository,
             MovimientoInventarioRepository movimientoInventarioRepository,
-            TipoMovimientoRepository tipoMovimientoRepository) {
+            TipoMovimientoRepository tipoMovimientoRepository,
+            EstadoCitaRepository estadoCitaRepository) {
         this.tratamientoRealizadoService = tratamientoRealizadoService;
         this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
         this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
@@ -61,6 +63,7 @@ public class TratamientoController {
         this.detalleComprobanteRepository = detalleComprobanteRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
         this.tipoMovimientoRepository = tipoMovimientoRepository;
+        this.estadoCitaRepository = estadoCitaRepository;
     }
 
     /**
@@ -227,6 +230,31 @@ public class TratamientoController {
 
             // Guardar tratamiento
             tratamientoRealizadoRepository.save(tratamiento);
+
+            // **CREAR CITA AUTOMÁTICA EN EL CALENDARIO**
+            // Crear una cita automática que bloquee el tiempo en el que se realiza el tratamiento
+            LocalDateTime inicioTratamiento = cita.getFechaHoraFin(); // Inicia después de la cita original
+            LocalDateTime finTratamiento = inicioTratamiento.plusMinutes(procedimiento.getDuracionMinutos());
+
+            // Obtener estado "COMPLETADA" para la nueva cita
+            EstadoCita estadoCompletada = estadoCitaRepository.findByNombre("COMPLETADA")
+                    .orElseGet(() -> estadoCitaRepository.findByNombre("ASISTIO")
+                            .orElseThrow(() -> new RuntimeException("No se encontró un estado válido para la cita")));
+
+            // Crear nueva cita automática
+            Cita citaTratamiento = new Cita();
+            citaTratamiento.setPaciente(cita.getPaciente());
+            citaTratamiento.setOdontologo(cita.getOdontologo());
+            citaTratamiento.setProcedimiento(procedimiento);
+            citaTratamiento.setFechaHoraInicio(inicioTratamiento);
+            citaTratamiento.setFechaHoraFin(finTratamiento);
+            citaTratamiento.setDuracionEstimadaMinutos(procedimiento.getDuracionMinutos());
+            citaTratamiento.setMotivoConsulta("Tratamiento realizado: " + procedimiento.getNombre());
+            citaTratamiento.setEstadoCita(estadoCompletada);
+            citaTratamiento.setNotas("Cita generada automáticamente al registrar tratamiento inmediato");
+
+            // Guardar la nueva cita
+            citaRepository.save(citaTratamiento);
 
             // **OBTENER O GENERAR COMPROBANTE**
             // Verificar si ya existe un comprobante para esta cita

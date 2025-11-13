@@ -516,8 +516,23 @@
                 <div class="alert alert-info mb-3">
                     <h6><i class="fas fa-info-circle mr-2"></i>Tratamiento a Planificar</h6>
                     <p class="mb-1"><strong>Paciente:</strong> <span id="planificarPacienteNombre"></span></p>
-                    <p class="mb-1"><strong>Procedimiento:</strong> <span id="planificarProcedimientoNombre"></span></p>
-                    <p class="mb-0"><strong>Odontólogo:</strong> <span id="planificarOdontologoNombre"></span></p>
+                    <p class="mb-0"><strong>Procedimiento:</strong> <span id="planificarProcedimientoNombre"></span></p>
+                </div>
+
+                <!-- Selector de Odontólogo -->
+                <div class="form-group">
+                    <label for="planificarOdontologoIdSelect" class="font-weight-bold">
+                        <i class="fas fa-user-md mr-1"></i>Odontólogo <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-control" id="planificarOdontologoIdSelect" required>
+                        <option value="">Seleccione un odontólogo...</option>
+                        <option th:each="odontologo : ${listaOdontologos}"
+                                th:value="${odontologo.id}"
+                                th:text="${odontologo.nombreCompleto}"></option>
+                    </select>
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i> Puede elegir un odontólogo diferente al de la cita original
+                    </small>
                 </div>
 
                 <!-- Layout: 2 columnas -->
@@ -531,7 +546,7 @@
                             <label for="fechaCitaPlanificar">Fecha <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="fechaCitaPlanificar" required>
                             <small class="form-text text-muted">
-                                <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios
+                                <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios (no se permiten fechas pasadas)
                             </small>
                         </div>
 
@@ -800,15 +815,60 @@ $(document).ready(function() {
 
     // ============ SCRIPT PARA MODAL PLANIFICAR TRATAMIENTO ============
 
+    // Al abrir el modal, establecer fecha mínima a hoy
+    $('#modalPlanificarTratamiento').on('show.bs.modal', function() {
+        const hoy = new Date().toISOString().split('T')[0];
+        $('#fechaCitaPlanificar').attr('min', hoy);
+
+        // Pre-seleccionar el odontólogo original si está disponible
+        const odontologoIdOriginal = $('#planificarOdontologoId').val();
+        if (odontologoIdOriginal) {
+            $('#planificarOdontologoIdSelect').val(odontologoIdOriginal);
+        }
+    });
+
+    // Cuando cambia el odontólogo, actualizar el campo hidden y limpiar horarios
+    $('#planificarOdontologoIdSelect').on('change', function() {
+        const odontologoId = $(this).val();
+        $('#planificarOdontologoId').val(odontologoId);
+
+        // Limpiar horarios disponibles
+        $('#grilla-horarios-disponibles-planificar').html(
+            '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios del odontólogo elegido</div>'
+        );
+
+        // Limpiar horario seleccionado
+        $('#horario-seleccionado-info-planificar').hide();
+        $('#nuevaFechaHoraInicioPlanificar').val('');
+
+        // Si hay una fecha seleccionada, recargar horarios
+        const fecha = $('#fechaCitaPlanificar').val();
+        if (fecha && odontologoId) {
+            $('#fechaCitaPlanificar').trigger('change');
+        }
+    });
+
     // Manejar cambio de fecha en modal planificar
     $('#fechaCitaPlanificar').on('change', function() {
         const fecha = $(this).val();
-        const odontologoId = $('#planificarOdontologoId').val();
+        const odontologoId = $('#planificarOdontologoIdSelect').val(); // Usar el select en lugar del hidden
         const procedimientoId = $('#planificarProcedimientoId').val();
 
         if (!fecha || !odontologoId) {
             $('#grilla-horarios-disponibles-planificar').html(
-                '<div class="alert alert-warning">Por favor seleccione una fecha válida</div>'
+                '<div class="alert alert-warning">Por favor seleccione un odontólogo y una fecha válida</div>'
+            );
+            return;
+        }
+
+        // Validar que la fecha no sea pasada
+        const fechaSeleccionada = new Date(fecha + 'T00:00:00');
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        if (fechaSeleccionada < hoy) {
+            $('#grilla-horarios-disponibles-planificar').html(
+                '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-2"></i>No se pueden seleccionar fechas pasadas</div>'
             );
             return;
         }
@@ -920,7 +980,7 @@ $(document).ready(function() {
         // Obtener datos guardados del tratamiento
         const datosTratamiento = window.datosTratamientoPlanificar || {};
         const procedimientoId = $('#planificarProcedimientoId').val();
-        const odontologoId = $('#planificarOdontologoId').val();
+        const odontologoId = $('#planificarOdontologoIdSelect').val(); // Usar el select
         const pacienteId = $('#planificarPacienteId').val();
 
         console.log('Datos para crear cita:', { pacienteId, odontologoId, procedimientoId, fechaHoraInicio }); // Debug
