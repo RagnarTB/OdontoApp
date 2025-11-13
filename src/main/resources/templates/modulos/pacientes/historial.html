@@ -154,9 +154,12 @@
                                                                         title="Ver Detalles">
                                                                     <i class="fas fa-eye"></i>
                                                                 </button>
-                                                                <a th:href="@{/citas}" class="btn btn-sm btn-success" title="Ver Cita Asociada">
+                                                                <button type="button" class="btn btn-sm btn-success btn-ver-cita-asociada"
+                                                                        th:data-cita-id="${tratamiento.cita != null ? tratamiento.cita.id : ''}"
+                                                                        th:disabled="${tratamiento.cita == null}"
+                                                                        title="Ver Cita Asociada">
                                                                     <i class="fas fa-calendar-alt"></i>
-                                                                </a>
+                                                                </button>
                                                             </td>
                                                         </tr>
                                                     </tbody>
@@ -286,6 +289,23 @@
                 $('#modalDescripcion').text(descripcion || 'Sin observaciones adicionales');
 
                 $('#modalVerDetalleTratamiento').modal('show');
+            });
+
+            // Ver cita asociada al tratamiento
+            $('.btn-ver-cita-asociada').on('click', function() {
+                const citaId = $(this).data('cita-id');
+
+                if (!citaId) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('Información', 'Este tratamiento no tiene una cita asociada', 'info');
+                    } else {
+                        alert('Este tratamiento no tiene una cita asociada');
+                    }
+                    return;
+                }
+
+                // Redirigir al calendario con parámetro para abrir el modal de detalle de cita
+                window.location.href = '/citas?verCita=' + citaId;
             });
         });
     </script>

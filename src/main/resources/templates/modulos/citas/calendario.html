@@ -374,6 +374,47 @@
 
             calendar.render();
 
+            // Verificar si hay un parámetro verCita en la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const verCitaId = urlParams.get('verCita');
+
+            if (verCitaId) {
+                // Buscar la cita en el calendario y abrir el modal de detalle
+                setTimeout(function() {
+                    // Obtener todos los eventos del calendario
+                    const eventos = calendar.getEvents();
+                    const evento = eventos.find(e => e.id === verCitaId);
+
+                    if (evento) {
+                        // Si el evento está en el calendario, abrir su modal
+                        const props = evento.extendedProps;
+                        document.getElementById('detalleCitaId').value = evento.id;
+                        document.getElementById('detallePaciente').textContent = evento.title;
+                        document.getElementById('detalleOdontologo').textContent = props.odontologoNombre || 'N/A';
+                        document.getElementById('detalleOdontologoId').value = props.odontologoId || '';
+                        document.getElementById('detalleProcedimientoId').value = props.procedimientoId || '';
+                        document.getElementById('detalleProcedimiento').textContent = props.procedimientoNombre || 'N/A';
+                        document.getElementById('detalleEstado').textContent = props.estadoNombre || 'N/A';
+                        document.getElementById('detalleFechaHoraInicio').textContent = moment(evento.start).format('DD/MM/YYYY HH:mm');
+                        document.getElementById('detalleFechaHoraFin').textContent = moment(evento.end).format('DD/MM/YYYY HH:mm');
+                        document.getElementById('detalleFecha').value = moment(evento.start).format('DD/MM/YYYY');
+                        document.getElementById('detalleHora').value = moment(evento.start).format('HH:mm');
+                        document.getElementById('detalleMotivoConsulta').textContent = props.motivoConsulta || '-';
+                        document.getElementById('detalleNotasInternas').textContent = props.notasInternas || '-';
+
+                        document.querySelectorAll('.citaIdField').forEach(function(field) {
+                            field.value = evento.id;
+                        });
+
+                        mostrarBotonesSegunEstado(props.estadoNombre);
+                        $('#modalDetalleCita').modal('show');
+
+                        // Limpiar el parámetro de la URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                }, 1000); // Esperar a que se carguen los eventos
+            }
+
             // Recargar calendario al cambiar el filtro de odontólogo
             document.getElementById('filtroOdontologo').addEventListener('change', function() {
                 calendar.refetchEvents();
