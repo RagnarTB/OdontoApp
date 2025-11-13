@@ -234,7 +234,7 @@ public class TratamientoController {
             // **CREAR CITA AUTOMÁTICA EN EL CALENDARIO**
             // Crear una cita automática que bloquee el tiempo en el que se realiza el tratamiento
             LocalDateTime inicioTratamiento = cita.getFechaHoraFin(); // Inicia después de la cita original
-            LocalDateTime finTratamiento = inicioTratamiento.plusMinutes(procedimiento.getDuracionMinutos());
+            LocalDateTime finTratamiento = inicioTratamiento.plusMinutes(procedimiento.getDuracionBaseMinutos());
 
             // Obtener estado "COMPLETADA" para la nueva cita
             EstadoCita estadoCompletada = estadoCitaRepository.findByNombre("COMPLETADA")
@@ -248,7 +248,7 @@ public class TratamientoController {
             citaTratamiento.setProcedimiento(procedimiento);
             citaTratamiento.setFechaHoraInicio(inicioTratamiento);
             citaTratamiento.setFechaHoraFin(finTratamiento);
-            citaTratamiento.setDuracionEstimadaMinutos(procedimiento.getDuracionMinutos());
+            citaTratamiento.setDuracionEstimadaMinutos(procedimiento.getDuracionBaseMinutos());
             citaTratamiento.setMotivoConsulta("Tratamiento realizado: " + procedimiento.getNombre());
             citaTratamiento.setEstadoCita(estadoCompletada);
             citaTratamiento.setNotas("Cita generada automáticamente al registrar tratamiento inmediato");
