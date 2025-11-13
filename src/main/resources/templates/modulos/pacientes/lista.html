@@ -95,6 +95,46 @@
                         </table>
                     </div>
                     <div class="card-footer clearfix" th:if="${paginaPacientes.totalPages > 0}">
+                        <div class="float-left">
+                            <small class="text-muted">
+                                Mostrando <span th:text="${paginaPacientes.numberOfElements}"></span> de
+                                <span th:text="${paginaPacientes.totalElements}"></span> pacientes
+                                (Página <span th:text="${paginaPacientes.number + 1}"></span> de
+                                <span th:text="${paginaPacientes.totalPages}"></span>)
+                            </small>
+                        </div>
+                        <ul class="pagination pagination-sm m-0 float-right" th:if="${paginaPacientes.totalPages > 1}">
+                            <!-- Primera página -->
+                            <li class="page-item" th:classappend="${paginaPacientes.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/pacientes(page=0, keyword=${keyword})}" aria-label="Primera">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <!-- Página anterior -->
+                            <li class="page-item" th:classappend="${paginaPacientes.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/pacientes(page=${paginaPacientes.number - 1}, keyword=${keyword})}" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            <!-- Números de página -->
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaPacientes.totalPages - 1)}"
+                                th:if="${i >= paginaPacientes.number - 2 && i <= paginaPacientes.number + 2}"
+                                th:classappend="${i == paginaPacientes.number} ? 'active'">
+                                <a class="page-link" th:href="@{/pacientes(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
+                            </li>
+                            <!-- Página siguiente -->
+                            <li class="page-item" th:classappend="${paginaPacientes.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/pacientes(page=${paginaPacientes.number + 1}, keyword=${keyword})}" aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <!-- Última página -->
+                            <li class="page-item" th:classappend="${paginaPacientes.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/pacientes(page=${paginaPacientes.totalPages - 1}, keyword=${keyword})}" aria-label="Última">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
