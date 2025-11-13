@@ -174,10 +174,15 @@
                                 Ingresar al Portal
                             </button>
                         </form>
-                        <p class="text-center text-sm mt-4">
-                            <a th:href="@{/registro}" class="font-medium text-blue-600 hover:underline">¿No tienes
-                                cuenta? Regístrate aquí</a>
-                        </p>
+                        <div class="text-center text-sm mt-4 space-y-2">
+                            <p>
+                                <a th:href="@{/recuperar-password}" class="font-medium text-blue-600 hover:underline">¿Has olvidado tu contraseña?</a>
+                            </p>
+                            <p>
+                                <a th:href="@{/registro}" class="font-medium text-blue-600 hover:underline">¿No tienes
+                                    cuenta? Regístrate aquí</a>
+                            </p>
+                        </div>
                     </div>
                 </div>
 
