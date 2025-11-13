@@ -136,17 +136,58 @@
                             <h3 class="card-title">
                                 <i class="fas fa-list mr-2"></i>Listado de Citas
                             </h3>
-                            <div class="card-tools">
-                                <div class="input-group input-group-sm" style="width: 300px;">
-                                    <input type="text" id="buscarCita" class="form-control" placeholder="Buscar por paciente, odontólogo...">
-                                    <div class="input-group-append">
-                                        <button type="button" class="btn btn-default" id="btnBuscarCita">
-                                            <i class="fas fa-search"></i>
-                                        </button>
+                        </div>
+
+                        <!-- Panel de Filtros -->
+                        <div class="card-body border-bottom pb-3">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group mb-2">
+                                        <label for="filtroFechaDesde" class="mb-1"><small>Fecha Desde:</small></label>
+                                        <input type="date" id="filtroFechaDesde" class="form-control form-control-sm">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-2">
+                                        <label for="filtroFechaHasta" class="mb-1"><small>Fecha Hasta:</small></label>
+                                        <input type="date" id="filtroFechaHasta" class="form-control form-control-sm">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-2">
+                                        <label for="filtroEstado" class="mb-1"><small>Estado:</small></label>
+                                        <select id="filtroEstado" class="form-control form-control-sm">
+                                            <option value="">Todos los estados</option>
+                                            <option th:each="estado : ${listaEstadosCita}"
+                                                    th:value="${estado.id}"
+                                                    th:text="${estado.nombre}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-2">
+                                        <label for="filtroOdontologo" class="mb-1"><small>Odontólogo:</small></label>
+                                        <select id="filtroOdontologo" class="form-control form-control-sm">
+                                            <option value="">Todos los odontólogos</option>
+                                            <option th:each="odontologo : ${listaOdontologos}"
+                                                    th:value="${odontologo.id}"
+                                                    th:text="${odontologo.nombreCompleto}"></option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
+                            <div class="row">
+                                <div class="col-md-12 text-right">
+                                    <button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltros">
+                                        <i class="fas fa-filter mr-1"></i>Aplicar Filtros
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnLimpiarFiltros">
+                                        <i class="fas fa-eraser mr-1"></i>Limpiar
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+
                         <div class="card-body table-responsive p-0" style="max-height: 600px;">
                             <table class="table table-hover table-striped table-head-fixed text-nowrap">
                                 <thead>
@@ -477,28 +518,32 @@
             cargarCitas(0);
         });
 
-        // Evento de búsqueda
-        $('#btnBuscarCita').on('click', function() {
+        // Botón aplicar filtros
+        $('#btnAplicarFiltros').on('click', function() {
             cargarCitas(0);
         });
 
-        $('#buscarCita').on('keypress', function(e) {
+        // Botón limpiar filtros
+        $('#btnLimpiarFiltros').on('click', function() {
+            $('#filtroFechaDesde').val('');
+            $('#filtroFechaHasta').val('');
+            $('#filtroEstado').val('');
+            $('#filtroOdontologo').val('');
+            cargarCitas(0);
+        });
+
+        // Aplicar filtros al presionar Enter en campos de fecha
+        $('#filtroFechaDesde, #filtroFechaHasta').on('keypress', function(e) {
             if (e.which === 13) {
                 cargarCitas(0);
             }
         });
 
-        // Búsqueda en tiempo real
-        let timeoutBusquedaCitas = null;
-        $('#buscarCita').on('input', function() {
-            clearTimeout(timeoutBusquedaCitas);
-            timeoutBusquedaCitas = setTimeout(function() {
-                cargarCitas(0);
-            }, 500); // Esperar 500ms después de que el usuario deje de escribir
-        });
-
         function cargarCitas(pagina) {
-            const keyword = $('#buscarCita').val();
+            const fechaDesde = $('#filtroFechaDesde').val();
+            const fechaHasta = $('#filtroFechaHasta').val();
+            const estadoId = $('#filtroEstado').val();
+            const odontologoId = $('#filtroOdontologo').val();
 
             $.ajax({
                 url: '/citas/api/lista',
@@ -506,7 +551,10 @@
                 data: {
                     page: pagina,
                     size: tamanoPagina,
-                    keyword: keyword
+                    fechaDesde: fechaDesde,
+                    fechaHasta: fechaHasta,
+                    estadoId: estadoId,
+                    odontologoId: odontologoId
                 },
                 success: function(response) {
                     if (response.error) {

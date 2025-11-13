@@ -88,11 +88,15 @@ public class CitaController {
             // Buscar todos los insumos con sus relaciones cargadas (para el modal de registrar tratamiento)
             var listaInsumos = insumoRepository.findAllWithRelations();
 
+            // Buscar todos los estados de cita (para filtros)
+            var listaEstadosCita = estadoCitaRepository.findAll();
+
             // Añadir al modelo
             model.addAttribute("listaOdontologos", listaOdontologos);
             model.addAttribute("listaPacientes", listaPacientes);
             model.addAttribute("listaProcedimientos", listaProcedimientos);
             model.addAttribute("listaInsumos", listaInsumos);
+            model.addAttribute("listaEstadosCita", listaEstadosCita);
             model.addAttribute("citaDTO", new CitaDTO());
 
             return "modulos/citas/calendario";
@@ -105,6 +109,7 @@ public class CitaController {
             model.addAttribute("listaPacientes", List.of());
             model.addAttribute("listaProcedimientos", List.of());
             model.addAttribute("listaInsumos", List.of());
+            model.addAttribute("listaEstadosCita", List.of());
             model.addAttribute("citaDTO", new CitaDTO());
             model.addAttribute("error", "Error al cargar los datos del calendario. Por favor, contacte al administrador.");
 
@@ -464,12 +469,16 @@ public class CitaController {
     }
 
     /**
-     * API REST para obtener lista de citas con paginación y búsqueda.
+     * API REST para obtener lista de citas con paginación y filtros.
      * Usado por la vista de lista de citas en el calendario.
      *
      * @param page Número de página (0-indexed)
      * @param size Cantidad de elementos por página
      * @param keyword Palabra clave para buscar
+     * @param fechaDesde Fecha desde para filtro de rango (formato: yyyy-MM-dd)
+     * @param fechaHasta Fecha hasta para filtro de rango (formato: yyyy-MM-dd)
+     * @param estadoId ID del estado de cita para filtrar
+     * @param odontologoId ID del odontólogo para filtrar
      * @return JSON con citas paginadas
      */
     @GetMapping("/api/lista")
@@ -477,14 +486,22 @@ public class CitaController {
     public Map<String, Object> obtenerListaCitas(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
+            @RequestParam(required = false) Long estadoId,
+            @RequestParam(required = false) Long odontologoId) {
 
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by("fechaHoraInicio").descending());
 
-            // Listar todas las citas sin filtros (keyword se puede implementar en futuras versiones)
-            // Por ahora mostramos todas las citas paginadas
-            Page<Cita> paginaCitas = citaService.listarCitasConFiltros(null, null, null, null, pageable);
+            // Convertir fechas LocalDate a LocalDateTime para filtros
+            LocalDateTime fechaHoraDesde = fechaDesde != null ? fechaDesde.atStartOfDay() : null;
+            LocalDateTime fechaHoraHasta = fechaHasta != null ? fechaHasta.atTime(23, 59, 59) : null;
+
+            // Listar citas con filtros aplicados
+            Page<Cita> paginaCitas = citaService.listarCitasConFiltros(
+                    fechaHoraDesde, fechaHoraHasta, estadoId, odontologoId, pageable);
 
             // Convertir a formato para la tabla
             List<Map<String, Object>> citasDTO = paginaCitas.getContent().stream()
