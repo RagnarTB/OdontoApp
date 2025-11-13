@@ -137,7 +137,8 @@
     /*<![CDATA[*/
     $(document).ready(function() {
         // ✅ Autocompletar fecha/hora actual al abrir el modal (solo si no está seteada)
-        $('#modalRegistrarPago').on('show.bs.modal', function() {
+        // Usar 'shown.bs.modal' en lugar de 'show.bs.modal' para no interferir con otros handlers
+        $('#modalRegistrarPago').on('shown.bs.modal', function() {
             // Solo setear la fecha si no tiene valor (evita sobrescribir valor seteado por otro script)
             if (!$('#fechaPago').val()) {
                 const ahora = new Date();

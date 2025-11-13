@@ -352,9 +352,9 @@ public class CitaServiceImpl implements CitaService {
                 "Por favor seleccione un horario dentro de las horas de atención.");
         }
 
-        // Crear la cita
-        EstadoCita estadoPendiente = estadoCitaRepository.findByNombre(ESTADO_PENDIENTE)
-                .orElseThrow(() -> new IllegalStateException("Estado PENDIENTE no encontrado en la base de datos"));
+        // Crear la cita como CONFIRMADA (las citas presenciales se crean confirmadas)
+        EstadoCita estadoConfirmada = estadoCitaRepository.findByNombre(ESTADO_CONFIRMADA)
+                .orElseThrow(() -> new IllegalStateException("Estado CONFIRMADA no encontrado en la base de datos"));
 
         Cita nuevaCita = new Cita();
         nuevaCita.setPaciente(paciente);
@@ -363,7 +363,7 @@ public class CitaServiceImpl implements CitaService {
         nuevaCita.setFechaHoraInicio(fechaHoraInicio);
         nuevaCita.setFechaHoraFin(fechaHoraFin);
         nuevaCita.setDuracionEstimadaMinutos(procedimiento.getDuracionBaseMinutos());
-        nuevaCita.setEstadoCita(estadoPendiente);
+        nuevaCita.setEstadoCita(estadoConfirmada);
         nuevaCita.setMotivoConsulta(motivoConsulta);
         nuevaCita.setNotas(notas);
 
@@ -573,12 +573,18 @@ public class CitaServiceImpl implements CitaService {
 
         List<Cita> citas = citaRepository.findByFechaHoraInicioBetween(inicio, fin);
 
-        // Filtrar por odontólogo si se especificó
-        if (odontologoId != null) {
-            citas = citas.stream()
-                    .filter(c -> c.getOdontologo().getId().equals(odontologoId))
-                    .collect(Collectors.toList());
-        }
+        // Filtrar por odontólogo si se especificó y excluir citas canceladas/reprogramadas
+        citas = citas.stream()
+                .filter(c -> {
+                    // Filtrar por odontólogo si se especificó
+                    if (odontologoId != null && !c.getOdontologo().getId().equals(odontologoId)) {
+                        return false;
+                    }
+                    // Excluir citas canceladas y reprogramadas del calendario
+                    String estado = c.getEstadoCita().getNombre();
+                    return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+                })
+                .collect(Collectors.toList());
 
         return citas;
     }
