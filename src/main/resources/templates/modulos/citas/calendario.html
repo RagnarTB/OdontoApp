@@ -405,6 +405,9 @@
 
                     // Rellenar el modal de reprogramar con la cita actual
                     document.getElementById('reprogramarCitaId').value = evento.id;
+                    document.getElementById('reprogramarOdontologoId').value = props.odontologoId || '';
+                    document.getElementById('reprogramarPaciente').textContent = evento.title;
+                    document.getElementById('reprogramarFechaActual').textContent = moment(evento.start).format('DD/MM/YYYY HH:mm');
 
                     // Rellenar el modal de cancelar
                     document.getElementById('cancelarCitaId').value = evento.id;

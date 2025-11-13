@@ -379,8 +379,23 @@
                     <div class="alert alert-info mb-3">
                         <h6><i class="fas fa-info-circle mr-2"></i>Cita Actual</h6>
                         <p class="mb-1"><strong>Paciente:</strong> <span id="reprogramarPaciente"></span></p>
-                        <p class="mb-1"><strong>Odontólogo:</strong> <span id="reprogramarOdontologo"></span></p>
                         <p class="mb-0"><strong>Fecha/Hora:</strong> <span id="reprogramarFechaActual"></span></p>
+                    </div>
+
+                    <!-- Selector de Odontólogo -->
+                    <div class="form-group">
+                        <label for="reprogramarOdontologoIdSelect" class="font-weight-bold">
+                            <i class="fas fa-user-md mr-1"></i>Odontólogo <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control" id="reprogramarOdontologoIdSelect" required>
+                            <option value="">Seleccione un odontólogo...</option>
+                            <option th:each="odontologo : ${listaOdontologos}"
+                                    th:value="${odontologo.id}"
+                                    th:text="${odontologo.nombreCompleto}"></option>
+                        </select>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> Puede elegir un odontólogo diferente para la reprogramación
+                        </small>
                     </div>
 
                     <!-- Layout horizontal: 2 columnas -->
@@ -395,7 +410,7 @@
                                 <label for="fechaCitaReprogramar">Fecha <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" id="fechaCitaReprogramar" required>
                                 <small class="form-text text-muted">
-                                    <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios
+                                    <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios (no se permiten fechas pasadas)
                                 </small>
                             </div>
 
@@ -1040,6 +1055,161 @@ $(document).ready(function() {
             '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
         );
         $('.horario-slot-planificar').removeClass('btn-primary').addClass('btn-outline-primary');
+    });
+
+    // ============ SCRIPT PARA MODAL REPROGRAMAR CITA ============
+
+    // Al abrir el modal, establecer fecha mínima a hoy y pre-seleccionar odontólogo
+    $('#modalReprogramarCita').on('show.bs.modal', function() {
+        const hoy = new Date().toISOString().split('T')[0];
+        $('#fechaCitaReprogramar').attr('min', hoy);
+
+        // Pre-seleccionar el odontólogo original si está disponible
+        const odontologoIdOriginal = $('#reprogramarOdontologoId').val();
+        if (odontologoIdOriginal) {
+            $('#reprogramarOdontologoIdSelect').val(odontologoIdOriginal);
+        }
+    });
+
+    // Cuando cambia el odontólogo, actualizar el campo hidden y limpiar horarios
+    $('#reprogramarOdontologoIdSelect').on('change', function() {
+        const odontologoId = $(this).val();
+        $('#reprogramarOdontologoId').val(odontologoId);
+
+        // Limpiar horarios disponibles
+        $('#grilla-horarios-disponibles-reprogramar').html(
+            '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios del odontólogo elegido</div>'
+        );
+
+        // Limpiar horario seleccionado
+        $('#horario-seleccionado-info-reprogramar').hide();
+        $('#nuevaFechaHoraInicioReprogramar').val('');
+
+        // Si hay una fecha seleccionada, recargar horarios
+        const fecha = $('#fechaCitaReprogramar').val();
+        if (fecha && odontologoId) {
+            $('#fechaCitaReprogramar').trigger('change');
+        }
+    });
+
+    // Manejar cambio de fecha en modal reprogramar
+    $('#fechaCitaReprogramar').on('change', function() {
+        const fecha = $(this).val();
+        const odontologoId = $('#reprogramarOdontologoIdSelect').val(); // Usar el select
+        const citaId = $('#reprogramarCitaId').val();
+
+        if (!fecha || !odontologoId) {
+            $('#grilla-horarios-disponibles-reprogramar').html(
+                '<div class="alert alert-warning">Por favor seleccione un odontólogo y una fecha válida</div>'
+            );
+            return;
+        }
+
+        // Validar que la fecha no sea pasada
+        const fechaSeleccionada = new Date(fecha + 'T00:00:00');
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        if (fechaSeleccionada < hoy) {
+            $('#grilla-horarios-disponibles-reprogramar').html(
+                '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-2"></i>No se pueden seleccionar fechas pasadas</div>'
+            );
+            return;
+        }
+
+        // Obtener duración de la cita (default 30 minutos si no se encuentra)
+        let duracion = 30;
+
+        // Mostrar loading
+        $('#grilla-horarios-disponibles-reprogramar').html(
+            '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Cargando horarios...</p></div>'
+        );
+
+        // Consultar horarios disponibles
+        $.ajax({
+            url: '/citas/api/horarios-disponibles',
+            method: 'GET',
+            data: {
+                odontologoId: odontologoId,
+                fecha: fecha,
+                duracion: duracion,
+                citaIdExcluir: citaId // Excluir la cita actual al buscar disponibilidad
+            },
+            success: function(response) {
+                if (!response.disponible) {
+                    $('#grilla-horarios-disponibles-reprogramar').html(
+                        `<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i>${response.motivo || 'No hay disponibilidad en esta fecha'}</div>`
+                    );
+                    return;
+                }
+
+                const horarios = response.horariosDisponibles || [];
+                if (horarios.length === 0) {
+                    $('#grilla-horarios-disponibles-reprogramar').html(
+                        '<div class="alert alert-info">No hay horarios disponibles en esta fecha</div>'
+                    );
+                    return;
+                }
+
+                // Generar grilla de horarios
+                let html = '<div class="row">';
+                horarios.forEach(function(slot) {
+                    if (slot.disponible) {
+                        const fechaHora = fecha + 'T' + slot.inicio;
+                        html += `
+                            <div class="col-6 col-md-4 mb-2">
+                                <button type="button" class="btn btn-outline-primary btn-block btn-sm horario-slot-reprogramar"
+                                        data-fecha-hora="${fechaHora}">
+                                    ${slot.inicio}
+                                </button>
+                            </div>
+                        `;
+                    }
+                });
+                html += '</div>';
+
+                $('#grilla-horarios-disponibles-reprogramar').html(html);
+            },
+            error: function() {
+                $('#grilla-horarios-disponibles-reprogramar').html(
+                    '<div class="alert alert-danger">Error al cargar los horarios</div>'
+                );
+            }
+        });
+    });
+
+    // Seleccionar horario
+    $(document).on('click', '.horario-slot-reprogramar', function() {
+        $('.horario-slot-reprogramar').removeClass('btn-primary').addClass('btn-outline-primary');
+        $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+
+        const fechaHora = $(this).data('fecha-hora');
+        $('#nuevaFechaHoraInicioReprogramar').val(fechaHora);
+
+        const fechaObj = new Date(fechaHora);
+        const textoHorario = fechaObj.toLocaleString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        $('#horario-seleccionado-texto-reprogramar').text(textoHorario);
+        $('#horario-seleccionado-info-reprogramar').show();
+    });
+
+    // Limpiar modal de reprogramar al cerrar
+    $('#modalReprogramarCita').on('hidden.bs.modal', function() {
+        $('#fechaCitaReprogramar').val('');
+        $('#nuevaFechaHoraInicioReprogramar').val('');
+        $('#horario-seleccionado-info-reprogramar').hide();
+        $('#grilla-horarios-disponibles-reprogramar').html(
+            '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
+        );
+        $('.horario-slot-reprogramar').removeClass('btn-primary').addClass('btn-outline-primary');
+        $('#motivoReprogramacion').val('');
     });
 });
 </script>
