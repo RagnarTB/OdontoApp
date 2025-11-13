@@ -7,12 +7,14 @@ import com.odontoapp.entidad.Insumo;
 import com.odontoapp.entidad.Procedimiento;
 import com.odontoapp.entidad.ProcedimientoInsumo;
 import com.odontoapp.entidad.Usuario;
+import com.odontoapp.entidad.TratamientoPlanificado;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.EstadoCitaRepository;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
+import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.EmailService;
 import java.math.BigDecimal;
@@ -56,6 +58,7 @@ public class CitaServiceImpl implements CitaService {
     private final EmailService emailService;
     private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
     private final InsumoRepository insumoRepository;
+    private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
 
     public CitaServiceImpl(CitaRepository citaRepository,
                           UsuarioRepository usuarioRepository,
@@ -63,7 +66,8 @@ public class CitaServiceImpl implements CitaService {
                           EstadoCitaRepository estadoCitaRepository,
                           EmailService emailService,
                           ProcedimientoInsumoRepository procedimientoInsumoRepository,
-                          InsumoRepository insumoRepository) {
+                          InsumoRepository insumoRepository,
+                          TratamientoPlanificadoRepository tratamientoPlanificadoRepository) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
@@ -71,6 +75,7 @@ public class CitaServiceImpl implements CitaService {
         this.emailService = emailService;
         this.procedimientoInsumoRepository = procedimientoInsumoRepository;
         this.insumoRepository = insumoRepository;
+        this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
     }
 
     @Override
@@ -504,6 +509,16 @@ public class CitaServiceImpl implements CitaService {
         // Si el paciente asistió, descontar insumos asociados al procedimiento
         if (asistio && cita.getProcedimiento() != null) {
             descontarInsumosDelProcedimiento(cita.getProcedimiento().getId());
+        }
+
+        // Si el paciente asistió, actualizar el tratamiento planificado asociado (si existe)
+        if (asistio) {
+            TratamientoPlanificado tratamientoPlanificado = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
+            if (tratamientoPlanificado != null && "PLANIFICADO".equals(tratamientoPlanificado.getEstado())) {
+                tratamientoPlanificado.setEstado("EN_CURSO");
+                tratamientoPlanificadoRepository.save(tratamientoPlanificado);
+                System.out.println("✓ Tratamiento planificado actualizado a EN_CURSO para cita: " + citaId);
+            }
         }
 
         return citaRepository.save(cita);

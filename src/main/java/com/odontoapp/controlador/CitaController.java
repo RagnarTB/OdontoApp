@@ -10,8 +10,11 @@ import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
+import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
+import com.odontoapp.entidad.TratamientoPlanificado;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.FacturacionService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +48,7 @@ public class CitaController {
     private final ProcedimientoRepository procedimientoRepository;
     private final InsumoRepository insumoRepository;
     private final EstadoCitaRepository estadoCitaRepository;
+    private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
 
     public CitaController(CitaService citaService,
                          FacturacionService facturacionService,
@@ -53,7 +57,8 @@ public class CitaController {
                          PacienteRepository pacienteRepository,
                          ProcedimientoRepository procedimientoRepository,
                          InsumoRepository insumoRepository,
-                         EstadoCitaRepository estadoCitaRepository) {
+                         EstadoCitaRepository estadoCitaRepository,
+                         TratamientoPlanificadoRepository tratamientoPlanificadoRepository) {
         this.citaService = citaService;
         this.facturacionService = facturacionService;
         this.rolRepository = rolRepository;
@@ -62,6 +67,7 @@ public class CitaController {
         this.procedimientoRepository = procedimientoRepository;
         this.insumoRepository = insumoRepository;
         this.estadoCitaRepository = estadoCitaRepository;
+        this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
     }
 
     /**
@@ -537,6 +543,38 @@ public class CitaController {
             error.put("error", true);
             error.put("mensaje", "Error al obtener lista de citas: " + e.getMessage());
             return error;
+        }
+    }
+
+    /**
+     * Obtiene el tratamiento planificado asociado a una cita.
+     *
+     * @param citaId ID de la cita
+     * @return ResponseEntity con los datos del tratamiento planificado o vacío
+     */
+    @GetMapping("/api/tratamiento-planificado/{citaId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> obtenerTratamientoPlanificado(@PathVariable Long citaId) {
+        try {
+            TratamientoPlanificado tratamiento = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
+
+            if (tratamiento == null) {
+                return ResponseEntity.ok(Map.of("existe", false));
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("existe", true);
+            response.put("id", tratamiento.getId());
+            response.put("procedimiento", tratamiento.getProcedimiento().getNombre());
+            response.put("piezasDentales", tratamiento.getPiezasDentales() != null ? tratamiento.getPiezasDentales() : "N/A");
+            response.put("descripcion", tratamiento.getDescripcion() != null ? tratamiento.getDescripcion() : "");
+            response.put("estado", tratamiento.getEstado());
+            response.put("odontologo", tratamiento.getOdontologo().getNombreCompleto());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("existe", false));
         }
     }
 

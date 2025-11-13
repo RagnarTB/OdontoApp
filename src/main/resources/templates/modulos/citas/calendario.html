@@ -707,8 +707,38 @@
             // Mostrar/ocultar botones según estado
             mostrarBotonesSegunEstado(cita.estadoNombre);
 
+            // Cargar tratamiento planificado asociado
+            cargarTratamientoPlanificado(cita.id);
+
             // Abrir modal
             $('#modalDetalleCita').modal('show');
+        }
+
+        function cargarTratamientoPlanificado(citaId) {
+            // Limpiar y ocultar por defecto
+            $('#seccionTratamientoPlanificado').hide();
+            $('#infoTratamientoPlanificado').html('');
+
+            // Consultar tratamiento planificado
+            $.ajax({
+                url: `/citas/api/tratamiento-planificado/${citaId}`,
+                method: 'GET',
+                success: function(data) {
+                    if (data.existe) {
+                        const html = `
+                            <p class="mb-1"><strong>Procedimiento:</strong> ${data.procedimiento}</p>
+                            <p class="mb-1"><strong>Piezas Dentales:</strong> ${data.piezasDentales}</p>
+                            <p class="mb-1"><strong>Estado:</strong> <span class="badge badge-info">${data.estado}</span></p>
+                            ${data.descripcion ? `<p class="mb-0"><strong>Descripción:</strong> ${data.descripcion}</p>` : ''}
+                        `;
+                        $('#infoTratamientoPlanificado').html(html);
+                        $('#seccionTratamientoPlanificado').show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log('No se pudo cargar el tratamiento planificado:', error);
+                }
+            });
         }
 
         function renderizarPaginacion(paginaActual, totalPaginas) {
