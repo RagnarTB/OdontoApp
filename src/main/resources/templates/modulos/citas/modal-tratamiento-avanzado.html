@@ -276,12 +276,30 @@ function initModalTratamiento() {
         if (citaId) {
             $('#tratamientoCitaId').val(citaId);
 
-            // Cargar información de la cita
+            // Cargar información de la cita y guardar en citaDatos
             const paciente = $('#detallePaciente').text();
+            const pacienteId = $('#detallePacienteId').val();
             const odontologo = $('#detalleOdontologo').text();
+            const odontologoId = $('#detalleOdontologoId').val();
             const fecha = $('#detalleFecha').val();
             const hora = $('#detalleHora').val();
             const procedimientoId = $('#detalleProcedimientoId').val();
+            const procedimiento = $('#detalleProcedimiento').text();
+
+            // **GUARDAR EN citaDatos para uso posterior**
+            citaDatos = {
+                id: citaId,
+                pacienteNombre: paciente,
+                pacienteId: pacienteId,
+                odontologoNombre: odontologo,
+                odontologoId: odontologoId,
+                procedimientoId: procedimientoId,
+                procedimientoNombre: procedimiento,
+                fecha: fecha,
+                hora: hora
+            };
+
+            console.log('Datos de la cita cargados:', citaDatos); // Debug
 
             $('#infoCitaPaciente').text(paciente);
             $('#infoCitaOdontologo').text(odontologo);
@@ -1014,11 +1032,13 @@ function initModalTratamiento() {
 
         // Pre-poblar modal con información de la cita actual
         const citaId = citaDatos.id || '';
+        const pacienteId = citaDatos.pacienteId || '';
         const pacienteNombre = citaDatos.pacienteNombre || 'N/A';
         const odontologoNombre = citaDatos.odontologoNombre || 'N/A';
         const odontologoId = citaDatos.odontologoId || '';
 
         $('#planificarCitaId').val(citaId);
+        $('#planificarPacienteId').val(pacienteId);
         $('#planificarProcedimientoId').val(procedimientoId);
         $('#planificarOdontologoId').val(odontologoId);
         $('#planificarPiezasDentales').val(datos.piezasDentales || '');

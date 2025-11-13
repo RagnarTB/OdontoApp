@@ -333,6 +333,7 @@
                     // Rellenar el modal de detalles
                     document.getElementById('detalleCitaId').value = evento.id;
                     document.getElementById('detallePaciente').textContent = evento.title;
+                    document.getElementById('detallePacienteId').value = props.pacienteId || '';
                     document.getElementById('detalleOdontologo').textContent = props.odontologoNombre || 'N/A';
                     document.getElementById('detalleOdontologoId').value = props.odontologoId || '';
                     document.getElementById('detalleProcedimientoId').value = props.procedimientoId || '';
@@ -391,6 +392,7 @@
                         const props = evento.extendedProps;
                         document.getElementById('detalleCitaId').value = evento.id;
                         document.getElementById('detallePaciente').textContent = evento.title;
+                        document.getElementById('detallePacienteId').value = props.pacienteId || '';
                         document.getElementById('detalleOdontologo').textContent = props.odontologoNombre || 'N/A';
                         document.getElementById('detalleOdontologoId').value = props.odontologoId || '';
                         document.getElementById('detalleProcedimientoId').value = props.procedimientoId || '';

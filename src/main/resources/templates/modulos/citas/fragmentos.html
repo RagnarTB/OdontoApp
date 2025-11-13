@@ -265,6 +265,7 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="detalleCitaId" class="citaIdField">
+                <input type="hidden" id="detallePacienteId">
                 <input type="hidden" id="detalleOdontologoId">
                 <input type="hidden" id="detalleProcedimientoId">
                 <input type="hidden" id="detalleFecha">
@@ -920,14 +921,28 @@ $(document).ready(function() {
         const datosTratamiento = window.datosTratamientoPlanificar || {};
         const procedimientoId = $('#planificarProcedimientoId').val();
         const odontologoId = $('#planificarOdontologoId').val();
+        const pacienteId = $('#planificarPacienteId').val();
+
+        console.log('Datos para crear cita:', { pacienteId, odontologoId, procedimientoId, fechaHoraInicio }); // Debug
+
+        // Validar que tengamos todos los datos necesarios
+        if (!pacienteId || !odontologoId || !procedimientoId) {
+            $btn.prop('disabled', false).html(originalText);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Error', 'Faltan datos necesarios para crear la cita. Por favor, inténtelo nuevamente.', 'error');
+            } else {
+                alert('Faltan datos necesarios para crear la cita');
+            }
+            return;
+        }
 
         // Primero crear la cita
         const citaData = {
-            pacienteUsuarioId: $('#planificarPacienteId').val() || datosTratamiento.citaId,
+            pacienteUsuarioId: pacienteId,
             odontologoUsuarioId: odontologoId,
             procedimientoId: procedimientoId,
             fechaHoraInicio: fechaHoraInicio,
-            motivoConsulta: datosTratamiento.descripcion || '',
+            motivoConsulta: datosTratamiento.descripcion || 'Tratamiento planificado',
             notasInternas: 'Cita generada desde planificación de tratamiento'
         };
 
