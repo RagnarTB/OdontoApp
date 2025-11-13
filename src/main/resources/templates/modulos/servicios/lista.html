@@ -97,7 +97,8 @@
                                     <select class="form-control ml-2" name="categoriaId">
                                         <option value="">Todas las categorías</option>
                                         <option th:each="cat : ${todasLasCategorias}" th:value="${cat.id}"
-                                            th:text="${cat.nombre}"></option>
+                                            th:text="${cat.nombre}"
+                                            th:selected="${categoriaId != null && categoriaId.toString() == cat.id.toString()}"></option>
                                     </select>
                                     <button type="submit" class="btn btn-default ml-2"><i
                                             class="fas fa-search"></i></button>
@@ -153,6 +154,54 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    <div class="card-footer clearfix" th:if="${paginaProcedimientos.totalPages > 1}">
+                        <ul class="pagination pagination-sm m-0 float-right">
+                            <!-- Botón Primera Página -->
+                            <li class="page-item" th:classappend="${paginaProcedimientos.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/servicios(page=0, keyword=${keyword}, categoriaId=${categoriaId})}" aria-label="Primera">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+
+                            <!-- Botón Anterior -->
+                            <li class="page-item" th:classappend="${!paginaProcedimientos.hasPrevious()} ? 'disabled'">
+                                <a class="page-link" th:href="@{/servicios(page=${paginaProcedimientos.number - 1}, keyword=${keyword}, categoriaId=${categoriaId})}" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+
+                            <!-- Números de página -->
+                            <li class="page-item"
+                                th:each="i : ${#numbers.sequence(0, paginaProcedimientos.totalPages - 1)}"
+                                th:if="${i >= paginaProcedimientos.number - 2 && i <= paginaProcedimientos.number + 2}"
+                                th:classappend="${i == paginaProcedimientos.number} ? 'active'">
+                                <a class="page-link" th:href="@{/servicios(page=${i}, keyword=${keyword}, categoriaId=${categoriaId})}" th:text="${i + 1}">1</a>
+                            </li>
+
+                            <!-- Botón Siguiente -->
+                            <li class="page-item" th:classappend="${!paginaProcedimientos.hasNext()} ? 'disabled'">
+                                <a class="page-link" th:href="@{/servicios(page=${paginaProcedimientos.number + 1}, keyword=${keyword}, categoriaId=${categoriaId})}" aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+
+                            <!-- Botón Última Página -->
+                            <li class="page-item" th:classappend="${paginaProcedimientos.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/servicios(page=${paginaProcedimientos.totalPages - 1}, keyword=${keyword}, categoriaId=${categoriaId})}" aria-label="Última">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+
+                        <div class="float-left">
+                            <span class="text-muted">
+                                Mostrando <b th:text="${paginaProcedimientos.numberOfElements}"></b> de <b th:text="${paginaProcedimientos.totalElements}"></b> servicios
+                                (Página <b th:text="${paginaProcedimientos.number + 1}"></b> de <b th:text="${paginaProcedimientos.totalPages}"></b>)
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

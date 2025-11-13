@@ -82,12 +82,12 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         if (loginType != null && !loginType.trim().isEmpty()) {
             boolean esPaciente = authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
-                    .anyMatch(role -> role.equals("PACIENTE"));
+                    .anyMatch(role -> role.equals("ROLE_PACIENTE"));
 
             boolean esPersonal = authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
-                    .anyMatch(role -> role.equals("ADMIN") || role.equals("ODONTOLOGO")
-                            || role.equals("RECEPCIONISTA") || role.equals("AUXILIAR") || role.equals("ALMACEN"));
+                    .anyMatch(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_ODONTOLOGO")
+                            || role.equals("ROLE_RECEPCIONISTA") || role.equals("ROLE_AUXILIAR") || role.equals("ROLE_ALMACEN"));
 
             // Validar login de pacientes: solo permitir rol PACIENTE
             if ("paciente".equalsIgnoreCase(loginType)) {
@@ -191,7 +191,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
         for (GrantedAuthority grantedAuthority : authorities) {
             log.debug("Evaluando rol: {}", grantedAuthority.getAuthority());
-            if (grantedAuthority.getAuthority().equals("PACIENTE")) {
+            if (grantedAuthority.getAuthority().equals("ROLE_PACIENTE")) {
                 log.info("Rol PACIENTE detectado. URL objetivo: /paciente/dashboard");
                 return "/paciente/dashboard";
             }

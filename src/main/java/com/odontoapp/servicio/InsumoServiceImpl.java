@@ -32,11 +32,23 @@ public class InsumoServiceImpl implements InsumoService {
     }
 
     @Override
-    public Page<Insumo> listarTodos(String keyword, Pageable pageable) {
-        if (keyword != null && !keyword.isBlank()) {
-            return insumoRepository.findByKeyword(keyword, pageable);
+    public Page<Insumo> listarTodos(String keyword, Long categoriaId, Pageable pageable) {
+        if (categoriaId != null) {
+            // Filtrar por categoría específica
+            if (keyword != null && !keyword.isBlank()) {
+                // Buscar por keyword dentro de la categoría
+                return insumoRepository.findByCategoriaIdAndKeyword(categoriaId, keyword, pageable);
+            } else {
+                // Solo filtrar por categoría
+                return insumoRepository.findByCategoriaId(categoriaId, pageable);
+            }
+        } else {
+            // Sin filtro de categoría, buscar por keyword o listar todos
+            if (keyword != null && !keyword.isBlank()) {
+                return insumoRepository.findByKeyword(keyword, pageable);
+            }
+            return insumoRepository.findAllWithRelations(pageable);
         }
-        return insumoRepository.findAllWithRelations(pageable);
     }
     
     @Override

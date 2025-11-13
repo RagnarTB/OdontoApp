@@ -25,4 +25,14 @@ public interface ProcedimientoRepository extends JpaRepository<Procedimiento, Lo
     @Query(value = "SELECT DISTINCT p FROM Procedimiento p LEFT JOIN FETCH p.categoria",
            countQuery = "SELECT COUNT(p) FROM Procedimiento p")
     Page<Procedimiento> findAllWithRelations(Pageable pageable);
+
+    // Método para filtrar por categoría con paginación
+    @Query(value = "SELECT DISTINCT p FROM Procedimiento p LEFT JOIN FETCH p.categoria c WHERE c.id = :categoriaId",
+           countQuery = "SELECT COUNT(p) FROM Procedimiento p WHERE p.categoria.id = :categoriaId")
+    Page<Procedimiento> findByCategoriaId(@Param("categoriaId") Long categoriaId, Pageable pageable);
+
+    // Método para filtrar por categoría y keyword con paginación
+    @Query(value = "SELECT DISTINCT p FROM Procedimiento p LEFT JOIN FETCH p.categoria c WHERE c.id = :categoriaId AND (p.nombre LIKE %:keyword% OR p.codigo LIKE %:keyword% OR p.descripcion LIKE %:keyword%)",
+           countQuery = "SELECT COUNT(p) FROM Procedimiento p WHERE p.categoria.id = :categoriaId AND (p.nombre LIKE %:keyword% OR p.codigo LIKE %:keyword% OR p.descripcion LIKE %:keyword%)")
+    Page<Procedimiento> findByCategoriaIdAndKeyword(@Param("categoriaId") Long categoriaId, @Param("keyword") String keyword, Pageable pageable);
 }

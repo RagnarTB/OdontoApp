@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface InsumoService {
-    Page<Insumo> listarTodos(String keyword, Pageable pageable);
+    Page<Insumo> listarTodos(String keyword, Long categoriaId, Pageable pageable);
     Optional<Insumo> buscarPorId(Long id);
     Insumo guardar(InsumoDTO insumoDTO);
     void eliminar(Long id);

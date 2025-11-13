@@ -23,14 +23,18 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.odontoapp.dto.PacienteDTO;
 import com.odontoapp.dto.ReniecResponseDTO;
 import com.odontoapp.entidad.Cita;
+import com.odontoapp.entidad.Comprobante;
 import com.odontoapp.entidad.OdontogramaDiente;
 import com.odontoapp.entidad.Paciente;
 import com.odontoapp.entidad.TipoDocumento;
+import com.odontoapp.entidad.TratamientoPlanificado;
 import com.odontoapp.entidad.TratamientoRealizado;
 import com.odontoapp.repositorio.CitaRepository;
+import com.odontoapp.repositorio.ComprobanteRepository;
 import com.odontoapp.repositorio.OdontogramaDienteRepository;
 import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.TipoDocumentoRepository;
+import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
 import com.odontoapp.repositorio.TratamientoRealizadoRepository;
 import com.odontoapp.servicio.PacienteService;
 import com.odontoapp.servicio.ReniecService;
@@ -49,11 +53,15 @@ public class PacienteController {
     private final CitaRepository citaRepository;
     private final OdontogramaDienteRepository odontogramaDienteRepository;
     private final TratamientoRealizadoRepository tratamientoRealizadoRepository;
+    private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
+    private final ComprobanteRepository comprobanteRepository;
 
     public PacienteController(PacienteService pacienteService, ReniecService reniecService,
             PacienteRepository pacienteRepository, TipoDocumentoRepository tipoDocumentoRepository,
             CitaRepository citaRepository, OdontogramaDienteRepository odontogramaDienteRepository,
-            TratamientoRealizadoRepository tratamientoRealizadoRepository) {
+            TratamientoRealizadoRepository tratamientoRealizadoRepository,
+            TratamientoPlanificadoRepository tratamientoPlanificadoRepository,
+            ComprobanteRepository comprobanteRepository) {
         this.pacienteService = pacienteService;
         this.reniecService = reniecService;
         this.pacienteRepository = pacienteRepository;
@@ -61,6 +69,8 @@ public class PacienteController {
         this.citaRepository = citaRepository;
         this.odontogramaDienteRepository = odontogramaDienteRepository;
         this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
+        this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
+        this.comprobanteRepository = comprobanteRepository;
     }
 
     @GetMapping("/pacientes")
@@ -242,20 +252,34 @@ public class PacienteController {
         Paciente paciente = pacienteOpt.get();
         model.addAttribute("paciente", paciente);
 
-        // Cargar tratamientos realizados del paciente
+        // Cargar datos del historial del paciente
         if (paciente.getUsuario() != null) {
-            // Obtener todas las citas del paciente y sus tratamientos
-            java.util.List<Cita> citas = citaRepository.findByPacienteId(paciente.getUsuario().getId(),
-                    PageRequest.of(0, 100)).getContent(); // Últimas 100 citas
+            Long usuarioId = paciente.getUsuario().getId();
 
+            // Obtener todas las citas del paciente (últimas 100)
+            java.util.List<Cita> citas = citaRepository.findByPacienteId(usuarioId,
+                    PageRequest.of(0, 100)).getContent();
+            model.addAttribute("citas", citas);
+
+            // Obtener tratamientos realizados del paciente
             java.util.List<TratamientoRealizado> tratamientos = new java.util.ArrayList<>();
             for (Cita cita : citas) {
                 java.util.List<TratamientoRealizado> tratamientosCita =
                         tratamientoRealizadoRepository.findByCitaId(cita.getId());
                 tratamientos.addAll(tratamientosCita);
             }
-
             model.addAttribute("tratamientos", tratamientos);
+
+            // Obtener tratamientos planificados del paciente
+            java.util.List<TratamientoPlanificado> tratamientosPlanificados =
+                    tratamientoPlanificadoRepository.findByPacienteId(usuarioId);
+            model.addAttribute("tratamientosPlanificados", tratamientosPlanificados);
+
+            // Obtener comprobantes del paciente
+            java.util.List<Comprobante> comprobantes =
+                    comprobanteRepository.findByPacienteIdOrderByFechaEmisionDesc(usuarioId,
+                            PageRequest.of(0, 100)).getContent();
+            model.addAttribute("comprobantes", comprobantes);
         }
 
         return "modulos/pacientes/historial";

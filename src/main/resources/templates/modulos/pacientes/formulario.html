@@ -21,7 +21,7 @@
                         <h3 class="card-title">Datos del Paciente</h3>
                     </div>
 
-                    <form th:action="@{/pacientes/guardar}" th:object="${pacienteDTO}" method="post">
+                    <form th:action="@{/pacientes/guardar}" th:object="${pacienteDTO}" method="post" data-auto-loading="true">
                         <input type="hidden" th:field="*{id}" />
 
                         <div class="card-body">
@@ -234,12 +234,8 @@
                         </div>
 
                         <div class="card-footer">
-                            <button type="submit" class="btn btn-primary btn-guardar-form" id="btnGuardarPaciente">
-                                <i class="fas fa-save mr-1"></i>
-                                <span class="btn-text">Guardar Paciente</span>
-                                <span class="btn-loading" style="display:none;">
-                                    <i class="fas fa-spinner fa-spin mr-1"></i>Guardando...
-                                </span>
+                            <button type="submit" class="btn btn-primary" id="btnGuardarPaciente" data-loading-text="Guardando paciente...">
+                                <i class="fas fa-save mr-1"></i>Guardar Paciente
                             </button>
                             <a th:href="@{/pacientes}" class="btn btn-secondary">Cancelar</a>
                         </div>
@@ -251,22 +247,7 @@
 
         <script th:src="@{/js/paciente-form.js}"></script>
         <script>
-            // Agregar loading al formulario al hacer submit
-            $(document).ready(function() {
-                $('#formPaciente').on('submit', function(e) {
-                    const $btn = $('#btnGuardarPaciente');
-
-                    // Validar formulario
-                    if (!this.checkValidity()) {
-                        return true; // Dejar que el navegador muestre validaciones
-                    }
-
-                    // Deshabilitar botón y mostrar loading
-                    $btn.prop('disabled', true);
-                    $btn.find('.btn-text').hide();
-                    $btn.find('.btn-loading').show();
-                });
-            });
+            // El sistema de loading ahora es manejado automáticamente por button-loading.js
         </script>
     </div>
 </body>

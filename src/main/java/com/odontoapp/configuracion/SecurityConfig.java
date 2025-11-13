@@ -41,7 +41,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/login", "/adminlte/**", "/css/**", "/js/**",
                                                                 "/activar-cuenta", "/establecer-password",
                                                                 "/resultado-activacion", "/registro/**",
-                                                                "/api/reniec")
+                                                                "/recuperar-password/**", "/api/reniec")
                                                 .permitAll()
 
                                                 // Cambiar password obligatorio - todos autenticados

@@ -107,12 +107,12 @@
                         </div>
                         <div class="col-md-8">
                             <div class="mt-4">
+                                <strong class="mr-2">Leyenda:</strong>
                                 <span class="badge badge-warning mr-2"><i class="fas fa-circle"></i> Pendiente</span>
                                 <span class="badge badge-info mr-2"><i class="fas fa-circle"></i> Confirmada</span>
                                 <span class="badge badge-success mr-2"><i class="fas fa-circle"></i> Asistió</span>
                                 <span class="badge badge-danger mr-2"><i class="fas fa-circle"></i> No Asistió</span>
-                                <span class="badge badge-secondary mr-2"><i class="fas fa-circle"></i> Cancelada</span>
-                                <span class="badge badge-orange mr-2"><i class="fas fa-circle"></i> Reprogramada</span>
+                                <small class="text-muted ml-2"><em>(Estados cancelados/reprogramados no se muestran en calendario)</em></small>
                             </div>
                         </div>
                     </div>
@@ -136,17 +136,69 @@
                             <h3 class="card-title">
                                 <i class="fas fa-list mr-2"></i>Listado de Citas
                             </h3>
-                            <div class="card-tools">
-                                <div class="input-group input-group-sm" style="width: 300px;">
-                                    <input type="text" id="buscarCita" class="form-control" placeholder="Buscar por paciente, odontólogo...">
-                                    <div class="input-group-append">
-                                        <button type="button" class="btn btn-default" id="btnBuscarCita">
-                                            <i class="fas fa-search"></i>
-                                        </button>
+                        </div>
+
+                        <!-- Panel de Filtros -->
+                        <div class="card-body border-bottom pb-3">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group mb-2">
+                                        <label for="filtroFechaDesde" class="mb-1"><small>Fecha Desde:</small></label>
+                                        <input type="date" id="filtroFechaDesde" class="form-control form-control-sm">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-2">
+                                        <label for="filtroFechaHasta" class="mb-1"><small>Fecha Hasta:</small></label>
+                                        <input type="date" id="filtroFechaHasta" class="form-control form-control-sm">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-2">
+                                        <label for="filtroEstado" class="mb-1"><small>Estado:</small></label>
+                                        <select id="filtroEstado" class="form-control form-control-sm">
+                                            <option value="">Todos los estados</option>
+                                            <option th:each="estado : ${listaEstadosCita}"
+                                                    th:value="${estado.id}"
+                                                    th:text="${estado.nombre}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-2">
+                                        <label for="filtroOdontologo" class="mb-1"><small>Odontólogo:</small></label>
+                                        <select id="filtroOdontologo" class="form-control form-control-sm">
+                                            <option value="">Todos los odontólogos</option>
+                                            <option th:each="odontologo : ${listaOdontologos}"
+                                                    th:value="${odontologo.id}"
+                                                    th:text="${odontologo.nombreCompleto}"></option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
+                            <div class="row">
+                                <div class="col-md-12 text-right">
+                                    <button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltros">
+                                        <i class="fas fa-filter mr-1"></i>Aplicar Filtros
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnLimpiarFiltros">
+                                        <i class="fas fa-eraser mr-1"></i>Limpiar
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <strong class="mr-2">Leyenda de Estados:</strong>
+                                    <span class="badge badge-warning mr-2"><i class="fas fa-circle"></i> Pendiente</span>
+                                    <span class="badge badge-info mr-2"><i class="fas fa-circle"></i> Confirmada</span>
+                                    <span class="badge badge-success mr-2"><i class="fas fa-circle"></i> Asistió</span>
+                                    <span class="badge badge-danger mr-2"><i class="fas fa-circle"></i> No Asistió</span>
+                                    <span class="badge badge-secondary mr-2"><i class="fas fa-circle"></i> Cancelada</span>
+                                    <span class="badge badge-orange mr-2" style="background-color: #fd7e14;"><i class="fas fa-circle"></i> Reprogramada</span>
+                                </div>
+                            </div>
                         </div>
+
                         <div class="card-body table-responsive p-0" style="max-height: 600px;">
                             <table class="table table-hover table-striped table-head-fixed text-nowrap">
                                 <thead>
@@ -191,6 +243,7 @@
     <div th:replace="~{modulos/citas/fragmentos :: modalDetalleCita}"></div>
     <div th:replace="~{modulos/citas/fragmentos :: modalReprogramarCita}"></div>
     <div th:replace="~{modulos/citas/fragmentos :: modalCancelarCita}"></div>
+    <div th:replace="~{modulos/citas/fragmentos :: modalPlanificarTratamiento}"></div>
     <div th:replace="~{modulos/citas/fragmentos :: modalRegistrarTratamiento}"></div>
 
 </div>
@@ -332,6 +385,7 @@
                     // Rellenar el modal de detalles
                     document.getElementById('detalleCitaId').value = evento.id;
                     document.getElementById('detallePaciente').textContent = evento.title;
+                    document.getElementById('detallePacienteId').value = props.pacienteId || '';
                     document.getElementById('detalleOdontologo').textContent = props.odontologoNombre || 'N/A';
                     document.getElementById('detalleOdontologoId').value = props.odontologoId || '';
                     document.getElementById('detalleProcedimientoId').value = props.procedimientoId || '';
@@ -351,6 +405,9 @@
 
                     // Rellenar el modal de reprogramar con la cita actual
                     document.getElementById('reprogramarCitaId').value = evento.id;
+                    document.getElementById('reprogramarOdontologoId').value = props.odontologoId || '';
+                    document.getElementById('reprogramarPaciente').textContent = evento.title;
+                    document.getElementById('reprogramarFechaActual').textContent = moment(evento.start).format('DD/MM/YYYY HH:mm');
 
                     // Rellenar el modal de cancelar
                     document.getElementById('cancelarCitaId').value = evento.id;
@@ -373,6 +430,48 @@
             });
 
             calendar.render();
+
+            // Verificar si hay un parámetro verCita en la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const verCitaId = urlParams.get('verCita');
+
+            if (verCitaId) {
+                // Buscar la cita en el calendario y abrir el modal de detalle
+                setTimeout(function() {
+                    // Obtener todos los eventos del calendario
+                    const eventos = calendar.getEvents();
+                    const evento = eventos.find(e => e.id === verCitaId);
+
+                    if (evento) {
+                        // Si el evento está en el calendario, abrir su modal
+                        const props = evento.extendedProps;
+                        document.getElementById('detalleCitaId').value = evento.id;
+                        document.getElementById('detallePaciente').textContent = evento.title;
+                        document.getElementById('detallePacienteId').value = props.pacienteId || '';
+                        document.getElementById('detalleOdontologo').textContent = props.odontologoNombre || 'N/A';
+                        document.getElementById('detalleOdontologoId').value = props.odontologoId || '';
+                        document.getElementById('detalleProcedimientoId').value = props.procedimientoId || '';
+                        document.getElementById('detalleProcedimiento').textContent = props.procedimientoNombre || 'N/A';
+                        document.getElementById('detalleEstado').textContent = props.estadoNombre || 'N/A';
+                        document.getElementById('detalleFechaHoraInicio').textContent = moment(evento.start).format('DD/MM/YYYY HH:mm');
+                        document.getElementById('detalleFechaHoraFin').textContent = moment(evento.end).format('DD/MM/YYYY HH:mm');
+                        document.getElementById('detalleFecha').value = moment(evento.start).format('DD/MM/YYYY');
+                        document.getElementById('detalleHora').value = moment(evento.start).format('HH:mm');
+                        document.getElementById('detalleMotivoConsulta').textContent = props.motivoConsulta || '-';
+                        document.getElementById('detalleNotasInternas').textContent = props.notasInternas || '-';
+
+                        document.querySelectorAll('.citaIdField').forEach(function(field) {
+                            field.value = evento.id;
+                        });
+
+                        mostrarBotonesSegunEstado(props.estadoNombre);
+                        $('#modalDetalleCita').modal('show');
+
+                        // Limpiar el parámetro de la URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                }, 1000); // Esperar a que se carguen los eventos
+            }
 
             // Recargar calendario al cambiar el filtro de odontólogo
             document.getElementById('filtroOdontologo').addEventListener('change', function() {
@@ -433,28 +532,32 @@
             cargarCitas(0);
         });
 
-        // Evento de búsqueda
-        $('#btnBuscarCita').on('click', function() {
+        // Botón aplicar filtros
+        $('#btnAplicarFiltros').on('click', function() {
             cargarCitas(0);
         });
 
-        $('#buscarCita').on('keypress', function(e) {
+        // Botón limpiar filtros
+        $('#btnLimpiarFiltros').on('click', function() {
+            $('#filtroFechaDesde').val('');
+            $('#filtroFechaHasta').val('');
+            $('#filtroEstado').val('');
+            $('#filtroOdontologo').val('');
+            cargarCitas(0);
+        });
+
+        // Aplicar filtros al presionar Enter en campos de fecha
+        $('#filtroFechaDesde, #filtroFechaHasta').on('keypress', function(e) {
             if (e.which === 13) {
                 cargarCitas(0);
             }
         });
 
-        // Búsqueda en tiempo real
-        let timeoutBusquedaCitas = null;
-        $('#buscarCita').on('input', function() {
-            clearTimeout(timeoutBusquedaCitas);
-            timeoutBusquedaCitas = setTimeout(function() {
-                cargarCitas(0);
-            }, 500); // Esperar 500ms después de que el usuario deje de escribir
-        });
-
         function cargarCitas(pagina) {
-            const keyword = $('#buscarCita').val();
+            const fechaDesde = $('#filtroFechaDesde').val();
+            const fechaHasta = $('#filtroFechaHasta').val();
+            const estadoId = $('#filtroEstado').val();
+            const odontologoId = $('#filtroOdontologo').val();
 
             $.ajax({
                 url: '/citas/api/lista',
@@ -462,7 +565,10 @@
                 data: {
                     page: pagina,
                     size: tamanoPagina,
-                    keyword: keyword
+                    fechaDesde: fechaDesde,
+                    fechaHasta: fechaHasta,
+                    estadoId: estadoId,
+                    odontologoId: odontologoId
                 },
                 success: function(response) {
                     if (response.error) {
@@ -601,8 +707,38 @@
             // Mostrar/ocultar botones según estado
             mostrarBotonesSegunEstado(cita.estadoNombre);
 
+            // Cargar tratamiento planificado asociado
+            cargarTratamientoPlanificado(cita.id);
+
             // Abrir modal
             $('#modalDetalleCita').modal('show');
+        }
+
+        function cargarTratamientoPlanificado(citaId) {
+            // Limpiar y ocultar por defecto
+            $('#seccionTratamientoPlanificado').hide();
+            $('#infoTratamientoPlanificado').html('');
+
+            // Consultar tratamiento planificado
+            $.ajax({
+                url: `/citas/api/tratamiento-planificado/${citaId}`,
+                method: 'GET',
+                success: function(data) {
+                    if (data.existe) {
+                        const html = `
+                            <p class="mb-1"><strong>Procedimiento:</strong> ${data.procedimiento}</p>
+                            <p class="mb-1"><strong>Piezas Dentales:</strong> ${data.piezasDentales}</p>
+                            <p class="mb-1"><strong>Estado:</strong> <span class="badge badge-info">${data.estado}</span></p>
+                            ${data.descripcion ? `<p class="mb-0"><strong>Descripción:</strong> ${data.descripcion}</p>` : ''}
+                        `;
+                        $('#infoTratamientoPlanificado').html(html);
+                        $('#seccionTratamientoPlanificado').show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log('No se pudo cargar el tratamiento planificado:', error);
+                }
+            });
         }
 
         function renderizarPaginacion(paginaActual, totalPaginas) {

@@ -29,6 +29,7 @@
                         <option th:each="proc : ${listaProcedimientos}"
                                 th:value="${proc.id}"
                                 th:data-codigo="${proc.codigo}"
+                                th:attr="data-duracion=${proc.duracionBaseMinutos}"
                                 th:text="${proc.codigo + ' - ' + proc.nombre + ' (' + proc.duracionBaseMinutos + ' min)'}"></option>
                     </select>
                 </div>
@@ -119,29 +120,24 @@
 <th:block th:fragment="scriptModalTratamiento">
 <script th:inline="javascript">
 /*<![CDATA[*/
-// Verificar que jQuery esté cargado antes de ejecutar
-if (typeof jQuery === 'undefined') {
-    console.error('ERROR: jQuery no está cargado. El modal de tratamiento no funcionará correctamente.');
-    console.error('Por favor, asegúrese de incluir jQuery antes de este script.');
-} else {
-    console.log('jQuery detectado correctamente, inicializando modal de tratamiento...');
-}
-
 // Usar función auto-ejecutable que espera a que jQuery y DOM estén listos
 (function() {
     // Si jQuery no está disponible, intentar esperar un momento
     if (typeof jQuery === 'undefined') {
+        console.warn('jQuery aún no está cargado, esperando...');
         setTimeout(function() {
             if (typeof jQuery !== 'undefined') {
+                console.log('jQuery cargado, inicializando modal de tratamiento...');
                 initModalTratamiento();
             } else {
-                console.error('jQuery no se cargó a tiempo');
+                console.error('ERROR: jQuery no se cargó. El modal de tratamiento no funcionará.');
             }
         }, 1000);
         return;
     }
 
-    // Si ya está listo, inicializar inmediatamente
+    // Si jQuery está listo, inicializar inmediatamente
+    console.log('jQuery detectado, inicializando modal de tratamiento...');
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         initModalTratamiento();
     } else {
@@ -281,12 +277,30 @@ function initModalTratamiento() {
         if (citaId) {
             $('#tratamientoCitaId').val(citaId);
 
-            // Cargar información de la cita
+            // Cargar información de la cita y guardar en citaDatos
             const paciente = $('#detallePaciente').text();
+            const pacienteId = $('#detallePacienteId').val();
             const odontologo = $('#detalleOdontologo').text();
+            const odontologoId = $('#detalleOdontologoId').val();
             const fecha = $('#detalleFecha').val();
             const hora = $('#detalleHora').val();
             const procedimientoId = $('#detalleProcedimientoId').val();
+            const procedimiento = $('#detalleProcedimiento').text();
+
+            // **GUARDAR EN citaDatos para uso posterior**
+            citaDatos = {
+                id: citaId,
+                pacienteNombre: paciente,
+                pacienteId: pacienteId,
+                odontologoNombre: odontologo,
+                odontologoId: odontologoId,
+                procedimientoId: procedimientoId,
+                procedimientoNombre: procedimiento,
+                fecha: fecha,
+                hora: hora
+            };
+
+            console.log('Datos de la cita cargados:', citaDatos); // Debug
 
             $('#infoCitaPaciente').text(paciente);
             $('#infoCitaOdontologo').text(odontologo);
@@ -978,9 +992,26 @@ function initModalTratamiento() {
                 location.reload();
             },
             error: function(xhr) {
-                console.error('Error en la petición:', xhr); // Debug
+                console.error('Error completo:', xhr); // Debug
+                console.error('Status:', xhr.status); // Debug
+                console.error('Response:', xhr.responseJSON); // Debug
+                console.error('Response Text:', xhr.responseText); // Debug
                 setButtonLoading($btn, false);
-                const mensaje = xhr.responseJSON?.mensaje || 'No se pudo registrar el tratamiento';
+
+                let mensaje = 'No se pudo registrar el tratamiento';
+
+                // Intentar obtener el mensaje de error del servidor
+                if (xhr.responseJSON) {
+                    mensaje = xhr.responseJSON.mensaje || xhr.responseJSON.error || mensaje;
+                } else if (xhr.responseText) {
+                    try {
+                        const errorObj = JSON.parse(xhr.responseText);
+                        mensaje = errorObj.mensaje || errorObj.error || mensaje;
+                    } catch (e) {
+                        mensaje = xhr.responseText.substring(0, 200); // Primeros 200 caracteres
+                    }
+                }
+
                 if (typeof Swal !== 'undefined') {
                     Swal.fire('Error', mensaje, 'error');
                 } else {
@@ -990,7 +1021,7 @@ function initModalTratamiento() {
         });
     });
 
-    // Botón Planificar (usar delegación de eventos)
+    // Botón Planificar (abrir modal de planificación)
     $(document).off('click', '#btnPlanificarTratamiento').on('click', '#btnPlanificarTratamiento', function() {
         console.log('Botón Planificar clickeado'); // Debug
 
@@ -1007,53 +1038,40 @@ function initModalTratamiento() {
             return;
         }
 
-        // Validar que haya una cita asociada
-        const citaId = $('#tratamientoCitaId').val();
-        console.log('Cita ID:', citaId); // Debug
-
-        if (!citaId) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire('Error', 'No se encontró la información de la cita', 'error');
-            } else {
-                alert('No se encontró la información de la cita');
-            }
-            return;
-        }
-
+        // Recopilar todos los datos del tratamiento
         const datos = recopilarDatosTratamiento('PLANIFICADO');
         console.log('Datos del tratamiento planificado:', datos); // Debug
 
-        // Activar loading usando el sistema global
-        const $btn = $(this);
-        setButtonLoading($btn, true);
+        // Guardar datos temporalmente para usar en el modal de planificación
+        window.datosTratamientoPlanificar = datos;
 
-        $.ajax({
-            url: '/tratamientos/planificar',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(datos),
-            success: function(response) {
-                console.log('Respuesta del servidor:', response); // Debug
-                setButtonLoading($btn, false);
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire('Éxito', response.mensaje || 'Tratamiento planificado correctamente', 'success');
-                } else {
-                    alert(response.mensaje || 'Tratamiento planificado correctamente');
-                }
-                $('#modalRegistrarTratamiento').modal('hide');
-                location.reload();
-            },
-            error: function(xhr) {
-                console.error('Error en la petición:', xhr); // Debug
-                setButtonLoading($btn, false);
-                const mensaje = xhr.responseJSON?.mensaje || 'No se pudo planificar el tratamiento';
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire('Error', mensaje, 'error');
-                } else {
-                    alert('Error: ' + mensaje);
-                }
-            }
-        });
+        // Obtener el procedimiento seleccionado
+        const procedimientoTexto = $('#tratamientoProcedimientoId option:selected').text();
+
+        // Pre-poblar modal con información de la cita actual
+        const citaId = citaDatos.id || '';
+        const pacienteId = citaDatos.pacienteId || '';
+        const pacienteNombre = citaDatos.pacienteNombre || 'N/A';
+        const odontologoNombre = citaDatos.odontologoNombre || 'N/A';
+        const odontologoId = citaDatos.odontologoId || '';
+
+        $('#planificarCitaId').val(citaId);
+        $('#planificarPacienteId').val(pacienteId);
+        $('#planificarProcedimientoId').val(procedimientoId);
+        $('#planificarOdontologoId').val(odontologoId);
+        $('#planificarPiezasDentales').val(datos.piezasDentales || '');
+        $('#planificarDescripcion').val(datos.descripcion || '');
+        $('#planificarCamposDinamicos').val(JSON.stringify(datos.camposDinamicos || []));
+        $('#planificarInsumosAdicionales').val(JSON.stringify(datos.insumosAdicionales || []));
+
+        $('#planificarPacienteNombre').text(pacienteNombre);
+        $('#planificarProcedimientoNombre').text(procedimientoTexto);
+
+        // Cerrar modal de tratamiento y abrir modal de planificación
+        $('#modalRegistrarTratamiento').modal('hide');
+        setTimeout(function() {
+            $('#modalPlanificarTratamiento').modal('show');
+        }, 300);
     });
 
     function recopilarDatosTratamiento(tipo) {

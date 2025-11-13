@@ -68,6 +68,13 @@ public class Usuario extends EntidadAuditable { // Extiende EntidadAuditable
     // Este campo es solo para el flujo de activación
     private String verificationToken;
 
+    // Campos para recuperación de contraseña
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_token_expiry")
+    private LocalDateTime passwordResetTokenExpiry;
+
     // --- Relaciones ---
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
     @JoinTable(name = "usuarios_roles", joinColumns = @JoinColumn(name = "usuario_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "rol_id", referencedColumnName = "id"))

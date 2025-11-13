@@ -10,8 +10,11 @@ import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
+import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
+import com.odontoapp.entidad.TratamientoPlanificado;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.FacturacionService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +48,7 @@ public class CitaController {
     private final ProcedimientoRepository procedimientoRepository;
     private final InsumoRepository insumoRepository;
     private final EstadoCitaRepository estadoCitaRepository;
+    private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
 
     public CitaController(CitaService citaService,
                          FacturacionService facturacionService,
@@ -53,7 +57,8 @@ public class CitaController {
                          PacienteRepository pacienteRepository,
                          ProcedimientoRepository procedimientoRepository,
                          InsumoRepository insumoRepository,
-                         EstadoCitaRepository estadoCitaRepository) {
+                         EstadoCitaRepository estadoCitaRepository,
+                         TratamientoPlanificadoRepository tratamientoPlanificadoRepository) {
         this.citaService = citaService;
         this.facturacionService = facturacionService;
         this.rolRepository = rolRepository;
@@ -62,6 +67,7 @@ public class CitaController {
         this.procedimientoRepository = procedimientoRepository;
         this.insumoRepository = insumoRepository;
         this.estadoCitaRepository = estadoCitaRepository;
+        this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
     }
 
     /**
@@ -88,11 +94,15 @@ public class CitaController {
             // Buscar todos los insumos con sus relaciones cargadas (para el modal de registrar tratamiento)
             var listaInsumos = insumoRepository.findAllWithRelations();
 
+            // Buscar todos los estados de cita (para filtros)
+            var listaEstadosCita = estadoCitaRepository.findAll();
+
             // Añadir al modelo
             model.addAttribute("listaOdontologos", listaOdontologos);
             model.addAttribute("listaPacientes", listaPacientes);
             model.addAttribute("listaProcedimientos", listaProcedimientos);
             model.addAttribute("listaInsumos", listaInsumos);
+            model.addAttribute("listaEstadosCita", listaEstadosCita);
             model.addAttribute("citaDTO", new CitaDTO());
 
             return "modulos/citas/calendario";
@@ -105,6 +115,7 @@ public class CitaController {
             model.addAttribute("listaPacientes", List.of());
             model.addAttribute("listaProcedimientos", List.of());
             model.addAttribute("listaInsumos", List.of());
+            model.addAttribute("listaEstadosCita", List.of());
             model.addAttribute("citaDTO", new CitaDTO());
             model.addAttribute("error", "Error al cargar los datos del calendario. Por favor, contacte al administrador.");
 
@@ -464,12 +475,16 @@ public class CitaController {
     }
 
     /**
-     * API REST para obtener lista de citas con paginación y búsqueda.
+     * API REST para obtener lista de citas con paginación y filtros.
      * Usado por la vista de lista de citas en el calendario.
      *
      * @param page Número de página (0-indexed)
      * @param size Cantidad de elementos por página
      * @param keyword Palabra clave para buscar
+     * @param fechaDesde Fecha desde para filtro de rango (formato: yyyy-MM-dd)
+     * @param fechaHasta Fecha hasta para filtro de rango (formato: yyyy-MM-dd)
+     * @param estadoId ID del estado de cita para filtrar
+     * @param odontologoId ID del odontólogo para filtrar
      * @return JSON con citas paginadas
      */
     @GetMapping("/api/lista")
@@ -477,14 +492,19 @@ public class CitaController {
     public Map<String, Object> obtenerListaCitas(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
+            @RequestParam(required = false) Long estadoId,
+            @RequestParam(required = false) Long odontologoId) {
 
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by("fechaHoraInicio").descending());
 
-            // Listar todas las citas sin filtros (keyword se puede implementar en futuras versiones)
-            // Por ahora mostramos todas las citas paginadas
-            Page<Cita> paginaCitas = citaService.listarCitasConFiltros(null, null, null, null, pageable);
+            // Listar citas con filtros aplicados
+            // Nota: El servicio convierte internamente LocalDate a LocalDateTime
+            Page<Cita> paginaCitas = citaService.listarCitasConFiltros(
+                    estadoId, odontologoId, fechaDesde, fechaHasta, pageable);
 
             // Convertir a formato para la tabla
             List<Map<String, Object>> citasDTO = paginaCitas.getContent().stream()
@@ -523,6 +543,38 @@ public class CitaController {
             error.put("error", true);
             error.put("mensaje", "Error al obtener lista de citas: " + e.getMessage());
             return error;
+        }
+    }
+
+    /**
+     * Obtiene el tratamiento planificado asociado a una cita.
+     *
+     * @param citaId ID de la cita
+     * @return ResponseEntity con los datos del tratamiento planificado o vacío
+     */
+    @GetMapping("/api/tratamiento-planificado/{citaId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> obtenerTratamientoPlanificado(@PathVariable Long citaId) {
+        try {
+            TratamientoPlanificado tratamiento = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
+
+            if (tratamiento == null) {
+                return ResponseEntity.ok(Map.of("existe", false));
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("existe", true);
+            response.put("id", tratamiento.getId());
+            response.put("procedimiento", tratamiento.getProcedimiento().getNombre());
+            response.put("piezasDentales", tratamiento.getPiezasDentales() != null ? tratamiento.getPiezasDentales() : "N/A");
+            response.put("descripcion", tratamiento.getDescripcion() != null ? tratamiento.getDescripcion() : "");
+            response.put("estado", tratamiento.getEstado());
+            response.put("odontologo", tratamiento.getOdontologo().getNombreCompleto());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("existe", false));
         }
     }
 

@@ -28,6 +28,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     Optional<Usuario> findByVerificationToken(String verificationToken);
 
+    Optional<Usuario> findByPasswordResetToken(String passwordResetToken);
+
     // --- NUEVO MÉTODO ---
     @Query("SELECT u FROM Usuario u WHERE u.email = :email") // Ignora el @Where global
     Optional<Usuario> findByEmailIgnorandoSoftDelete(@Param("email") String email);

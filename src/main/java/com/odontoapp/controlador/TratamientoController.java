@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +35,9 @@ public class TratamientoController {
     private final ComprobanteRepository comprobanteRepository;
     private final EstadoPagoRepository estadoPagoRepository;
     private final DetalleComprobanteRepository detalleComprobanteRepository;
+    private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final TipoMovimientoRepository tipoMovimientoRepository;
+    private final EstadoCitaRepository estadoCitaRepository;
 
     public TratamientoController(
             TratamientoRealizadoService tratamientoRealizadoService,
@@ -44,7 +48,10 @@ public class TratamientoController {
             InsumoRepository insumoRepository,
             ComprobanteRepository comprobanteRepository,
             EstadoPagoRepository estadoPagoRepository,
-            DetalleComprobanteRepository detalleComprobanteRepository) {
+            DetalleComprobanteRepository detalleComprobanteRepository,
+            MovimientoInventarioRepository movimientoInventarioRepository,
+            TipoMovimientoRepository tipoMovimientoRepository,
+            EstadoCitaRepository estadoCitaRepository) {
         this.tratamientoRealizadoService = tratamientoRealizadoService;
         this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
         this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
@@ -54,6 +61,9 @@ public class TratamientoController {
         this.comprobanteRepository = comprobanteRepository;
         this.estadoPagoRepository = estadoPagoRepository;
         this.detalleComprobanteRepository = detalleComprobanteRepository;
+        this.movimientoInventarioRepository = movimientoInventarioRepository;
+        this.tipoMovimientoRepository = tipoMovimientoRepository;
+        this.estadoCitaRepository = estadoCitaRepository;
     }
 
     /**
@@ -221,8 +231,43 @@ public class TratamientoController {
             // Guardar tratamiento
             tratamientoRealizadoRepository.save(tratamiento);
 
-            // **GENERAR COMPROBANTE AUTOMÁTICAMENTE**
-            Comprobante comprobante = generarComprobante(cita, procedimiento, insumosAdicionales);
+            // **CREAR CITA AUTOMÁTICA EN EL CALENDARIO**
+            // Crear una cita automática que bloquee el tiempo en el que se realiza el tratamiento
+            LocalDateTime inicioTratamiento = cita.getFechaHoraFin(); // Inicia después de la cita original
+            LocalDateTime finTratamiento = inicioTratamiento.plusMinutes(procedimiento.getDuracionBaseMinutos());
+
+            // Obtener estado "COMPLETADA" para la nueva cita
+            EstadoCita estadoCompletada = estadoCitaRepository.findByNombre("COMPLETADA")
+                    .orElseGet(() -> estadoCitaRepository.findByNombre("ASISTIO")
+                            .orElseThrow(() -> new RuntimeException("No se encontró un estado válido para la cita")));
+
+            // Crear nueva cita automática
+            Cita citaTratamiento = new Cita();
+            citaTratamiento.setPaciente(cita.getPaciente());
+            citaTratamiento.setOdontologo(cita.getOdontologo());
+            citaTratamiento.setProcedimiento(procedimiento);
+            citaTratamiento.setFechaHoraInicio(inicioTratamiento);
+            citaTratamiento.setFechaHoraFin(finTratamiento);
+            citaTratamiento.setDuracionEstimadaMinutos(procedimiento.getDuracionBaseMinutos());
+            citaTratamiento.setMotivoConsulta("Tratamiento realizado: " + procedimiento.getNombre());
+            citaTratamiento.setEstadoCita(estadoCompletada);
+            citaTratamiento.setNotas("Cita generada automáticamente al registrar tratamiento inmediato");
+
+            // Guardar la nueva cita
+            citaRepository.save(citaTratamiento);
+
+            // **OBTENER O GENERAR COMPROBANTE**
+            // Verificar si ya existe un comprobante para esta cita
+            Optional<Comprobante> comprobanteExistente = comprobanteRepository.findByCitaId(citaId);
+            Comprobante comprobante;
+
+            if (comprobanteExistente.isPresent()) {
+                // Reutilizar el comprobante existente
+                comprobante = comprobanteExistente.get();
+            } else {
+                // Generar nuevo comprobante
+                comprobante = generarComprobante(cita, procedimiento, insumosAdicionales);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -479,6 +524,10 @@ public class TratamientoController {
                                 insumoEntity.getPrecioUnitario() : BigDecimal.ZERO);
                         detalleInsumo.setSubtotal(detalleInsumo.getPrecioUnitario().multiply(cantidad));
                         detalleComprobanteRepository.save(detalleInsumo);
+
+                        // **REGISTRAR MOVIMIENTO DE INVENTARIO Y ACTUALIZAR STOCK**
+                        String referencia = "Cita #" + comprobante.getCita().getId() + " - " + comprobante.getNumeroComprobante();
+                        registrarUsoInsumo(insumoEntity, cantidad, referencia);
                     }
                 } catch (Exception e) {
                     System.err.println("Error guardando detalle de insumo: " + e.getMessage());
@@ -505,5 +554,54 @@ public class TratamientoController {
 
         int correlativo = comprobantesHoy.size() + 1;
         return prefijo + String.format("%04d", correlativo);
+    }
+
+    /**
+     * Registra el uso de insumos en el inventario
+     * Crea un movimiento de tipo SALIDA y actualiza el stock del insumo
+     *
+     * @param insumo Insumo utilizado
+     * @param cantidad Cantidad usada
+     * @param referencia Referencia del movimiento (ej: "Cita #123")
+     */
+    private void registrarUsoInsumo(Insumo insumo, BigDecimal cantidad, String referencia) {
+        try {
+            // Obtener tipo de movimiento SALIDA
+            TipoMovimiento tipoSalida = tipoMovimientoRepository.findByCodigo("SALIDA")
+                    .orElseThrow(() -> new RuntimeException("Tipo de movimiento SALIDA no encontrado"));
+
+            // Guardar stock anterior
+            BigDecimal stockAnterior = insumo.getStockActual();
+            BigDecimal stockNuevo = stockAnterior.subtract(cantidad);
+
+            // Validar que no quede stock negativo
+            if (stockNuevo.compareTo(BigDecimal.ZERO) < 0) {
+                System.err.println("Advertencia: Stock insuficiente para insumo " + insumo.getNombre() +
+                        ". Stock actual: " + stockAnterior + ", Cantidad solicitada: " + cantidad);
+                // Permitir el movimiento pero registrar como stock 0
+                stockNuevo = BigDecimal.ZERO;
+            }
+
+            // Crear movimiento de inventario
+            MovimientoInventario movimiento = new MovimientoInventario();
+            movimiento.setInsumo(insumo);
+            movimiento.setTipoMovimiento(tipoSalida);
+            movimiento.setCantidad(cantidad);
+            movimiento.setStockAnterior(stockAnterior);
+            movimiento.setStockNuevo(stockNuevo);
+            movimiento.setReferencia(referencia);
+            movimiento.setNotas("Uso en tratamiento odontológico");
+
+            // Guardar movimiento
+            movimientoInventarioRepository.save(movimiento);
+
+            // Actualizar stock del insumo
+            insumo.setStockActual(stockNuevo);
+            insumoRepository.save(insumo);
+
+        } catch (Exception e) {
+            System.err.println("Error al registrar movimiento de inventario: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

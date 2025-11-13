@@ -7,12 +7,14 @@ import com.odontoapp.entidad.Insumo;
 import com.odontoapp.entidad.Procedimiento;
 import com.odontoapp.entidad.ProcedimientoInsumo;
 import com.odontoapp.entidad.Usuario;
+import com.odontoapp.entidad.TratamientoPlanificado;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.EstadoCitaRepository;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
+import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.EmailService;
 import java.math.BigDecimal;
@@ -56,6 +58,7 @@ public class CitaServiceImpl implements CitaService {
     private final EmailService emailService;
     private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
     private final InsumoRepository insumoRepository;
+    private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
 
     public CitaServiceImpl(CitaRepository citaRepository,
                           UsuarioRepository usuarioRepository,
@@ -63,7 +66,8 @@ public class CitaServiceImpl implements CitaService {
                           EstadoCitaRepository estadoCitaRepository,
                           EmailService emailService,
                           ProcedimientoInsumoRepository procedimientoInsumoRepository,
-                          InsumoRepository insumoRepository) {
+                          InsumoRepository insumoRepository,
+                          TratamientoPlanificadoRepository tratamientoPlanificadoRepository) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
@@ -71,6 +75,7 @@ public class CitaServiceImpl implements CitaService {
         this.emailService = emailService;
         this.procedimientoInsumoRepository = procedimientoInsumoRepository;
         this.insumoRepository = insumoRepository;
+        this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
     }
 
     @Override
@@ -352,9 +357,9 @@ public class CitaServiceImpl implements CitaService {
                 "Por favor seleccione un horario dentro de las horas de atención.");
         }
 
-        // Crear la cita
-        EstadoCita estadoPendiente = estadoCitaRepository.findByNombre(ESTADO_PENDIENTE)
-                .orElseThrow(() -> new IllegalStateException("Estado PENDIENTE no encontrado en la base de datos"));
+        // Crear la cita como CONFIRMADA (las citas presenciales se crean confirmadas)
+        EstadoCita estadoConfirmada = estadoCitaRepository.findByNombre(ESTADO_CONFIRMADA)
+                .orElseThrow(() -> new IllegalStateException("Estado CONFIRMADA no encontrado en la base de datos"));
 
         Cita nuevaCita = new Cita();
         nuevaCita.setPaciente(paciente);
@@ -363,7 +368,7 @@ public class CitaServiceImpl implements CitaService {
         nuevaCita.setFechaHoraInicio(fechaHoraInicio);
         nuevaCita.setFechaHoraFin(fechaHoraFin);
         nuevaCita.setDuracionEstimadaMinutos(procedimiento.getDuracionBaseMinutos());
-        nuevaCita.setEstadoCita(estadoPendiente);
+        nuevaCita.setEstadoCita(estadoConfirmada);
         nuevaCita.setMotivoConsulta(motivoConsulta);
         nuevaCita.setNotas(notas);
 
@@ -506,6 +511,16 @@ public class CitaServiceImpl implements CitaService {
             descontarInsumosDelProcedimiento(cita.getProcedimiento().getId());
         }
 
+        // Si el paciente asistió, actualizar el tratamiento planificado asociado (si existe)
+        if (asistio) {
+            TratamientoPlanificado tratamientoPlanificado = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
+            if (tratamientoPlanificado != null && "PLANIFICADO".equals(tratamientoPlanificado.getEstado())) {
+                tratamientoPlanificado.setEstado("EN_CURSO");
+                tratamientoPlanificadoRepository.save(tratamientoPlanificado);
+                System.out.println("✓ Tratamiento planificado actualizado a EN_CURSO para cita: " + citaId);
+            }
+        }
+
         return citaRepository.save(cita);
     }
 
@@ -573,12 +588,18 @@ public class CitaServiceImpl implements CitaService {
 
         List<Cita> citas = citaRepository.findByFechaHoraInicioBetween(inicio, fin);
 
-        // Filtrar por odontólogo si se especificó
-        if (odontologoId != null) {
-            citas = citas.stream()
-                    .filter(c -> c.getOdontologo().getId().equals(odontologoId))
-                    .collect(Collectors.toList());
-        }
+        // Filtrar por odontólogo si se especificó y excluir citas canceladas/reprogramadas
+        citas = citas.stream()
+                .filter(c -> {
+                    // Filtrar por odontólogo si se especificó
+                    if (odontologoId != null && !c.getOdontologo().getId().equals(odontologoId)) {
+                        return false;
+                    }
+                    // Excluir citas canceladas y reprogramadas del calendario
+                    String estado = c.getEstadoCita().getNombre();
+                    return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+                })
+                .collect(Collectors.toList());
 
         return citas;
     }

@@ -89,6 +89,40 @@ public class EmailService {
         }
     }
 
+    /**
+     * Envía email de recuperación de contraseña
+     */
+    public void enviarEmailRecuperacionPassword(String para, String nombre, String token) {
+        String urlRestablecer = "http://localhost:8080/recuperar-password/restablecer?token=" + token;
+        String subject = "Recuperar Contraseña - OdontoApp";
+        String content = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>"
+                + "<h2 style='color: #007bff;'>Recuperar Contraseña</h2>"
+                + "<p>Hola <strong>" + nombre + "</strong>,</p>"
+                + "<p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en OdontoApp.</p>"
+                + "<p>Haz clic en el siguiente enlace para establecer una nueva contraseña:</p>"
+                + "<div style='text-align: center; margin: 30px 0;'>"
+                + "<a href=\"" + urlRestablecer + "\" "
+                + "style='background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>"
+                + "Restablecer Contraseña"
+                + "</a>"
+                + "</div>"
+                + "<div style='background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;'>"
+                + "<p style='margin: 0; color: #856404;'><strong>⚠️ IMPORTANTE:</strong></p>"
+                + "<p style='margin: 5px 0 0 0; color: #856404;'>Este enlace expirará en 24 horas por seguridad.</p>"
+                + "<p style='margin: 5px 0 0 0; color: #856404;'>Si no solicitaste restablecer tu contraseña, ignora este email y tu contraseña permanecerá sin cambios.</p>"
+                + "</div>"
+                + "<hr style='margin: 30px 0; border: none; border-top: 1px solid #ddd;'>"
+                + "<p style='color: #6c757d; font-size: 12px;'>Este es un mensaje automático, por favor no responder.</p>"
+                + "</div>";
+
+        try {
+            enviarEmail(para, subject, content);
+        } catch (MessagingException e) {
+            System.err.println("Error al enviar email de recuperación de contraseña: " + e.getMessage());
+            throw new RuntimeException("Error al enviar email de recuperación: " + e.getMessage());
+        }
+    }
+
     // ============ NOTIFICACIONES DE CITAS ============
 
     /**
