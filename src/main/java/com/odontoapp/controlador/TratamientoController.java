@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -221,8 +222,18 @@ public class TratamientoController {
             // Guardar tratamiento
             tratamientoRealizadoRepository.save(tratamiento);
 
-            // **GENERAR COMPROBANTE AUTOMÁTICAMENTE**
-            Comprobante comprobante = generarComprobante(cita, procedimiento, insumosAdicionales);
+            // **OBTENER O GENERAR COMPROBANTE**
+            // Verificar si ya existe un comprobante para esta cita
+            Optional<Comprobante> comprobanteExistente = comprobanteRepository.findByCitaId(citaId);
+            Comprobante comprobante;
+
+            if (comprobanteExistente.isPresent()) {
+                // Reutilizar el comprobante existente
+                comprobante = comprobanteExistente.get();
+            } else {
+                // Generar nuevo comprobante
+                comprobante = generarComprobante(cita, procedimiento, insumosAdicionales);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
