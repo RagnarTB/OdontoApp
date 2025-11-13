@@ -12,6 +12,11 @@ import java.util.List;
 public interface TratamientoPlanificadoRepository extends JpaRepository<TratamientoPlanificado, Long> {
 
     /**
+     * Obtener todos los tratamientos planificados de un paciente por ID
+     */
+    List<TratamientoPlanificado> findByPacienteId(Long pacienteId);
+
+    /**
      * Obtener todos los tratamientos planificados de un paciente
      */
     List<TratamientoPlanificado> findByPacienteOrderByFechaPlanificadaDesc(Usuario paciente);
