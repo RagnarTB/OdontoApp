@@ -52,7 +52,8 @@ public class ProcedimientoController {
     public String listarProcedimientos(Model model,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoriaId) {
 
         // Cargar resumen de categorías
         List<CategoriaServicioDTO> categoriasConteo = categoriaRepository.findAll().stream()
@@ -65,11 +66,27 @@ public class ProcedimientoController {
                 )).collect(Collectors.toList());
         model.addAttribute("categoriasConteo", categoriasConteo);
 
-        // Cargar lista paginada de servicios (esto se mantiene)
+        // Cargar lista paginada de servicios con filtro de categoría
         Pageable pageable = PageRequest.of(page, size);
-        Page<Procedimiento> paginaProcedimientos = procedimientoService.listarTodos(keyword, pageable);
+        Page<Procedimiento> paginaProcedimientos;
+
+        if (categoriaId != null) {
+            // Filtrar por categoría específica
+            if (keyword != null && !keyword.isBlank()) {
+                // Buscar por keyword dentro de la categoría
+                paginaProcedimientos = procedimientoRepository.findByCategoriaIdAndKeyword(categoriaId, keyword, pageable);
+            } else {
+                // Solo filtrar por categoría
+                paginaProcedimientos = procedimientoRepository.findByCategoriaId(categoriaId, pageable);
+            }
+        } else {
+            // Sin filtro de categoría, buscar por keyword o listar todos
+            paginaProcedimientos = procedimientoService.listarTodos(keyword, pageable);
+        }
+
         model.addAttribute("paginaProcedimientos", paginaProcedimientos);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("categoriaId", categoriaId);
 
         // Cargar todas las categorías para el filtro dropdown
         model.addAttribute("todasLasCategorias", categoriaRepository.findAll());

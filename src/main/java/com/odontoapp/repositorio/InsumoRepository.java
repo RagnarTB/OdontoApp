@@ -36,9 +36,19 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
      * Útil para validar si una categoría puede ser eliminada o desactivada.
      * Spring Data JPA genera la consulta: "SELECT count(i) FROM Insumo i WHERE
      * i.categoria.id = :categoriaId"
-     * 
+     *
      * @param categoriaId El ID de la CategoriaInsumo.
      * @return El número de insumos asociados a esa categoría.
      */
     long countByCategoriaId(Long categoriaId);
+
+    // Método para filtrar por categoría con paginación
+    @Query(value = "SELECT DISTINCT i FROM Insumo i LEFT JOIN FETCH i.categoria c LEFT JOIN FETCH i.unidadMedida WHERE c.id = :categoriaId",
+           countQuery = "SELECT COUNT(i) FROM Insumo i WHERE i.categoria.id = :categoriaId")
+    Page<Insumo> findByCategoriaId(@Param("categoriaId") Long categoriaId, Pageable pageable);
+
+    // Método para filtrar por categoría y keyword con paginación
+    @Query(value = "SELECT DISTINCT i FROM Insumo i LEFT JOIN FETCH i.categoria c LEFT JOIN FETCH i.unidadMedida WHERE c.id = :categoriaId AND (i.nombre LIKE %:keyword% OR i.codigo LIKE %:keyword% OR i.marca LIKE %:keyword%)",
+           countQuery = "SELECT COUNT(i) FROM Insumo i WHERE i.categoria.id = :categoriaId AND (i.nombre LIKE %:keyword% OR i.codigo LIKE %:keyword% OR i.marca LIKE %:keyword%)")
+    Page<Insumo> findByCategoriaIdAndKeyword(@Param("categoriaId") Long categoriaId, @Param("keyword") String keyword, Pageable pageable);
 }

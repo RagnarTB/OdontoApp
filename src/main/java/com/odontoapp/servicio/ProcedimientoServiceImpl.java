@@ -85,14 +85,18 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
         procedimiento = procedimientoRepository.save(procedimiento);
 
         // Gestionar insumos asociados
-        if (dto.getInsumos() != null && !dto.getInsumos().isEmpty()) {
-            // Si estamos editando, eliminar las relaciones existentes
-            if (dto.getId() != null) {
-                List<ProcedimientoInsumo> insumosExistentes = procedimientoInsumoRepository.findByProcedimientoId(dto.getId());
+        // Si estamos editando, eliminar todas las relaciones existentes primero
+        if (procedimiento.getId() != null) {
+            List<ProcedimientoInsumo> insumosExistentes = procedimientoInsumoRepository.findByProcedimientoId(procedimiento.getId());
+            if (!insumosExistentes.isEmpty()) {
                 procedimientoInsumoRepository.deleteAll(insumosExistentes);
+                // Forzar el flush para asegurar que los deletes se ejecuten antes de los inserts
+                procedimientoInsumoRepository.flush();
             }
+        }
 
-            // Crear nuevas relaciones
+        // Crear nuevas relaciones solo si hay insumos en el DTO
+        if (dto.getInsumos() != null && !dto.getInsumos().isEmpty()) {
             for (ProcedimientoDTO.InsumoItemDTO insumoItem : dto.getInsumos()) {
                 Insumo insumo = insumoRepository.findById(insumoItem.getInsumoId())
                         .orElseThrow(() -> new IllegalStateException("Insumo no encontrado: " + insumoItem.getInsumoId()));
