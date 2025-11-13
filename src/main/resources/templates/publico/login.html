@@ -104,7 +104,8 @@
                         <span th:if="${param.loginType == 'personal'}">Por favor, use el login de "Pacientes".</span>
                     </span>
                     <span th:unless="${param.reason == 'wrongPortal'}">
-                        Credenciales incorrectas o cuenta inactiva/bloqueada. Verifica tus datos.
+                        <strong>❌ Credenciales incorrectas:</strong> Verifica tu email y contraseña.<br>
+                        <small>💡 Asegúrate de estar en la sección correcta: "Personal Clínica" o "Pacientes"</small>
                     </span>
                 </div>
                 <div th:if="${param.logout}" class="p-3 bg-blue-100 text-blue-700 rounded-lg text-sm">
@@ -149,6 +150,9 @@
                                 Iniciar Sesión
                             </button>
                         </form>
+                        <p class="text-center text-sm mt-4">
+                            <a th:href="@{/recuperar-password}" class="font-medium text-blue-600 hover:underline">¿Has olvidado tu contraseña?</a>
+                        </p>
                     </div>
 
                     <!-- ✅ LOGIN PARA PACIENTES -->
@@ -174,15 +178,13 @@
                                 Ingresar al Portal
                             </button>
                         </form>
-                        <div class="text-center text-sm mt-4 space-y-2">
-                            <p>
-                                <a th:href="@{/recuperar-password}" class="font-medium text-blue-600 hover:underline">¿Has olvidado tu contraseña?</a>
-                            </p>
-                            <p>
-                                <a th:href="@{/registro}" class="font-medium text-blue-600 hover:underline">¿No tienes
-                                    cuenta? Regístrate aquí</a>
-                            </p>
-                        </div>
+                        <p class="text-center text-sm mt-4">
+                            <a th:href="@{/recuperar-password}" class="font-medium text-blue-600 hover:underline">¿Has olvidado tu contraseña?</a>
+                        </p>
+                        <p class="text-center text-sm mt-2">
+                            <a th:href="@{/registro}" class="font-medium text-blue-600 hover:underline">¿No tienes
+                                cuenta? Regístrate aquí</a>
+                        </p>
                     </div>
                 </div>
 
