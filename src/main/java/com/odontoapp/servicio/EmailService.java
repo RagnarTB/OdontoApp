@@ -22,7 +22,7 @@ public class EmailService {
     // Este método envía el link para que el ADMIN creado por el sistema establezca
     // su password
     public void enviarEmailActivacionAdmin(String para, String nombre, String token) {
-        String urlActivacion = "http://localhost:8080/activar-cuenta?token=" + token;
+        String urlActivacion = "http://159.112.151.106:8080/activar-cuenta?token=" + token;
         String subject = "Activa tu cuenta en OdontoApp (Personal)";
         String content = "<p>Hola " + nombre + ",</p>"
                 + "<p>Tu cuenta de personal ha sido creada en OdontoApp.</p>"
@@ -38,7 +38,7 @@ public class EmailService {
 
     // 🔥 NUEVO MÉTODO para el link de registro de PACIENTE (Flujo Self-Service)
     public void enviarEmailActivacion(String para, String nombre, String token) {
-        String urlActivacion = "http://localhost:8080/registro/completar?token=" + token;
+        String urlActivacion = "http://159.112.151.106:8080/registro/completar?token=" + token;
         String subject = "Completa tu registro en OdontoApp";
         String content = "<p>Hola " + nombre + ",</p>"
                 + "<p>Gracias por iniciar tu registro en OdontoApp.</p>"
@@ -76,7 +76,7 @@ public class EmailService {
                 + "<p style='margin: 0; color: #856404;'><strong>⚠️ IMPORTANTE:</strong></p>"
                 + "<p style='margin: 5px 0 0 0; color: #856404;'>Por seguridad, deberás cambiar esta contraseña en tu primer inicio de sesión.</p>"
                 + "</div>"
-                + "<p>Puedes iniciar sesión en: <a href='http://localhost:8080/login'>http://localhost:8080/login</a></p>"
+                + "<p>Puedes iniciar sesión en: <a href='http://159.112.151.106:8080/login'>http://159.112.151.106:8080/login</a></p>"
                 + "<hr style='margin: 30px 0; border: none; border-top: 1px solid #ddd;'>"
                 + "<p style='color: #6c757d; font-size: 12px;'>Este es un mensaje automático, por favor no responder.</p>"
                 + "</div>";
@@ -93,7 +93,7 @@ public class EmailService {
      * Envía email de recuperación de contraseña
      */
     public void enviarEmailRecuperacionPassword(String para, String nombre, String token) {
-        String urlRestablecer = "http://localhost:8080/recuperar-password/restablecer?token=" + token;
+        String urlRestablecer = "http://159.112.151.106:8080/recuperar-password/restablecer?token=" + token;
         String subject = "Recuperar Contraseña - OdontoApp";
         String content = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>"
                 + "<h2 style='color: #007bff;'>Recuperar Contraseña</h2>"
