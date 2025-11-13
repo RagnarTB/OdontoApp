@@ -270,17 +270,35 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     $(document).ready(function() {
-        // Cuando se abre el modal de registrar pago, rellenar los datos
-        $('#modalRegistrarPago').on('show.bs.modal', function (event) {
+        // IMPORTANTE: Usar 'shown.bs.modal' en lugar de 'show.bs.modal'
+        // para asegurar que el modal esté completamente renderizado
+        $('#modalRegistrarPago').on('shown.bs.modal', function (event) {
             var button = $(event.relatedTarget); // Botón que abrió el modal
+
+            // Validar que tengamos el botón y los datos
+            if (!button || button.length === 0) {
+                console.error('No se pudo obtener el botón que abrió el modal');
+                return;
+            }
+
             var comprobanteId = button.data('comprobante-id');
             var numeroComprobante = button.data('numero-comprobante');
             var saldoPendiente = button.data('saldo-pendiente');
 
+            console.log('Modal abierto con:', {comprobanteId, numeroComprobante, saldoPendiente});
+
+            // Validar que tenemos el ID del comprobante
+            if (!comprobanteId) {
+                console.error('ERROR: No se proporcionó el ID del comprobante');
+                alert('Error: No se pudo cargar la información del comprobante. Por favor, recargue la página.');
+                $('#modalRegistrarPago').modal('hide');
+                return;
+            }
+
             // Rellenar campos del modal
             $('#pagoComprobanteId').val(comprobanteId);
-            $('#infoNumeroComprobante').text(numeroComprobante);
-            $('#infoSaldoPendiente').text(saldoPendiente);
+            $('#infoNumeroComprobante').text(numeroComprobante || 'N/A');
+            $('#infoSaldoPendiente').text(saldoPendiente || '0.00');
 
             // Establecer fecha actual por defecto
             var now = new Date();
@@ -294,6 +312,9 @@
             // Establecer monto máximo
             $('#monto').attr('max', saldoPendiente);
             $('#monto').val(saldoPendiente);
+            $('#monto').trigger('input'); // Trigger validación
+
+            console.log('Comprobante ID seteado:', $('#pagoComprobanteId').val());
         });
     });
     /*]]>*/
