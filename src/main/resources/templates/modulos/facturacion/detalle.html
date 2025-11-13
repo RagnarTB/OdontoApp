@@ -58,7 +58,10 @@
                                     <p><strong>Paciente:</strong> <span th:text="${comprobante.paciente.nombreCompleto}">Juan Pérez</span></p>
                                 </div>
                                 <div class="col-md-6">
-                                    <p><strong>Fecha Emisión:</strong> <span th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy HH:mm')}">01/11/2025</span></p>
+                                    <p><strong>Fecha Emisión:</strong>
+                                        <span th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy')}">01/11/2025</span>
+                                        <small class="text-muted ml-1" th:text="'a las ' + ${#temporals.format(comprobante.fechaEmision, 'HH:mm')}">a las 14:30</small>
+                                    </p>
                                     <p><strong>Estado:</strong>
                                         <span class="badge"
                                               th:classappend="${comprobante.estadoPago.nombre == 'PENDIENTE'} ? 'badge-warning' :

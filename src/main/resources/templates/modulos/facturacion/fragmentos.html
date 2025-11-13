@@ -44,17 +44,29 @@
                         <label for="monto">Monto a Pagar <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <div class="input-group-prepend">
-                                <span class="input-group-text">S/</span>
+                                <span class="input-group-text"><i class="fas fa-money-bill-wave"></i> S/</span>
                             </div>
                             <input type="number" class="form-control" id="monto" name="monto"
                                    step="0.01" min="0.01"
                                    data-validar="decimal"
                                    data-max-decimals="2"
                                    required>
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-success" type="button" id="btnPagarTotal"
+                                        title="Pagar el saldo completo">
+                                    <i class="fas fa-check-double"></i> Total
+                                </button>
+                            </div>
                         </div>
                         <small class="form-text text-muted">
-                            El monto no debe exceder el saldo pendiente. Solo números con hasta 2 decimales.
+                            <i class="fas fa-info-circle"></i> El monto no debe exceder el saldo pendiente
                         </small>
+                        <div id="montoValidacion" class="invalid-feedback" style="display: none;">
+                            El monto excede el saldo pendiente
+                        </div>
+                        <div id="montoInfo" class="text-success small mt-1" style="display: none;">
+                            <i class="fas fa-check-circle"></i> <span id="montoRestante"></span>
+                        </div>
                     </div>
 
                     <!-- Método de Pago -->
@@ -144,6 +156,40 @@
                 const ahora = new Date();
                 const fechaFormateada = ahora.toISOString().slice(0, 16);
                 $('#fechaPago').val(fechaFormateada);
+            }
+        });
+
+        // ✅ Botón "Pagar Total" - setea el monto al saldo pendiente completo
+        $('#btnPagarTotal').click(function() {
+            const saldoPendiente = parseFloat($('#infoSaldoPendiente').text()) || 0;
+            $('#monto').val(saldoPendiente.toFixed(2));
+            $('#monto').trigger('input'); // Trigger validación
+        });
+
+        // ✅ Validación en tiempo real del monto
+        $('#monto').on('input', function() {
+            const montoIngresado = parseFloat($(this).val()) || 0;
+            const saldoPendiente = parseFloat($('#infoSaldoPendiente').text()) || 0;
+
+            if (montoIngresado > saldoPendiente) {
+                $('#montoValidacion').show();
+                $(this).addClass('is-invalid');
+                $('#montoInfo').hide();
+            } else {
+                $('#montoValidacion').hide();
+                $(this).removeClass('is-invalid');
+
+                if (montoIngresado > 0) {
+                    const restante = saldoPendiente - montoIngresado;
+                    if (restante > 0) {
+                        $('#montoRestante').text('Quedará pendiente: S/ ' + restante.toFixed(2));
+                    } else {
+                        $('#montoRestante').text('Pago completo - Saldará la deuda');
+                    }
+                    $('#montoInfo').show();
+                } else {
+                    $('#montoInfo').hide();
+                }
             }
         });
 
