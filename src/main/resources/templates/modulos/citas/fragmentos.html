@@ -339,19 +339,19 @@
                     </div>
 
                     <!-- Botón Reprogramar -->
-                    <button type="button" class="btn btn-warning" id="btnReprogramar" data-dismiss="modal" data-toggle="modal" data-target="#modalReprogramarCita"
+                    <button type="button" class="btn btn-warning" id="btnReprogramar"
                             sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
                         <i class="fas fa-calendar-alt mr-1"></i>Reprogramar
                     </button>
 
                     <!-- Botón Cancelar -->
-                    <button type="button" class="btn btn-danger" id="btnCancelar" data-dismiss="modal" data-toggle="modal" data-target="#modalCancelarCita"
+                    <button type="button" class="btn btn-danger" id="btnCancelar"
                             sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ELIMINAR_CITAS', 'ADMIN')">
                         <i class="fas fa-ban mr-1"></i>Cancelar
                     </button>
 
                     <!-- Botón Registrar Tratamiento -->
-                    <button type="button" class="btn btn-primary" id="btnRegistrarTratamiento" data-dismiss="modal" data-toggle="modal" data-target="#modalRegistrarTratamiento"
+                    <button type="button" class="btn btn-primary" id="btnRegistrarTratamiento"
                             sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
                         <i class="fas fa-notes-medical mr-1"></i>Registrar Tratamiento
                     </button>
@@ -1072,14 +1072,31 @@ $(document).ready(function() {
 
     // Al abrir el modal, establecer fecha mínima a hoy y pre-seleccionar odontólogo
     $('#modalReprogramarCita').on('show.bs.modal', function() {
+        console.log('Abriendo modal de reprogramar...');
+
         const hoy = new Date().toISOString().split('T')[0];
         $('#fechaCitaReprogramar').attr('min', hoy);
 
         // Pre-seleccionar el odontólogo original si está disponible
         const odontologoIdOriginal = $('#reprogramarOdontologoId').val();
+        console.log('Odontólogo original ID:', odontologoIdOriginal);
+
         if (odontologoIdOriginal) {
             $('#reprogramarOdontologoIdSelect').val(odontologoIdOriginal);
+            console.log('Odontólogo pre-seleccionado:', odontologoIdOriginal);
+        } else {
+            console.warn('No hay odontólogo original, necesita seleccionar uno');
+            // Limpiar el select
+            $('#reprogramarOdontologoIdSelect').val('');
         }
+
+        // Limpiar selección previa de horarios
+        $('#nuevaFechaHoraInicioReprogramar').val('');
+        $('#fechaCitaReprogramar').val('');
+        $('#horario-seleccionado-info-reprogramar').hide();
+        $('#grilla-horarios-disponibles-reprogramar').html(
+            '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
+        );
     });
 
     // Cuando cambia el odontólogo, actualizar el campo hidden y limpiar horarios
