@@ -240,4 +240,32 @@ public class FacturacionController {
 
         return "modulos/facturacion/lista";
     }
+
+    /**
+     * Genera una vista de impresión del comprobante.
+     *
+     * @param id ID del comprobante
+     * @param model Modelo de Spring MVC
+     * @param attributes Atributos de redirección
+     * @return Vista de impresión del comprobante
+     */
+    @GetMapping("/imprimir/{id}")
+    public String imprimirComprobante(@PathVariable Long id,
+                                     Model model,
+                                     RedirectAttributes attributes) {
+        try {
+            // Obtener el comprobante con todos sus detalles
+            Comprobante comprobante = facturacionService.obtenerComprobantePorId(id);
+
+            // Añadir al modelo
+            model.addAttribute("comprobante", comprobante);
+
+            return "modulos/facturacion/imprimir";
+
+        } catch (Exception e) {
+            attributes.addFlashAttribute("error",
+                    "Error al cargar el comprobante para impresión: " + e.getMessage());
+            return "redirect:/facturacion";
+        }
+    }
 }
