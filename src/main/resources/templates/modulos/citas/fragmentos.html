@@ -1122,11 +1122,17 @@ $(document).ready(function() {
 
     // Manejar cambio de fecha en modal reprogramar
     $('#fechaCitaReprogramar').on('change', function() {
+        console.log('Fecha cambiada en reprogramar');
         const fecha = $(this).val();
         const odontologoId = $('#reprogramarOdontologoIdSelect').val(); // Usar el select
         const citaId = $('#reprogramarCitaId').val();
 
+        console.log('Fecha seleccionada:', fecha);
+        console.log('Odontólogo ID del select:', odontologoId);
+        console.log('Cita ID a excluir:', citaId);
+
         if (!fecha || !odontologoId) {
+            console.warn('Falta fecha u odontólogo');
             $('#grilla-horarios-disponibles-reprogramar').html(
                 '<div class="alert alert-warning">Por favor seleccione un odontólogo y una fecha válida</div>'
             );
@@ -1164,7 +1170,10 @@ $(document).ready(function() {
                 citaIdExcluir: citaId // Excluir la cita actual al buscar disponibilidad
             },
             success: function(response) {
+                console.log('Respuesta de horarios disponibles:', response);
+
                 if (!response.disponible) {
+                    console.warn('No hay disponibilidad:', response.motivo);
                     $('#grilla-horarios-disponibles-reprogramar').html(
                         `<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i>${response.motivo || 'No hay disponibilidad en esta fecha'}</div>`
                     );
@@ -1172,7 +1181,10 @@ $(document).ready(function() {
                 }
 
                 const horarios = response.horariosDisponibles || [];
+                console.log('Horarios disponibles encontrados:', horarios.length);
+
                 if (horarios.length === 0) {
+                    console.warn('No hay horarios en esta fecha');
                     $('#grilla-horarios-disponibles-reprogramar').html(
                         '<div class="alert alert-info">No hay horarios disponibles en esta fecha</div>'
                     );
@@ -1197,6 +1209,7 @@ $(document).ready(function() {
                 html += '</div>';
 
                 $('#grilla-horarios-disponibles-reprogramar').html(html);
+                console.log('Grilla de horarios generada con', horarios.filter(s => s.disponible).length, 'slots');
             },
             error: function() {
                 $('#grilla-horarios-disponibles-reprogramar').html(
@@ -1208,11 +1221,14 @@ $(document).ready(function() {
 
     // Seleccionar horario
     $(document).on('click', '.horario-slot-reprogramar', function() {
+        console.log('Horario clickeado');
         $('.horario-slot-reprogramar').removeClass('btn-primary').addClass('btn-outline-primary');
         $(this).removeClass('btn-outline-primary').addClass('btn-primary');
 
         const fechaHora = $(this).data('fecha-hora');
+        console.log('Fecha/Hora seleccionada:', fechaHora);
         $('#nuevaFechaHoraInicioReprogramar').val(fechaHora);
+        console.log('Campo hidden actualizado:', $('#nuevaFechaHoraInicioReprogramar').val());
 
         const fechaObj = new Date(fechaHora);
         const textoHorario = fechaObj.toLocaleString('es-ES', {
@@ -1226,28 +1242,53 @@ $(document).ready(function() {
 
         $('#horario-seleccionado-texto-reprogramar').text(textoHorario);
         $('#horario-seleccionado-info-reprogramar').show();
+        console.log('Horario seleccionado mostrado:', textoHorario);
     });
 
     // Limpiar modal de reprogramar al cerrar
     $('#modalReprogramarCita').on('hidden.bs.modal', function() {
+        console.log('Limpiando modal de reprogramar...');
         $('#fechaCitaReprogramar').val('');
         $('#nuevaFechaHoraInicioReprogramar').val('');
+        $('#reprogramarOdontologoIdSelect').val('');
         $('#horario-seleccionado-info-reprogramar').hide();
         $('#grilla-horarios-disponibles-reprogramar').html(
             '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
         );
         $('.horario-slot-reprogramar').removeClass('btn-primary').addClass('btn-outline-primary');
         $('#motivoReprogramacion').val('');
+
+        // Resetear botón si quedó en estado loading
+        const $btnSubmit = $('#btnConfirmarReprogramar');
+        $btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
+        $btnSubmit.prop('disabled', false);
+        console.log('Modal limpiado completamente');
     });
 
     // Validar formulario de reprogramar antes de enviar
     $('#modalReprogramarCita form').on('submit', function(e) {
+        console.log('=== VALIDACIÓN DE SUBMIT REPROGRAMAR ===');
+
         const odontologoId = $('#reprogramarOdontologoId').val();
         const nuevaFechaHora = $('#nuevaFechaHoraInicioReprogramar').val();
+        const citaId = $('#reprogramarCitaId').val();
+
+        console.log('Cita ID:', citaId);
+        console.log('Odontólogo ID:', odontologoId);
+        console.log('Nueva Fecha/Hora:', nuevaFechaHora);
+
+        const $btnSubmit = $('#btnConfirmarReprogramar');
 
         // Validar que se haya seleccionado un odontólogo
         if (!odontologoId || odontologoId.trim() === '') {
+            console.error('Validación FALLIDA: No hay odontólogo seleccionado');
             e.preventDefault();
+            e.stopImmediatePropagation();
+
+            // Resetear botón de loading
+            $btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
+            $btnSubmit.prop('disabled', false);
+
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'warning',
@@ -1263,7 +1304,14 @@ $(document).ready(function() {
 
         // Validar que se haya seleccionado un horario
         if (!nuevaFechaHora || nuevaFechaHora.trim() === '') {
+            console.error('Validación FALLIDA: No hay horario seleccionado');
             e.preventDefault();
+            e.stopImmediatePropagation();
+
+            // Resetear botón de loading
+            $btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
+            $btnSubmit.prop('disabled', false);
+
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'warning',
@@ -1278,6 +1326,7 @@ $(document).ready(function() {
         }
 
         // Si todas las validaciones pasan, permitir el submit
+        console.log('✓ Validación EXITOSA - Permitiendo submit');
         return true;
     });
 });
