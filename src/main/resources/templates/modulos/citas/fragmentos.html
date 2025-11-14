@@ -1266,6 +1266,13 @@ $(document).ready(function() {
         $('#nuevaFechaHoraInicioReprogramar').val(fechaHora);
         console.log('Campo hidden actualizado:', $('#nuevaFechaHoraInicioReprogramar').val());
 
+        // ✅ CRÍTICO: Actualizar variable global usada por horarios-citas.js
+        const partes = fechaHora.split('T');
+        if (partes.length === 2) {
+            window.horarioSeleccionadoReprogramar = partes[1]; // Solo la hora (HH:mm)
+            console.log('✅ Variable global actualizada - horarioSeleccionadoReprogramar:', window.horarioSeleccionadoReprogramar);
+        }
+
         const fechaObj = new Date(fechaHora);
         const textoHorario = fechaObj.toLocaleString('es-ES', {
             weekday: 'long',
@@ -1302,6 +1309,9 @@ $(document).ready(function() {
         const $btnSubmit = $('#btnConfirmarReprogramar');
         $btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
         $btnSubmit.prop('disabled', false);
+
+        // ✅ Limpiar variable global de horarios-citas.js
+        window.horarioSeleccionadoReprogramar = null;
 
         console.log('✅ Modal limpiado completamente');
     });
