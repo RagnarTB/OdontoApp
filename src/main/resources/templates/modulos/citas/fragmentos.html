@@ -384,7 +384,7 @@
                 <div class="modal-body">
                     <input type="hidden" id="reprogramarCitaId" name="citaId">
                     <input type="hidden" id="reprogramarOdontologoId" name="odontologoUsuarioId">
-                    <input type="hidden" id="nuevaFechaHoraInicioReprogramar" name="nuevaFechaHoraInicio" required>
+                    <input type="hidden" id="nuevaFechaHoraInicioReprogramar" name="nuevaFechaHoraInicio">
 
                     <!-- Información de la cita actual -->
                     <div class="alert alert-info mb-3">
@@ -398,7 +398,7 @@
                         <label for="reprogramarOdontologoIdSelect" class="font-weight-bold">
                             <i class="fas fa-user-md mr-1"></i>Odontólogo <span class="text-danger">*</span>
                         </label>
-                        <select class="form-control" id="reprogramarOdontologoIdSelect" required>
+                        <select class="form-control" id="reprogramarOdontologoIdSelect">
                             <option value="">Seleccione un odontólogo...</option>
                             <option th:each="odontologo : ${listaOdontologos}"
                                     th:value="${odontologo.id}"
@@ -419,7 +419,7 @@
                             </h6>
                             <div class="form-group">
                                 <label for="fechaCitaReprogramar">Fecha <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="fechaCitaReprogramar" required>
+                                <input type="date" class="form-control" id="fechaCitaReprogramar">
                                 <small class="form-text text-muted">
                                     <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios (no se permiten fechas pasadas)
                                 </small>
@@ -1221,6 +1221,47 @@ $(document).ready(function() {
         );
         $('.horario-slot-reprogramar').removeClass('btn-primary').addClass('btn-outline-primary');
         $('#motivoReprogramacion').val('');
+    });
+
+    // Validar formulario de reprogramar antes de enviar
+    $('#modalReprogramarCita form').on('submit', function(e) {
+        const odontologoId = $('#reprogramarOdontologoId').val();
+        const nuevaFechaHora = $('#nuevaFechaHoraInicioReprogramar').val();
+
+        // Validar que se haya seleccionado un odontólogo
+        if (!odontologoId || odontologoId.trim() === '') {
+            e.preventDefault();
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Odontólogo requerido',
+                    text: 'Por favor seleccione un odontólogo para la reprogramación.',
+                    confirmButtonText: 'Entendido'
+                });
+            } else {
+                alert('Por favor seleccione un odontólogo para la reprogramación.');
+            }
+            return false;
+        }
+
+        // Validar que se haya seleccionado un horario
+        if (!nuevaFechaHora || nuevaFechaHora.trim() === '') {
+            e.preventDefault();
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Horario requerido',
+                    text: 'Por favor seleccione un horario para la reprogramación.',
+                    confirmButtonText: 'Entendido'
+                });
+            } else {
+                alert('Por favor seleccione un horario para la reprogramación.');
+            }
+            return false;
+        }
+
+        // Si todas las validaciones pasan, permitir el submit
+        return true;
     });
 });
 </script>
