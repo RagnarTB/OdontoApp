@@ -8,6 +8,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -239,9 +240,18 @@ public class PacienteController {
     /**
      * Muestra el historial clínico completo de un paciente
      * Incluye: datos básicos, tratamientos, citas, odontograma, comprobantes
+     * Con paginación para citas y comprobantes
      */
     @GetMapping("/pacientes/historial/{id}")
-    public String verHistorial(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+    public String verHistorial(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int citasPageNum,
+            @RequestParam(defaultValue = "10") int citasSize,
+            @RequestParam(defaultValue = "0") int comprobantesPageNum,
+            @RequestParam(defaultValue = "10") int comprobantesSize,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
         Optional<Paciente> pacienteOpt = pacienteService.buscarPorId(id);
 
         if (pacienteOpt.isEmpty()) {
@@ -256,14 +266,18 @@ public class PacienteController {
         if (paciente.getUsuario() != null) {
             Long usuarioId = paciente.getUsuario().getId();
 
-            // Obtener todas las citas del paciente (últimas 100)
-            java.util.List<Cita> citas = citaRepository.findByPacienteId(usuarioId,
-                    PageRequest.of(0, 100)).getContent();
-            model.addAttribute("citas", citas);
+            // Obtener citas del paciente con paginación
+            org.springframework.data.domain.Page<Cita> citasPage = citaRepository.findByPacienteId(
+                usuarioId,
+                PageRequest.of(citasPageNum, citasSize, Sort.by("fechaHoraInicio").descending())
+            );
+            model.addAttribute("citasPage", citasPage);
 
-            // Obtener tratamientos realizados del paciente
+            // Obtener tratamientos realizados del paciente (sin paginación, generalmente son pocos)
+            java.util.List<Cita> todasLasCitas = citaRepository.findByPacienteId(usuarioId,
+                    PageRequest.of(0, 1000)).getContent();
             java.util.List<TratamientoRealizado> tratamientos = new java.util.ArrayList<>();
-            for (Cita cita : citas) {
+            for (Cita cita : todasLasCitas) {
                 java.util.List<TratamientoRealizado> tratamientosCita =
                         tratamientoRealizadoRepository.findByCitaId(cita.getId());
                 tratamientos.addAll(tratamientosCita);
@@ -275,11 +289,13 @@ public class PacienteController {
                     tratamientoPlanificadoRepository.findByPacienteId(usuarioId);
             model.addAttribute("tratamientosPlanificados", tratamientosPlanificados);
 
-            // Obtener comprobantes del paciente
-            java.util.List<Comprobante> comprobantes =
-                    comprobanteRepository.findByPacienteIdOrderByFechaEmisionDesc(usuarioId,
-                            PageRequest.of(0, 100)).getContent();
-            model.addAttribute("comprobantes", comprobantes);
+            // Obtener comprobantes del paciente con paginación
+            org.springframework.data.domain.Page<Comprobante> comprobantesPage =
+                    comprobanteRepository.findByPacienteIdOrderByFechaEmisionDesc(
+                        usuarioId,
+                        PageRequest.of(comprobantesPageNum, comprobantesSize)
+                    );
+            model.addAttribute("comprobantesPage", comprobantesPage);
         }
 
         return "modulos/pacientes/historial";
