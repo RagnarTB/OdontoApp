@@ -32,7 +32,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
-    private static final int MAX_INTENTOS_FALLIDOS = 5;
+    private static final int MAX_INTENTOS_FALLIDOS = 3;
     private final EmailService emailService;
     private final PacienteRepository pacienteRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;

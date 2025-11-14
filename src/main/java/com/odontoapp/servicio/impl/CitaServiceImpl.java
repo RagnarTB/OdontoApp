@@ -8,6 +8,7 @@ import com.odontoapp.entidad.Procedimiento;
 import com.odontoapp.entidad.ProcedimientoInsumo;
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.entidad.TratamientoPlanificado;
+import com.odontoapp.entidad.TratamientoRealizado;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.EstadoCitaRepository;
 import com.odontoapp.repositorio.InsumoRepository;
@@ -15,6 +16,7 @@ import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
+import com.odontoapp.repositorio.TratamientoRealizadoRepository;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.EmailService;
 import java.math.BigDecimal;
@@ -59,6 +61,7 @@ public class CitaServiceImpl implements CitaService {
     private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
     private final InsumoRepository insumoRepository;
     private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
+    private final TratamientoRealizadoRepository tratamientoRealizadoRepository;
 
     public CitaServiceImpl(CitaRepository citaRepository,
                           UsuarioRepository usuarioRepository,
@@ -67,7 +70,8 @@ public class CitaServiceImpl implements CitaService {
                           EmailService emailService,
                           ProcedimientoInsumoRepository procedimientoInsumoRepository,
                           InsumoRepository insumoRepository,
-                          TratamientoPlanificadoRepository tratamientoPlanificadoRepository) {
+                          TratamientoPlanificadoRepository tratamientoPlanificadoRepository,
+                          TratamientoRealizadoRepository tratamientoRealizadoRepository) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
@@ -76,6 +80,7 @@ public class CitaServiceImpl implements CitaService {
         this.procedimientoInsumoRepository = procedimientoInsumoRepository;
         this.insumoRepository = insumoRepository;
         this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
+        this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
     }
 
     @Override
@@ -448,6 +453,16 @@ public class CitaServiceImpl implements CitaService {
 
         cita.setEstadoCita(estadoCancelada);
         cita.setMotivoCancelacion(motivo);
+
+        // Si hay tratamiento planificado asociado, volver a PLANIFICADO
+        TratamientoPlanificado tratamientoPlanificado = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
+        if (tratamientoPlanificado != null && "EN_CURSO".equals(tratamientoPlanificado.getEstado())) {
+            tratamientoPlanificado.setEstado("PLANIFICADO");
+            tratamientoPlanificado.setCitaAsociada(null); // Desvincular la cita cancelada
+            tratamientoPlanificadoRepository.save(tratamientoPlanificado);
+            System.out.println("⚠️ Cita cancelada - Tratamiento planificado vuelto a PLANIFICADO para cita: " + citaId);
+        }
+
         Cita citaCancelada = citaRepository.save(cita);
 
         // Enviar email de cancelación al paciente
@@ -514,13 +529,42 @@ public class CitaServiceImpl implements CitaService {
             descontarInsumosDelProcedimiento(cita.getProcedimiento().getId());
         }
 
-        // Si el paciente asistió, actualizar el tratamiento planificado asociado (si existe)
-        if (asistio) {
-            TratamientoPlanificado tratamientoPlanificado = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
-            if (tratamientoPlanificado != null && "PLANIFICADO".equals(tratamientoPlanificado.getEstado())) {
-                tratamientoPlanificado.setEstado("EN_CURSO");
-                tratamientoPlanificadoRepository.save(tratamientoPlanificado);
-                System.out.println("✓ Tratamiento planificado actualizado a EN_CURSO para cita: " + citaId);
+        // Manejar tratamiento planificado asociado según asistencia
+        TratamientoPlanificado tratamientoPlanificado = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
+
+        if (tratamientoPlanificado != null) {
+            String estadoActualTrat = tratamientoPlanificado.getEstado();
+
+            if (asistio) {
+                // PACIENTE ASISTIÓ: Marcar tratamiento como COMPLETADO y crear TratamientoRealizado
+                if ("EN_CURSO".equals(estadoActualTrat) || "PLANIFICADO".equals(estadoActualTrat)) {
+                    tratamientoPlanificado.setEstado("COMPLETADO");
+
+                    // Crear TratamientoRealizado a partir del TratamientoPlanificado
+                    TratamientoRealizado tratamientoRealizado = new TratamientoRealizado();
+                    tratamientoRealizado.setCita(cita);
+                    tratamientoRealizado.setProcedimiento(tratamientoPlanificado.getProcedimiento());
+                    tratamientoRealizado.setOdontologo(cita.getOdontologo());
+                    tratamientoRealizado.setPiezaDental(tratamientoPlanificado.getPiezasDentales());
+                    tratamientoRealizado.setDescripcionTrabajo(tratamientoPlanificado.getDescripcion());
+                    tratamientoRealizado.setFechaRealizacion(cita.getFechaHoraInicio());
+
+                    TratamientoRealizado tratRealizado = tratamientoRealizadoRepository.save(tratamientoRealizado);
+
+                    // Vincular el tratamiento realizado al planificado
+                    tratamientoPlanificado.setTratamientoRealizadoId(tratRealizado.getId());
+                    tratamientoPlanificadoRepository.save(tratamientoPlanificado);
+
+                    System.out.println("✅ Tratamiento planificado COMPLETADO y TratamientoRealizado creado para cita: " + citaId);
+                }
+            } else {
+                // PACIENTE NO ASISTIÓ: Volver a PLANIFICADO para poder reagendar
+                if ("EN_CURSO".equals(estadoActualTrat)) {
+                    tratamientoPlanificado.setEstado("PLANIFICADO");
+                    tratamientoPlanificado.setCitaAsociada(null); // Desvincular la cita
+                    tratamientoPlanificadoRepository.save(tratamientoPlanificado);
+                    System.out.println("⚠️ Paciente no asistió - Tratamiento planificado vuelto a PLANIFICADO para cita: " + citaId);
+                }
             }
         }
 
