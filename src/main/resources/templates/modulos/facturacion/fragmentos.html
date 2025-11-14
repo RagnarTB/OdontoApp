@@ -218,6 +218,15 @@
                 $('#camposMixto').show();
                 $('#montoEfectivo').prop('required', true);
                 $('#montoYape').prop('required', true);
+
+                // Auto-distribuir el monto total en dos partes iguales
+                var montoTotal = parseFloat($('#monto').val()) || 0;
+                if (montoTotal > 0) {
+                    var mitad = (montoTotal / 2).toFixed(2);
+                    $('#montoEfectivo').val(mitad);
+                    $('#montoYape').val(mitad);
+                    $('#montoEfectivo, #montoYape').trigger('input'); // Trigger validación
+                }
             }
         });
 
