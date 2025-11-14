@@ -247,6 +247,7 @@ public class CitaController {
      * Reprograma una cita existente.
      *
      * @param citaId ID de la cita a reprogramar
+     * @param odontologoUsuarioId ID del nuevo odontólogo (opcional, null mantiene el original)
      * @param nuevaFechaHoraInicio Nueva fecha y hora de inicio
      * @param motivo Motivo de la reprogramación
      * @param attributes Atributos para mensajes flash
@@ -255,11 +256,12 @@ public class CitaController {
     @PostMapping("/reprogramar")
     public String reprogramarCita(
             @RequestParam Long citaId,
+            @RequestParam(required = false) Long odontologoUsuarioId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime nuevaFechaHoraInicio,
             @RequestParam(required = false, defaultValue = "Reprogramado por usuario") String motivo,
             RedirectAttributes attributes) {
         try {
-            citaService.reprogramarCita(citaId, nuevaFechaHoraInicio, motivo);
+            citaService.reprogramarCita(citaId, odontologoUsuarioId, nuevaFechaHoraInicio, motivo);
             attributes.addFlashAttribute("success", "Cita reprogramada con éxito.");
         } catch (IllegalStateException e) {
             attributes.addFlashAttribute("error", "Error al reprogramar: " + e.getMessage());

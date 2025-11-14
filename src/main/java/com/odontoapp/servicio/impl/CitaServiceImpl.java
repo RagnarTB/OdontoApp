@@ -376,7 +376,7 @@ public class CitaServiceImpl implements CitaService {
     }
 
     @Override
-    public Cita reprogramarCita(Long citaId, LocalDateTime nuevaFechaHoraInicio, String motivo) {
+    public Cita reprogramarCita(Long citaId, Long nuevoOdontologoId, LocalDateTime nuevaFechaHoraInicio, String motivo) {
         Cita citaOriginal = citaRepository.findById(citaId)
                 .orElseThrow(() -> new EntityNotFoundException("Cita no encontrada con ID: " + citaId));
 
@@ -390,10 +390,13 @@ public class CitaServiceImpl implements CitaService {
             throw new IllegalStateException("Esta cita ya fue reprogramada");
         }
 
-        // Crear nueva cita con los mismos datos pero nueva fecha
+        // Usar el nuevo odontólogo si se proporciona, de lo contrario mantener el original
+        Long odontologoIdFinal = (nuevoOdontologoId != null) ? nuevoOdontologoId : citaOriginal.getOdontologo().getId();
+
+        // Crear nueva cita con los mismos datos pero nueva fecha y posiblemente nuevo odontólogo
         Cita nuevaCita = agendarCita(
                 citaOriginal.getPaciente().getId(),
-                citaOriginal.getOdontologo().getId(),
+                odontologoIdFinal,
                 citaOriginal.getProcedimiento().getId(),
                 nuevaFechaHoraInicio,
                 citaOriginal.getMotivoConsulta(),
