@@ -1072,21 +1072,45 @@ $(document).ready(function() {
 
     // Al abrir el modal, establecer fecha mínima a hoy y pre-seleccionar odontólogo
     $('#modalReprogramarCita').on('show.bs.modal', function() {
-        console.log('Abriendo modal de reprogramar...');
+        console.log('=== ABRIENDO MODAL REPROGRAMAR ===');
 
         const hoy = new Date().toISOString().split('T')[0];
         $('#fechaCitaReprogramar').attr('min', hoy);
 
-        // Pre-seleccionar el odontólogo original si está disponible
+        // Leer odontólogo del campo hidden
         const odontologoIdOriginal = $('#reprogramarOdontologoId').val();
-        console.log('Odontólogo original ID:', odontologoIdOriginal);
+        const citaId = $('#reprogramarCitaId').val();
+        console.log('Cita ID:', citaId);
+        console.log('Odontólogo ID del hidden:', odontologoIdOriginal);
 
-        if (odontologoIdOriginal) {
+        // PRE-SELECCIONAR Y VALIDAR
+        if (odontologoIdOriginal && odontologoIdOriginal !== '') {
             $('#reprogramarOdontologoIdSelect').val(odontologoIdOriginal);
-            console.log('Odontólogo pre-seleccionado:', odontologoIdOriginal);
+
+            // Validar que se seleccionó correctamente
+            const valorSeleccionado = $('#reprogramarOdontologoIdSelect').val();
+            if (valorSeleccionado !== odontologoIdOriginal) {
+                console.error('❌ ERROR: El odontólogo no existe en el select');
+                console.error('Esperado:', odontologoIdOriginal);
+                console.error('Obtenido:', valorSeleccionado);
+                console.error('Opciones disponibles:', $('#reprogramarOdontologoIdSelect option').map(function() {
+                    return $(this).val() + ': ' + $(this).text();
+                }).get());
+
+                // Mostrar advertencia al usuario
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Atención',
+                        text: 'El odontólogo original no está disponible. Por favor seleccione uno de la lista.',
+                        confirmButtonText: 'Entendido'
+                    });
+                }
+            } else {
+                console.log('✅ Odontólogo pre-seleccionado correctamente:', valorSeleccionado);
+            }
         } else {
-            console.warn('No hay odontólogo original, necesita seleccionar uno');
-            // Limpiar el select
+            console.warn('⚠️ No hay odontólogo en el hidden - usuario debe seleccionar');
             $('#reprogramarOdontologoIdSelect').val('');
         }
 
@@ -1097,6 +1121,7 @@ $(document).ready(function() {
         $('#grilla-horarios-disponibles-reprogramar').html(
             '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
         );
+        console.log('=== MODAL LISTO ===');
     });
 
     // Cuando cambia el odontólogo, actualizar el campo hidden y limpiar horarios
@@ -1122,19 +1147,20 @@ $(document).ready(function() {
 
     // Manejar cambio de fecha en modal reprogramar
     $('#fechaCitaReprogramar').on('change', function() {
-        console.log('Fecha cambiada en reprogramar');
+        console.log('=== FECHA CAMBIADA ===');
         const fecha = $(this).val();
-        const odontologoId = $('#reprogramarOdontologoIdSelect').val(); // Usar el select
+        // ✅ CAMBIO CRÍTICO: Usar el hidden como fuente de verdad
+        const odontologoId = $('#reprogramarOdontologoId').val();
         const citaId = $('#reprogramarCitaId').val();
 
         console.log('Fecha seleccionada:', fecha);
-        console.log('Odontólogo ID del select:', odontologoId);
+        console.log('Odontólogo ID (del hidden):', odontologoId);
         console.log('Cita ID a excluir:', citaId);
 
-        if (!fecha || !odontologoId) {
-            console.warn('Falta fecha u odontólogo');
+        if (!fecha || !odontologoId || odontologoId.trim() === '') {
+            console.warn('⚠️ Falta fecha u odontólogo');
             $('#grilla-horarios-disponibles-reprogramar').html(
-                '<div class="alert alert-warning">Por favor seleccione un odontólogo y una fecha válida</div>'
+                '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i>Por favor seleccione un odontólogo y una fecha válida</div>'
             );
             return;
         }
@@ -1159,16 +1185,22 @@ $(document).ready(function() {
             '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Cargando horarios...</p></div>'
         );
 
+        // Log de la petición AJAX
+        const requestData = {
+            odontologoId: odontologoId,
+            fecha: fecha,
+            duracion: duracion,
+            citaIdExcluir: citaId
+        };
+        console.log('=== PETICIÓN AJAX ===');
+        console.log('URL:', '/citas/api/horarios-disponibles');
+        console.log('Parámetros:', JSON.stringify(requestData, null, 2));
+
         // Consultar horarios disponibles
         $.ajax({
             url: '/citas/api/horarios-disponibles',
             method: 'GET',
-            data: {
-                odontologoId: odontologoId,
-                fecha: fecha,
-                duracion: duracion,
-                citaIdExcluir: citaId // Excluir la cita actual al buscar disponibilidad
-            },
+            data: requestData,
             success: function(response) {
                 console.log('Respuesta de horarios disponibles:', response);
 
@@ -1211,9 +1243,13 @@ $(document).ready(function() {
                 $('#grilla-horarios-disponibles-reprogramar').html(html);
                 console.log('Grilla de horarios generada con', horarios.filter(s => s.disponible).length, 'slots');
             },
-            error: function() {
+            error: function(xhr, status, error) {
+                console.error('=== ERROR EN AJAX ===');
+                console.error('Status:', status);
+                console.error('Error:', error);
+                console.error('Response:', xhr.responseText);
                 $('#grilla-horarios-disponibles-reprogramar').html(
-                    '<div class="alert alert-danger">Error al cargar los horarios</div>'
+                    '<div class="alert alert-danger"><i class="fas fa-times-circle mr-2"></i>Error al cargar los horarios. Ver consola para detalles.</div>'
                 );
             }
         });
@@ -1247,10 +1283,14 @@ $(document).ready(function() {
 
     // Limpiar modal de reprogramar al cerrar
     $('#modalReprogramarCita').on('hidden.bs.modal', function() {
-        console.log('Limpiando modal de reprogramar...');
+        console.log('=== LIMPIANDO MODAL ===');
+
+        // Limpiar TODOS los campos (select, inputs y hidden fields)
         $('#fechaCitaReprogramar').val('');
         $('#nuevaFechaHoraInicioReprogramar').val('');
         $('#reprogramarOdontologoIdSelect').val('');
+        $('#reprogramarOdontologoId').val('');  // ✅ AGREGAR: Limpiar hidden
+        $('#reprogramarCitaId').val('');  // ✅ AGREGAR: Limpiar cita ID
         $('#horario-seleccionado-info-reprogramar').hide();
         $('#grilla-horarios-disponibles-reprogramar').html(
             '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
@@ -1262,7 +1302,8 @@ $(document).ready(function() {
         const $btnSubmit = $('#btnConfirmarReprogramar');
         $btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
         $btnSubmit.prop('disabled', false);
-        console.log('Modal limpiado completamente');
+
+        console.log('✅ Modal limpiado completamente');
     });
 
     // Validar formulario de reprogramar antes de enviar
