@@ -260,12 +260,24 @@ public class CitaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime nuevaFechaHoraInicio,
             @RequestParam(required = false, defaultValue = "Reprogramado por usuario") String motivo,
             RedirectAttributes attributes) {
+
+        System.out.println("=== RECIBIENDO REPROGRAMACIÓN ===");
+        System.out.println("Cita ID: " + citaId);
+        System.out.println("Odontólogo Usuario ID: " + odontologoUsuarioId);
+        System.out.println("Nueva Fecha/Hora: " + nuevaFechaHoraInicio);
+        System.out.println("Motivo: " + motivo);
+
         try {
             citaService.reprogramarCita(citaId, odontologoUsuarioId, nuevaFechaHoraInicio, motivo);
             attributes.addFlashAttribute("success", "Cita reprogramada con éxito.");
+            System.out.println("✓ Cita reprogramada exitosamente");
         } catch (IllegalStateException e) {
+            System.err.println("❌ Error de estado al reprogramar: " + e.getMessage());
+            e.printStackTrace();
             attributes.addFlashAttribute("error", "Error al reprogramar: " + e.getMessage());
         } catch (Exception e) {
+            System.err.println("❌ Error inesperado al reprogramar: " + e.getMessage());
+            e.printStackTrace();
             attributes.addFlashAttribute("error", "Error inesperado al reprogramar la cita: " + e.getMessage());
         }
 
