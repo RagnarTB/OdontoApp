@@ -255,7 +255,8 @@ public class FacturacionController {
                                      RedirectAttributes attributes) {
         try {
             // Obtener el comprobante con todos sus detalles
-            Comprobante comprobante = facturacionService.obtenerComprobantePorId(id);
+            Comprobante comprobante = facturacionService.buscarComprobantePorId(id)
+                    .orElseThrow(() -> new RuntimeException("Comprobante no encontrado"));
 
             // Añadir al modelo
             model.addAttribute("comprobante", comprobante);
