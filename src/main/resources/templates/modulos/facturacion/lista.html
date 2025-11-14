@@ -125,24 +125,45 @@
                 </div>
 
                 <!-- Paginación -->
-                <div class="card-footer clearfix" th:if="${comprobantes != null && comprobantes.totalPages > 1}">
-                    <ul class="pagination pagination-sm m-0 float-right">
+                <div class="card-footer clearfix" th:if="${comprobantes != null && comprobantes.totalPages > 0}">
+                    <div class="float-left">
+                        <small class="text-muted">
+                            Mostrando <span th:text="${comprobantes.numberOfElements}"></span> de
+                            <span th:text="${comprobantes.totalElements}"></span> comprobantes
+                            (Página <span th:text="${comprobantes.number + 1}"></span> de
+                            <span th:text="${comprobantes.totalPages}"></span>)
+                        </small>
+                    </div>
+                    <ul class="pagination pagination-sm m-0 float-right" th:if="${comprobantes.totalPages > 1}">
+                        <!-- Primera página -->
                         <li class="page-item" th:classappend="${comprobantes.first} ? 'disabled'">
-                            <a class="page-link" th:href="@{/facturacion(page=0)}">&laquo;</a>
+                            <a class="page-link" th:href="@{/facturacion(page=0)}" aria-label="Primera">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
                         </li>
-                        <li class="page-item" th:classappend="${!comprobantes.hasPrevious()} ? 'disabled'">
-                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.number - 1})}">&lsaquo;</a>
+                        <!-- Página anterior -->
+                        <li class="page-item" th:classappend="${comprobantes.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.number - 1})}" aria-label="Anterior">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
                         </li>
-                        <li class="page-item"
-                            th:each="i : ${#numbers.sequence(0, comprobantes.totalPages - 1)}"
-                            th:classappend="${comprobantes.number == i} ? 'active'">
-                            <a class="page-link" th:href="@{/facturacion(page=${i})}" th:text="${i + 1}">1</a>
+                        <!-- Números de página -->
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, comprobantes.totalPages - 1)}"
+                            th:if="${i >= comprobantes.number - 2 && i <= comprobantes.number + 2}"
+                            th:classappend="${i == comprobantes.number} ? 'active'">
+                            <a class="page-link" th:href="@{/facturacion(page=${i})}" th:text="${i + 1}"></a>
                         </li>
-                        <li class="page-item" th:classappend="${!comprobantes.hasNext()} ? 'disabled'">
-                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.number + 1})}">&rsaquo;</a>
-                        </li>
+                        <!-- Página siguiente -->
                         <li class="page-item" th:classappend="${comprobantes.last} ? 'disabled'">
-                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.totalPages - 1})}">&raquo;</a>
+                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.number + 1})}" aria-label="Siguiente">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        <!-- Última página -->
+                        <li class="page-item" th:classappend="${comprobantes.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.totalPages - 1})}" aria-label="Última">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
                         </li>
                     </ul>
                 </div>

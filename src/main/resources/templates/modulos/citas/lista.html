@@ -172,25 +172,46 @@
                         </div>
                     </div>
                     <div class="card-footer clearfix" th:if="${paginaCitas.totalPages > 0}">
-                        <ul class="pagination pagination-sm m-0 float-right">
-                            <li class="page-item" th:classappend="${paginaCitas.first} ? 'disabled'">
-                                <a class="page-link" th:href="@{/citas/lista(page=${paginaCitas.number - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">«</a>
-                            </li>
-                            <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaCitas.totalPages - 1)}"
-                                th:classappend="${i == paginaCitas.number} ? 'active'">
-                                <a class="page-link" th:text="${i + 1}"
-                                   th:href="@{/citas/lista(page=${i}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}"></a>
-                            </li>
-                            <li class="page-item" th:classappend="${paginaCitas.last} ? 'disabled'">
-                                <a class="page-link" th:href="@{/citas/lista(page=${paginaCitas.number + 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">»</a>
-                            </li>
-                        </ul>
-                        <div class="float-left mt-2">
+                        <div class="float-left">
                             <small class="text-muted">
-                                Mostrando <strong th:text="${paginaCitas.numberOfElements}">0</strong> de
-                                <strong th:text="${paginaCitas.totalElements}">0</strong> citas
+                                Mostrando <span th:text="${paginaCitas.numberOfElements}"></span> de
+                                <span th:text="${paginaCitas.totalElements}"></span> citas
+                                (Página <span th:text="${paginaCitas.number + 1}"></span> de
+                                <span th:text="${paginaCitas.totalPages}"></span>)
                             </small>
                         </div>
+                        <ul class="pagination pagination-sm m-0 float-right" th:if="${paginaCitas.totalPages > 1}">
+                            <!-- Primera página -->
+                            <li class="page-item" th:classappend="${paginaCitas.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/citas/lista(page=0, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}" aria-label="Primera">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <!-- Página anterior -->
+                            <li class="page-item" th:classappend="${paginaCitas.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/citas/lista(page=${paginaCitas.number - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            <!-- Números de página -->
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaCitas.totalPages - 1)}"
+                                th:if="${i >= paginaCitas.number - 2 && i <= paginaCitas.number + 2}"
+                                th:classappend="${i == paginaCitas.number} ? 'active'">
+                                <a class="page-link" th:href="@{/citas/lista(page=${i}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}" th:text="${i + 1}"></a>
+                            </li>
+                            <!-- Página siguiente -->
+                            <li class="page-item" th:classappend="${paginaCitas.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/citas/lista(page=${paginaCitas.number + 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}" aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <!-- Última página -->
+                            <li class="page-item" th:classappend="${paginaCitas.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/citas/lista(page=${paginaCitas.totalPages - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, odontologoId=${odontologoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}" aria-label="Última">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
