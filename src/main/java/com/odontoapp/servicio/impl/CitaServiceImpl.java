@@ -9,6 +9,9 @@ import com.odontoapp.entidad.ProcedimientoInsumo;
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.entidad.TratamientoPlanificado;
 import com.odontoapp.entidad.TratamientoRealizado;
+import com.odontoapp.entidad.MovimientoInventario;
+import com.odontoapp.entidad.TipoMovimiento;
+import com.odontoapp.entidad.MotivoMovimiento;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.EstadoCitaRepository;
 import com.odontoapp.repositorio.InsumoRepository;
@@ -17,6 +20,9 @@ import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
 import com.odontoapp.repositorio.TratamientoRealizadoRepository;
+import com.odontoapp.repositorio.MovimientoInventarioRepository;
+import com.odontoapp.repositorio.TipoMovimientoRepository;
+import com.odontoapp.repositorio.MotivoMovimientoRepository;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.EmailService;
 import java.math.BigDecimal;
@@ -62,6 +68,9 @@ public class CitaServiceImpl implements CitaService {
     private final InsumoRepository insumoRepository;
     private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
     private final TratamientoRealizadoRepository tratamientoRealizadoRepository;
+    private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final TipoMovimientoRepository tipoMovimientoRepository;
+    private final MotivoMovimientoRepository motivoMovimientoRepository;
 
     public CitaServiceImpl(CitaRepository citaRepository,
                           UsuarioRepository usuarioRepository,
@@ -71,7 +80,10 @@ public class CitaServiceImpl implements CitaService {
                           ProcedimientoInsumoRepository procedimientoInsumoRepository,
                           InsumoRepository insumoRepository,
                           TratamientoPlanificadoRepository tratamientoPlanificadoRepository,
-                          TratamientoRealizadoRepository tratamientoRealizadoRepository) {
+                          TratamientoRealizadoRepository tratamientoRealizadoRepository,
+                          MovimientoInventarioRepository movimientoInventarioRepository,
+                          TipoMovimientoRepository tipoMovimientoRepository,
+                          MotivoMovimientoRepository motivoMovimientoRepository) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
@@ -81,6 +93,9 @@ public class CitaServiceImpl implements CitaService {
         this.insumoRepository = insumoRepository;
         this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
         this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
+        this.movimientoInventarioRepository = movimientoInventarioRepository;
+        this.tipoMovimientoRepository = tipoMovimientoRepository;
+        this.motivoMovimientoRepository = motivoMovimientoRepository;
     }
 
     @Override
@@ -526,7 +541,20 @@ public class CitaServiceImpl implements CitaService {
 
         // Si el paciente asistió, descontar insumos asociados al procedimiento
         if (asistio && cita.getProcedimiento() != null) {
-            descontarInsumosDelProcedimiento(cita.getProcedimiento().getId());
+            descontarInsumosDelProcedimiento(cita.getProcedimiento().getId(), citaId);
+
+            // Crear TratamientoRealizado automáticamente cuando asiste y tiene procedimiento
+            TratamientoRealizado tratamientoRealizado = new TratamientoRealizado();
+            tratamientoRealizado.setCita(cita);
+            tratamientoRealizado.setProcedimiento(cita.getProcedimiento());
+            tratamientoRealizado.setOdontologo(cita.getOdontologo());
+            tratamientoRealizado.setPiezaDental(null); // Se puede mejorar si se captura en la cita
+            tratamientoRealizado.setDescripcionTrabajo("Tratamiento realizado en cita del " +
+                cita.getFechaHoraInicio().toLocalDate());
+            tratamientoRealizado.setFechaRealizacion(cita.getFechaHoraInicio());
+
+            tratamientoRealizadoRepository.save(tratamientoRealizado);
+            System.out.println("✅ TratamientoRealizado creado automáticamente para cita: " + citaId);
         }
 
         // Manejar tratamiento planificado asociado según asistencia
@@ -574,10 +602,18 @@ public class CitaServiceImpl implements CitaService {
     /**
      * Descuenta los insumos asociados a un procedimiento del inventario.
      * Se utiliza cuando un paciente asiste a una cita y se consume el procedimiento.
+     * Registra movimientos de inventario con motivo "Uso en procedimiento".
      *
      * @param procedimientoId ID del procedimiento
+     * @param citaId ID de la cita para referencia
      */
-    private void descontarInsumosDelProcedimiento(Long procedimientoId) {
+    private void descontarInsumosDelProcedimiento(Long procedimientoId, Long citaId) {
+        // Obtener tipo y motivo de movimiento
+        TipoMovimiento tipoSalida = tipoMovimientoRepository.findByNombre("SALIDA")
+                .orElseThrow(() -> new IllegalStateException("Tipo de movimiento SALIDA no encontrado"));
+        MotivoMovimiento motivoUso = motivoMovimientoRepository.findByNombre("Uso en procedimiento")
+                .orElseThrow(() -> new IllegalStateException("Motivo 'Uso en procedimiento' no encontrado"));
+
         // Obtener todos los insumos asociados al procedimiento
         List<ProcedimientoInsumo> procedimientoInsumos = procedimientoInsumoRepository
                 .findByProcedimientoId(procedimientoId);
@@ -585,18 +621,36 @@ public class CitaServiceImpl implements CitaService {
         for (ProcedimientoInsumo pi : procedimientoInsumos) {
             Insumo insumo = pi.getInsumo();
             BigDecimal cantidadADescontar = pi.getCantidadDefecto();
+            BigDecimal stockAnterior = insumo.getStockActual();
 
             // Verificar que haya suficiente stock
-            if (insumo.getStockActual().compareTo(cantidadADescontar) < 0) {
+            if (stockAnterior.compareTo(cantidadADescontar) < 0) {
                 throw new IllegalStateException(
                         "Stock insuficiente del insumo: " + insumo.getNombre() +
-                        " (Disponible: " + insumo.getStockActual() + ", Requerido: " + cantidadADescontar + ")"
+                        " (Disponible: " + stockAnterior + ", Requerido: " + cantidadADescontar + ")"
                 );
             }
 
             // Descontar del stock
-            insumo.setStockActual(insumo.getStockActual().subtract(cantidadADescontar));
+            BigDecimal stockNuevo = stockAnterior.subtract(cantidadADescontar);
+            insumo.setStockActual(stockNuevo);
             insumoRepository.save(insumo);
+
+            // Registrar movimiento de inventario
+            MovimientoInventario movimiento = new MovimientoInventario();
+            movimiento.setInsumo(insumo);
+            movimiento.setTipoMovimiento(tipoSalida);
+            movimiento.setMotivoMovimiento(motivoUso);
+            movimiento.setCantidad(cantidadADescontar);
+            movimiento.setStockAnterior(stockAnterior);
+            movimiento.setStockNuevo(stockNuevo);
+            movimiento.setReferencia("Cita #" + citaId);
+            movimiento.setNotas("Uso de " + cantidadADescontar + " " + insumo.getUnidadMedida().getNombre() +
+                    " de " + insumo.getNombre() + " en procedimiento");
+
+            movimientoInventarioRepository.save(movimiento);
+            System.out.println("✅ Movimiento de inventario registrado: " + insumo.getNombre() +
+                    " - Cantidad: " + cantidadADescontar);
         }
     }
 
