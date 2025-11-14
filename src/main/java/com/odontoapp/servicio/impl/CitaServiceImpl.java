@@ -609,7 +609,7 @@ public class CitaServiceImpl implements CitaService {
      */
     private void descontarInsumosDelProcedimiento(Long procedimientoId, Long citaId) {
         // Obtener tipo y motivo de movimiento
-        TipoMovimiento tipoSalida = tipoMovimientoRepository.findByNombre("SALIDA")
+        TipoMovimiento tipoSalida = tipoMovimientoRepository.findByCodigo("SALIDA")
                 .orElseThrow(() -> new IllegalStateException("Tipo de movimiento SALIDA no encontrado"));
         MotivoMovimiento motivoUso = motivoMovimientoRepository.findByNombre("Uso en procedimiento")
                 .orElseThrow(() -> new IllegalStateException("Motivo 'Uso en procedimiento' no encontrado"));
