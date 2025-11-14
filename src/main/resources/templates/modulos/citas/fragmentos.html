@@ -1070,18 +1070,30 @@ $(document).ready(function() {
 
     // ============ SCRIPT PARA MODAL REPROGRAMAR CITA ============
 
-    // Al abrir el modal, establecer fecha mínima a hoy y pre-seleccionar odontólogo
+    // Al abrir el modal, copiar datos del modal de detalle y configurar
     $('#modalReprogramarCita').on('show.bs.modal', function() {
         console.log('=== ABRIENDO MODAL REPROGRAMAR ===');
 
+        // Copiar datos del modal de detalle (igual que en horarios-citas.js)
+        const citaId = $('#detalleCitaId').val();
+        const paciente = $('#detallePaciente').text();
+        const odontologo = $('#detalleOdontologo').text();
+        const odontologoId = $('#detalleOdontologoId').val();
+        const fechaHoraInicio = $('#detalleFechaHoraInicio').text();
+
+        $('#reprogramarCitaId').val(citaId);
+        $('#reprogramarPaciente').text(paciente);
+        $('#reprogramarOdontologo').text(odontologo);
+        $('#reprogramarFechaActual').text(fechaHoraInicio);
+        $('#reprogramarOdontologoId').val(odontologoId);
+
+        console.log('Datos copiados - Cita ID:', citaId, 'Odontólogo ID:', odontologoId);
+
+        // Configurar fecha mínima
         const hoy = new Date().toISOString().split('T')[0];
         $('#fechaCitaReprogramar').attr('min', hoy);
 
-        // Leer odontólogo del campo hidden
-        const odontologoIdOriginal = $('#reprogramarOdontologoId').val();
-        const citaId = $('#reprogramarCitaId').val();
-        console.log('Cita ID:', citaId);
-        console.log('Odontólogo ID del hidden:', odontologoIdOriginal);
+        const odontologoIdOriginal = odontologoId;
 
         // PRE-SELECCIONAR Y VALIDAR
         if (odontologoIdOriginal && odontologoIdOriginal !== '') {
@@ -1223,18 +1235,15 @@ $(document).ready(function() {
                     return;
                 }
 
-                // Generar grilla de horarios
-                let html = '<div class="row">';
+                // Generar grilla compatible con horarios-citas.js
+                let html = '<div class="horarios-grid">';
                 horarios.forEach(function(slot) {
                     if (slot.disponible) {
-                        const fechaHora = fecha + 'T' + slot.inicio;
                         html += `
-                            <div class="col-6 col-md-4 mb-2">
-                                <button type="button" class="btn btn-outline-primary btn-block btn-sm horario-slot-reprogramar"
-                                        data-fecha-hora="${fechaHora}">
-                                    ${slot.inicio}
-                                </button>
-                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-horario-slot-reprogramar"
+                                    data-hora="${slot.inicio}">
+                                <i class="far fa-clock mr-1"></i>${slot.inicio}
+                            </button>
                         `;
                     }
                 });
@@ -1255,39 +1264,6 @@ $(document).ready(function() {
         });
     });
 
-    // Seleccionar horario
-    $(document).on('click', '.horario-slot-reprogramar', function() {
-        console.log('Horario clickeado');
-        $('.horario-slot-reprogramar').removeClass('btn-primary').addClass('btn-outline-primary');
-        $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-
-        const fechaHora = $(this).data('fecha-hora');
-        console.log('Fecha/Hora seleccionada:', fechaHora);
-        $('#nuevaFechaHoraInicioReprogramar').val(fechaHora);
-        console.log('Campo hidden actualizado:', $('#nuevaFechaHoraInicioReprogramar').val());
-
-        // ✅ CRÍTICO: Actualizar variable global usada por horarios-citas.js
-        const partes = fechaHora.split('T');
-        if (partes.length === 2) {
-            window.horarioSeleccionadoReprogramar = partes[1]; // Solo la hora (HH:mm)
-            console.log('✅ Variable global actualizada - horarioSeleccionadoReprogramar:', window.horarioSeleccionadoReprogramar);
-        }
-
-        const fechaObj = new Date(fechaHora);
-        const textoHorario = fechaObj.toLocaleString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-
-        $('#horario-seleccionado-texto-reprogramar').text(textoHorario);
-        $('#horario-seleccionado-info-reprogramar').show();
-        console.log('Horario seleccionado mostrado:', textoHorario);
-    });
-
     // Limpiar modal de reprogramar al cerrar
     $('#modalReprogramarCita').on('hidden.bs.modal', function() {
         console.log('=== LIMPIANDO MODAL ===');
@@ -1302,7 +1278,7 @@ $(document).ready(function() {
         $('#grilla-horarios-disponibles-reprogramar').html(
             '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
         );
-        $('.horario-slot-reprogramar').removeClass('btn-primary').addClass('btn-outline-primary');
+        $('.btn-horario-slot-reprogramar').removeClass('btn-primary active').addClass('btn-outline-primary');
         $('#motivoReprogramacion').val('');
 
         // Resetear botón si quedó en estado loading
@@ -1310,75 +1286,7 @@ $(document).ready(function() {
         $btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
         $btnSubmit.prop('disabled', false);
 
-        // ✅ Limpiar variable global de horarios-citas.js
-        window.horarioSeleccionadoReprogramar = null;
-
         console.log('✅ Modal limpiado completamente');
-    });
-
-    // Validar formulario de reprogramar antes de enviar
-    $('#modalReprogramarCita form').on('submit', function(e) {
-        console.log('=== VALIDACIÓN DE SUBMIT REPROGRAMAR ===');
-
-        const odontologoId = $('#reprogramarOdontologoId').val();
-        const nuevaFechaHora = $('#nuevaFechaHoraInicioReprogramar').val();
-        const citaId = $('#reprogramarCitaId').val();
-
-        console.log('Cita ID:', citaId);
-        console.log('Odontólogo ID:', odontologoId);
-        console.log('Nueva Fecha/Hora:', nuevaFechaHora);
-
-        const $btnSubmit = $('#btnConfirmarReprogramar');
-
-        // Validar que se haya seleccionado un odontólogo
-        if (!odontologoId || odontologoId.trim() === '') {
-            console.error('Validación FALLIDA: No hay odontólogo seleccionado');
-            e.preventDefault();
-            e.stopImmediatePropagation();
-
-            // Resetear botón de loading
-            $btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
-            $btnSubmit.prop('disabled', false);
-
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Odontólogo requerido',
-                    text: 'Por favor seleccione un odontólogo para la reprogramación.',
-                    confirmButtonText: 'Entendido'
-                });
-            } else {
-                alert('Por favor seleccione un odontólogo para la reprogramación.');
-            }
-            return false;
-        }
-
-        // Validar que se haya seleccionado un horario
-        if (!nuevaFechaHora || nuevaFechaHora.trim() === '') {
-            console.error('Validación FALLIDA: No hay horario seleccionado');
-            e.preventDefault();
-            e.stopImmediatePropagation();
-
-            // Resetear botón de loading
-            $btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
-            $btnSubmit.prop('disabled', false);
-
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Horario requerido',
-                    text: 'Por favor seleccione un horario para la reprogramación.',
-                    confirmButtonText: 'Entendido'
-                });
-            } else {
-                alert('Por favor seleccione un horario para la reprogramación.');
-            }
-            return false;
-        }
-
-        // Si todas las validaciones pasan, permitir el submit
-        console.log('✓ Validación EXITOSA - Permitiendo submit');
-        return true;
     });
 });
 </script>
