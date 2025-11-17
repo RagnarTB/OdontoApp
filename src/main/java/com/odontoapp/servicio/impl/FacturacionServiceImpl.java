@@ -601,7 +601,7 @@ public class FacturacionServiceImpl implements FacturacionService {
 
     @Override
     @Transactional
-    public Comprobante anularComprobante(Long comprobanteId, String motivoAnulacion) {
+    public Comprobante anularComprobante(Long comprobanteId, String motivoAnulacion, boolean regresarInventario) {
         // 1. Validación de parámetros
         if (comprobanteId == null) {
             throw new IllegalArgumentException("El ID del comprobante es obligatorio");
@@ -629,18 +629,21 @@ public class FacturacionServiceImpl implements FacturacionService {
                     "Debe revertir los pagos primero. Pagos encontrados: " + pagos.size());
         }
 
-        // 5. Revertir stock si es VENTA_DIRECTA
-        if ("VENTA_DIRECTA".equals(comprobante.getTipoComprobante())) {
+        // 5. Revertir stock si se solicitó y tiene insumos
+        if (regresarInventario) {
             // Buscar tipo y motivo para la reversión
             TipoMovimiento tipoEntrada = tipoMovimientoRepository.findByCodigo("ENTRADA")
                     .orElseThrow(() -> new IllegalStateException(
                             "Tipo de movimiento ENTRADA no encontrado"));
 
             MotivoMovimiento motivoAnulacionVenta = motivoMovimientoRepository.findByNombre("Anulación de Venta")
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Motivo de movimiento 'Anulación de Venta' no encontrado"));
+                    .orElse(motivoMovimientoRepository.findByNombre("Anulacion de venta")
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Motivo de movimiento 'Anulación de Venta' no encontrado en la base de datos. " +
+                                    "Por favor, cree este motivo con tipo ENTRADA.")));
 
             // Iterar sobre los detalles para revertir insumos
+            int insumosRegresados = 0;
             for (DetalleComprobante detalle : comprobante.getDetalles()) {
                 if ("INSUMO".equals(detalle.getTipoItem())) {
                     // Crear MovimientoDTO para devolver el stock
@@ -650,10 +653,17 @@ public class FacturacionServiceImpl implements FacturacionService {
                     movimientoDTO.setMotivoMovimientoId(motivoAnulacionVenta.getId());
                     movimientoDTO.setCantidad(detalle.getCantidad());
                     movimientoDTO.setReferencia("Anulación de " + comprobante.getNumeroComprobante());
+                    movimientoDTO.setNotas("Devolución de insumos por anulación de comprobante");
 
                     // Registrar movimiento de entrada (devolver stock)
                     inventarioService.registrarMovimiento(movimientoDTO);
+                    insumosRegresados++;
                 }
+            }
+
+            if (insumosRegresados > 0) {
+                System.out.println("✓ Insumos regresados al inventario: " + insumosRegresados +
+                        " | Comprobante: " + comprobante.getNumeroComprobante());
             }
         }
 
@@ -668,6 +678,11 @@ public class FacturacionServiceImpl implements FacturacionService {
         String nuevaObservacion = observacionesActuales.isEmpty()
                 ? "ANULADO: " + motivoAnulacion
                 : observacionesActuales + " | ANULADO: " + motivoAnulacion;
+
+        if (regresarInventario) {
+            nuevaObservacion += " | Insumos regresados al inventario";
+        }
+
         comprobante.setDescripcion(nuevaObservacion);
 
         // 7. Guardar y devolver

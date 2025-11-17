@@ -148,9 +148,93 @@
                                     <textarea id="observaciones" name="observaciones" class="form-control" rows="2" placeholder="Observaciones adicionales del comprobante"></textarea>
                                 </div>
 
-                                <!-- Botón Generar Comprobante -->
-                                <button type="submit" class="btn btn-success btn-lg btn-block" id="btnGenerar" disabled>
-                                    <i class="fas fa-file-invoice-dollar mr-2"></i>Generar Comprobante Pendiente
+                                <!-- Selector de tipo de venta -->
+                                <div class="form-group">
+                                    <label for="tipoVenta">Tipo de Venta</label>
+                                    <select id="tipoVenta" class="form-control">
+                                        <option value="pendiente">Generar Comprobante Pendiente</option>
+                                        <option value="pagada">Venta Pagada (Generar y Cobrar)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Campos de pago (solo visible cuando es venta pagada) -->
+                                <div id="camposPago" style="display: none;">
+                                    <hr>
+                                    <h5><i class="fas fa-money-bill-wave mr-2"></i>Datos de Pago</h5>
+
+                                    <div class="form-group">
+                                        <label for="metodoPagoId">Método de Pago <span class="text-danger">*</span></label>
+                                        <select id="metodoPagoId" name="metodoPagoId" class="form-control">
+                                            <option value="">Seleccione un método</option>
+                                            <option th:each="metodo : ${listaMetodosPago}"
+                                                    th:value="${metodo.id}"
+                                                    th:text="${metodo.nombre}"></option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Campos para pago mixto -->
+                                    <div id="camposMixtoPOS" style="display: none;">
+                                        <div class="alert alert-info alert-sm">
+                                            <i class="fas fa-info-circle"></i> Ingrese cuánto pagará por cada método
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label for="montoEfectivoPOS">Efectivo</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text">S/</span>
+                                                        </div>
+                                                        <input type="number" class="form-control" id="montoEfectivoPOS"
+                                                               step="0.01" min="0" placeholder="0.00">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label for="montoYapePOS">Yape</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text">S/</span>
+                                                        </div>
+                                                        <input type="number" class="form-control" id="montoYapePOS"
+                                                               step="0.01" min="0" placeholder="0.00">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="montoPagoPOS">Monto Recibido <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">S/</span>
+                                            </div>
+                                            <input type="number" class="form-control" id="montoPagoPOS"
+                                                   step="0.01" min="0.01" placeholder="0.00">
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-success" type="button" id="btnMontoExacto">
+                                                    <i class="fas fa-check-double"></i> Exacto
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">El monto debe ser igual o mayor al total</small>
+                                    </div>
+
+                                    <div id="cambioPOS" class="alert alert-success" style="display: none;">
+                                        <strong>Cambio:</strong> S/ <span id="montoCambio">0.00</span>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="referenciaYapePOS">Referencia Yape/Transferencia</label>
+                                        <input type="text" class="form-control" id="referenciaYapePOS" placeholder="Número de operación (opcional)">
+                                    </div>
+                                </div>
+
+                                <!-- Botón Generar -->
+                                <button type="button" class="btn btn-success btn-lg btn-block" id="btnGenerar" disabled>
+                                    <i class="fas fa-file-invoice-dollar mr-2"></i><span id="btnGenerarTexto">Generar Comprobante Pendiente</span>
                                 </button>
                             </div>
                         </div>
@@ -346,12 +430,114 @@
                 $('#montoTotal').text(total.toFixed(2));
             }
 
-            // Antes de enviar el formulario, crear inputs hidden para cada detalle
-            $('#formPOS').submit(function(e) {
+            // Cambio de tipo de venta
+            $('#tipoVenta').change(function() {
+                var tipo = $(this).val();
+
+                if (tipo === 'pagada') {
+                    $('#camposPago').slideDown();
+                    $('#btnGenerarTexto').text('Generar Venta Pagada');
+                    $('#metodoPagoId').prop('required', true);
+                    $('#montoPagoPOS').prop('required', true);
+                } else {
+                    $('#camposPago').slideUp();
+                    $('#btnGenerarTexto').text('Generar Comprobante Pendiente');
+                    $('#metodoPagoId').prop('required', false);
+                    $('#montoPagoPOS').prop('required', false);
+                }
+            });
+
+            // Cambio de método de pago en POS
+            $('#metodoPagoId').change(function() {
+                var metodoTexto = $(this).find('option:selected').text().toUpperCase();
+
+                $('#camposMixtoPOS').hide();
+                $('#montoEfectivoPOS').val('');
+                $('#montoYapePOS').val('');
+
+                if (metodoTexto.includes('MIXTO')) {
+                    $('#camposMixtoPOS').show();
+                    var total = parseFloat($('#montoTotal').text()) || 0;
+                    if (total > 0) {
+                        var mitad = (total / 2).toFixed(2);
+                        $('#montoEfectivoPOS').val(mitad);
+                        $('#montoYapePOS').val(mitad);
+                        $('#montoPagoPOS').val(total.toFixed(2));
+                    }
+                }
+            });
+
+            // Auto-calcular en pago mixto POS
+            $('#montoEfectivoPOS, #montoYapePOS').on('input', function() {
+                var efectivo = parseFloat($('#montoEfectivoPOS').val()) || 0;
+                var yape = parseFloat($('#montoYapePOS').val()) || 0;
+                var suma = efectivo + yape;
+                $('#montoPagoPOS').val(suma.toFixed(2));
+                $('#montoPagoPOS').trigger('input');
+            });
+
+            // Botón monto exacto
+            $('#btnMontoExacto').click(function() {
+                var total = parseFloat($('#montoTotal').text()) || 0;
+                $('#montoPagoPOS').val(total.toFixed(2));
+                $('#montoPagoPOS').trigger('input');
+            });
+
+            // Calcular cambio
+            $('#montoPagoPOS').on('input', function() {
+                var total = parseFloat($('#montoTotal').text()) || 0;
+                var montoPago = parseFloat($(this).val()) || 0;
+
+                if (montoPago >= total) {
+                    var cambio = montoPago - total;
+                    $('#montoCambio').text(cambio.toFixed(2));
+                    $('#cambioPOS').slideDown();
+                } else {
+                    $('#cambioPOS').slideUp();
+                }
+            });
+
+            // Antes de "enviar" el formulario
+            $('#btnGenerar').click(function(e) {
                 if (detalles.length === 0) {
                     alert('Debe agregar al menos un item al carrito.');
-                    e.preventDefault();
                     return false;
+                }
+
+                var tipoVenta = $('#tipoVenta').val();
+
+                // Validar datos de pago si es venta pagada
+                if (tipoVenta === 'pagada') {
+                    var metodoPagoId = $('#metodoPagoId').val();
+                    var montoPago = parseFloat($('#montoPagoPOS').val()) || 0;
+                    var total = parseFloat($('#montoTotal').text()) || 0;
+
+                    if (!metodoPagoId) {
+                        alert('Debe seleccionar un método de pago.');
+                        return false;
+                    }
+
+                    if (montoPago < total) {
+                        alert('El monto recibido no puede ser menor al total (S/ ' + total.toFixed(2) + ')');
+                        return false;
+                    }
+
+                    // Validar pago mixto
+                    var metodoTexto = $('#metodoPagoId option:selected').text().toUpperCase();
+                    if (metodoTexto.includes('MIXTO')) {
+                        var efectivo = parseFloat($('#montoEfectivoPOS').val()) || 0;
+                        var yape = parseFloat($('#montoYapePOS').val()) || 0;
+
+                        if (efectivo <= 0 || yape <= 0) {
+                            alert('Para pago mixto, ambos montos deben ser mayores a cero.');
+                            return false;
+                        }
+
+                        if (Math.abs((efectivo + yape) - total) > 0.01) {
+                            alert('La suma de efectivo y yape debe ser igual al total.');
+                            return false;
+                        }
+                    }
                 }
 
                 // Limpiar container de hidden inputs
@@ -369,7 +555,20 @@
                     `);
                 });
 
-                return true;
+                // Si es venta pagada, agregar datos de pago
+                if (tipoVenta === 'pagada') {
+                    $('#containerDetallesHidden').append(`
+                        <input type="hidden" name="generarPago" value="true">
+                        <input type="hidden" name="metodoPagoId" value="${$('#metodoPagoId').val()}">
+                        <input type="hidden" name="montoPago" value="${$('#montoPagoPOS').val()}">
+                        <input type="hidden" name="montoEfectivo" value="${$('#montoEfectivoPOS').val() || ''}">
+                        <input type="hidden" name="montoYape" value="${$('#montoYapePOS').val() || ''}">
+                        <input type="hidden" name="referenciaYape" value="${$('#referenciaYapePOS').val() || ''}">
+                    `);
+                }
+
+                // Enviar el formulario
+                $('#formPOS').submit();
             });
         });
         /*]]>*/

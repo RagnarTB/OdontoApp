@@ -83,29 +83,72 @@ public class FacturacionController {
         // Buscar todos los insumos
         var listaInsumos = insumoRepository.findAll();
 
+        // Buscar métodos de pago
+        var listaMetodosPago = metodoPagoRepository.findAll();
+
         // Añadir al modelo
         model.addAttribute("comprobanteDTO", new ComprobanteDTO());
         model.addAttribute("listaPacientes", listaPacientes);
         model.addAttribute("listaProcedimientos", listaProcedimientos);
         model.addAttribute("listaInsumos", listaInsumos);
+        model.addAttribute("listaMetodosPago", listaMetodosPago);
 
         return "modulos/facturacion/pos";
     }
 
     /**
      * Genera un comprobante de venta directa (sin cita).
+     * Opcionalmente puede generar y registrar el pago en la misma operación.
      *
      * @param dto DTO con datos del comprobante
+     * @param generarPago Si se debe registrar el pago simultáneamente
+     * @param metodoPagoId ID del método de pago (si generarPago = true)
+     * @param montoPago Monto del pago (si generarPago = true)
+     * @param montoEfectivo Monto en efectivo (para pago mixto)
+     * @param montoYape Monto Yape (para pago mixto)
+     * @param referenciaYape Referencia de Yape/Transferencia
      * @param attributes Atributos para mensajes flash
      * @return Redirección a la lista de facturación
      */
     @PostMapping("/generar-venta-directa")
     public String generarVentaDirecta(@ModelAttribute ComprobanteDTO dto,
+                                     @RequestParam(required = false) Boolean generarPago,
+                                     @RequestParam(required = false) Long metodoPagoId,
+                                     @RequestParam(required = false) java.math.BigDecimal montoPago,
+                                     @RequestParam(required = false) java.math.BigDecimal montoEfectivo,
+                                     @RequestParam(required = false) java.math.BigDecimal montoYape,
+                                     @RequestParam(required = false) String referenciaYape,
                                      RedirectAttributes attributes) {
         try {
+            // 1. Generar comprobante
             Comprobante comprobante = facturacionService.generarComprobanteVentaDirecta(dto);
-            attributes.addFlashAttribute("success",
-                    "Comprobante " + comprobante.getNumeroComprobante() + " generado con éxito.");
+
+            // 2. Si se solicitó generar pago, registrarlo
+            if (generarPago != null && generarPago && metodoPagoId != null && montoPago != null) {
+                try {
+                    PagoDTO pagoDTO = new PagoDTO();
+                    pagoDTO.setComprobanteId(comprobante.getId());
+                    pagoDTO.setMetodoPagoId(metodoPagoId);
+                    pagoDTO.setMonto(montoPago);
+                    pagoDTO.setFechaPago(java.time.LocalDateTime.now());
+                    pagoDTO.setMontoEfectivo(montoEfectivo);
+                    pagoDTO.setMontoYape(montoYape);
+                    pagoDTO.setReferenciaYape(referenciaYape);
+                    pagoDTO.setNotas("Pago registrado desde POS");
+
+                    facturacionService.registrarPago(pagoDTO);
+
+                    attributes.addFlashAttribute("success",
+                            "Comprobante " + comprobante.getNumeroComprobante() + " generado y pagado con éxito. Estado: PAGADO.");
+                } catch (Exception e) {
+                    attributes.addFlashAttribute("warning",
+                            "Comprobante " + comprobante.getNumeroComprobante() + " generado, pero hubo un error al registrar el pago: " + e.getMessage());
+                }
+            } else {
+                attributes.addFlashAttribute("success",
+                        "Comprobante " + comprobante.getNumeroComprobante() + " generado con éxito.");
+            }
+
         } catch (IllegalArgumentException e) {
             attributes.addFlashAttribute("error",
                     "Error en los datos del comprobante: " + e.getMessage());
@@ -153,17 +196,28 @@ public class FacturacionController {
      *
      * @param id ID del comprobante a anular
      * @param motivo Motivo de la anulación
+     * @param regresarInventario Si se debe regresar el inventario (true/false)
      * @param attributes Atributos para mensajes flash
      * @return Redirección a la lista de facturación
      */
     @GetMapping("/anular/{id}")
     public String anularComprobante(@PathVariable Long id,
                                    @RequestParam(defaultValue = "Anulado por usuario") String motivo,
+                                   @RequestParam(required = false) Boolean regresarInventario,
                                    RedirectAttributes attributes) {
         try {
-            Comprobante comprobante = facturacionService.anularComprobante(id, motivo);
-            attributes.addFlashAttribute("success",
-                    "Comprobante " + comprobante.getNumeroComprobante() + " anulado con éxito.");
+            Comprobante comprobante = facturacionService.anularComprobante(
+                    id,
+                    motivo,
+                    regresarInventario != null && regresarInventario
+            );
+
+            String mensaje = "Comprobante " + comprobante.getNumeroComprobante() + " anulado con éxito.";
+            if (regresarInventario != null && regresarInventario) {
+                mensaje += " Los insumos han sido regresados al inventario.";
+            }
+
+            attributes.addFlashAttribute("success", mensaje);
         } catch (IllegalStateException e) {
             attributes.addFlashAttribute("error",
                     "Error al anular el comprobante: " + e.getMessage());

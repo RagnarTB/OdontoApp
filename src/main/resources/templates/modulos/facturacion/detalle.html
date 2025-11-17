@@ -236,14 +236,22 @@
                             </h3>
                         </div>
                         <div class="card-body">
+                            <!-- Botón Imprimir: Solo habilitado cuando está PAGADO_TOTAL -->
                             <a th:href="@{/facturacion/imprimir/{id}(id=${comprobante.id})}"
-                               class="btn btn-outline-primary btn-block"
+                               class="btn btn-block"
+                               th:classappend="${comprobante.estadoPago.nombre == 'PAGADO_TOTAL'} ? 'btn-primary' : 'btn-secondary disabled'"
+                               th:disabled="${comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
+                               th:attr="aria-disabled=${comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
                                target="_blank">
                                 <i class="fas fa-print mr-2"></i>Imprimir Comprobante
                             </a>
 
+                            <small th:if="${comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}" class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> Solo se puede imprimir comprobantes pagados totalmente
+                            </small>
+
                             <a th:href="@{/facturacion/anular/{id}(id=${comprobante.id})}"
-                               class="btn btn-outline-danger btn-block"
+                               class="btn btn-outline-danger btn-block mt-2"
                                th:if="${comprobante.estadoPago.nombre != 'ANULADO' && (pagos == null || pagos.empty)}"
                                onclick="return confirm('¿Está seguro de que desea anular este comprobante? Esta acción no se puede deshacer.');">
                                 <i class="fas fa-ban mr-2"></i>Anular Comprobante
@@ -317,6 +325,55 @@
             console.log('Comprobante ID seteado:', $('#pagoComprobanteId').val());
         });
     });
+
+    // Función para confirmar anulación con SweetAlert2
+    function confirmarAnulacion(button) {
+        var comprobanteId = $(button).data('comprobante-id');
+        var tieneInsumos = $(button).data('tiene-insumos');
+
+        // Si tiene insumos, preguntar si desea regresar al inventario
+        if (tieneInsumos) {
+            Swal.fire({
+                title: '¿Anular este comprobante?',
+                html: '<p>Esta acción no se puede deshacer.</p><p class="mt-2"><strong>¿Desea regresar los insumos al inventario?</strong></p>',
+                icon: 'warning',
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: '<i class="fas fa-check mr-1"></i> Sí, regresar insumos',
+                denyButtonText: '<i class="fas fa-times mr-1"></i> No regresar insumos',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745',
+                denyButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Anular y regresar insumos
+                    window.location.href = '/facturacion/anular/' + comprobanteId + '?regresarInventario=true';
+                } else if (result.isDenied) {
+                    // Anular sin regresar insumos
+                    window.location.href = '/facturacion/anular/' + comprobanteId + '?regresarInventario=false';
+                }
+            });
+        } else {
+            // No tiene insumos, solo confirmar anulación
+            Swal.fire({
+                title: '¿Está seguro?',
+                text: '¿Desea anular este comprobante? Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, anular',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/facturacion/anular/' + comprobanteId + '?regresarInventario=false';
+                }
+            });
+        }
+    }
     /*]]>*/
 </script>
 

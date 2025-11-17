@@ -305,6 +305,25 @@
                                       (${comprobante.estadoPago.nombre == 'ANULADO'} ? 'estado-anulado' : '')))"
                       th:text="${comprobante.estadoPago.nombre}">PENDIENTE</span>
             </div>
+            <!-- Información de la Cita (si existe) -->
+            <div th:if="${comprobante.cita != null}">
+                <div class="info-row">
+                    <span class="info-label">Cita ID:</span>
+                    <span th:text="${comprobante.cita.id}">123</span>
+                </div>
+                <div class="info-row" th:if="${comprobante.cita.fecha != null}">
+                    <span class="info-label">Fecha de Cita:</span>
+                    <span th:text="${#temporals.format(comprobante.cita.fecha, 'dd/MM/yyyy HH:mm')}">15/11/2025 14:00</span>
+                </div>
+                <div class="info-row" th:if="${comprobante.cita.procedimiento != null}">
+                    <span class="info-label">Procedimiento:</span>
+                    <span th:text="${comprobante.cita.procedimiento.nombre}">Limpieza Dental</span>
+                </div>
+                <div class="info-row" th:if="${comprobante.cita.odontologo != null}">
+                    <span class="info-label">Odontólogo:</span>
+                    <span th:text="${comprobante.cita.odontologo.nombreCompleto}">Dr. Juan Pérez</span>
+                </div>
+            </div>
         </div>
 
         <div class="info-section">
@@ -313,13 +332,21 @@
                 <span class="info-label">Nombre:</span>
                 <span th:text="${comprobante.paciente.nombreCompleto}">Juan Pérez</span>
             </div>
-            <div class="info-row" th:if="${comprobante.paciente.dni}">
-                <span class="info-label">DNI:</span>
-                <span th:text="${comprobante.paciente.dni}">12345678</span>
+            <div class="info-row" th:if="${comprobante.paciente.numeroDocumento}">
+                <span class="info-label">Documento:</span>
+                <span th:text="${comprobante.paciente.numeroDocumento}">12345678</span>
             </div>
             <div class="info-row" th:if="${comprobante.paciente.telefono}">
                 <span class="info-label">Teléfono:</span>
                 <span th:text="${comprobante.paciente.telefono}">987654321</span>
+            </div>
+            <div class="info-row" th:if="${comprobante.paciente.email}">
+                <span class="info-label">Email:</span>
+                <span th:text="${comprobante.paciente.email}">paciente@email.com</span>
+            </div>
+            <div class="info-row" th:if="${comprobante.paciente.direccion}">
+                <span class="info-label">Dirección:</span>
+                <span th:text="${comprobante.paciente.direccion}">Av. Principal 123</span>
             </div>
         </div>
     </div>

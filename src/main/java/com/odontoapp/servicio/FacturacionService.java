@@ -101,11 +101,12 @@ public interface FacturacionService {
      *
      * @param comprobanteId ID del comprobante a anular
      * @param motivoAnulacion Motivo de la anulación
+     * @param regresarInventario Si se debe regresar el inventario de insumos al stock
      * @return El comprobante anulado
      * @throws jakarta.persistence.EntityNotFoundException si no se encuentra el comprobante
      * @throws IllegalStateException si el comprobante ya tiene pagos registrados o ya está anulado
      */
-    Comprobante anularComprobante(Long comprobanteId, String motivoAnulacion);
+    Comprobante anularComprobante(Long comprobanteId, String motivoAnulacion, boolean regresarInventario);
 
     /**
      * Busca todos los comprobantes con saldo pendiente.
