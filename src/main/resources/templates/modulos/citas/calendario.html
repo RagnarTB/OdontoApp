@@ -517,6 +517,33 @@
                     break;
             }
         }
+
+        // Event listeners para botones de acción en modal de detalle
+        document.addEventListener('DOMContentLoaded', function() {
+            // Botón Reprogramar
+            document.getElementById('btnReprogramar').addEventListener('click', function() {
+                $('#modalDetalleCita').modal('hide');
+                setTimeout(function() {
+                    $('#modalReprogramarCita').modal('show');
+                }, 500);
+            });
+
+            // Botón Cancelar
+            document.getElementById('btnCancelar').addEventListener('click', function() {
+                $('#modalDetalleCita').modal('hide');
+                setTimeout(function() {
+                    $('#modalCancelarCita').modal('show');
+                }, 500);
+            });
+
+            // Botón Registrar Tratamiento
+            document.getElementById('btnRegistrarTratamiento').addEventListener('click', function() {
+                $('#modalDetalleCita').modal('hide');
+                setTimeout(function() {
+                    $('#modalRegistrarTratamiento').modal('show');
+                }, 500);
+            });
+        });
         /*]]>*/
     </script>
 

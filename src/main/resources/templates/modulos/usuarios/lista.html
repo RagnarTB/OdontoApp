@@ -141,25 +141,49 @@
                         <p class="text-muted">No se encontraron usuarios con los criterios de búsqueda.</p>
                     </div>
 
-                </div><div class="card-footer clearfix" th:if="${paginaUsuarios.totalPages > 1}">
-                <ul class="pagination pagination-sm m-0 float-right">
-                    <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
-                        <a class="page-link" th:href="@{/usuarios(page=0, keyword=${keyword})}">&laquo;</a>
-                    </li>
-                    <li class="page-item" th:classappend="${!paginaUsuarios.hasPrevious()} ? 'disabled'">
-                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, keyword=${keyword})}">&lsaquo;</a>
-                    </li>
-                    <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaUsuarios.totalPages - 1)}" th:classappend="${paginaUsuarios.number == i} ? 'active'">
-                        <a class="page-link" th:href="@{/usuarios(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
-                    </li>
-                    <li class="page-item" th:classappend="${!paginaUsuarios.hasNext()} ? 'disabled'">
-                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, keyword=${keyword})}">&rsaquo;</a>
-                    </li>
-                    <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
-                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.totalPages - 1}, keyword=${keyword})}">&raquo;</a>
-                    </li>
-                </ul>
-            </div>
+                </div>
+                <div class="card-footer clearfix" th:if="${paginaUsuarios.totalPages > 0}">
+                    <div class="float-left">
+                        <small class="text-muted">
+                            Mostrando <span th:text="${paginaUsuarios.numberOfElements}"></span> de
+                            <span th:text="${paginaUsuarios.totalElements}"></span> usuarios
+                            (Página <span th:text="${paginaUsuarios.number + 1}"></span> de
+                            <span th:text="${paginaUsuarios.totalPages}"></span>)
+                        </small>
+                    </div>
+                    <ul class="pagination pagination-sm m-0 float-right" th:if="${paginaUsuarios.totalPages > 1}">
+                        <!-- Primera página -->
+                        <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/usuarios(page=0, keyword=${keyword})}" aria-label="Primera">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                        <!-- Página anterior -->
+                        <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, keyword=${keyword})}" aria-label="Anterior">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        <!-- Números de página -->
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaUsuarios.totalPages - 1)}"
+                            th:if="${i >= paginaUsuarios.number - 2 && i <= paginaUsuarios.number + 2}"
+                            th:classappend="${i == paginaUsuarios.number} ? 'active'">
+                            <a class="page-link" th:href="@{/usuarios(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
+                        </li>
+                        <!-- Página siguiente -->
+                        <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, keyword=${keyword})}" aria-label="Siguiente">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        <!-- Última página -->
+                        <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.totalPages - 1}, keyword=${keyword})}" aria-label="Última">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div> </div> </section>
 
     <!-- Modal para Gestionar Excepciones de Horario -->

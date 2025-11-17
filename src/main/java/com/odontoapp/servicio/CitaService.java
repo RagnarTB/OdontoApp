@@ -70,12 +70,13 @@ public interface CitaService {
      * Crea una nueva cita y marca la anterior como REPROGRAMADA.
      *
      * @param citaId ID de la cita a reprogramar
+     * @param nuevoOdontologoId ID del nuevo odontólogo (null para mantener el mismo)
      * @param nuevaFechaHoraInicio Nueva fecha y hora de inicio
      * @param motivo Motivo de la reprogramación
      * @return La nueva cita creada
      * @throws IllegalStateException si la cita no puede ser reprogramada
      */
-    Cita reprogramarCita(Long citaId, LocalDateTime nuevaFechaHoraInicio, String motivo);
+    Cita reprogramarCita(Long citaId, Long nuevoOdontologoId, LocalDateTime nuevaFechaHoraInicio, String motivo);
 
     /**
      * Cancela una cita existente.

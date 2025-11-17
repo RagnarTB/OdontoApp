@@ -104,8 +104,12 @@
                         <span th:if="${param.loginType == 'personal'}">Por favor, use el login de "Pacientes".</span>
                     </span>
                     <span th:unless="${param.reason == 'wrongPortal'}">
-                        <strong>❌ Credenciales incorrectas:</strong> Verifica tu email y contraseña.<br>
-                        <small>💡 Asegúrate de estar en la sección correcta: "Personal Clínica" o "Pacientes"</small>
+                        <!-- Mensaje personalizado del handler de autenticación -->
+                        <span th:if="${session.SPRING_SECURITY_LAST_EXCEPTION_MESSAGE}" th:text="${session.SPRING_SECURITY_LAST_EXCEPTION_MESSAGE}"></span>
+                        <span th:unless="${session.SPRING_SECURITY_LAST_EXCEPTION_MESSAGE}">
+                            <strong>❌ Credenciales incorrectas:</strong> Verifica tu email y contraseña.<br>
+                            <small>💡 Asegúrate de estar en la sección correcta: "Personal Clínica" o "Pacientes"</small>
+                        </span>
                     </span>
                 </div>
                 <div th:if="${param.logout}" class="p-3 bg-blue-100 text-blue-700 rounded-lg text-sm">

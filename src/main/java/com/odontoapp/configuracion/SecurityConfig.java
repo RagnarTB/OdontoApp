@@ -13,15 +13,19 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 import com.odontoapp.seguridad.CustomAuthenticationSuccessHandler;
+import com.odontoapp.seguridad.CustomAuthenticationFailureHandler;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true) // ✅ Habilitar seguridad a nivel de método
 public class SecurityConfig {
 
-        // Inyecta tu handler personalizado
+        // Inyecta tus handlers personalizados
         @Autowired
         private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
+
+        @Autowired
+        private CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
 
         @Bean
         public PasswordEncoder passwordEncoder() {
@@ -80,7 +84,7 @@ public class SecurityConfig {
                                                 .usernameParameter("username")
                                                 .passwordParameter("password")
                                                 .successHandler(customAuthenticationSuccessHandler)
-                                                .failureUrl("/login?error=true")
+                                                .failureHandler(customAuthenticationFailureHandler)
                                                 .permitAll())
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")
