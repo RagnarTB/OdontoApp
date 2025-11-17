@@ -204,14 +204,9 @@ public class TratamientoController {
             Cita cita = citaRepository.findById(citaId)
                     .orElseThrow(() -> new RuntimeException("Cita no encontrada"));
 
-            // **VALIDAR QUE NO EXISTA YA UN TRATAMIENTO EN ESTA CITA**
+            // Verificar tratamientos existentes (para información, pero permitir múltiples)
             List<TratamientoRealizado> tratamientosExistentes = tratamientoRealizadoRepository.findByCitaId(citaId);
-            if (!tratamientosExistentes.isEmpty()) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("mensaje", "Esta cita ya tiene un tratamiento registrado. No se pueden registrar múltiples tratamientos en la misma cita.");
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
+            int numeroTratamiento = tratamientosExistentes.size() + 1;
 
             Procedimiento procedimiento = procedimientoRepository.findById(procedimientoId)
                     .orElseThrow(() -> new RuntimeException("Procedimiento no encontrado"));
