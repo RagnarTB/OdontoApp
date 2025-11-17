@@ -139,11 +139,17 @@
                             <h3 class="card-title">
                                 <i class="fas fa-history mr-2"></i>Historial de Pagos
                             </h3>
+                            <div class="card-tools" th:if="${pagos != null && !pagos.empty}">
+                                <span class="badge badge-success">
+                                    <i class="fas fa-receipt mr-1"></i><span th:text="${pagos.size()}">0</span> pago(s)
+                                </span>
+                            </div>
                         </div>
                         <div class="card-body p-0">
-                            <table class="table table-sm">
-                                <thead>
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="bg-light">
                                     <tr>
+                                        <th>#</th>
                                         <th>Fecha</th>
                                         <th>Método</th>
                                         <th class="text-right">Monto</th>
@@ -152,27 +158,59 @@
                                 </thead>
                                 <tbody>
                                     <tr th:if="${pagos == null || pagos.empty}">
-                                        <td colspan="4" class="text-center text-muted py-3">
-                                            <i class="fas fa-info-circle"></i> No se han registrado pagos aún.
+                                        <td colspan="5" class="text-center text-muted py-3">
+                                            <i class="fas fa-info-circle fa-2x mb-2 d-block"></i>
+                                            No se han registrado pagos aún.
                                         </td>
                                     </tr>
-                                    <tr th:each="pago : ${pagos}">
-                                        <td th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy HH:mm')}">01/11/2025 14:30</td>
+                                    <tr th:each="pago, iterStat : ${pagos}">
                                         <td>
-                                            <span class="badge badge-info" th:text="${pago.metodoPago.nombre}">EFECTIVO</span>
-                                            <span th:if="${pago.referenciaYape}" class="text-muted small">
-                                                <br>Ref: <span th:text="${pago.referenciaYape}">123456</span>
+                                            <span class="badge badge-light" th:text="${iterStat.count}">1</span>
+                                        </td>
+                                        <td>
+                                            <small th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy')}">01/11/2025</small>
+                                            <br>
+                                            <small class="text-muted" th:text="${#temporals.format(pago.fechaPago, 'HH:mm')}">14:30</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge"
+                                                  th:classappend="${pago.metodoPago.nombre.contains('EFECTIVO')} ? 'badge-success' :
+                                                                 (${pago.metodoPago.nombre.contains('YAPE')} ? 'badge-info' :
+                                                                 (${pago.metodoPago.nombre.contains('MIXTO')} ? 'badge-warning' : 'badge-primary'))"
+                                                  th:text="${pago.metodoPago.nombre}">EFECTIVO</span>
+
+                                            <!-- Detalles de pago mixto -->
+                                            <div th:if="${pago.montoEfectivo != null && pago.montoYape != null}" class="small text-muted mt-1">
+                                                <i class="fas fa-money-bill-wave mr-1"></i>Efectivo: S/ <span th:text="${#numbers.formatDecimal(pago.montoEfectivo, 1, 2)}">25.00</span>
+                                                <br>
+                                                <i class="fas fa-mobile-alt mr-1"></i>Yape: S/ <span th:text="${#numbers.formatDecimal(pago.montoYape, 1, 2)}">25.00</span>
+                                            </div>
+
+                                            <!-- Referencia de Yape/Transferencia -->
+                                            <span th:if="${pago.referenciaYape}" class="text-muted small d-block mt-1">
+                                                <i class="fas fa-hashtag"></i> Ref: <span th:text="${pago.referenciaYape}">123456</span>
                                             </span>
                                         </td>
                                         <td class="text-right">
-                                            <strong class="text-success">S/ <span th:text="${#numbers.formatDecimal(pago.monto, 1, 2)}">50.00</span></strong>
+                                            <strong class="text-success">
+                                                S/ <span th:text="${#numbers.formatDecimal(pago.monto, 1, 2)}">50.00</span>
+                                            </strong>
                                         </td>
                                         <td>
-                                            <span th:if="${pago.notas}" th:text="${pago.notas}">Pago parcial</span>
-                                            <span th:unless="${pago.notas}" class="text-muted">-</span>
+                                            <small th:if="${pago.notas}" th:text="${pago.notas}">Pago parcial</small>
+                                            <small th:unless="${pago.notas}" class="text-muted">-</small>
                                         </td>
                                     </tr>
                                 </tbody>
+                                <tfoot th:if="${pagos != null && !pagos.empty}" class="bg-light font-weight-bold">
+                                    <tr>
+                                        <td colspan="3" class="text-right">Total Pagado:</td>
+                                        <td class="text-right text-success">
+                                            S/ <span th:text="${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}">150.00</span>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -278,10 +316,11 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     $(document).ready(function() {
-        // IMPORTANTE: Usar 'shown.bs.modal' en lugar de 'show.bs.modal'
-        // para asegurar que el modal esté completamente renderizado
-        $('#modalRegistrarPago').on('shown.bs.modal', function (event) {
+        // IMPORTANTE: Usar 'show.bs.modal' para cargar datos ANTES de mostrar el modal
+        $('#modalRegistrarPago').on('show.bs.modal', function (event) {
             var button = $(event.relatedTarget); // Botón que abrió el modal
+
+            console.log('Modal show.bs.modal - event.relatedTarget:', button);
 
             // Validar que tengamos el botón y los datos
             if (!button || button.length === 0) {
@@ -291,38 +330,52 @@
 
             var comprobanteId = button.data('comprobante-id');
             var numeroComprobante = button.data('numero-comprobante');
-            var saldoPendiente = button.data('saldo-pendiente');
+            var saldoPendiente = parseFloat(button.data('saldo-pendiente')) || 0;
 
             console.log('Modal abierto con:', {comprobanteId, numeroComprobante, saldoPendiente});
 
             // Validar que tenemos el ID del comprobante
             if (!comprobanteId) {
                 console.error('ERROR: No se proporcionó el ID del comprobante');
-                alert('Error: No se pudo cargar la información del comprobante. Por favor, recargue la página.');
-                $('#modalRegistrarPago').modal('hide');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo cargar la información del comprobante. Por favor, recargue la página.'
+                });
+                $(this).modal('hide');
                 return;
             }
 
             // Rellenar campos del modal
             $('#pagoComprobanteId').val(comprobanteId);
             $('#infoNumeroComprobante').text(numeroComprobante || 'N/A');
-            $('#infoSaldoPendiente').text(saldoPendiente || '0.00');
+            $('#infoSaldoPendiente').text(saldoPendiente.toFixed(2));
 
-            // Establecer fecha actual por defecto
-            var now = new Date();
-            var dateString = now.getFullYear() + '-' +
-                             String(now.getMonth() + 1).padStart(2, '0') + '-' +
-                             String(now.getDate()).padStart(2, '0') + 'T' +
-                             String(now.getHours()).padStart(2, '0') + ':' +
-                             String(now.getMinutes()).padStart(2, '0');
-            $('#fechaPago').val(dateString);
-
-            // Establecer monto máximo
+            // Precargar el monto con el saldo pendiente
             $('#monto').attr('max', saldoPendiente);
-            $('#monto').val(saldoPendiente);
+            $('#monto').val(saldoPendiente.toFixed(2));
             $('#monto').trigger('input'); // Trigger validación
 
-            console.log('Comprobante ID seteado:', $('#pagoComprobanteId').val());
+            console.log('✓ Comprobante ID seteado:', $('#pagoComprobanteId').val());
+            console.log('✓ Saldo pendiente:', $('#infoSaldoPendiente').text());
+        });
+
+        // Validar antes de enviar el formulario
+        $('#modalRegistrarPago form').on('submit', function(e) {
+            var comprobanteId = $('#pagoComprobanteId').val();
+
+            console.log('Formulario submit - Comprobante ID:', comprobanteId);
+
+            if (!comprobanteId || comprobanteId === '') {
+                e.preventDefault();
+                console.error('ERROR: ID del comprobante vacío al enviar formulario');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El ID del comprobante no está disponible. Por favor, cierre y abra el modal nuevamente.'
+                });
+                return false;
+            }
         });
     });
 
