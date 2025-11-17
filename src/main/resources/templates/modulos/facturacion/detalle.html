@@ -109,14 +109,14 @@
                                             No hay detalles registrados.
                                         </td>
                                     </tr>
-                                    <tr th:each="detalle : ${comprobante.detalles}">
+                                    <tr th:each="detalle : ${comprobante.detalles}" class="detalle-row" th:data-tipo="${detalle.tipoItem}">
                                         <td>
                                             <span class="badge"
                                                   th:classappend="${detalle.tipoItem == 'PROCEDIMIENTO'} ? 'badge-primary' : 'badge-warning'"
                                                   th:text="${detalle.tipoItem}">PROCEDIMIENTO</span>
                                         </td>
-                                        <td th:text="${detalle.descripcionItem}">Limpieza Dental</td>
-                                        <td class="text-center" th:text="${#numbers.formatDecimal(detalle.cantidad, 1, 2)}">1.00</td>
+                                        <td class="detalle-descripcion" th:text="${detalle.descripcionItem}">Limpieza Dental</td>
+                                        <td class="text-center detalle-cantidad" th:text="${#numbers.formatDecimal(detalle.cantidad, 1, 2)}">1.00</td>
                                         <td class="text-right">S/ <span th:text="${#numbers.formatDecimal(detalle.precioUnitario, 1, 2)}">80.00</span></td>
                                         <td class="text-right"><strong>S/ <span th:text="${#numbers.formatDecimal(detalle.subtotal, 1, 2)}">80.00</span></strong></td>
                                     </tr>
@@ -386,19 +386,57 @@
 
         // Si tiene insumos, preguntar si desea regresar al inventario
         if (tieneInsumos) {
+            // Obtener lista de insumos del comprobante desde la tabla
+            var insumosHTML = '';
+            var hayInsumos = false;
+
+            $('.detalle-row').each(function() {
+                var tipo = $(this).data('tipo');
+                if (tipo === 'INSUMO') {
+                    hayInsumos = true;
+                    var descripcion = $(this).find('.detalle-descripcion').text();
+                    var cantidad = $(this).find('.detalle-cantidad').text();
+                    insumosHTML += '<li class="mb-2"><i class="fas fa-box text-warning mr-2"></i><strong>' + descripcion + '</strong> - Cantidad: ' + cantidad + '</li>';
+                }
+            });
+
+            if (!hayInsumos) {
+                insumosHTML = '<li class="text-muted">No hay insumos en este comprobante</li>';
+            }
+
             Swal.fire({
                 title: '¿Anular este comprobante?',
-                html: '<p>Esta acción no se puede deshacer.</p><p class="mt-2"><strong>¿Desea regresar los insumos al inventario?</strong></p>',
+                html: `
+                    <div class="text-left">
+                        <p class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <strong>Esta acción no se puede deshacer.</strong>
+                        </p>
+                        <div class="card">
+                            <div class="card-header bg-info text-white py-2">
+                                <strong><i class="fas fa-clipboard-list mr-2"></i>Insumos utilizados:</strong>
+                            </div>
+                            <div class="card-body p-3">
+                                <ul class="list-unstyled mb-0" style="max-height: 200px; overflow-y: auto;">
+                                    ${insumosHTML}
+                                </ul>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-center font-weight-bold">¿Desea regresar estos insumos al inventario?</p>
+                        <p class="text-muted small text-center">El motivo será registrado como "Anulación de Venta"</p>
+                    </div>
+                `,
                 icon: 'warning',
                 showCancelButton: true,
-                showDenyButton: true,
+                showDenyButton: hayInsumos,
                 confirmButtonText: '<i class="fas fa-check mr-1"></i> Sí, regresar insumos',
                 denyButtonText: '<i class="fas fa-times mr-1"></i> No regresar insumos',
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#28a745',
                 denyButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
-                reverseButtons: true
+                reverseButtons: true,
+                width: '650px'
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Anular y regresar insumos
