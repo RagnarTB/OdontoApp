@@ -288,12 +288,14 @@
                                 <i class="fas fa-info-circle"></i> Solo se puede imprimir comprobantes pagados totalmente
                             </small>
 
-                            <a th:href="@{/facturacion/anular/{id}(id=${comprobante.id})}"
+                            <button type="button"
                                class="btn btn-outline-danger btn-block mt-2"
                                th:if="${comprobante.estadoPago.nombre != 'ANULADO' && (pagos == null || pagos.empty)}"
-                               onclick="return confirm('¿Está seguro de que desea anular este comprobante? Esta acción no se puede deshacer.');">
+                               th:attr="data-comprobante-id=${comprobante.id},
+                                        data-tiene-insumos=${comprobante.detalles.?[tipoItem == 'INSUMO'].size() > 0}"
+                               onclick="confirmarAnulacion(this);">
                                 <i class="fas fa-ban mr-2"></i>Anular Comprobante
-                            </a>
+                            </button>
 
                             <div th:if="${comprobante.estadoPago.nombre != 'ANULADO' && pagos != null && !pagos.empty}"
                                  class="alert alert-warning small mt-2">
@@ -351,12 +353,18 @@
             $('#infoNumeroComprobante').text(numeroComprobante || 'N/A');
             $('#infoSaldoPendiente').text(saldoPendiente.toFixed(2));
 
+            // Asignar automáticamente la fecha y hora actual
+            const ahora = new Date();
+            const fechaFormateada = ahora.toISOString().slice(0, 19);  // Formato: YYYY-MM-DDTHH:mm:ss
+            $('#fechaPago').val(fechaFormateada);
+
             // Precargar el monto con el saldo pendiente
             $('#monto').attr('max', saldoPendiente);
             $('#monto').val(saldoPendiente.toFixed(2));
             $('#monto').trigger('input'); // Trigger validación
 
             console.log('✓ Comprobante ID seteado:', $('#pagoComprobanteId').val());
+            console.log('✓ Fecha de pago seteada:', $('#fechaPago').val());
             console.log('✓ Saldo pendiente:', $('#infoSaldoPendiente').text());
         });
 
