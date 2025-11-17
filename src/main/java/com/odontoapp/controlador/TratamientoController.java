@@ -226,6 +226,35 @@ public class TratamientoController {
             // Guardar tratamiento
             tratamientoRealizadoRepository.save(tratamiento);
 
+            // **BUSCAR Y ACTUALIZAR TRATAMIENTO PLANIFICADO SI EXISTE**
+            // Buscar tratamiento planificado del mismo paciente y procedimiento que esté pendiente
+            List<TratamientoPlanificado> tratamientosplanificados = tratamientoPlanificadoRepository
+                    .findByPacienteAndProcedimientoAndEstado(
+                            cita.getPaciente(),
+                            procedimiento,
+                            "PLANIFICADO"
+                    );
+
+            // También buscar los que están EN_CURSO
+            if (tratamientosplanificados.isEmpty()) {
+                tratamientosplanificados = tratamientoPlanificadoRepository
+                        .findByPacienteAndProcedimientoAndEstado(
+                                cita.getPaciente(),
+                                procedimiento,
+                                "EN_CURSO"
+                        );
+            }
+
+            // Si encontramos un tratamiento planificado, marcarlo como COMPLETADO
+            if (!tratamientosplanificados.isEmpty()) {
+                TratamientoPlanificado planificado = tratamientosplanificados.get(0); // Tomar el primero
+                planificado.setEstado("COMPLETADO");
+                planificado.setTratamientoRealizadoId(tratamiento.getId());
+                tratamientoPlanificadoRepository.save(planificado);
+                System.out.println("✓ Tratamiento planificado ID " + planificado.getId() +
+                        " marcado como COMPLETADO");
+            }
+
             // **CREAR CITA AUTOMÁTICA EN EL CALENDARIO**
             // Crear una cita automática que bloquee el tiempo en el que se realiza el tratamiento
             LocalDateTime inicioTratamiento = cita.getFechaHoraFin(); // Inicia después de la cita original

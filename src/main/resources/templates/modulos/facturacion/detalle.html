@@ -318,34 +318,49 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     $(document).ready(function() {
+        console.log('=== SCRIPT DETALLE.HTML CARGADO ===');
+
+        // Datos del comprobante desde Thymeleaf
+        var comprobanteIdThymeleaf = /*[[${comprobante.id}]]*/ null;
+        var numeroComprobanteThymeleaf = /*[[${comprobante.numeroComprobante}]]*/ '';
+        var saldoPendienteThymeleaf = /*[[${comprobante.montoPendiente}]]*/ 0;
+
+        console.log('Datos de Thymeleaf:', {
+            comprobanteId: comprobanteIdThymeleaf,
+            numeroComprobante: numeroComprobanteThymeleaf,
+            saldoPendiente: saldoPendienteThymeleaf
+        });
+
+        // Limpiar modal al cerrar
+        $('#modalRegistrarPago').on('hidden.bs.modal', function() {
+            console.log('Modal cerrado - limpiando campos');
+            $(this).find('form')[0].reset();
+            $('#camposYape').hide();
+            $('#camposMixto').hide();
+            $('#warningMixto').remove();
+        });
+
         // IMPORTANTE: Usar 'show.bs.modal' para cargar datos ANTES de mostrar el modal
         $('#modalRegistrarPago').on('show.bs.modal', function (event) {
-            var button = $(event.relatedTarget); // Botón que abrió el modal
+            console.log('=== ABRIENDO MODAL DE PAGO ===');
 
-            console.log('Modal show.bs.modal - event.relatedTarget:', button);
+            // Usar datos de Thymeleaf directamente
+            var comprobanteId = comprobanteIdThymeleaf;
+            var numeroComprobante = numeroComprobanteThymeleaf;
+            var saldoPendiente = parseFloat(saldoPendienteThymeleaf) || 0;
 
-            // Validar que tengamos el botón y los datos
-            if (!button || button.length === 0) {
-                console.error('No se pudo obtener el botón que abrió el modal');
-                return;
-            }
-
-            var comprobanteId = button.data('comprobante-id');
-            var numeroComprobante = button.data('numero-comprobante');
-            var saldoPendiente = parseFloat(button.data('saldo-pendiente')) || 0;
-
-            console.log('Modal abierto con:', {comprobanteId, numeroComprobante, saldoPendiente});
+            console.log('Usando datos:', {comprobanteId, numeroComprobante, saldoPendiente});
 
             // Validar que tenemos el ID del comprobante
             if (!comprobanteId) {
-                console.error('ERROR: No se proporcionó el ID del comprobante');
+                console.error('ERROR: No hay ID del comprobante');
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
                     text: 'No se pudo cargar la información del comprobante. Por favor, recargue la página.'
                 });
-                $(this).modal('hide');
-                return;
+                event.preventDefault();
+                return false;
             }
 
             // Rellenar campos del modal
@@ -366,24 +381,6 @@
             console.log('✓ Comprobante ID seteado:', $('#pagoComprobanteId').val());
             console.log('✓ Fecha de pago seteada:', $('#fechaPago').val());
             console.log('✓ Saldo pendiente:', $('#infoSaldoPendiente').text());
-        });
-
-        // Validar antes de enviar el formulario
-        $('#modalRegistrarPago form').on('submit', function(e) {
-            var comprobanteId = $('#pagoComprobanteId').val();
-
-            console.log('Formulario submit - Comprobante ID:', comprobanteId);
-
-            if (!comprobanteId || comprobanteId === '') {
-                e.preventDefault();
-                console.error('ERROR: ID del comprobante vacío al enviar formulario');
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'El ID del comprobante no está disponible. Por favor, cierre y abra el modal nuevamente.'
-                });
-                return false;
-            }
         });
     });
 

@@ -44,4 +44,16 @@ public interface TratamientoPlanificadoRepository extends JpaRepository<Tratamie
      */
     @Query("SELECT t FROM TratamientoPlanificado t WHERE t.citaAsociada.id = :citaId")
     TratamientoPlanificado findByCitaAsociadaId(@Param("citaId") Long citaId);
+
+    /**
+     * Buscar tratamientos planificados por paciente, procedimiento y estado
+     * Útil para encontrar tratamientos pendientes y marcarlos como completados
+     */
+    @Query("SELECT t FROM TratamientoPlanificado t WHERE t.paciente = :paciente " +
+           "AND t.procedimiento = :procedimiento AND t.estado = :estado " +
+           "ORDER BY t.fechaCreacion DESC")
+    List<TratamientoPlanificado> findByPacienteAndProcedimientoAndEstado(
+            @Param("paciente") Usuario paciente,
+            @Param("procedimiento") com.odontoapp.entidad.Procedimiento procedimiento,
+            @Param("estado") String estado);
 }
