@@ -48,13 +48,51 @@
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                     data-accordion="false">
 
-                    <!-- DASHBOARD -->
-                    <li class="nav-item">
-                        <a th:href="@{/dashboard}" class="nav-link">
-                            <i class="nav-icon fas fa-tachometer-alt"></i>
-                            <p>Dashboard</p>
-                        </a>
-                    </li>
+                    <!-- ======================= MENÚ PARA PACIENTES ======================= -->
+                    <th:block sec:authorize="hasRole('PACIENTE')">
+                        <!-- Dashboard del Paciente -->
+                        <li class="nav-item">
+                            <a th:href="@{/paciente/dashboard}" class="nav-link">
+                                <i class="nav-icon fas fa-home"></i>
+                                <p>Inicio</p>
+                            </a>
+                        </li>
+
+                        <!-- Mis Citas -->
+                        <li class="nav-item">
+                            <a th:href="@{/paciente/citas}" class="nav-link">
+                                <i class="nav-icon fas fa-calendar-alt"></i>
+                                <p>Mis Citas</p>
+                            </a>
+                        </li>
+
+                        <!-- Mi Perfil -->
+                        <li class="nav-item">
+                            <a th:href="@{/paciente/perfil}" class="nav-link">
+                                <i class="nav-icon fas fa-user-circle"></i>
+                                <p>Mi Perfil</p>
+                            </a>
+                        </li>
+
+                        <!-- Mis Comprobantes -->
+                        <li class="nav-item">
+                            <a th:href="@{/paciente/perfil?tab=comprobantes}" class="nav-link">
+                                <i class="nav-icon fas fa-file-invoice"></i>
+                                <p>Mis Comprobantes</p>
+                            </a>
+                        </li>
+                    </th:block>
+
+                    <!-- ======================= MENÚ PARA STAFF ======================= -->
+                    <th:block sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA','ALMACEN')">
+                        <!-- DASHBOARD -->
+                        <li class="nav-item">
+                            <a th:href="@{/dashboard}" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Dashboard</p>
+                            </a>
+                        </li>
+                    </th:block>
 
                     <!-- ADMINISTRACIÓN - Solo ADMIN -->
                     <li class="nav-header" sec:authorize="hasRole('ADMIN')">
@@ -88,12 +126,11 @@
                         </a>
                     </li>
 
-                    <!-- Agenda de Citas - ADMIN, ODONTOLOGO, RECEPCIONISTA, PACIENTE -->
-                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA','PACIENTE')">
+                    <!-- Agenda de Citas - ADMIN, ODONTOLOGO, RECEPCIONISTA -->
+                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
                         <a th:href="@{/citas}" class="nav-link">
                             <i class="nav-icon fas fa-calendar-alt"></i>
-                            <p sec:authorize="hasRole('PACIENTE')">Mis Citas</p>
-                            <p sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">Agenda de Citas</p>
+                            <p>Agenda de Citas</p>
                         </a>
                     </li>
 

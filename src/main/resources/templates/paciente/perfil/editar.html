@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(titulo='Editar Mi Perfil', contenido=~{::#contenido-principal})}">
+
+<body>
+<div id="contenido-principal">
+
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1><i class="fas fa-user-edit"></i> Editar Mis Datos Personales</h1>
+                </div>
+                <div class="col-sm-6">
+                    <a th:href="@{/paciente/perfil}" class="btn btn-secondary float-sm-right">
+                        <i class="fas fa-arrow-left"></i> Volver a Mi Perfil
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            <div class="row">
+                <!-- Datos no editables (solo lectura) -->
+                <div class="col-md-4">
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-lock"></i> Datos Protegidos (Solo Lectura)</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Importante:</strong> Estos datos no pueden ser modificados por ti.
+                                Si necesitas actualizarlos, contacta con la clínica.
+                            </div>
+
+                            <dl class="row">
+                                <dt class="col-sm-6">Nombre Completo:</dt>
+                                <dd class="col-sm-6" th:text="${paciente.nombreCompleto}">Nombre</dd>
+
+                                <dt class="col-sm-6">Tipo Documento:</dt>
+                                <dd class="col-sm-6" th:text="${paciente.tipoDocumento.nombre}">DNI</dd>
+
+                                <dt class="col-sm-6">Número Documento:</dt>
+                                <dd class="col-sm-6" th:text="${paciente.numeroDocumento}">12345678</dd>
+
+                                <dt class="col-sm-6">Fecha Nacimiento:</dt>
+                                <dd class="col-sm-6" th:text="${#temporals.format(paciente.fechaNacimiento, 'dd/MM/yyyy')}">01/01/1990</dd>
+
+                                <dt class="col-sm-6">Género:</dt>
+                                <dd class="col-sm-6" th:text="${paciente.genero}">Masculino</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario de datos editables -->
+                <div class="col-md-8">
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-edit"></i> Datos que Puedes Actualizar</h3>
+                        </div>
+                        <form th:action="@{/paciente/perfil/guardar}" th:object="${pacienteDTO}" method="post">
+                            <div class="card-body">
+
+                                <input type="hidden" th:field="*{id}">
+
+                                <div class="form-group">
+                                    <label for="email">
+                                        Email <span class="text-danger">*</span>
+                                        <small class="text-muted">(también se usará para iniciar sesión)</small>
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                        </div>
+                                        <input type="email" th:field="*{email}" id="email" class="form-control"
+                                               placeholder="ejemplo@email.com" required
+                                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">
+                                            Error en email
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Asegúrate de usar un email válido, ya que recibirás notificaciones aquí.
+                                    </small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="telefono">
+                                        Teléfono
+                                        <small class="text-muted">(opcional)</small>
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                        </div>
+                                        <input type="text" th:field="*{telefono}" id="telefono" class="form-control"
+                                               placeholder="999-999-999" maxlength="20"
+                                               th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}">
+                                            Error en teléfono
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Número de contacto para confirmación de citas y comunicaciones.
+                                    </small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="direccion">
+                                        Dirección
+                                        <small class="text-muted">(opcional)</small>
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                                        </div>
+                                        <textarea th:field="*{direccion}" id="direccion" class="form-control" rows="3"
+                                                  placeholder="Ingrese su dirección completa"
+                                                  th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid' : ''"></textarea>
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('direccion')}" th:errors="*{direccion}">
+                                            Error en dirección
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Dirección completa (calle, número, distrito, ciudad).
+                                    </small>
+                                </div>
+
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>Recuerda:</strong> Si actualizas tu email, deberás usarlo para iniciar sesión la próxima vez.
+                                </div>
+
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save"></i> Guardar Cambios
+                                </button>
+                                <a th:href="@{/paciente/perfil}" class="btn btn-default">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Información adicional sobre seguridad -->
+                    <div class="card card-outline card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-shield-alt"></i> Seguridad y Privacidad</h3>
+                        </div>
+                        <div class="card-body">
+                            <p><strong><i class="fas fa-check text-success"></i> Tus datos están protegidos</strong></p>
+                            <ul class="list-unstyled ml-3">
+                                <li><i class="fas fa-lock text-muted"></i> Tus datos médicos son confidenciales</li>
+                                <li><i class="fas fa-lock text-muted"></i> Solo tú y el personal autorizado pueden verlos</li>
+                                <li><i class="fas fa-lock text-muted"></i> Los cambios son registrados en el sistema</li>
+                            </ul>
+
+                            <hr>
+
+                            <p><strong><i class="fas fa-info-circle text-info"></i> ¿Necesitas cambiar tu contraseña?</strong></p>
+                            <p class="text-muted">Por favor, contacta con la administración de la clínica para restablecer tu contraseña.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Validación de email en tiempo real
+        $('#email').on('blur', function() {
+            const email = $(this).val();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (email && !emailRegex.test(email)) {
+                $(this).addClass('is-invalid');
+                $(this).next('.invalid-feedback').text('Por favor ingresa un email válido');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+
+        // Validación de teléfono (solo números, guiones y espacios)
+        $('#telefono').on('input', function() {
+            this.value = this.value.replace(/[^0-9\-\s]/g, '');
+        });
+    });
+</script>
+
+</body>
+</html>

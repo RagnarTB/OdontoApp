@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(titulo='Mi Perfil', contenido=~{::#contenido-principal})}">
+
+<body>
+<div id="contenido-principal">
+
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1><i class="fas fa-user-circle"></i> Mi Perfil e Historial Clínico</h1>
+                </div>
+                <div class="col-sm-6">
+                    <a th:href="@{/paciente/perfil/editar}" class="btn btn-warning float-sm-right">
+                        <i class="fas fa-edit"></i> Editar Mis Datos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            <!-- Información del Paciente -->
+            <div class="row">
+                <div class="col-md-3">
+                    <!-- Profile Image -->
+                    <div class="card card-primary card-outline">
+                        <div class="card-body box-profile">
+                            <div class="text-center">
+                                <img class="profile-user-img img-fluid img-circle"
+                                     th:src="@{/adminlte/dist/img/avatar5.png}"
+                                     alt="User profile picture">
+                            </div>
+
+                            <h3 class="profile-username text-center" th:text="${paciente.nombreCompleto}">Nombre del Paciente</h3>
+
+                            <p class="text-muted text-center">Paciente</p>
+
+                            <ul class="list-group list-group-unbordered mb-3">
+                                <li class="list-group-item">
+                                    <b>Documento</b>
+                                    <a class="float-right">
+                                        <span th:text="${paciente.tipoDocumento.nombre}">DNI</span>:
+                                        <span th:text="${paciente.numeroDocumento}">12345678</span>
+                                    </a>
+                                </li>
+                                <li class="list-group-item">
+                                    <b>Fecha de Nacimiento</b>
+                                    <a class="float-right" th:text="${#temporals.format(paciente.fechaNacimiento, 'dd/MM/yyyy')}">01/01/1990</a>
+                                </li>
+                                <li class="list-group-item">
+                                    <b>Edad</b>
+                                    <a class="float-right">
+                                        <span th:text="${#temporals.period(paciente.fechaNacimiento, #temporals.createNow()).years}">30</span> años
+                                    </a>
+                                </li>
+                                <li class="list-group-item">
+                                    <b>Género</b>
+                                    <a class="float-right" th:text="${paciente.genero}">Masculino</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Contact Info -->
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">Información de Contacto</h3>
+                        </div>
+                        <div class="card-body">
+                            <strong><i class="fas fa-envelope mr-1"></i> Email</strong>
+                            <p class="text-muted" th:text="${paciente.email}">email@example.com</p>
+
+                            <hr>
+
+                            <strong><i class="fas fa-phone mr-1"></i> Teléfono</strong>
+                            <p class="text-muted" th:text="${paciente.telefono ?: 'No registrado'}">999-999-999</p>
+
+                            <hr>
+
+                            <strong><i class="fas fa-map-marker-alt mr-1"></i> Dirección</strong>
+                            <p class="text-muted" th:text="${paciente.direccion ?: 'No registrada'}">Dirección completa</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-9">
+                    <div class="card">
+                        <div class="card-header p-2">
+                            <ul class="nav nav-pills">
+                                <li class="nav-item">
+                                    <a class="nav-link active" href="#citas" data-toggle="tab">
+                                        <i class="fas fa-calendar-alt"></i> Citas
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#tratamientos" data-toggle="tab">
+                                        <i class="fas fa-tooth"></i> Tratamientos
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#comprobantes" data-toggle="tab">
+                                        <i class="fas fa-file-invoice-dollar"></i> Comprobantes
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#odontograma" data-toggle="tab">
+                                        <i class="fas fa-teeth"></i> Odontograma
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content">
+                                <!-- TAB: Citas -->
+                                <div class="active tab-pane" id="citas">
+                                    <div class="mb-3">
+                                        <a th:href="@{/paciente/citas}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-calendar-plus"></i> Agendar Nueva Cita
+                                        </a>
+                                        <a th:href="@{/paciente/citas/lista}" class="btn btn-info btn-sm">
+                                            <i class="fas fa-list"></i> Ver Todas las Citas
+                                        </a>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Odontólogo</th>
+                                                    <th>Procedimiento</th>
+                                                    <th>Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:if="${citasPage.content.isEmpty()}">
+                                                    <td colspan="4" class="text-center text-muted">
+                                                        No se encontraron citas
+                                                    </td>
+                                                </tr>
+                                                <tr th:each="cita : ${citasPage.content}">
+                                                    <td th:text="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}">Fecha</td>
+                                                    <td th:text="${cita.odontologo.nombreCompleto}">Doctor</td>
+                                                    <td th:text="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}">Procedimiento</td>
+                                                    <td>
+                                                        <span class="badge"
+                                                              th:classappend="${
+                                                                  cita.estadoCita.nombre == 'PENDIENTE' ? 'badge-warning' :
+                                                                  cita.estadoCita.nombre == 'CONFIRMADA' ? 'badge-info' :
+                                                                  cita.estadoCita.nombre == 'ASISTIO' ? 'badge-success' :
+                                                                  cita.estadoCita.nombre == 'NO_ASISTIO' ? 'badge-danger' :
+                                                                  'badge-secondary'
+                                                              }"
+                                                              th:text="${cita.estadoCita.descripcion}">Estado</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Paginación de Citas -->
+                                    <nav th:if="${citasPage.totalPages > 1}">
+                                        <ul class="pagination pagination-sm justify-content-center">
+                                            <li class="page-item" th:classappend="${!citasPage.hasPrevious() ? 'disabled' : ''}">
+                                                <a class="page-link" th:href="@{/paciente/perfil(citasPageNum=${citasPage.number - 1})}">Anterior</a>
+                                            </li>
+                                            <li class="page-item" th:each="pageNum : ${#numbers.sequence(0, citasPage.totalPages - 1)}"
+                                                th:classappend="${pageNum == citasPage.number ? 'active' : ''}">
+                                                <a class="page-link" th:href="@{/paciente/perfil(citasPageNum=${pageNum})}" th:text="${pageNum + 1}">1</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!citasPage.hasNext() ? 'disabled' : ''}">
+                                                <a class="page-link" th:href="@{/paciente/perfil(citasPageNum=${citasPage.number + 1})}">Siguiente</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+
+                                <!-- TAB: Tratamientos -->
+                                <div class="tab-pane" id="tratamientos">
+                                    <h5>Tratamientos Planificados/En Curso</h5>
+                                    <div class="table-responsive mb-4">
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Tratamiento</th>
+                                                    <th>Fecha Inicio</th>
+                                                    <th>Estado</th>
+                                                    <th>Diente(s)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:if="${tratamientosPlanificados.isEmpty()}">
+                                                    <td colspan="4" class="text-center text-muted">
+                                                        No hay tratamientos planificados
+                                                    </td>
+                                                </tr>
+                                                <tr th:each="tp : ${tratamientosPlanificados}">
+                                                    <td th:text="${tp.tratamiento.nombre}">Tratamiento</td>
+                                                    <td th:text="${tp.fechaInicio != null ? #temporals.format(tp.fechaInicio, 'dd/MM/yyyy') : 'No iniciado'}">Fecha</td>
+                                                    <td>
+                                                        <span class="badge badge-warning" th:text="${tp.estadoTratamiento.descripcion}">Estado</span>
+                                                    </td>
+                                                    <td th:text="${tp.diente != null ? tp.diente.numeroDiente : 'N/A'}">Diente</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <h5>Tratamientos Realizados</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Tratamiento</th>
+                                                    <th>Odontólogo</th>
+                                                    <th>Diente(s)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:if="${tratamientosPage.content.isEmpty()}">
+                                                    <td colspan="4" class="text-center text-muted">
+                                                        No se encontraron tratamientos realizados
+                                                    </td>
+                                                </tr>
+                                                <tr th:each="tr : ${tratamientosPage.content}">
+                                                    <td th:text="${#temporals.format(tr.fechaRealizacion, 'dd/MM/yyyy')}">Fecha</td>
+                                                    <td th:text="${tr.tratamiento.nombre}">Tratamiento</td>
+                                                    <td th:text="${tr.odontologo.nombreCompleto}">Doctor</td>
+                                                    <td th:text="${tr.diente != null ? tr.diente.numeroDiente : 'General'}">Diente</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Paginación de Tratamientos -->
+                                    <nav th:if="${tratamientosPage.totalPages > 1}">
+                                        <ul class="pagination pagination-sm justify-content-center">
+                                            <li class="page-item" th:classappend="${!tratamientosPage.hasPrevious() ? 'disabled' : ''}">
+                                                <a class="page-link" th:href="@{/paciente/perfil(tratamientosPage=${tratamientosPage.number - 1})}">Anterior</a>
+                                            </li>
+                                            <li class="page-item" th:each="pageNum : ${#numbers.sequence(0, tratamientosPage.totalPages - 1)}"
+                                                th:classappend="${pageNum == tratamientosPage.number ? 'active' : ''}">
+                                                <a class="page-link" th:href="@{/paciente/perfil(tratamientosPage=${pageNum})}" th:text="${pageNum + 1}">1</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!tratamientosPage.hasNext() ? 'disabled' : ''}">
+                                                <a class="page-link" th:href="@{/paciente/perfil(tratamientosPage=${tratamientosPage.number + 1})}">Siguiente</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+
+                                <!-- TAB: Comprobantes -->
+                                <div class="tab-pane" id="comprobantes">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Número</th>
+                                                    <th>Fecha Emisión</th>
+                                                    <th>Monto Total</th>
+                                                    <th>Monto Pendiente</th>
+                                                    <th>Estado</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:if="${comprobantesPage.content.isEmpty()}">
+                                                    <td colspan="6" class="text-center text-muted">
+                                                        No se encontraron comprobantes
+                                                    </td>
+                                                </tr>
+                                                <tr th:each="comp : ${comprobantesPage.content}">
+                                                    <td th:text="${comp.numeroComprobante}">B001-000001</td>
+                                                    <td th:text="${#temporals.format(comp.fechaEmision, 'dd/MM/yyyy')}">Fecha</td>
+                                                    <td>S/ <span th:text="${#numbers.formatDecimal(comp.montoTotal, 1, 2)}">0.00</span></td>
+                                                    <td>S/ <span th:text="${#numbers.formatDecimal(comp.montoPendiente, 1, 2)}">0.00</span></td>
+                                                    <td>
+                                                        <span class="badge"
+                                                              th:classappend="${
+                                                                  comp.estadoPago.nombre == 'PAGADO' ? 'badge-success' :
+                                                                  comp.estadoPago.nombre == 'PAGADO_PARCIAL' ? 'badge-warning' :
+                                                                  'badge-danger'
+                                                              }"
+                                                              th:text="${comp.estadoPago.descripcion}">Estado</span>
+                                                    </td>
+                                                    <td>
+                                                        <a th:href="@{/paciente/perfil/comprobantes/{id}(id=${comp.id})}"
+                                                           class="btn btn-sm btn-info" title="Ver Detalle">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Paginación de Comprobantes -->
+                                    <nav th:if="${comprobantesPage.totalPages > 1}">
+                                        <ul class="pagination pagination-sm justify-content-center">
+                                            <li class="page-item" th:classappend="${!comprobantesPage.hasPrevious() ? 'disabled' : ''}">
+                                                <a class="page-link" th:href="@{/paciente/perfil(comprobantesPageNum=${comprobantesPage.number - 1})}">Anterior</a>
+                                            </li>
+                                            <li class="page-item" th:each="pageNum : ${#numbers.sequence(0, comprobantesPage.totalPages - 1)}"
+                                                th:classappend="${pageNum == comprobantesPage.number ? 'active' : ''}">
+                                                <a class="page-link" th:href="@{/paciente/perfil(comprobantesPageNum=${pageNum})}" th:text="${pageNum + 1}">1</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!comprobantesPage.hasNext() ? 'disabled' : ''}">
+                                                <a class="page-link" th:href="@{/paciente/perfil(comprobantesPageNum=${comprobantesPage.number + 1})}">Siguiente</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+
+                                <!-- TAB: Odontograma -->
+                                <div class="tab-pane" id="odontograma">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i>
+                                        <strong>Odontograma:</strong> Representación visual del estado de tus dientes y tratamientos realizados.
+                                    </div>
+
+                                    <div th:if="${odontograma.isEmpty()}" class="text-center text-muted py-5">
+                                        <i class="fas fa-teeth fa-3x mb-3"></i>
+                                        <p>No se ha registrado un odontograma todavía</p>
+                                    </div>
+
+                                    <div th:if="${!odontograma.isEmpty()}" class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Diente</th>
+                                                    <th>Estado</th>
+                                                    <th>Cara Vestibular</th>
+                                                    <th>Cara Palatina</th>
+                                                    <th>Cara Mesial</th>
+                                                    <th>Cara Distal</th>
+                                                    <th>Cara Oclusal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:each="diente : ${odontograma}">
+                                                    <td><strong th:text="${diente.numeroDiente}">11</strong></td>
+                                                    <td th:text="${diente.estadoDiente.nombre}">Sano</td>
+                                                    <td th:text="${diente.caraVestibular ?: '-'}">-</td>
+                                                    <td th:text="${diente.caraPalatina ?: '-'}">-</td>
+                                                    <td th:text="${diente.caraMesial ?: '-'}">-</td>
+                                                    <td th:text="${diente.caraDistal ?: '-'}">-</td>
+                                                    <td th:text="${diente.caraOclusal ?: '-'}">-</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+</div>
+</body>
+</html>
