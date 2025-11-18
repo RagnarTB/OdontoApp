@@ -539,17 +539,36 @@ public class CitaServiceImpl implements CitaService {
             cita.setNotas(notasActuales + "Asistencia: " + notas);
         }
 
-        // REFACTORIZACIÓN: El descuento de inventario y creación de TratamientoRealizado
-        // se maneja EXCLUSIVAMENTE en el flujo de Facturación (Modal Avanzado de Tratamientos).
-        // Esto evita duplicidad y centraliza el control de inventario.
-        //
-        // Al marcar asistencia, solo se actualiza el estado de la cita y, si existe,
-        // el estado del TratamientoPlanificado a COMPLETADO para excluirlo de pendientes.
+        // LÓGICA DE COHERENCIA: ASISTIO = REALIZADO
+        // Si el paciente asistió, asegurar que exista al menos un TratamientoRealizado MÍNIMO
+        // asociado a la cita para mantener coherencia (cada ASISTIO debe tener un REALIZADO).
+        // NOTA: El descuento de inventario se maneja EXCLUSIVAMENTE en Facturación.
 
         if (asistio && cita.getProcedimiento() != null) {
             System.out.println("ℹ️ Paciente ASISTIÓ - Cita ID: " + citaId + ", Procedimiento: " + cita.getProcedimiento().getNombre());
-            System.out.println("   → El registro de trabajo final (TratamientoRealizado) y descuento de inventario");
-            System.out.println("   → se realizarán en el módulo de Facturación (centralizando el control)");
+
+            // Verificar si ya existe un TratamientoRealizado para esta cita
+            List<TratamientoRealizado> tratamientosExistentes = tratamientoRealizadoRepository.findByCitaId(citaId);
+
+            if (tratamientosExistentes.isEmpty()) {
+                // NO existe TratamientoRealizado → Crear uno MÍNIMO para coherencia
+                TratamientoRealizado tratamientoMinimo = new TratamientoRealizado();
+                tratamientoMinimo.setCita(cita);
+                tratamientoMinimo.setProcedimiento(cita.getProcedimiento());
+                tratamientoMinimo.setOdontologo(cita.getOdontologo());
+                tratamientoMinimo.setPiezaDental(null);
+                tratamientoMinimo.setDescripcionTrabajo("Tratamiento realizado en cita del " +
+                    cita.getFechaHoraInicio().toLocalDate());
+                tratamientoMinimo.setFechaRealizacion(cita.getFechaHoraInicio());
+
+                TratamientoRealizado guardado = tratamientoRealizadoRepository.save(tratamientoMinimo);
+                System.out.println("✅ TratamientoRealizado MÍNIMO creado - ID: " + guardado.getId() +
+                                 " (Coherencia: ASISTIO = REALIZADO)");
+                System.out.println("   → El descuento de inventario se realizará en el módulo de Facturación");
+            } else {
+                System.out.println("✓ Ya existe TratamientoRealizado para esta cita - ID: " +
+                                 tratamientosExistentes.get(0).getId());
+            }
         }
 
         // Manejar tratamiento planificado asociado según asistencia

@@ -240,32 +240,42 @@ public class TratamientoController {
             }
 
             // **BUSCAR Y ACTUALIZAR TRATAMIENTO PLANIFICADO SI EXISTE**
-            // Buscar tratamiento planificado del mismo paciente y procedimiento que esté pendiente
-            List<TratamientoPlanificado> tratamientosplanificados = tratamientoPlanificadoRepository
-                    .findByPacienteAndProcedimientoAndEstado(
-                            cita.getPaciente(),
-                            procedimiento,
-                            "PLANIFICADO"
-                    );
+            // Prioridad 1: Buscar por cita asociada (más preciso)
+            TratamientoPlanificado planificado = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
 
-            // También buscar los que están EN_CURSO
-            if (tratamientosplanificados.isEmpty()) {
-                tratamientosplanificados = tratamientoPlanificadoRepository
+            // Prioridad 2: Si no se encuentra por cita, buscar por paciente + procedimiento + estado
+            if (planificado == null) {
+                List<TratamientoPlanificado> tratamientosplanificados = tratamientoPlanificadoRepository
                         .findByPacienteAndProcedimientoAndEstado(
                                 cita.getPaciente(),
                                 procedimiento,
-                                "EN_CURSO"
+                                "PLANIFICADO"
                         );
+
+                // También buscar los que están EN_CURSO
+                if (tratamientosplanificados.isEmpty()) {
+                    tratamientosplanificados = tratamientoPlanificadoRepository
+                            .findByPacienteAndProcedimientoAndEstado(
+                                    cita.getPaciente(),
+                                    procedimiento,
+                                    "EN_CURSO"
+                            );
+                }
+
+                if (!tratamientosplanificados.isEmpty()) {
+                    planificado = tratamientosplanificados.get(0); // Tomar el primero
+                }
             }
 
             // Si encontramos un tratamiento planificado, marcarlo como COMPLETADO
-            if (!tratamientosplanificados.isEmpty()) {
-                TratamientoPlanificado planificado = tratamientosplanificados.get(0); // Tomar el primero
+            if (planificado != null) {
                 planificado.setEstado("COMPLETADO");
                 planificado.setTratamientoRealizadoId(tratamiento.getId());
                 tratamientoPlanificadoRepository.save(planificado);
                 System.out.println("✓ Tratamiento planificado ID " + planificado.getId() +
-                        " marcado como COMPLETADO");
+                        " marcado como COMPLETADO y vinculado a TratamientoRealizado ID " + tratamiento.getId());
+            } else {
+                System.out.println("ℹ️ No se encontró TratamientoPlanificado asociado - tratamiento directo");
             }
 
             // **CREAR CITA AUTOMÁTICA EN EL CALENDARIO**

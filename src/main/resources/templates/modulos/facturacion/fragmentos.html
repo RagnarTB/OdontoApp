@@ -251,6 +251,11 @@
             var minutes = String(now.getMinutes()).padStart(2, '0');
             var fechaHoraActual = year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
             $('#fechaPago').val(fechaHoraActual);
+
+            // Auto-focus: enfocar el selector de método de pago al abrir modal
+            setTimeout(function() {
+                $('#metodoPagoId').focus();
+            }, 500);
         });
 
         // Listener en el botón como backup
