@@ -1,19 +1,25 @@
 package com.odontoapp.servicio.impl;
 
+import com.odontoapp.dto.MovimientoDTO;
 import com.odontoapp.dto.TratamientoRealizadoDTO;
 import com.odontoapp.entidad.Cita;
 import com.odontoapp.entidad.Insumo;
+import com.odontoapp.entidad.MotivoMovimiento;
 import com.odontoapp.entidad.Procedimiento;
 import com.odontoapp.entidad.ProcedimientoInsumo;
 import com.odontoapp.entidad.Rol;
+import com.odontoapp.entidad.TipoMovimiento;
 import com.odontoapp.entidad.TratamientoRealizado;
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.InsumoRepository;
+import com.odontoapp.repositorio.MotivoMovimientoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
+import com.odontoapp.repositorio.TipoMovimientoRepository;
 import com.odontoapp.repositorio.TratamientoRealizadoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
+import com.odontoapp.servicio.InventarioService;
 import com.odontoapp.servicio.TratamientoRealizadoService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -36,19 +42,28 @@ public class TratamientoRealizadoServiceImpl implements TratamientoRealizadoServ
     private final UsuarioRepository usuarioRepository;
     private final InsumoRepository insumoRepository;
     private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
+    private final InventarioService inventarioService;
+    private final TipoMovimientoRepository tipoMovimientoRepository;
+    private final MotivoMovimientoRepository motivoMovimientoRepository;
 
     public TratamientoRealizadoServiceImpl(TratamientoRealizadoRepository tratamientoRealizadoRepository,
                                           CitaRepository citaRepository,
                                           ProcedimientoRepository procedimientoRepository,
                                           UsuarioRepository usuarioRepository,
                                           InsumoRepository insumoRepository,
-                                          ProcedimientoInsumoRepository procedimientoInsumoRepository) {
+                                          ProcedimientoInsumoRepository procedimientoInsumoRepository,
+                                          InventarioService inventarioService,
+                                          TipoMovimientoRepository tipoMovimientoRepository,
+                                          MotivoMovimientoRepository motivoMovimientoRepository) {
         this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
         this.citaRepository = citaRepository;
         this.procedimientoRepository = procedimientoRepository;
         this.usuarioRepository = usuarioRepository;
         this.insumoRepository = insumoRepository;
         this.procedimientoInsumoRepository = procedimientoInsumoRepository;
+        this.inventarioService = inventarioService;
+        this.tipoMovimientoRepository = tipoMovimientoRepository;
+        this.motivoMovimientoRepository = motivoMovimientoRepository;
     }
 
     @Override
@@ -123,6 +138,13 @@ public class TratamientoRealizadoServiceImpl implements TratamientoRealizadoServ
             insumoAjustado.setStockActual(nuevoStock);
             insumoRepository.save(insumoAjustado);
 
+            // ✅ REGISTRAR MOVIMIENTO EN HISTORIAL DE INVENTARIO
+            registrarMovimientoInventario(
+                insumoAjustado,
+                dto.getCantidadInsumoAjustada(),
+                "Uso en tratamiento - Cita #" + cita.getId()
+            );
+
             System.out.println("✓ Stock actualizado: " + insumoAjustado.getNombre() +
                 " | Cantidad utilizada: " + dto.getCantidadInsumoAjustada() +
                 " | Nuevo stock: " + nuevoStock);
@@ -166,6 +188,13 @@ public class TratamientoRealizadoServiceImpl implements TratamientoRealizadoServ
                     BigDecimal nuevoStock = insumo.getStockActual().subtract(cantidadRequerida);
                     insumo.setStockActual(nuevoStock);
                     insumoRepository.save(insumo);
+
+                    // ✅ REGISTRAR MOVIMIENTO EN HISTORIAL DE INVENTARIO
+                    registrarMovimientoInventario(
+                        insumo,
+                        cantidadRequerida,
+                        "Uso en procedimiento: " + procedimiento.getNombre() + " - Cita #" + cita.getId()
+                    );
 
                     System.out.println("  ✓ " + insumo.getNombre() +
                         " | Cantidad: " + cantidadRequerida + " " + insumo.getUnidadMedida().getAbreviatura() +
@@ -232,5 +261,44 @@ public class TratamientoRealizadoServiceImpl implements TratamientoRealizadoServ
         // Eliminar el tratamiento
         // Nota: Como TratamientoRealizado no tiene soft delete, esto es eliminación física
         tratamientoRealizadoRepository.deleteById(tratamientoId);
+    }
+
+    /**
+     * Método helper para registrar movimientos de inventario cuando se usan insumos en tratamientos.
+     * Busca automáticamente el tipo "SALIDA" y el motivo "Uso en procedimiento".
+     */
+    private void registrarMovimientoInventario(Insumo insumo, BigDecimal cantidad, String referencia) {
+        try {
+            // Buscar tipo de movimiento "SALIDA"
+            TipoMovimiento tipoSalida = tipoMovimientoRepository.findByNombre("SALIDA")
+                .orElseThrow(() -> new EntityNotFoundException(
+                    "No se encontró el tipo de movimiento 'SALIDA'. Asegúrate de que exista en la base de datos."));
+
+            // Buscar motivo "Uso en procedimiento" (o crear variantes similares)
+            MotivoMovimiento motivoUso = motivoMovimientoRepository.findByNombre("Uso en procedimiento")
+                .orElseGet(() -> motivoMovimientoRepository.findByNombre("USO_PROCEDIMIENTO")
+                    .orElseThrow(() -> new EntityNotFoundException(
+                        "No se encontró el motivo de movimiento 'Uso en procedimiento'. Asegúrate de que exista en la base de datos.")));
+
+            // Crear DTO de movimiento
+            MovimientoDTO movimientoDTO = new MovimientoDTO();
+            movimientoDTO.setInsumoId(insumo.getId());
+            movimientoDTO.setTipoMovimientoId(tipoSalida.getId());
+            movimientoDTO.setMotivoMovimientoId(motivoUso.getId());
+            movimientoDTO.setCantidad(cantidad);
+            movimientoDTO.setReferencia(referencia);
+            movimientoDTO.setNotas("Descuento automático por uso en tratamiento dental");
+
+            // Registrar movimiento en el servicio de inventario
+            inventarioService.registrarMovimiento(movimientoDTO);
+
+            System.out.println("  ✅ Movimiento de inventario registrado: " + cantidad + " " +
+                insumo.getUnidadMedida().getAbreviatura() + " de " + insumo.getNombre());
+
+        } catch (EntityNotFoundException e) {
+            // Log pero no fallar el tratamiento si no se puede registrar el movimiento
+            System.err.println("⚠️ Advertencia: No se pudo registrar el movimiento de inventario: " + e.getMessage());
+            System.err.println("   El descuento de stock se realizó correctamente, pero no se registró en el historial.");
+        }
     }
 }

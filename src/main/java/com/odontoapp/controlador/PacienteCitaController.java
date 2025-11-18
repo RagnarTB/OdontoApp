@@ -16,6 +16,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -97,6 +98,7 @@ public class PacienteCitaController {
      * Muestra la vista de lista de citas del paciente con filtros y paginación
      */
     @GetMapping("/lista")
+    @Transactional(readOnly = true)
     public String verListaCitas(Model model,
                                 @RequestParam(defaultValue = "0") int page,
                                 @RequestParam(defaultValue = "20") int size,
@@ -145,6 +147,7 @@ public class PacienteCitaController {
      */
     @GetMapping("/api/eventos")
     @ResponseBody
+    @Transactional(readOnly = true)
     public List<FullCalendarEventDTO> getEventos(
             @RequestParam String start,
             @RequestParam String end) {
