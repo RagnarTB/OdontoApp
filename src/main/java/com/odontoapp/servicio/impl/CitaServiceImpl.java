@@ -25,6 +25,7 @@ import com.odontoapp.repositorio.TipoMovimientoRepository;
 import com.odontoapp.repositorio.MotivoMovimientoRepository;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.EmailService;
+import com.odontoapp.servicio.InventarioService;
 import java.math.BigDecimal;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
@@ -71,6 +72,7 @@ public class CitaServiceImpl implements CitaService {
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final TipoMovimientoRepository tipoMovimientoRepository;
     private final MotivoMovimientoRepository motivoMovimientoRepository;
+    private final InventarioService inventarioService;
 
     public CitaServiceImpl(CitaRepository citaRepository,
                           UsuarioRepository usuarioRepository,
@@ -83,7 +85,8 @@ public class CitaServiceImpl implements CitaService {
                           TratamientoRealizadoRepository tratamientoRealizadoRepository,
                           MovimientoInventarioRepository movimientoInventarioRepository,
                           TipoMovimientoRepository tipoMovimientoRepository,
-                          MotivoMovimientoRepository motivoMovimientoRepository) {
+                          MotivoMovimientoRepository motivoMovimientoRepository,
+                          InventarioService inventarioService) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
@@ -96,6 +99,7 @@ public class CitaServiceImpl implements CitaService {
         this.movimientoInventarioRepository = movimientoInventarioRepository;
         this.tipoMovimientoRepository = tipoMovimientoRepository;
         this.motivoMovimientoRepository = motivoMovimientoRepository;
+        this.inventarioService = inventarioService;
     }
 
     @Override
@@ -539,10 +543,9 @@ public class CitaServiceImpl implements CitaService {
             cita.setNotas(notasActuales + "Asistencia: " + notas);
         }
 
-        // LÓGICA DE COHERENCIA: ASISTIO = REALIZADO
-        // Si el paciente asistió, asegurar que exista al menos un TratamientoRealizado MÍNIMO
-        // asociado a la cita para mantener coherencia (cada ASISTIO debe tener un REALIZADO).
-        // NOTA: El descuento de inventario se maneja EXCLUSIVAMENTE en Facturación.
+        // LÓGICA DE COHERENCIA: ASISTIO = REALIZADO + DESCUENTO DE STOCK
+        // Si el paciente asistió, asegurar que exista un TratamientoRealizado MÍNIMO
+        // y descontar inmediatamente el inventario asociado al procedimiento.
 
         if (asistio && cita.getProcedimiento() != null) {
             System.out.println("ℹ️ Paciente ASISTIÓ - Cita ID: " + citaId + ", Procedimiento: " + cita.getProcedimiento().getNombre());
@@ -564,10 +567,25 @@ public class CitaServiceImpl implements CitaService {
                 TratamientoRealizado guardado = tratamientoRealizadoRepository.save(tratamientoMinimo);
                 System.out.println("✅ TratamientoRealizado MÍNIMO creado - ID: " + guardado.getId() +
                                  " (Coherencia: ASISTIO = REALIZADO)");
-                System.out.println("   → El descuento de inventario se realizará en el módulo de Facturación");
+
+                // DESCUENTO DE STOCK INMEDIATO
+                try {
+                    String referenciaCita = "Cita #" + citaId;
+                    inventarioService.descontarStockPorProcedimientoRealizado(
+                        guardado.getProcedimiento().getId(),
+                        null,  // cantidadAjustada: null = usar cantidad por defecto
+                        null,  // insumoAjustadoId: null = descontar todos los insumos por defecto
+                        referenciaCita
+                    );
+                    System.out.println("✅ Stock descontado automáticamente para procedimiento: " +
+                                     guardado.getProcedimiento().getNombre() + " (Cita #" + citaId + ")");
+                } catch (Exception e) {
+                    System.err.println("⚠️ Error al descontar stock: " + e.getMessage());
+                    // Log pero no fallar la cita - el descuento se puede hacer manualmente
+                }
             } else {
                 System.out.println("✓ Ya existe TratamientoRealizado para esta cita - ID: " +
-                                 tratamientosExistentes.get(0).getId());
+                                 tratamientosExistentes.get(0).getId() + " (stock ya procesado)");
             }
         }
 
