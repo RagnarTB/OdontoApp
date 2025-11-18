@@ -148,6 +148,7 @@
                                                             <th>Procedimiento</th>
                                                             <th>Piezas Dentales</th>
                                                             <th>Odontólogo</th>
+                                                            <th>Estado</th>
                                                             <th>Acciones</th>
                                                         </tr>
                                                     </thead>
@@ -163,6 +164,7 @@
                                                             </td>
                                                             <td th:text="${tratamiento.piezaDental ?: 'N/A'}"></td>
                                                             <td th:text="${tratamiento.odontologo.nombreCompleto}"></td>
+                                                            <td><span class="badge badge-success">REALIZADO</span></td>
                                                             <td>
                                                                 <button type="button" class="btn btn-sm btn-primary btn-ver-tratamiento"
                                                                         th:data-tratamiento-id="${tratamiento.id}"

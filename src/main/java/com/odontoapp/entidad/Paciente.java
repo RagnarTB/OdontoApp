@@ -46,8 +46,8 @@ public class Paciente extends EntidadAuditable {
     @Lob
     private String tratamientosActuales;
 
-    @Column(columnDefinition = "json")
-    private String estadoOdontograma;
+    // NOTA: El odontograma ahora usa el modelo normalizado (OdontogramaDiente)
+    // en lugar del campo JSON estadoOdontograma (eliminado)
 
     private boolean eliminado = false;
 
