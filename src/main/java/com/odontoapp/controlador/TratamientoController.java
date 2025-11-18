@@ -361,7 +361,8 @@ public class TratamientoController {
             tratamiento.setOdontologo(cita.getOdontologo());
             tratamiento.setPiezasDentales(piezasDentales);
             tratamiento.setDescripcion(descripcionCompleta);
-            tratamiento.setEstado("PLANIFICADO");
+            tratamiento.setEstado("EN_CURSO"); // Cambiar a EN_CURSO porque está asociado a una cita activa
+            tratamiento.setCitaAsociada(cita); // ← CRÍTICO: Asociar la cita
             tratamiento.setNotas("Detectado en cita del " + cita.getFechaHoraInicio().toLocalDate());
 
             // Guardar

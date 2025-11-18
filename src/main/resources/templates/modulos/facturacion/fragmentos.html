@@ -5,7 +5,8 @@
 <!-- ========================================== -->
 <!-- MODAL: Registrar Pago (Simplificado) -->
 <!-- ========================================== -->
-<div th:fragment="modalRegistrarPago" class="modal fade" id="modalRegistrarPago" tabindex="-1" role="dialog" aria-labelledby="modalRegistrarPagoLabel" aria-hidden="true">
+<th:block th:fragment="modalRegistrarPago">
+<div class="modal fade" id="modalRegistrarPago" tabindex="-1" role="dialog" aria-labelledby="modalRegistrarPagoLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <form id="formRegistrarPago">
@@ -411,6 +412,7 @@
     });
     /*]]>*/
 </script>
+</th:block>
 
 </body>
 </html>

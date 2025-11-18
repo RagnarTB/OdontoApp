@@ -424,7 +424,17 @@
 
         // Renderizar odontograma al cargar la página
         $(document).ready(function() {
-            console.log('Cargando odontograma con', dientesData.length, 'dientes');
+            console.log('=== ODONTOGRAMA DEBUG ===');
+            console.log('PacienteId:', pacienteId);
+            console.log('Dientes recibidos:', dientesData);
+            console.log('Total dientes:', dientesData.length);
+            console.log('jQuery version:', $.fn.jquery);
+            console.log('========================');
+
+            if (dientesData.length === 0) {
+                console.warn('⚠️ No hay dientes en dientesData. Se renderizarán 32 dientes por defecto (todos SANOS).');
+            }
+
             renderizarOdontograma();
         });
 
