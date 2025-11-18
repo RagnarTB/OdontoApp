@@ -9,7 +9,7 @@
 <div class="modal fade" id="modalRegistrarPago" tabindex="-1" role="dialog" aria-labelledby="modalRegistrarPagoLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <form id="formRegistrarPago">
+            <form id="formRegistrarPago" onsubmit="return false;">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title" id="modalRegistrarPagoLabel">
                         <i class="fas fa-money-bill-wave mr-2"></i>Registrar Pago
@@ -108,7 +108,7 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i>Cancelar
                     </button>
-                    <button type="submit" class="btn btn-success btn-lg">
+                    <button type="submit" class="btn btn-success btn-lg" id="btnSubmitPago">
                         <i class="fas fa-check mr-1"></i>Registrar Pago
                     </button>
                 </div>
@@ -120,7 +120,15 @@
 <!-- Script para el modal de pago -->
 <script th:inline="javascript">
     /*<![CDATA[*/
-    $(document).ready(function() {
+    // Ejecutar inmediatamente cuando se cargue el script
+    (function() {
+        console.log('✅ Script del modal de pagos cargado');
+
+        if (typeof jQuery === 'undefined') {
+            console.error('❌ jQuery no está disponible');
+            return;
+        }
+
         var saldoPendienteGlobal = 0;
 
         // Mostrar/ocultar campo de monto según tipo de pago
@@ -250,8 +258,16 @@
             $('#fechaPago').val(fechaHoraActual);
         });
 
+        // Listener en el botón como backup
+        $('#btnSubmitPago').on('click', function(e) {
+            console.log('🔵 Click en botón Registrar Pago');
+            e.preventDefault();
+            $('#formRegistrarPago').trigger('submit');
+        });
+
         // Validación y envío AJAX del formulario
         $('#formRegistrarPago').on('submit', function(e) {
+            console.log('🟢 Submit event capturado');
             e.preventDefault(); // Prevenir submit por defecto
             e.stopPropagation(); // Detener propagación del evento
 
@@ -409,7 +425,9 @@
 
             return false;
         });
-    });
+
+        console.log('✅ Event handlers del modal registrados correctamente');
+    })(); // Ejecutar inmediatamente
     /*]]>*/
 </script>
 </th:block>

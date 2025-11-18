@@ -408,6 +408,9 @@
 
 <script th:inline="javascript">
         /*<![CDATA[*/
+        console.log('🦷 Script de odontograma cargado');
+        console.log('jQuery disponible:', typeof jQuery !== 'undefined');
+
         const pacienteId = /*[[${pacienteId}]]*/ 0;
         let dientesData = /*[[${dientes}]]*/ [];
 
@@ -439,10 +442,17 @@
         });
 
         function renderizarOdontograma() {
+            console.log('🦷 Iniciando renderizado de odontograma...');
+
             // Renderizar cada cuadrante
             for (let cuadrante = 1; cuadrante <= 4; cuadrante++) {
                 const container = document.getElementById(`cuadrante-${cuadrante}`);
-                if (!container) continue;
+                if (!container) {
+                    console.error('❌ No se encontró el contenedor cuadrante-' + cuadrante);
+                    continue;
+                }
+
+                console.log('✅ Renderizando cuadrante ' + cuadrante);
 
                 container.innerHTML = '';
 
@@ -460,6 +470,8 @@
                     container.appendChild(dienteElement);
                 }
             }
+
+            console.log('✅ Odontograma renderizado completamente (32 dientes)');
         }
 
         function crearElementoDiente(diente) {
