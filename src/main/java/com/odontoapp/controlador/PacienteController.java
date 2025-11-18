@@ -284,9 +284,9 @@ public class PacienteController {
             }
             model.addAttribute("tratamientos", tratamientos);
 
-            // Obtener tratamientos planificados del paciente
+            // Obtener tratamientos planificados del paciente (solo PLANIFICADO y EN_CURSO, no los COMPLETADOS)
             java.util.List<TratamientoPlanificado> tratamientosPlanificados =
-                    tratamientoPlanificadoRepository.findByPacienteId(usuarioId);
+                    tratamientoPlanificadoRepository.findTratamientosPendientes(paciente.getUsuario());
             model.addAttribute("tratamientosPlanificados", tratamientosPlanificados);
 
             // Obtener comprobantes del paciente con paginación

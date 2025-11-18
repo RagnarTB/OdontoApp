@@ -48,7 +48,7 @@ public class OdontogramaDienteServiceImpl implements OdontogramaDienteService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<OdontogramaDienteDTO> obtenerOdontogramaCompleto(Long pacienteUsuarioId) {
         Usuario paciente = buscarPaciente(pacienteUsuarioId);
 
