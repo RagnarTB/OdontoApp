@@ -8,7 +8,7 @@
 <div th:fragment="modalRegistrarPago" class="modal fade" id="modalRegistrarPago" tabindex="-1" role="dialog" aria-labelledby="modalRegistrarPagoLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <form th:action="@{/facturacion/registrar-pago}" method="post" th:object="${pagoDTO}">
+            <form id="formRegistrarPago">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title" id="modalRegistrarPagoLabel">
                         <i class="fas fa-money-bill-wave mr-2"></i>Registrar Pago
@@ -250,8 +250,9 @@
         });
 
         // Validación y envío AJAX del formulario
-        $('#modalRegistrarPago form').submit(function(e) {
+        $('#formRegistrarPago').on('submit', function(e) {
             e.preventDefault(); // Prevenir submit por defecto
+            e.stopPropagation(); // Detener propagación del evento
 
             // Validar que el ID del comprobante esté presente
             var comprobanteId = $('#pagoComprobanteId').val();
