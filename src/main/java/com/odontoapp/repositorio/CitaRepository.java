@@ -119,4 +119,25 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
         @Param("inicio") LocalDateTime inicio,
         @Param("fin") LocalDateTime fin
     );
+
+    /**
+     * Busca citas de un paciente con filtros opcionales (estado, fechas)
+     * @param pacienteId ID del usuario paciente
+     * @param estadoId ID del estado de cita (opcional)
+     * @param fechaDesde Fecha de inicio del rango (opcional)
+     * @param fechaHasta Fecha de fin del rango (opcional)
+     * @param pageable Paginación
+     * @return Página de citas del paciente con filtros aplicados
+     */
+    @Query("SELECT c FROM Cita c WHERE c.paciente.id = :pacienteId " +
+           "AND (:estadoId IS NULL OR c.estadoCita.id = :estadoId) " +
+           "AND (:fechaDesde IS NULL OR c.fechaHoraInicio >= :fechaDesde) " +
+           "AND (:fechaHasta IS NULL OR c.fechaHoraInicio <= :fechaHasta)")
+    Page<Cita> findByPacienteIdWithFilters(
+        @Param("pacienteId") Long pacienteId,
+        @Param("estadoId") Long estadoId,
+        @Param("fechaDesde") LocalDateTime fechaDesde,
+        @Param("fechaHasta") LocalDateTime fechaHasta,
+        Pageable pageable
+    );
 }
