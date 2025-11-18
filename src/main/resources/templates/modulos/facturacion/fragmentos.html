@@ -24,17 +24,56 @@
                     <!-- Fecha de Pago (Hidden - se asigna automáticamente) -->
                     <input type="hidden" id="fechaPago" name="fechaPago">
 
-                    <!-- Monto (Hidden - se toma automáticamente del saldo pendiente) -->
-                    <input type="hidden" id="monto" name="monto">
-
                     <!-- Información del Comprobante -->
                     <div class="alert alert-info" role="alert">
                         <h5 class="mb-2"><i class="fas fa-file-invoice mr-2"></i><strong>Comprobante:</strong> <span id="infoNumeroComprobante"></span></h5>
-                        <h4 class="mb-0 text-success"><i class="fas fa-dollar-sign mr-2"></i><strong>Monto a Pagar:</strong> S/ <span id="infoSaldoPendiente"></span></h4>
-                        <p class="mt-2 mb-0 small text-muted">
-                            <i class="fas fa-info-circle mr-1"></i>Se pagará el saldo pendiente completo
-                        </p>
+                        <h4 class="mb-0 text-danger"><i class="fas fa-exclamation-circle mr-2"></i><strong>Saldo Pendiente:</strong> S/ <span id="infoSaldoPendiente"></span></h4>
                     </div>
+
+                    <!-- Tipo de Pago -->
+                    <div class="form-group">
+                        <label class="d-block mb-3">
+                            <i class="fas fa-hand-holding-usd mr-1"></i>Tipo de Pago
+                        </label>
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="pagoTotal" name="tipoPago" class="custom-control-input" value="total" checked>
+                            <label class="custom-control-label" for="pagoTotal">
+                                <strong>Pago Total</strong> - Pagar el saldo completo (<span class="text-success">S/ <span id="montoTotalDisplay">0.00</span></span>)
+                            </label>
+                        </div>
+                        <div class="custom-control custom-radio mt-2">
+                            <input type="radio" id="pagoParcial" name="tipoPago" class="custom-control-input" value="parcial">
+                            <label class="custom-control-label" for="pagoParcial">
+                                <strong>Pago Parcial</strong> - Pagar solo una parte
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Campo de Monto (aparece solo si es pago parcial) -->
+                    <div id="campomonto" style="display: none;">
+                        <div class="form-group">
+                            <label for="monto"><i class="fas fa-money-bill-wave mr-1"></i>Monto a Pagar <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">S/</span>
+                                </div>
+                                <input type="number" class="form-control" id="monto" name="monto"
+                                       step="0.01" min="0.01" placeholder="0.00">
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> Debe ser mayor a 0 y no exceder el saldo pendiente
+                            </small>
+                            <div id="montoError" class="text-danger small mt-1" style="display: none;">
+                                <i class="fas fa-exclamation-triangle"></i> <span id="montoErrorMsg"></span>
+                            </div>
+                            <div id="montoInfo" class="text-success small mt-1" style="display: none;">
+                                <i class="fas fa-check-circle"></i> Quedará pendiente: S/ <span id="montoRestante">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Monto hidden que siempre se envía -->
+                    <input type="hidden" id="montoFinal" name="monto">
 
                     <!-- Método de Pago -->
                     <div class="form-group">
@@ -81,6 +120,60 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     $(document).ready(function() {
+        var saldoPendienteGlobal = 0;
+
+        // Mostrar/ocultar campo de monto según tipo de pago
+        $('input[name="tipoPago"]').change(function() {
+            if ($(this).val() === 'parcial') {
+                $('#campomonto').slideDown();
+                $('#monto').prop('required', true);
+                $('#monto').focus();
+            } else {
+                $('#campomonto').slideUp();
+                $('#monto').prop('required', false);
+                $('#monto').val('');
+                $('#montoError').hide();
+                $('#montoInfo').hide();
+                // Para pago total, setear el monto al saldo pendiente
+                $('#montoFinal').val(saldoPendienteGlobal.toFixed(2));
+            }
+        });
+
+        // Validación en tiempo real del monto parcial
+        $('#monto').on('input', function() {
+            var montoIngresado = parseFloat($(this).val()) || 0;
+
+            $('#montoError').hide();
+            $('#montoInfo').hide();
+
+            if (montoIngresado <= 0) {
+                $('#montoError').show();
+                $('#montoErrorMsg').text('El monto debe ser mayor a 0');
+                $(this).addClass('is-invalid');
+                return;
+            }
+
+            if (montoIngresado > saldoPendienteGlobal) {
+                $('#montoError').show();
+                $('#montoErrorMsg').text('El monto excede el saldo pendiente (S/ ' + saldoPendienteGlobal.toFixed(2) + ')');
+                $(this).addClass('is-invalid');
+                return;
+            }
+
+            $(this).removeClass('is-invalid');
+            var restante = saldoPendienteGlobal - montoIngresado;
+
+            if (restante > 0) {
+                $('#montoRestante').text(restante.toFixed(2));
+                $('#montoInfo').show();
+            } else {
+                $('#montoInfo').hide();
+            }
+
+            // Actualizar monto final
+            $('#montoFinal').val(montoIngresado.toFixed(2));
+        });
+
         // Mostrar campo de referencia según el método de pago seleccionado
         $('#metodoPagoId').change(function() {
             var metodoTexto = $(this).find('option:selected').text().toUpperCase();
@@ -101,7 +194,12 @@
         $('#modalRegistrarPago').on('hidden.bs.modal', function() {
             $(this).find('form')[0].reset();
             $('#camposYape').hide();
+            $('#campomonto').hide();
             $('#referenciaYape').prop('required', false);
+            $('#monto').prop('required', false);
+            $('#montoError').hide();
+            $('#montoInfo').hide();
+            $('#pagoTotal').prop('checked', true);
         });
 
         // Cargar datos cuando se abre el modal
@@ -125,13 +223,20 @@
                 return;
             }
 
+            // Guardar saldo pendiente globalmente
+            saldoPendienteGlobal = saldoPendiente;
+
             // Cargar datos en el formulario
             $('#pagoComprobanteId').val(comprobanteId);
             $('#infoNumeroComprobante').text(numeroComprobante);
             $('#infoSaldoPendiente').text(saldoPendiente.toFixed(2));
+            $('#montoTotalDisplay').text(saldoPendiente.toFixed(2));
 
-            // Setear el monto automáticamente al saldo pendiente completo
-            $('#monto').val(saldoPendiente.toFixed(2));
+            // Setear el monto final al saldo pendiente por defecto (pago total)
+            $('#montoFinal').val(saldoPendiente.toFixed(2));
+
+            // Setear atributo max en el campo de monto parcial
+            $('#monto').attr('max', saldoPendiente.toFixed(2));
 
             // Setear la fecha de pago automáticamente a la fecha/hora actual
             var now = new Date();
@@ -154,6 +259,49 @@
                     icon: 'error',
                     title: 'Error',
                     text: 'No se ha especificado el comprobante. Por favor, cierre y vuelva a abrir el modal.',
+                    confirmButtonText: 'Entendido'
+                });
+                return false;
+            }
+
+            // Validar tipo de pago y monto
+            var tipoPago = $('input[name="tipoPago"]:checked').val();
+            var montoFinal = parseFloat($('#montoFinal').val() || 0);
+
+            if (tipoPago === 'parcial') {
+                var montoParcial = parseFloat($('#monto').val() || 0);
+
+                if (montoParcial <= 0) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Monto Inválido',
+                        text: 'El monto del pago parcial debe ser mayor a cero.',
+                        confirmButtonText: 'Entendido'
+                    });
+                    $('#monto').focus();
+                    return false;
+                }
+
+                if (montoParcial > saldoPendienteGlobal) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Monto Excedido',
+                        text: 'El monto ingresado (S/ ' + montoParcial.toFixed(2) + ') excede el saldo pendiente (S/ ' + saldoPendienteGlobal.toFixed(2) + ')',
+                        confirmButtonText: 'Entendido'
+                    });
+                    $('#monto').focus();
+                    return false;
+                }
+            }
+
+            if (montoFinal <= 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El monto del pago debe ser mayor a cero.',
                     confirmButtonText: 'Entendido'
                 });
                 return false;
@@ -198,19 +346,6 @@
                     icon: 'error',
                     title: 'Error',
                     text: 'La fecha de pago no está configurada. Por favor, cierre y vuelva a abrir el modal.',
-                    confirmButtonText: 'Entendido'
-                });
-                return false;
-            }
-
-            // Validar monto
-            var monto = parseFloat($('#monto').val() || 0);
-            if (monto <= 0) {
-                e.preventDefault();
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'El monto del pago debe ser mayor a cero.',
                     confirmButtonText: 'Entendido'
                 });
                 return false;

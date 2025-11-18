@@ -150,10 +150,12 @@
 
                         <div class="col-md-4">
                             <label>Nombre Completo</label>
-                            <input type="text" class="form-control" th:field="*{nombreCompleto}"
+                            <input type="text" class="form-control" id="nombreCompleto" th:field="*{nombreCompleto}"
+                                readonly
                                 th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
                             <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback d-block"
                                 th:errors="*{nombreCompleto}"></div>
+                            <small class="form-text text-muted">Busque por DNI para autocompletar</small>
                         </div>
                     </div>
 
@@ -177,11 +179,14 @@
                     <div class="form-row mt-3">
                         <div class="col-md-6">
                             <label>Teléfono</label>
-                            <input type="text" class="form-control" th:field="*{telefono}">
+                            <input type="text" class="form-control" id="telefono" th:field="*{telefono}"
+                                maxlength="15" placeholder="Ej: 987654321">
+                            <small id="telefono-error" class="form-text text-danger"></small>
                         </div>
                         <div class="col-md-6">
                             <label>Fecha de Nacimiento</label>
-                            <input type="date" class="form-control" th:field="*{fechaNacimiento}">
+                            <input type="date" class="form-control" id="fechaNacimiento" th:field="*{fechaNacimiento}">
+                            <small id="fecha-error" class="form-text text-danger"></small>
                         </div>
                     </div>
 
@@ -215,90 +220,280 @@
     <script th:src="@{/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
 
     <script>
-        // === Validación de contraseñas MEJORADA ===
-        document.querySelector('form').addEventListener('submit', function (event) {
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const errorElement = document.getElementById('passwordErrorJS');
-            const ESPECIALES = '!@#$%&*';
+        $(document).ready(function() {
+            const $tipoDoc = $('#tipoDocumentoId');
+            const $numeroDoc = $('#numeroDocumento');
+            const $nombre = $('#nombreCompleto');
+            const $telefono = $('#telefono');
+            const $fechaNac = $('#fechaNacimiento');
 
-            errorElement.textContent = '';
+            // ========================================
+            // VALIDACIONES POR TIPO DE DOCUMENTO
+            // ========================================
+            function validarLongitudDocumento() {
+                const tipoDocTexto = $tipoDoc.find('option:selected').text().trim().toUpperCase();
+                const numero = $numeroDoc.val().trim();
+                const $error = $('#doc-error');
 
-            if (password.length < 8) {
-                errorElement.textContent = 'La contraseña debe tener al menos 8 caracteres.';
-                event.preventDefault();
-                return;
-            }
+                $error.text('');
 
-            const tieneMayuscula = /[A-Z]/.test(password);
-            const tieneMinuscula = /[a-z]/.test(password);
-            const tieneNumero = /[0-9]/.test(password);
-            const tieneEspecial = new RegExp(`[${ESPECIALES.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}]`).test(password);
+                if (!numero) return true;
 
-            if (!tieneMayuscula) {
-                errorElement.textContent = 'La contraseña debe contener al menos una letra mayúscula.';
-                event.preventDefault();
-                return;
-            }
-            if (!tieneMinuscula) {
-                errorElement.textContent = 'La contraseña debe contener al menos una letra minúscula.';
-                event.preventDefault();
-                return;
-            }
-            if (!tieneNumero) {
-                errorElement.textContent = 'La contraseña debe contener al menos un número.';
-                event.preventDefault();
-                return;
-            }
-            if (!tieneEspecial) {
-                errorElement.textContent = 'La contraseña debe contener al menos un carácter especial (!@#$%&*).';
-                event.preventDefault();
-                return;
-            }
-
-            if (password !== confirmPassword) {
-                errorElement.textContent = 'Las contraseñas no coinciden.';
-                event.preventDefault();
-                return;
-            }
-        });
-
-        // === Búsqueda en RENIEC ===
-        $('#btn-buscar-reniec-registro').click(function () {
-            const numDoc = $('#numeroDocumento').val();
-            const tipoDocId = $('#tipoDocumentoId').val();
-            const $nombreInput = $('#nombreCompleto');
-            const $errorSpan = $('#doc-error');
-
-            $errorSpan.text('');
-            $nombreInput.val('');
-
-            if (!numDoc || !tipoDocId) {
-                $errorSpan.text('Seleccione el tipo y escriba el número de documento.');
-                return;
-            }
-
-            if ($('#tipoDocumentoId option:selected').text().trim().toUpperCase() !== 'DNI') {
-                $errorSpan.text('La búsqueda automática solo está disponible para DNI.');
-                return;
-            }
-
-            $.ajax({
-                url: '/api/reniec',
-                type: 'GET',
-                data: { numDoc: numDoc, tipoDocId: tipoDocId },
-                success: function (response) {
-                    if (response.nombreCompleto) {
-                        $nombreInput.val(response.nombreCompleto).attr('readonly', true);
-                        $errorSpan.text('Datos cargados con éxito.').removeClass('text-danger').addClass('text-success');
+                // DNI: 8 dígitos
+                if (tipoDocTexto === 'DNI') {
+                    if (!/^\d{8}$/.test(numero)) {
+                        $error.text('El DNI debe tener exactamente 8 dígitos numéricos');
+                        return false;
                     }
-                },
-                error: function (xhr) {
-                    const errorMsg = xhr.responseJSON && xhr.responseJSON.error ?
-                        xhr.responseJSON.error : 'Error al consultar Reniec.';
-                    $errorSpan.text(errorMsg).removeClass('text-success').addClass('text-danger');
-                    $nombreInput.attr('readonly', false);
                 }
+                // RUC: 11 dígitos
+                else if (tipoDocTexto === 'RUC') {
+                    if (!/^\d{11}$/.test(numero)) {
+                        $error.text('El RUC debe tener exactamente 11 dígitos numéricos');
+                        return false;
+                    }
+                }
+                // CE/Pasaporte: 9-12 caracteres alfanuméricos
+                else if (tipoDocTexto.includes('CARNET') || tipoDocTexto.includes('EXTRANJERÍA') || tipoDocTexto.includes('PASAPORTE')) {
+                    if (!/^[A-Z0-9]{7,12}$/i.test(numero)) {
+                        $error.text('El documento debe tener entre 7 y 12 caracteres alfanuméricos');
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            // Solo permitir números en campos numéricos según tipo de documento
+            $numeroDoc.on('input', function() {
+                const tipoDocTexto = $tipoDoc.find('option:selected').text().trim().toUpperCase();
+                let valor = $(this).val();
+
+                // Para DNI y RUC, solo números
+                if (tipoDocTexto === 'DNI' || tipoDocTexto === 'RUC') {
+                    valor = valor.replace(/[^0-9]/g, '');
+
+                    // Limitar longitud
+                    if (tipoDocTexto === 'DNI' && valor.length > 8) {
+                        valor = valor.substring(0, 8);
+                    } else if (tipoDocTexto === 'RUC' && valor.length > 11) {
+                        valor = valor.substring(0, 11);
+                    }
+                } else {
+                    // Para CE/Pasaporte, solo alfanuméricos
+                    valor = valor.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                    if (valor.length > 12) {
+                        valor = valor.substring(0, 12);
+                    }
+                }
+
+                $(this).val(valor);
+                validarLongitudDocumento();
+            });
+
+            // Validar al cambiar tipo de documento
+            $tipoDoc.on('change', function() {
+                $numeroDoc.val('');
+                $('#doc-error').text('');
+                validarLongitudDocumento();
+            });
+
+            // Si quita el número de documento, borrar nombre
+            $numeroDoc.on('blur', function() {
+                if (!$(this).val().trim()) {
+                    $nombre.val('').attr('readonly', true);
+                    $('#doc-error').text('');
+                }
+            });
+
+            // ========================================
+            // TELÉFONO: SOLO NÚMEROS
+            // ========================================
+            $telefono.on('input', function() {
+                let valor = $(this).val().replace(/[^0-9]/g, '');
+
+                // Limitar a 15 dígitos (máximo internacional)
+                if (valor.length > 15) {
+                    valor = valor.substring(0, 15);
+                }
+
+                $(this).val(valor);
+
+                // Validar que tenga al menos 7 dígitos (mínimo para Perú)
+                const $error = $('#telefono-error');
+                if (valor.length > 0 && valor.length < 7) {
+                    $error.text('El teléfono debe tener al menos 7 dígitos');
+                } else {
+                    $error.text('');
+                }
+            });
+
+            // ========================================
+            // FECHA DE NACIMIENTO: NO FUTURAS
+            // ========================================
+            // Setear máximo como hoy
+            const hoy = new Date().toISOString().split('T')[0];
+            $fechaNac.attr('max', hoy);
+
+            $fechaNac.on('change', function() {
+                const fechaSeleccionada = new Date($(this).val());
+                const fechaHoy = new Date();
+                const $error = $('#fecha-error');
+
+                if (fechaSeleccionada > fechaHoy) {
+                    $error.text('La fecha de nacimiento no puede ser futura');
+                    $(this).val('');
+                } else {
+                    $error.text('');
+                }
+
+                // Validar que sea mayor de edad (opcional)
+                const edad = calcularEdad(fechaSeleccionada);
+                if (edad < 1) {
+                    $error.text('La fecha de nacimiento es inválida');
+                    $(this).val('');
+                }
+            });
+
+            function calcularEdad(fechaNacimiento) {
+                const hoy = new Date();
+                let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+                const mes = hoy.getMonth() - fechaNacimiento.getMonth();
+                if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+                    edad--;
+                }
+                return edad;
+            }
+
+            // ========================================
+            // BÚSQUEDA EN RENIEC
+            // ========================================
+            $('#btn-buscar-reniec-registro').click(function () {
+                const numDoc = $numeroDoc.val();
+                const tipoDocId = $tipoDoc.val();
+                const $errorSpan = $('#doc-error');
+
+                $errorSpan.text('');
+                $nombre.val('');
+
+                if (!numDoc || !tipoDocId) {
+                    $errorSpan.text('Seleccione el tipo y escriba el número de documento.');
+                    return;
+                }
+
+                // Validar longitud antes de buscar
+                if (!validarLongitudDocumento()) {
+                    return;
+                }
+
+                if ($tipoDoc.find('option:selected').text().trim().toUpperCase() !== 'DNI') {
+                    $errorSpan.text('La búsqueda automática solo está disponible para DNI.');
+                    $nombre.attr('readonly', false);
+                    return;
+                }
+
+                // Deshabilitar botón mientras busca
+                const $btn = $(this);
+                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Buscando...');
+
+                $.ajax({
+                    url: '/api/reniec',
+                    type: 'GET',
+                    data: { numDoc: numDoc, tipoDocId: tipoDocId },
+                    success: function (response) {
+                        if (response.nombreCompleto) {
+                            $nombre.val(response.nombreCompleto).attr('readonly', true);
+                            $errorSpan.text('✓ Datos cargados con éxito').removeClass('text-danger').addClass('text-success');
+                        }
+                    },
+                    error: function (xhr) {
+                        const errorMsg = xhr.responseJSON && xhr.responseJSON.error ?
+                            xhr.responseJSON.error : 'Error al consultar Reniec.';
+                        $errorSpan.text(errorMsg).removeClass('text-success').addClass('text-danger');
+                        $nombre.attr('readonly', false);
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).html('Buscar');
+                    }
+                });
+            });
+
+            // ========================================
+            // VALIDACIÓN DE CONTRASEÑAS
+            // ========================================
+            $('form').on('submit', function (event) {
+                const password = $('#password').val();
+                const confirmPassword = $('#confirmPassword').val();
+                const $errorElement = $('#passwordErrorJS');
+                const ESPECIALES = '!@#$%&*';
+
+                $errorElement.text('');
+
+                // Validar número de documento antes de enviar
+                if (!validarLongitudDocumento()) {
+                    event.preventDefault();
+                    $numeroDoc.focus();
+                    return false;
+                }
+
+                // Validar teléfono
+                const telefono = $telefono.val();
+                if (telefono && telefono.length < 7) {
+                    event.preventDefault();
+                    $('#telefono-error').text('El teléfono debe tener al menos 7 dígitos');
+                    $telefono.focus();
+                    return false;
+                }
+
+                // Validar fecha de nacimiento
+                const fechaNac = $fechaNac.val();
+                if (fechaNac && new Date(fechaNac) > new Date()) {
+                    event.preventDefault();
+                    $('#fecha-error').text('La fecha de nacimiento no puede ser futura');
+                    $fechaNac.focus();
+                    return false;
+                }
+
+                // Validar contraseña
+                if (password.length < 8) {
+                    $errorElement.text('La contraseña debe tener al menos 8 caracteres.');
+                    event.preventDefault();
+                    return false;
+                }
+
+                const tieneMayuscula = /[A-Z]/.test(password);
+                const tieneMinuscula = /[a-z]/.test(password);
+                const tieneNumero = /[0-9]/.test(password);
+                const tieneEspecial = new RegExp(`[${ESPECIALES.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}]`).test(password);
+
+                if (!tieneMayuscula) {
+                    $errorElement.text('La contraseña debe contener al menos una letra mayúscula.');
+                    event.preventDefault();
+                    return false;
+                }
+                if (!tieneMinuscula) {
+                    $errorElement.text('La contraseña debe contener al menos una letra minúscula.');
+                    event.preventDefault();
+                    return false;
+                }
+                if (!tieneNumero) {
+                    $errorElement.text('La contraseña debe contener al menos un número.');
+                    event.preventDefault();
+                    return false;
+                }
+                if (!tieneEspecial) {
+                    $errorElement.text('La contraseña debe contener al menos un carácter especial (!@#$%&*).');
+                    event.preventDefault();
+                    return false;
+                }
+
+                if (password !== confirmPassword) {
+                    $errorElement.text('Las contraseñas no coinciden.');
+                    event.preventDefault();
+                    return false;
+                }
+
+                return true;
             });
         });
     </script>
