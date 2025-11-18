@@ -8,13 +8,16 @@
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1><i class="fas fa-user-circle"></i> Mi Perfil e Historial Clínico</h1>
-                </div>
-                <div class="col-sm-6">
-                    <a th:href="@{/paciente/perfil/editar}" class="btn btn-warning float-sm-right">
-                        <i class="fas fa-edit"></i> Editar Mis Datos
-                    </a>
+                <div class="col-sm-12">
+                    <h1 class="m-0">
+                        <i class="fas fa-user-circle text-primary"></i>
+                        <span th:text="${paciente.nombreCompleto}">Nombre del Paciente</span>
+                    </h1>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-id-card"></i>
+                        <span th:text="${paciente.tipoDocumento.nombre}">DNI</span>:
+                        <span th:text="${paciente.numeroDocumento}">12345678</span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -23,100 +26,133 @@
     <section class="content">
         <div class="container-fluid">
 
-            <!-- Información del Paciente -->
-            <div class="row">
-                <div class="col-md-3">
-                    <!-- Profile Image -->
-                    <div class="card card-primary card-outline">
-                        <div class="card-body box-profile">
-                            <div class="text-center">
-                                <img class="profile-user-img img-fluid img-circle"
-                                     th:src="@{/adminlte/dist/img/avatar5.png}"
-                                     alt="User profile picture">
-                            </div>
-
-                            <h3 class="profile-username text-center" th:text="${paciente.nombreCompleto}">Nombre del Paciente</h3>
-
-                            <p class="text-muted text-center">Paciente</p>
-
-                            <ul class="list-group list-group-unbordered mb-3">
-                                <li class="list-group-item">
-                                    <b>Documento</b>
-                                    <a class="float-right">
-                                        <span th:text="${paciente.tipoDocumento.nombre}">DNI</span>:
-                                        <span th:text="${paciente.numeroDocumento}">12345678</span>
-                                    </a>
-                                </li>
-                                <li class="list-group-item">
-                                    <b>Fecha de Nacimiento</b>
-                                    <a class="float-right" th:text="${#temporals.format(paciente.fechaNacimiento, 'dd/MM/yyyy')}">01/01/1990</a>
-                                </li>
-                                <li class="list-group-item">
-                                    <b>Edad</b>
-                                    <a class="float-right">
-                                        <span th:text="${#temporals.period(paciente.fechaNacimiento, #temporals.createNow()).years}">30</span> años
-                                    </a>
-                                </li>
-                                <li class="list-group-item">
-                                    <b>Género</b>
-                                    <a class="float-right" th:text="${paciente.genero}">Masculino</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- Contact Info -->
-                    <div class="card card-primary">
-                        <div class="card-header">
-                            <h3 class="card-title">Información de Contacto</h3>
-                        </div>
-                        <div class="card-body">
-                            <strong><i class="fas fa-envelope mr-1"></i> Email</strong>
-                            <p class="text-muted" th:text="${paciente.email}">email@example.com</p>
-
-                            <hr>
-
-                            <strong><i class="fas fa-phone mr-1"></i> Teléfono</strong>
-                            <p class="text-muted" th:text="${paciente.telefono ?: 'No registrado'}">999-999-999</p>
-
-                            <hr>
-
-                            <strong><i class="fas fa-map-marker-alt mr-1"></i> Dirección</strong>
-                            <p class="text-muted" th:text="${paciente.direccion ?: 'No registrada'}">Dirección completa</p>
+            <!-- Tarjetas de información rápida -->
+            <div class="row mb-3">
+                <div class="col-md-3 col-sm-6">
+                    <div class="info-box bg-info">
+                        <span class="info-box-icon"><i class="fas fa-envelope"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Email</span>
+                            <span class="info-box-number" style="font-size: 0.9rem" th:text="${paciente.email}">email@email.com</span>
                         </div>
                     </div>
                 </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="info-box bg-success">
+                        <span class="info-box-icon"><i class="fas fa-phone"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Teléfono</span>
+                            <span class="info-box-number" th:text="${paciente.telefono ?: 'No registrado'}">999-999-999</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="info-box bg-warning">
+                        <span class="info-box-icon"><i class="fas fa-birthday-cake"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Fecha Nacimiento</span>
+                            <span class="info-box-number" style="font-size: 0.9rem"
+                                  th:text="${#temporals.format(paciente.fechaNacimiento, 'dd/MM/yyyy')}">01/01/1990</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="info-box bg-danger">
+                        <span class="info-box-icon"><i class="fas fa-user-check"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Edad</span>
+                            <span class="info-box-number">
+                                <span th:text="${#temporals.period(paciente.fechaNacimiento, #temporals.createNow()).years}">30</span> años
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                <div class="col-md-9">
-                    <div class="card">
-                        <div class="card-header p-2">
-                            <ul class="nav nav-pills">
+            <!-- Botón de editar perfil -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <a th:href="@{/paciente/perfil/editar}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Editar Mis Datos
+                    </a>
+                </div>
+            </div>
+
+            <!-- Información Médica y Tabs -->
+            <div class="row">
+                <div class="col-md-12">
+
+                    <!-- Información Médica (Alergias y Antecedentes) -->
+                    <div class="card card-danger collapsed-card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-notes-medical"></i> Información Médica Importante</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-allergies text-danger"></i> Alergias Conocidas</h5>
+                                    <div class="alert" th:classappend="${paciente.alergias != null && !paciente.alergias.isEmpty()} ? 'alert-warning' : 'alert-secondary'">
+                                        <p th:text="${paciente.alergias != null && !paciente.alergias.isEmpty() ? paciente.alergias : 'No se han registrado alergias'}"></p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-heartbeat text-danger"></i> Antecedentes Médicos</h5>
+                                    <div class="alert" th:classappend="${paciente.antecedentesMedicos != null && !paciente.antecedentesMedicos.isEmpty()} ? 'alert-info' : 'alert-secondary'">
+                                        <p th:text="${paciente.antecedentesMedicos != null && !paciente.antecedentesMedicos.isEmpty() ? paciente.antecedentesMedicos : 'No se han registrado antecedentes médicos'}"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <p class="text-muted small">
+                                        <i class="fas fa-info-circle"></i>
+                                        Puedes actualizar esta información en cualquier momento desde el botón "Editar Mis Datos".
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs del Historial -->
+                    <div class="card card-primary card-outline card-outline-tabs">
+                        <div class="card-header p-0 border-bottom-0">
+                            <ul class="nav nav-tabs" id="custom-tabs-four-tab" role="tablist">
                                 <li class="nav-item">
-                                    <a class="nav-link active" href="#citas" data-toggle="tab">
-                                        <i class="fas fa-calendar-alt"></i> Citas
+                                    <a class="nav-link active" id="custom-tabs-four-citas-tab" data-toggle="pill"
+                                       href="#custom-tabs-four-citas" role="tab">
+                                        <i class="fas fa-calendar-check"></i> Mis Citas
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#tratamientos" data-toggle="tab">
+                                    <a class="nav-link" id="custom-tabs-four-tratamientos-tab" data-toggle="pill"
+                                       href="#custom-tabs-four-tratamientos" role="tab">
                                         <i class="fas fa-tooth"></i> Tratamientos
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#comprobantes" data-toggle="tab">
-                                        <i class="fas fa-file-invoice-dollar"></i> Comprobantes
+                                    <a class="nav-link" id="custom-tabs-four-comprobantes-tab" data-toggle="pill"
+                                       href="#custom-tabs-four-comprobantes" role="tab">
+                                        <i class="fas fa-file-invoice-dollar"></i> Mis Comprobantes
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#odontograma" data-toggle="tab">
+                                    <a class="nav-link" id="custom-tabs-four-odontograma-tab" data-toggle="pill"
+                                       href="#custom-tabs-four-odontograma" role="tab">
                                         <i class="fas fa-teeth"></i> Odontograma
                                     </a>
                                 </li>
                             </ul>
                         </div>
                         <div class="card-body">
-                            <div class="tab-content">
+                            <div class="tab-content" id="custom-tabs-four-tabContent">
+
                                 <!-- TAB: Citas -->
-                                <div class="active tab-pane" id="citas">
+                                <div class="tab-pane fade show active" id="custom-tabs-four-citas" role="tabpanel">
                                     <div class="mb-3">
                                         <a th:href="@{/paciente/citas}" class="btn btn-primary btn-sm">
                                             <i class="fas fa-calendar-plus"></i> Agendar Nueva Cita
@@ -127,10 +163,10 @@
                                     </div>
 
                                     <div class="table-responsive">
-                                        <table class="table table-striped">
-                                            <thead>
+                                        <table class="table table-hover table-striped">
+                                            <thead class="table-primary">
                                                 <tr>
-                                                    <th>Fecha</th>
+                                                    <th>Fecha y Hora</th>
                                                     <th>Odontólogo</th>
                                                     <th>Procedimiento</th>
                                                     <th>Estado</th>
@@ -138,12 +174,20 @@
                                             </thead>
                                             <tbody>
                                                 <tr th:if="${citasPage.content.isEmpty()}">
-                                                    <td colspan="4" class="text-center text-muted">
+                                                    <td colspan="4" class="text-center text-muted py-4">
+                                                        <i class="fas fa-calendar-times fa-2x"></i><br>
                                                         No se encontraron citas
                                                     </td>
                                                 </tr>
                                                 <tr th:each="cita : ${citasPage.content}">
-                                                    <td th:text="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}">Fecha</td>
+                                                    <td>
+                                                        <i class="far fa-calendar-alt text-primary"></i>
+                                                        <span th:text="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy')}">Fecha</span><br>
+                                                        <small class="text-muted">
+                                                            <i class="far fa-clock"></i>
+                                                            <span th:text="${#temporals.format(cita.fechaHoraInicio, 'HH:mm')}">Hora</span>
+                                                        </small>
+                                                    </td>
                                                     <td th:text="${cita.odontologo.nombreCompleto}">Doctor</td>
                                                     <td th:text="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}">Procedimiento</td>
                                                     <td>
@@ -180,11 +224,13 @@
                                 </div>
 
                                 <!-- TAB: Tratamientos -->
-                                <div class="tab-pane" id="tratamientos">
-                                    <h5>Tratamientos Planificados/En Curso</h5>
+                                <div class="tab-pane fade" id="custom-tabs-four-tratamientos" role="tabpanel">
+
+                                    <!-- Tratamientos Planificados/En Curso -->
+                                    <h5 class="text-primary"><i class="fas fa-clipboard-list"></i> Tratamientos Planificados/En Curso</h5>
                                     <div class="table-responsive mb-4">
                                         <table class="table table-bordered">
-                                            <thead>
+                                            <thead class="table-warning">
                                                 <tr>
                                                     <th>Tratamiento</th>
                                                     <th>Fecha Inicio</th>
@@ -194,7 +240,8 @@
                                             </thead>
                                             <tbody>
                                                 <tr th:if="${tratamientosPlanificados.isEmpty()}">
-                                                    <td colspan="4" class="text-center text-muted">
+                                                    <td colspan="4" class="text-center text-muted py-3">
+                                                        <i class="fas fa-check-circle fa-2x"></i><br>
                                                         No hay tratamientos planificados
                                                     </td>
                                                 </tr>
@@ -210,10 +257,11 @@
                                         </table>
                                     </div>
 
-                                    <h5>Tratamientos Realizados</h5>
+                                    <!-- Tratamientos Realizados -->
+                                    <h5 class="text-success"><i class="fas fa-check-double"></i> Tratamientos Realizados</h5>
                                     <div class="table-responsive">
-                                        <table class="table table-striped">
-                                            <thead>
+                                        <table class="table table-hover">
+                                            <thead class="table-success">
                                                 <tr>
                                                     <th>Fecha</th>
                                                     <th>Tratamiento</th>
@@ -223,7 +271,8 @@
                                             </thead>
                                             <tbody>
                                                 <tr th:if="${tratamientosPage.content.isEmpty()}">
-                                                    <td colspan="4" class="text-center text-muted">
+                                                    <td colspan="4" class="text-center text-muted py-3">
+                                                        <i class="fas fa-inbox fa-2x"></i><br>
                                                         No se encontraron tratamientos realizados
                                                     </td>
                                                 </tr>
@@ -255,10 +304,10 @@
                                 </div>
 
                                 <!-- TAB: Comprobantes -->
-                                <div class="tab-pane" id="comprobantes">
+                                <div class="tab-pane fade" id="custom-tabs-four-comprobantes" role="tabpanel">
                                     <div class="table-responsive">
-                                        <table class="table table-striped">
-                                            <thead>
+                                        <table class="table table-hover table-striped">
+                                            <thead class="table-info">
                                                 <tr>
                                                     <th>Número</th>
                                                     <th>Fecha Emisión</th>
@@ -270,15 +319,16 @@
                                             </thead>
                                             <tbody>
                                                 <tr th:if="${comprobantesPage.content.isEmpty()}">
-                                                    <td colspan="6" class="text-center text-muted">
+                                                    <td colspan="6" class="text-center text-muted py-4">
+                                                        <i class="fas fa-file-invoice fa-2x"></i><br>
                                                         No se encontraron comprobantes
                                                     </td>
                                                 </tr>
                                                 <tr th:each="comp : ${comprobantesPage.content}">
-                                                    <td th:text="${comp.numeroComprobante}">B001-000001</td>
+                                                    <td><strong th:text="${comp.numeroComprobante}">B001-000001</strong></td>
                                                     <td th:text="${#temporals.format(comp.fechaEmision, 'dd/MM/yyyy')}">Fecha</td>
-                                                    <td>S/ <span th:text="${#numbers.formatDecimal(comp.montoTotal, 1, 2)}">0.00</span></td>
-                                                    <td>S/ <span th:text="${#numbers.formatDecimal(comp.montoPendiente, 1, 2)}">0.00</span></td>
+                                                    <td class="text-right">S/ <span th:text="${#numbers.formatDecimal(comp.montoTotal, 1, 2)}">0.00</span></td>
+                                                    <td class="text-right">S/ <span th:text="${#numbers.formatDecimal(comp.montoPendiente, 1, 2)}">0.00</span></td>
                                                     <td>
                                                         <span class="badge"
                                                               th:classappend="${
@@ -291,7 +341,7 @@
                                                     <td>
                                                         <a th:href="@{/paciente/perfil/comprobantes/{id}(id=${comp.id})}"
                                                            class="btn btn-sm btn-info" title="Ver Detalle">
-                                                            <i class="fas fa-eye"></i>
+                                                            <i class="fas fa-eye"></i> Ver
                                                         </a>
                                                     </td>
                                                 </tr>
@@ -317,7 +367,7 @@
                                 </div>
 
                                 <!-- TAB: Odontograma -->
-                                <div class="tab-pane" id="odontograma">
+                                <div class="tab-pane fade" id="custom-tabs-four-odontograma" role="tabpanel">
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle"></i>
                                         <strong>Odontograma:</strong> Representación visual del estado de tus dientes y tratamientos realizados.
@@ -330,21 +380,21 @@
 
                                     <div th:if="${!odontograma.isEmpty()}" class="table-responsive">
                                         <table class="table table-bordered table-sm">
-                                            <thead>
+                                            <thead class="table-primary">
                                                 <tr>
                                                     <th>Diente</th>
                                                     <th>Estado</th>
-                                                    <th>Cara Vestibular</th>
-                                                    <th>Cara Palatina</th>
-                                                    <th>Cara Mesial</th>
-                                                    <th>Cara Distal</th>
-                                                    <th>Cara Oclusal</th>
+                                                    <th>Vestibular</th>
+                                                    <th>Palatina</th>
+                                                    <th>Mesial</th>
+                                                    <th>Distal</th>
+                                                    <th>Oclusal</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr th:each="diente : ${odontograma}">
                                                     <td><strong th:text="${diente.numeroDiente}">11</strong></td>
-                                                    <td th:text="${diente.estadoDiente.nombre}">Sano</td>
+                                                    <td><span class="badge badge-secondary" th:text="${diente.estadoDiente.nombre}">Sano</span></td>
                                                     <td th:text="${diente.caraVestibular ?: '-'}">-</td>
                                                     <td th:text="${diente.caraPalatina ?: '-'}">-</td>
                                                     <td th:text="${diente.caraMesial ?: '-'}">-</td>
@@ -355,6 +405,7 @@
                                         </table>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>

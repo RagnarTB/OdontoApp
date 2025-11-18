@@ -23,112 +23,204 @@
     <section class="content">
         <div class="container-fluid">
 
+            <!-- Formulario de edición de perfil -->
             <div class="row">
-                <!-- Datos no editables (solo lectura) -->
-                <div class="col-md-4">
-                    <div class="card card-info">
+                <div class="col-md-12">
+                    <div class="card card-primary">
                         <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-lock"></i> Datos Protegidos (Solo Lectura)</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i>
-                                <strong>Importante:</strong> Estos datos no pueden ser modificados por ti.
-                                Si necesitas actualizarlos, contacta con la clínica.
-                            </div>
-
-                            <dl class="row">
-                                <dt class="col-sm-6">Nombre Completo:</dt>
-                                <dd class="col-sm-6" th:text="${paciente.nombreCompleto}">Nombre</dd>
-
-                                <dt class="col-sm-6">Tipo Documento:</dt>
-                                <dd class="col-sm-6" th:text="${paciente.tipoDocumento.nombre}">DNI</dd>
-
-                                <dt class="col-sm-6">Número Documento:</dt>
-                                <dd class="col-sm-6" th:text="${paciente.numeroDocumento}">12345678</dd>
-
-                                <dt class="col-sm-6">Fecha Nacimiento:</dt>
-                                <dd class="col-sm-6" th:text="${#temporals.format(paciente.fechaNacimiento, 'dd/MM/yyyy')}">01/01/1990</dd>
-
-                                <dt class="col-sm-6">Género:</dt>
-                                <dd class="col-sm-6" th:text="${paciente.genero}">Masculino</dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Formulario de datos editables -->
-                <div class="col-md-8">
-                    <div class="card card-warning">
-                        <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-edit"></i> Datos que Puedes Actualizar</h3>
+                            <h3 class="card-title"><i class="fas fa-edit"></i> Datos del Paciente - Modo Edición</h3>
                         </div>
                         <form th:action="@{/paciente/perfil/guardar}" th:object="${pacienteDTO}" method="post">
                             <div class="card-body">
 
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Campos editables:</strong> Email, Teléfono, Dirección, Alergias y Antecedentes Médicos.<br>
+                                    <strong>Campos protegidos:</strong> Tipo de documento, Número de documento, Nombre completo y Fecha de nacimiento.
+                                </div>
+
                                 <input type="hidden" th:field="*{id}">
 
-                                <div class="form-group">
-                                    <label for="email">
-                                        Email <span class="text-danger">*</span>
-                                        <small class="text-muted">(también se usará para iniciar sesión)</small>
-                                    </label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                        </div>
-                                        <input type="email" th:field="*{email}" id="email" class="form-control"
-                                               placeholder="ejemplo@email.com" required
-                                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
-                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">
-                                            Error en email
+                                <div class="row">
+                                    <!-- CAMPOS PROTEGIDOS (SOLO LECTURA) -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Tipo Documento</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                                </div>
+                                                <input type="text" class="form-control" readonly
+                                                       th:value="${paciente.tipoDocumento.nombre}">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">Campo no editable</small>
                                         </div>
                                     </div>
-                                    <small class="form-text text-muted">
-                                        Asegúrate de usar un email válido, ya que recibirás notificaciones aquí.
-                                    </small>
-                                </div>
 
-                                <div class="form-group">
-                                    <label for="telefono">
-                                        Teléfono
-                                        <small class="text-muted">(opcional)</small>
-                                    </label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                                        </div>
-                                        <input type="text" th:field="*{telefono}" id="telefono" class="form-control"
-                                               placeholder="999-999-999" maxlength="20"
-                                               th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid' : ''">
-                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}">
-                                            Error en teléfono
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Número Documento</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
+                                                </div>
+                                                <input type="text" class="form-control" readonly
+                                                       th:value="${paciente.numeroDocumento}">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">Campo no editable</small>
                                         </div>
                                     </div>
-                                    <small class="form-text text-muted">
-                                        Número de contacto para confirmación de citas y comunicaciones.
-                                    </small>
-                                </div>
 
-                                <div class="form-group">
-                                    <label for="direccion">
-                                        Dirección
-                                        <small class="text-muted">(opcional)</small>
-                                    </label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
-                                        </div>
-                                        <textarea th:field="*{direccion}" id="direccion" class="form-control" rows="3"
-                                                  placeholder="Ingrese su dirección completa"
-                                                  th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid' : ''"></textarea>
-                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('direccion')}" th:errors="*{direccion}">
-                                            Error en dirección
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label>Nombre Completo</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                                </div>
+                                                <input type="text" class="form-control" readonly
+                                                       th:value="${paciente.nombreCompleto}">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">Se autocompleta al buscar DNI</small>
                                         </div>
                                     </div>
-                                    <small class="form-text text-muted">
-                                        Dirección completa (calle, número, distrito, ciudad).
-                                    </small>
+
+                                    <!-- CAMPOS EDITABLES -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="email">
+                                                Email <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                                </div>
+                                                <input type="email" th:field="*{email}" id="email" class="form-control"
+                                                       placeholder="ejemplo@email.com" required
+                                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
+                                                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">
+                                                    Error en email
+                                                </div>
+                                            </div>
+                                            <small class="form-text text-muted">Campo editable</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="telefono">Teléfono</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                                </div>
+                                                <input type="text" th:field="*{telefono}" id="telefono" class="form-control"
+                                                       placeholder="999-999-999" maxlength="20" pattern="[0-9\-\s]+"
+                                                       th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid' : ''">
+                                                <div class="invalid-feedback" th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}">
+                                                    Error en teléfono
+                                                </div>
+                                            </div>
+                                            <small class="form-text text-muted">Campo editable - 9 dígitos</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Fecha de Nacimiento <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                </div>
+                                                <input type="text" class="form-control" readonly
+                                                       th:value="${#temporals.format(paciente.fechaNacimiento, 'dd/MM/yyyy')}">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">Campo no editable</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="genero">Género</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-venus-mars"></i></span>
+                                                </div>
+                                                <input type="text" class="form-control" readonly
+                                                       th:value="${paciente.genero}">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">Campo no editable</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="direccion">Dirección</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                                                </div>
+                                                <textarea th:field="*{direccion}" id="direccion" class="form-control" rows="2"
+                                                          placeholder="Ingrese su dirección completa"
+                                                          th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid' : ''"></textarea>
+                                                <div class="invalid-feedback" th:if="${#fields.hasErrors('direccion')}" th:errors="*{direccion}">
+                                                    Error en dirección
+                                                </div>
+                                            </div>
+                                            <small class="form-text text-muted">Campo editable</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="alergias">Alergias Conocidas</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-allergies"></i></span>
+                                                </div>
+                                                <textarea th:field="*{alergias}" id="alergias" class="form-control" rows="2"
+                                                          placeholder="Ej: Penicilina, AINES..."
+                                                          th:classappend="${#fields.hasErrors('alergias')} ? 'is-invalid' : ''"></textarea>
+                                                <div class="invalid-feedback" th:if="${#fields.hasErrors('alergias')}" th:errors="*{alergias}">
+                                                    Error en alergias
+                                                </div>
+                                            </div>
+                                            <small class="form-text text-muted">Campo editable</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="antecedentesMedicos">Antecedentes Médicos Relevantes</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-notes-medical"></i></span>
+                                                </div>
+                                                <textarea th:field="*{antecedentesMedicos}" id="antecedentesMedicos" class="form-control" rows="3"
+                                                          placeholder="Ej: Hipertensión, Diabetes, Asma..."
+                                                          th:classappend="${#fields.hasErrors('antecedentesMedicos')} ? 'is-invalid' : ''"></textarea>
+                                                <div class="invalid-feedback" th:if="${#fields.hasErrors('antecedentesMedicos')}" th:errors="*{antecedentesMedicos}">
+                                                    Error en antecedentes médicos
+                                                </div>
+                                            </div>
+                                            <small class="form-text text-muted">Campo editable</small>
+                                        </div>
+                                    </div>
+
                                 </div>
 
                                 <div class="alert alert-warning">
@@ -138,7 +230,7 @@
 
                             </div>
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-warning">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save"></i> Guardar Cambios
                                 </button>
                                 <a th:href="@{/paciente/perfil}" class="btn btn-default">
@@ -146,26 +238,6 @@
                                 </a>
                             </div>
                         </form>
-                    </div>
-
-                    <!-- Información adicional sobre seguridad -->
-                    <div class="card card-outline card-primary">
-                        <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-shield-alt"></i> Seguridad y Privacidad</h3>
-                        </div>
-                        <div class="card-body">
-                            <p><strong><i class="fas fa-check text-success"></i> Tus datos están protegidos</strong></p>
-                            <ul class="list-unstyled ml-3">
-                                <li><i class="fas fa-lock text-muted"></i> Tus datos médicos son confidenciales</li>
-                                <li><i class="fas fa-lock text-muted"></i> Solo tú y el personal autorizado pueden verlos</li>
-                                <li><i class="fas fa-lock text-muted"></i> Los cambios son registrados en el sistema</li>
-                            </ul>
-
-                            <hr>
-
-                            <p><strong><i class="fas fa-info-circle text-info"></i> ¿Necesitas cambiar tu contraseña?</strong></p>
-                            <p class="text-muted">Por favor, contacta con la administración de la clínica para restablecer tu contraseña.</p>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -184,7 +256,7 @@
 
             if (email && !emailRegex.test(email)) {
                 $(this).addClass('is-invalid');
-                $(this).next('.invalid-feedback').text('Por favor ingresa un email válido');
+                $(this).siblings('.invalid-feedback').text('Por favor ingresa un email válido');
             } else {
                 $(this).removeClass('is-invalid');
             }

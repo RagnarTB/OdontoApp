@@ -121,6 +121,8 @@ public class PacientePerfilController {
         dto.setEmail(paciente.getEmail());
         dto.setTelefono(paciente.getTelefono());
         dto.setDireccion(paciente.getDireccion());
+        dto.setAlergias(paciente.getAlergias());
+        dto.setAntecedentesMedicos(paciente.getAntecedentesMedicos());
 
         // Datos de solo lectura (para mostrar pero no editar)
         model.addAttribute("paciente", paciente);
@@ -155,10 +157,12 @@ public class PacientePerfilController {
         }
 
         try {
-            // SOLO actualizar campos permitidos: email, teléfono, dirección
+            // SOLO actualizar campos permitidos: email, teléfono, dirección, alergias, antecedentes
             paciente.setEmail(pacienteDTO.getEmail());
             paciente.setTelefono(pacienteDTO.getTelefono());
             paciente.setDireccion(pacienteDTO.getDireccion());
+            paciente.setAlergias(pacienteDTO.getAlergias());
+            paciente.setAntecedentesMedicos(pacienteDTO.getAntecedentesMedicos());
 
             // Guardar cambios
             pacienteRepository.save(paciente);
