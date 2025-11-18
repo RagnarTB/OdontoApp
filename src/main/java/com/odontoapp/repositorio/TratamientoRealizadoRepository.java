@@ -1,7 +1,11 @@
 package com.odontoapp.repositorio;
 
 import com.odontoapp.entidad.TratamientoRealizado;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -21,4 +25,13 @@ public interface TratamientoRealizadoRepository extends JpaRepository<Tratamient
      * @return Lista de tratamientos realizados
      */
     List<TratamientoRealizado> findByCitaId(Long citaId);
+
+    /**
+     * Busca todos los tratamientos realizados de un paciente con paginación.
+     * @param pacienteId El ID del paciente
+     * @param pageable Información de paginación y ordenamiento
+     * @return Página de tratamientos realizados
+     */
+    @Query("SELECT t FROM TratamientoRealizado t WHERE t.cita.paciente.id = :pacienteId")
+    Page<TratamientoRealizado> findByPacienteId(@Param("pacienteId") Long pacienteId, Pageable pageable);
 }

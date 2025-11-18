@@ -249,12 +249,13 @@
             $('#fechaPago').val(fechaHoraActual);
         });
 
-        // Validación al enviar el formulario
+        // Validación y envío AJAX del formulario
         $('#modalRegistrarPago form').submit(function(e) {
+            e.preventDefault(); // Prevenir submit por defecto
+
             // Validar que el ID del comprobante esté presente
             var comprobanteId = $('#pagoComprobanteId').val();
             if (!comprobanteId || comprobanteId === '' || comprobanteId === '0') {
-                e.preventDefault();
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -272,7 +273,6 @@
                 var montoParcial = parseFloat($('#monto').val() || 0);
 
                 if (montoParcial <= 0) {
-                    e.preventDefault();
                     Swal.fire({
                         icon: 'error',
                         title: 'Monto Inválido',
@@ -284,7 +284,6 @@
                 }
 
                 if (montoParcial > saldoPendienteGlobal) {
-                    e.preventDefault();
                     Swal.fire({
                         icon: 'error',
                         title: 'Monto Excedido',
@@ -297,7 +296,6 @@
             }
 
             if (montoFinal <= 0) {
-                e.preventDefault();
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -310,7 +308,6 @@
             // Validar método de pago
             var metodoPagoId = $('#metodoPagoId').val();
             if (!metodoPagoId) {
-                e.preventDefault();
                 Swal.fire({
                     icon: 'warning',
                     title: 'Método de Pago Requerido',
@@ -326,7 +323,6 @@
             if (metodoTexto.includes('YAPE') || metodoTexto.includes('TRANSFERENCIA') || metodoTexto.includes('TARJETA')) {
                 var referenciaYape = $('#referenciaYape').val().trim();
                 if (!referenciaYape) {
-                    e.preventDefault();
                     Swal.fire({
                         icon: 'warning',
                         title: 'Referencia Requerida',
@@ -341,7 +337,6 @@
             // Validar fecha de pago
             var fechaPago = $('#fechaPago').val();
             if (!fechaPago) {
-                e.preventDefault();
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -351,7 +346,66 @@
                 return false;
             }
 
-            return true;
+            // Construir objeto de pago (DTO)
+            var pagoDTO = {
+                comprobanteId: parseInt(comprobanteId),
+                metodoPagoId: parseInt(metodoPagoId),
+                monto: parseFloat(montoFinal),
+                fechaPago: fechaPago,
+                notas: $('#notasPago').val() || null,
+                referenciaYape: $('#referenciaYape').val() || null
+            };
+
+            console.log('Enviando pago:', pagoDTO);
+
+            // Deshabilitar botón mientras se procesa
+            var $submitBtn = $(this).find('button[type="submit"]');
+            $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+
+            // Enviar AJAX
+            $.ajax({
+                url: '/facturacion/registrar-pago',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(pagoDTO),
+                success: function(response) {
+                    console.log('Respuesta exitosa:', response);
+
+                    $('#modalRegistrarPago').modal('hide');
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: response.mensaje || 'Pago registrado con éxito',
+                        confirmButtonText: 'Aceptar'
+                    }).then(function() {
+                        // Recargar la página para ver los cambios
+                        window.location.reload();
+                    });
+                },
+                error: function(xhr) {
+                    console.error('Error:', xhr);
+
+                    var mensaje = 'Error al registrar el pago';
+                    if (xhr.responseJSON && xhr.responseJSON.mensaje) {
+                        mensaje = xhr.responseJSON.mensaje;
+                    } else if (xhr.responseText) {
+                        mensaje = xhr.responseText;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: mensaje,
+                        confirmButtonText: 'Entendido'
+                    });
+
+                    // Rehabilitar botón
+                    $submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Registrar Pago');
+                }
+            });
+
+            return false;
         });
     });
     /*]]>*/

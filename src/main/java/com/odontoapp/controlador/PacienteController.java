@@ -273,16 +273,18 @@ public class PacienteController {
             );
             model.addAttribute("citasPage", citasPage);
 
-            // Obtener tratamientos realizados del paciente (sin paginación, generalmente son pocos)
-            java.util.List<Cita> todasLasCitas = citaRepository.findByPacienteId(usuarioId,
-                    PageRequest.of(0, 1000)).getContent();
-            java.util.List<TratamientoRealizado> tratamientos = new java.util.ArrayList<>();
-            for (Cita cita : todasLasCitas) {
-                java.util.List<TratamientoRealizado> tratamientosCita =
-                        tratamientoRealizadoRepository.findByCitaId(cita.getId());
-                tratamientos.addAll(tratamientosCita);
-            }
-            model.addAttribute("tratamientos", tratamientos);
+            // Obtener tratamientos realizados del paciente con paginación
+            int tratamientosPageNum = request.getParameter("tratamientosPage") != null
+                    ? Integer.parseInt(request.getParameter("tratamientosPage"))
+                    : 0;
+            int tratamientosSize = 10; // 10 tratamientos por página
+
+            org.springframework.data.domain.Page<TratamientoRealizado> tratamientosPage =
+                    tratamientoRealizadoRepository.findByPacienteId(
+                        paciente.getId(),
+                        PageRequest.of(tratamientosPageNum, tratamientosSize, Sort.by("fechaRealizacion").descending())
+                    );
+            model.addAttribute("tratamientosPage", tratamientosPage);
 
             // Obtener tratamientos planificados del paciente (solo PLANIFICADO y EN_CURSO, no los COMPLETADOS)
             java.util.List<TratamientoPlanificado> tratamientosPlanificados =
