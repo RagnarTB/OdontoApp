@@ -26,6 +26,7 @@ import com.odontoapp.repositorio.MotivoMovimientoRepository;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.EmailService;
 import com.odontoapp.servicio.InventarioService;
+import com.odontoapp.servicio.FacturacionService;
 import java.math.BigDecimal;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
@@ -73,6 +74,7 @@ public class CitaServiceImpl implements CitaService {
     private final TipoMovimientoRepository tipoMovimientoRepository;
     private final MotivoMovimientoRepository motivoMovimientoRepository;
     private final InventarioService inventarioService;
+    private final FacturacionService facturacionService;
 
     public CitaServiceImpl(CitaRepository citaRepository,
                           UsuarioRepository usuarioRepository,
@@ -86,7 +88,8 @@ public class CitaServiceImpl implements CitaService {
                           MovimientoInventarioRepository movimientoInventarioRepository,
                           TipoMovimientoRepository tipoMovimientoRepository,
                           MotivoMovimientoRepository motivoMovimientoRepository,
-                          InventarioService inventarioService) {
+                          InventarioService inventarioService,
+                          FacturacionService facturacionService) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
@@ -100,6 +103,7 @@ public class CitaServiceImpl implements CitaService {
         this.tipoMovimientoRepository = tipoMovimientoRepository;
         this.motivoMovimientoRepository = motivoMovimientoRepository;
         this.inventarioService = inventarioService;
+        this.facturacionService = facturacionService;
     }
 
     @Override
@@ -615,7 +619,28 @@ public class CitaServiceImpl implements CitaService {
             }
         }
 
-        return citaRepository.save(cita);
+        Cita citaActualizada = citaRepository.save(cita);
+
+        // GENERAR COMPROBANTE AUTOMÁTICO cuando el paciente asiste
+        if (asistio && cita.getProcedimiento() != null) {
+            try {
+                // Generar comprobante automáticamente (sin detalles adicionales)
+                // Solo incluye el procedimiento de la cita con su precio base
+                // Los insumos ya fueron descontados del inventario pero NO se cobran por separado
+                // El método generarComprobanteDesdeCita ya valida que no exista un comprobante previo
+                facturacionService.generarComprobanteDesdeCita(citaId, null);
+                System.out.println("✅ Comprobante generado automáticamente para cita: " + citaId);
+            } catch (IllegalStateException e) {
+                // Si ya existe comprobante o hay otro error de estado, solo logueamos
+                System.out.println("ℹ️ No se generó comprobante para cita " + citaId + ": " + e.getMessage());
+            } catch (Exception e) {
+                // Log del error pero no fallar la marcación de asistencia
+                System.err.println("⚠️ Error al generar comprobante automático para cita " + citaId + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        return citaActualizada;
     }
 
     /**
