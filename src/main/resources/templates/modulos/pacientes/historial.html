@@ -343,15 +343,31 @@
 
                                     <!-- Tab Odontograma -->
                                     <div class="tab-pane fade" id="odontograma" role="tabpanel" aria-labelledby="odontograma-tab">
-                                        <div class="alert alert-info">
-                                            <h5><i class="icon fas fa-info-circle"></i> Carta Dental (Odontograma)</h5>
-                                            Aquí se mostrará el odontograma completo del paciente con el estado de cada pieza dental.
-                                            Esta funcionalidad será completada en futuras actualizaciones.
-                                        </div>
-                                        <!-- Placeholder para futura implementación -->
-                                        <div class="text-center text-muted p-5">
-                                            <i class="fas fa-tooth" style="font-size: 4rem; opacity: 0.3;"></i>
-                                            <p class="mt-3">Odontograma no disponible</p>
+                                        <div class="card">
+                                            <div class="card-header bg-primary">
+                                                <h5 class="mb-0"><i class="fas fa-tooth mr-2"></i>Carta Dental (Odontograma)</h5>
+                                            </div>
+                                            <div class="card-body text-center">
+                                                <div class="mb-4">
+                                                    <i class="fas fa-tooth text-primary" style="font-size: 5rem; opacity: 0.2;"></i>
+                                                </div>
+                                                <h5 class="mb-3">Visualice y edite el estado dental completo del paciente</h5>
+                                                <p class="text-muted mb-4">
+                                                    El odontograma muestra el estado de las 32 piezas dentales permanentes,
+                                                    incluyendo caries, restauraciones, endodoncias, coronas y más.
+                                                </p>
+                                                <a th:href="@{/odontograma/paciente/{id}(id=${paciente.id})}"
+                                                   class="btn btn-primary btn-lg">
+                                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                                    Ver Odontograma Completo
+                                                </a>
+                                            </div>
+                                            <div class="card-footer text-muted">
+                                                <small>
+                                                    <i class="fas fa-info-circle mr-1"></i>
+                                                    El odontograma se actualiza automáticamente cuando se realizan tratamientos
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
 

@@ -4,6 +4,7 @@ import com.odontoapp.dto.TratamientoRealizadoDTO;
 import com.odontoapp.entidad.*;
 import com.odontoapp.repositorio.*;
 import com.odontoapp.servicio.TratamientoRealizadoService;
+import com.odontoapp.servicio.OdontogramaDienteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +39,7 @@ public class TratamientoController {
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final TipoMovimientoRepository tipoMovimientoRepository;
     private final EstadoCitaRepository estadoCitaRepository;
+    private final OdontogramaDienteService odontogramaService;
 
     public TratamientoController(
             TratamientoRealizadoService tratamientoRealizadoService,
@@ -51,7 +53,8 @@ public class TratamientoController {
             DetalleComprobanteRepository detalleComprobanteRepository,
             MovimientoInventarioRepository movimientoInventarioRepository,
             TipoMovimientoRepository tipoMovimientoRepository,
-            EstadoCitaRepository estadoCitaRepository) {
+            EstadoCitaRepository estadoCitaRepository,
+            OdontogramaDienteService odontogramaService) {
         this.tratamientoRealizadoService = tratamientoRealizadoService;
         this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
         this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
@@ -64,6 +67,7 @@ public class TratamientoController {
         this.movimientoInventarioRepository = movimientoInventarioRepository;
         this.tipoMovimientoRepository = tipoMovimientoRepository;
         this.estadoCitaRepository = estadoCitaRepository;
+        this.odontogramaService = odontogramaService;
     }
 
     /**
@@ -225,6 +229,15 @@ public class TratamientoController {
 
             // Guardar tratamiento
             tratamientoRealizadoRepository.save(tratamiento);
+
+            // **ACTUALIZAR ODONTOGRAMA AUTOMÁTICAMENTE**
+            try {
+                odontogramaService.actualizarDesdeTratamiento(tratamiento.getId());
+                System.out.println("✓ Odontograma actualizado automáticamente para tratamiento ID: " + tratamiento.getId());
+            } catch (Exception e) {
+                System.err.println("⚠ Error al actualizar odontograma: " + e.getMessage());
+                // No fallar el tratamiento si falla la actualización del odontograma
+            }
 
             // **BUSCAR Y ACTUALIZAR TRATAMIENTO PLANIFICADO SI EXISTE**
             // Buscar tratamiento planificado del mismo paciente y procedimiento que esté pendiente
