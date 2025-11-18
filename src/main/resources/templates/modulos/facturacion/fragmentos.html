@@ -120,14 +120,9 @@
 <!-- Script para el modal de pago -->
 <script th:inline="javascript">
     /*<![CDATA[*/
-    // Ejecutar inmediatamente cuando se cargue el script
-    (function() {
-        console.log('✅ Script del modal de pagos cargado');
-
-        if (typeof jQuery === 'undefined') {
-            console.error('❌ jQuery no está disponible');
-            return;
-        }
+    // Esperar a que jQuery esté disponible
+    $(document).ready(function() {
+        console.log('✅ Script del modal de pagos cargado (jQuery disponible)');
 
         var saldoPendienteGlobal = 0;
 
@@ -427,7 +422,7 @@
         });
 
         console.log('✅ Event handlers del modal registrados correctamente');
-    })(); // Ejecutar inmediatamente
+    }); // document.ready
     /*]]>*/
 </script>
 </th:block>

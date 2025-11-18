@@ -541,7 +541,14 @@ public class CitaServiceImpl implements CitaService {
 
         // Si el paciente asistió, descontar insumos asociados al procedimiento
         if (asistio && cita.getProcedimiento() != null) {
-            descontarInsumosDelProcedimiento(cita.getProcedimiento().getId(), citaId);
+            System.out.println("🔵 Paciente ASISTIÓ - Cita ID: " + citaId + ", Procedimiento: " + cita.getProcedimiento().getNombre());
+
+            try {
+                descontarInsumosDelProcedimiento(cita.getProcedimiento().getId(), citaId);
+            } catch (Exception e) {
+                System.err.println("⚠️ Error al descontar insumos (continuando): " + e.getMessage());
+                // Continuar aunque falle el descuento de insumos
+            }
 
             // Crear TratamientoRealizado automáticamente cuando asiste y tiene procedimiento
             TratamientoRealizado tratamientoRealizado = new TratamientoRealizado();
@@ -553,8 +560,12 @@ public class CitaServiceImpl implements CitaService {
                 cita.getFechaHoraInicio().toLocalDate());
             tratamientoRealizado.setFechaRealizacion(cita.getFechaHoraInicio());
 
-            tratamientoRealizadoRepository.save(tratamientoRealizado);
-            System.out.println("✅ TratamientoRealizado creado automáticamente para cita: " + citaId);
+            TratamientoRealizado savedTratamiento = tratamientoRealizadoRepository.save(tratamientoRealizado);
+            System.out.println("✅ TratamientoRealizado creado automáticamente - ID: " + savedTratamiento.getId() +
+                             ", Cita: " + citaId + ", Procedimiento: " + cita.getProcedimiento().getNombre());
+        } else {
+            System.out.println("⚠️ NO se creó TratamientoRealizado - Asistio: " + asistio +
+                             ", Tiene procedimiento: " + (cita.getProcedimiento() != null));
         }
 
         // Manejar tratamiento planificado asociado según asistencia

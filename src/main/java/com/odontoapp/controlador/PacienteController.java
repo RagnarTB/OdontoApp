@@ -279,7 +279,7 @@ public class PacienteController {
 
             org.springframework.data.domain.Page<TratamientoRealizado> tratamientosPageData =
                     tratamientoRealizadoRepository.findByPacienteId(
-                        paciente.getId(),
+                        usuarioId, // ← FIX: Usar usuarioId en lugar de paciente.getId()
                         PageRequest.of(tratamientosPage, tratamientosSize, Sort.by("fechaRealizacion").descending())
                     );
             model.addAttribute("tratamientosPage", tratamientosPageData);
