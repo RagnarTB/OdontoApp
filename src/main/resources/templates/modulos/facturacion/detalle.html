@@ -495,9 +495,16 @@
             $('#infoSaldoPendiente').text(saldoPendiente.toFixed(2));
 
             // Asignar automáticamente la fecha y hora actual
+            // Formato para datetime-local: yyyy-MM-ddTHH:mm
             const ahora = new Date();
-            const fechaFormateada = ahora.toISOString().slice(0, 19);
+            const year = ahora.getFullYear();
+            const month = String(ahora.getMonth() + 1).padStart(2, '0');
+            const day = String(ahora.getDate()).padStart(2, '0');
+            const hours = String(ahora.getHours()).padStart(2, '0');
+            const minutes = String(ahora.getMinutes()).padStart(2, '0');
+            const fechaFormateada = `${year}-${month}-${day}T${hours}:${minutes}`;
             $('#fechaPago').val(fechaFormateada);
+            console.log('Fecha formateada:', fechaFormateada);
 
             // Precargar el monto con el saldo pendiente
             $('#monto').attr('max', saldoPendiente);
@@ -515,7 +522,15 @@
 
             // VALIDAR QUE EL ID DEL COMPROBANTE ESTÉ PRESENTE
             var comprobanteId = $('#pagoComprobanteId').val();
-            console.log('ID del comprobante al enviar:', comprobanteId);
+            var fechaPago = $('#fechaPago').val();
+            var metodoPagoId = $('#metodoPagoId').val();
+            var monto = $('#monto').val();
+
+            console.log('Datos del formulario:');
+            console.log('  - ID Comprobante:', comprobanteId);
+            console.log('  - Fecha Pago:', fechaPago);
+            console.log('  - Método Pago ID:', metodoPagoId);
+            console.log('  - Monto:', monto);
 
             if (!comprobanteId || comprobanteId === '' || comprobanteId === '0') {
                 e.preventDefault();
