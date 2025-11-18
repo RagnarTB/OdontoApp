@@ -204,14 +204,9 @@ public class TratamientoController {
             Cita cita = citaRepository.findById(citaId)
                     .orElseThrow(() -> new RuntimeException("Cita no encontrada"));
 
-            // **VALIDAR QUE NO EXISTA YA UN TRATAMIENTO EN ESTA CITA**
+            // Verificar tratamientos existentes (para información, pero permitir múltiples)
             List<TratamientoRealizado> tratamientosExistentes = tratamientoRealizadoRepository.findByCitaId(citaId);
-            if (!tratamientosExistentes.isEmpty()) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("mensaje", "Esta cita ya tiene un tratamiento registrado. No se pueden registrar múltiples tratamientos en la misma cita.");
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
+            int numeroTratamiento = tratamientosExistentes.size() + 1;
 
             Procedimiento procedimiento = procedimientoRepository.findById(procedimientoId)
                     .orElseThrow(() -> new RuntimeException("Procedimiento no encontrado"));
@@ -230,6 +225,35 @@ public class TratamientoController {
 
             // Guardar tratamiento
             tratamientoRealizadoRepository.save(tratamiento);
+
+            // **BUSCAR Y ACTUALIZAR TRATAMIENTO PLANIFICADO SI EXISTE**
+            // Buscar tratamiento planificado del mismo paciente y procedimiento que esté pendiente
+            List<TratamientoPlanificado> tratamientosplanificados = tratamientoPlanificadoRepository
+                    .findByPacienteAndProcedimientoAndEstado(
+                            cita.getPaciente(),
+                            procedimiento,
+                            "PLANIFICADO"
+                    );
+
+            // También buscar los que están EN_CURSO
+            if (tratamientosplanificados.isEmpty()) {
+                tratamientosplanificados = tratamientoPlanificadoRepository
+                        .findByPacienteAndProcedimientoAndEstado(
+                                cita.getPaciente(),
+                                procedimiento,
+                                "EN_CURSO"
+                        );
+            }
+
+            // Si encontramos un tratamiento planificado, marcarlo como COMPLETADO
+            if (!tratamientosplanificados.isEmpty()) {
+                TratamientoPlanificado planificado = tratamientosplanificados.get(0); // Tomar el primero
+                planificado.setEstado("COMPLETADO");
+                planificado.setTratamientoRealizadoId(tratamiento.getId());
+                tratamientoPlanificadoRepository.save(planificado);
+                System.out.println("✓ Tratamiento planificado ID " + planificado.getId() +
+                        " marcado como COMPLETADO");
+            }
 
             // **CREAR CITA AUTOMÁTICA EN EL CALENDARIO**
             // Crear una cita automática que bloquee el tiempo en el que se realiza el tratamiento

@@ -1008,46 +1008,88 @@ $(document).ready(function() {
         const procedimientoId = $('#planificarProcedimientoId').val();
         const odontologoId = $('#planificarOdontologoIdSelect').val(); // Usar el select
         const pacienteId = $('#planificarPacienteId').val();
+        const citaId = $('#planificarCitaId').val(); // Cita original
 
-        console.log('Datos para crear cita:', { pacienteId, odontologoId, procedimientoId, fechaHoraInicio }); // Debug
+        console.log('Datos para planificar tratamiento:', { citaId, procedimientoId, datosTratamiento }); // Debug
 
-        // Validar que tengamos todos los datos necesarios
-        if (!pacienteId || !odontologoId || !procedimientoId) {
+        // Validar que tengamos los datos necesarios
+        if (!citaId || !procedimientoId) {
             $btn.prop('disabled', false).html(originalText);
             if (typeof Swal !== 'undefined') {
-                Swal.fire('Error', 'Faltan datos necesarios para crear la cita. Por favor, inténtelo nuevamente.', 'error');
+                Swal.fire('Error', 'Faltan datos necesarios para planificar el tratamiento. Por favor, inténtelo nuevamente.', 'error');
             } else {
-                alert('Faltan datos necesarios para crear la cita');
+                alert('Faltan datos necesarios para planificar el tratamiento');
             }
             return;
         }
 
-        // Primero crear la cita
-        const citaData = {
-            pacienteUsuarioId: pacienteId,
-            odontologoUsuarioId: odontologoId,
+        // Primero crear el TratamientoPlanificado con los datos del tratamiento
+        const tratamientoData = {
+            citaId: citaId,
             procedimientoId: procedimientoId,
-            fechaHoraInicio: fechaHoraInicio,
-            motivoConsulta: datosTratamiento.descripcion || 'Tratamiento planificado',
-            notasInternas: 'Cita generada desde planificación de tratamiento'
+            piezasDentales: datosTratamiento.piezasDentales || '',
+            descripcion: datosTratamiento.descripcion || '',
+            camposDinamicos: datosTratamiento.camposDinamicos || [],
+            tipo: 'PLANIFICADO'
         };
 
         $.ajax({
-            url: '/citas/agendar',
+            url: '/tratamientos/planificar',
             method: 'POST',
-            data: citaData,
-            success: function() {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire('Éxito', 'Tratamiento planificado correctamente. La cita ha sido agendada.', 'success');
+            contentType: 'application/json',
+            data: JSON.stringify(tratamientoData),
+            success: function(response) {
+                console.log('Tratamiento planificado creado:', response); // Debug
+
+                // Ahora agendar la cita si se seleccionó un horario
+                if (fechaHoraInicio && pacienteId && odontologoId) {
+                    const citaData = {
+                        pacienteUsuarioId: pacienteId,
+                        odontologoUsuarioId: odontologoId,
+                        procedimientoId: procedimientoId,
+                        fechaHoraInicio: fechaHoraInicio,
+                        motivoConsulta: datosTratamiento.descripcion || 'Tratamiento planificado',
+                        notasInternas: 'Cita generada desde planificación de tratamiento. Tratamiento planificado ID: ' + response.tratamientoId
+                    };
+
+                    $.ajax({
+                        url: '/citas/agendar',
+                        method: 'POST',
+                        data: citaData,
+                        success: function() {
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire('Éxito', 'Tratamiento planificado correctamente. La cita ha sido agendada.', 'success');
+                            } else {
+                                alert('Tratamiento planificado correctamente. La cita ha sido agendada.');
+                            }
+                            $('#modalPlanificarTratamiento').modal('hide');
+                            location.reload();
+                        },
+                        error: function(xhr) {
+                            $btn.prop('disabled', false).html(originalText);
+                            const mensaje = xhr.responseJSON?.mensaje || 'Tratamiento guardado, pero no se pudo agendar la cita';
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire('Advertencia', mensaje, 'warning');
+                            } else {
+                                alert('Advertencia: ' + mensaje);
+                            }
+                            location.reload(); // Recargar de todas formas porque el tratamiento sí se guardó
+                        }
+                    });
                 } else {
-                    alert('Tratamiento planificado correctamente. La cita ha sido agendada.');
+                    // Si no se seleccionó horario, solo mostrar mensaje de éxito
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('Éxito', 'Tratamiento planificado correctamente.', 'success');
+                    } else {
+                        alert('Tratamiento planificado correctamente.');
+                    }
+                    $('#modalPlanificarTratamiento').modal('hide');
+                    location.reload();
                 }
-                $('#modalPlanificarTratamiento').modal('hide');
-                location.reload();
             },
             error: function(xhr) {
                 $btn.prop('disabled', false).html(originalText);
-                const mensaje = xhr.responseJSON?.mensaje || 'No se pudo agendar la cita';
+                const mensaje = xhr.responseJSON?.mensaje || 'No se pudo planificar el tratamiento';
                 if (typeof Swal !== 'undefined') {
                     Swal.fire('Error', mensaje, 'error');
                 } else {
