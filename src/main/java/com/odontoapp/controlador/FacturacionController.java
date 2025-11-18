@@ -227,7 +227,7 @@ public class FacturacionController {
      * @param attributes Atributos para mensajes flash
      * @return Redirección a la lista de facturación
      */
-    @GetMapping("/anular/{id}")
+    @PostMapping("/anular/{id}")
     public String anularComprobante(@PathVariable Long id,
                                    @RequestParam(defaultValue = "Anulado por usuario") String motivo,
                                    @RequestParam(required = false) Boolean regresarInventario,

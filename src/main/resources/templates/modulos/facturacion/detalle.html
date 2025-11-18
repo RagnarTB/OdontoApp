@@ -317,6 +317,36 @@
 
 <script th:inline="javascript">
     /*<\![CDATA[*/
+    // Función auxiliar para enviar POST de anulación
+    function enviarAnulacion(comprobanteId, regresarInventario) {
+        // Crear formulario dinámico para POST
+        var form = $('<form>', {
+            'method': 'POST',
+            'action': '/facturacion/anular/' + comprobanteId
+        });
+
+        // Agregar campo regresarInventario
+        form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'regresarInventario',
+            'value': regresarInventario
+        }));
+
+        // Agregar token CSRF si existe
+        var csrfToken = $('meta[name="_csrf"]').attr('content');
+        if (csrfToken) {
+            form.append($('<input>', {
+                'type': 'hidden',
+                'name': '_csrf',
+                'value': csrfToken
+            }));
+        }
+
+        // Agregar al body y enviar
+        $('body').append(form);
+        form.submit();
+    }
+
     // Función para confirmar anulación con SweetAlert2
     function confirmarAnulacion(button) {
         var comprobanteId = $(button).data('comprobante-id');
@@ -377,11 +407,11 @@
                 width: '650px'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Anular y regresar insumos
-                    window.location.href = '/facturacion/anular/' + comprobanteId + '?regresarInventario=true';
+                    // Anular y regresar insumos con POST
+                    enviarAnulacion(comprobanteId, true);
                 } else if (result.isDenied) {
-                    // Anular sin regresar insumos
-                    window.location.href = '/facturacion/anular/' + comprobanteId + '?regresarInventario=false';
+                    // Anular sin regresar insumos con POST
+                    enviarAnulacion(comprobanteId, false);
                 }
             });
         } else {
@@ -398,7 +428,7 @@
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = '/facturacion/anular/' + comprobanteId + '?regresarInventario=false';
+                    enviarAnulacion(comprobanteId, false);
                 }
             });
         }
