@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- ========================================== -->
+<!-- MODAL: Agendar Nueva Cita (WIZARD) -->
+<!-- ========================================== -->
+<div th:fragment="modalAgendarCita" class="modal fade" id="modalAgendarCita" tabindex="-1" role="dialog" aria-labelledby="modalAgendarCitaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form th:action="@{/paciente/citas/agendar}" method="post" data-auto-loading="true">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalAgendarCitaLabel">
+                        <i class="fas fa-calendar-plus mr-2"></i>Agendar Nueva Cita
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <!-- Indicadores de progreso del wizard -->
+                <div class="modal-body pb-2">
+                    <div class="wizard-steps d-flex justify-content-between mb-4">
+                        <div class="wizard-step active" data-step="1">
+                            <div class="step-circle">
+                                <span class="step-number">1</span>
+                                <i class="fas fa-check step-check" style="display: none;"></i>
+                            </div>
+                            <div class="step-label">Información Básica</div>
+                        </div>
+                        <div class="wizard-line"></div>
+                        <div class="wizard-step" data-step="2">
+                            <div class="step-circle">
+                                <span class="step-number">2</span>
+                                <i class="fas fa-check step-check" style="display: none;"></i>
+                            </div>
+                            <div class="step-label">Horario</div>
+                        </div>
+                        <div class="wizard-line"></div>
+                        <div class="wizard-step" data-step="3">
+                            <div class="step-circle">
+                                <span class="step-number">3</span>
+                                <i class="fas fa-check step-check" style="display: none;"></i>
+                            </div>
+                            <div class="step-label">Detalles</div>
+                        </div>
+                    </div>
+
+                    <style>
+                        .wizard-steps {
+                            position: relative;
+                            padding: 0 20px;
+                        }
+                        .wizard-step {
+                            text-align: center;
+                            flex: 1;
+                            position: relative;
+                            z-index: 2;
+                        }
+                        .step-circle {
+                            width: 45px;
+                            height: 45px;
+                            border-radius: 50%;
+                            background: #e9ecef;
+                            color: #6c757d;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin: 0 auto 8px;
+                            font-weight: bold;
+                            border: 3px solid #e9ecef;
+                            transition: all 0.3s;
+                        }
+                        .wizard-step.active .step-circle {
+                            background: #007bff;
+                            color: white;
+                            border-color: #007bff;
+                            transform: scale(1.1);
+                        }
+                        .wizard-step.completed .step-circle {
+                            background: #28a745;
+                            color: white;
+                            border-color: #28a745;
+                        }
+                        .wizard-step.completed .step-number {
+                            display: none;
+                        }
+                        .wizard-step.completed .step-check {
+                            display: block !important;
+                        }
+                        .step-label {
+                            font-size: 12px;
+                            color: #6c757d;
+                            font-weight: 500;
+                        }
+                        .wizard-step.active .step-label {
+                            color: #007bff;
+                            font-weight: 600;
+                        }
+                        .wizard-step.completed .step-label {
+                            color: #28a745;
+                        }
+                        .wizard-line {
+                            flex: 1;
+                            height: 3px;
+                            background: #e9ecef;
+                            margin: 22px 10px 0;
+                            position: relative;
+                        }
+                        .wizard-content-step {
+                            display: none;
+                        }
+                        .wizard-content-step.active {
+                            display: block;
+                        }
+                        .horarios-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                            gap: 10px;
+                            max-height: 400px;
+                            overflow-y: auto;
+                            padding: 10px;
+                        }
+                        .horario-slot {
+                            padding: 12px 8px;
+                            border: 2px solid #dee2e6;
+                            border-radius: 6px;
+                            background: white;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            text-align: center;
+                            font-weight: 500;
+                        }
+                        .horario-slot.disponible:hover {
+                            border-color: #007bff;
+                            background: #e7f1ff;
+                            transform: translateY(-2px);
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        }
+                        .horario-slot.seleccionado {
+                            background: #007bff;
+                            color: white;
+                            border-color: #0056b3;
+                        }
+                        .horario-slot.ocupado {
+                            background: #e9ecef;
+                            color: #6c757d;
+                            cursor: not-allowed;
+                            opacity: 0.6;
+                        }
+                        .duracion-texto {
+                            display: block;
+                            font-size: 10px;
+                            margin-top: 4px;
+                            opacity: 0.8;
+                        }
+                    </style>
+                </div>
+
+                <div class="modal-body pt-0">
+                    <!-- Alerta de validación -->
+                    <div id="alertaValidacionCita" class="alert alert-danger d-none" role="alert">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span id="mensajeValidacionCita"></span>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Importante:</strong> Tu cita quedará en estado PENDIENTE hasta que sea confirmada por el personal de la clínica.
+                    </div>
+
+                    <!-- Campo hidden para enviar la fecha/hora seleccionada -->
+                    <input type="hidden" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
+
+                    <!-- Campo hidden para paciente (auto-asignado) -->
+                    <input type="hidden" name="pacienteUsuarioId" th:value="${usuarioLogueado.id}">
+
+                    <!-- PASO 1: Información Básica -->
+                    <div class="wizard-content-step active" id="wizard-step-1">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="odontologoIdAgendar">Odontólogo <span class="text-danger">*</span></label>
+                                <select class="form-control" id="odontologoIdAgendar" name="odontologoUsuarioId" required>
+                                    <option value="">Seleccione un odontólogo</option>
+                                    <option th:each="odontologo : ${listaOdontologos}"
+                                            th:value="${odontologo.id}"
+                                            th:text="${odontologo.nombreCompleto}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="procedimientoIdAgendar">Procedimiento <small class="text-muted">(Opcional)</small></label>
+                                <select class="form-control" id="procedimientoIdAgendar" name="procedimientoId">
+                                    <option value="">Seleccione un procedimiento</option>
+                                    <option th:each="procedimiento : ${listaProcedimientos}"
+                                            th:value="${procedimiento.id}"
+                                            th:text="${procedimiento.nombre} + ' (' + ${procedimiento.duracionBaseMinutos} + ' min)'"
+                                            th:attr="data-duracion=${procedimiento.duracionBaseMinutos}"></option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> Influye en la duración de la cita
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="fechaCitaAgendar">Fecha de la Cita <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="fechaCitaAgendar" required>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-calendar-alt"></i> Seleccione la fecha para ver horarios
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                    <!-- FIN PASO 1 -->
+
+                    <!-- PASO 2: Seleccionar Horario -->
+                    <div class="wizard-content-step" id="wizard-step-2">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-primary mb-0">
+                            <i class="fas fa-clock mr-2"></i>Seleccionar Horario Disponible
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnRefrescarHorarios" title="Refrescar horarios disponibles">
+                            <i class="fas fa-sync-alt"></i> Actualizar
+                        </button>
+                    </div>
+
+                    <!-- Indicador de horario seleccionado -->
+                    <div class="alert alert-info" id="horario-seleccionado-info" style="display: none;">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <strong>Horario seleccionado:</strong> <span id="horario-seleccionado-texto">Ninguno</span>
+                    </div>
+
+                    <!-- Grilla de horarios disponibles -->
+                    <div id="grilla-horarios-disponibles" class="mb-3">
+                        <div class="alert alert-secondary text-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Seleccione un odontólogo y fecha para ver los horarios disponibles
+                        </div>
+                    </div>
+                    </div>
+                    <!-- FIN PASO 2 -->
+
+                    <!-- PASO 3: Información Adicional -->
+                    <div class="wizard-content-step" id="wizard-step-3">
+                    <h6 class="text-primary mb-3">
+                        <i class="fas fa-notes-medical mr-2"></i>Información Adicional <small class="text-muted">(Opcional)</small>
+                    </h6>
+
+                    <div class="form-group">
+                        <label for="motivoConsultaAgendar">Motivo de Consulta</label>
+                        <textarea class="form-control" id="motivoConsultaAgendar" name="motivoConsulta" rows="3" placeholder="Describa el motivo de su consulta"></textarea>
+                    </div>
+                    </div>
+                    <!-- FIN PASO 3 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i>Cancelar
+                    </button>
+                    <div class="ml-auto">
+                        <button type="button" class="btn btn-outline-secondary" id="btnWizardAnterior" style="display: none;">
+                            <i class="fas fa-arrow-left mr-1"></i>Anterior
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btnWizardSiguiente">
+                            Siguiente<i class="fas fa-arrow-right ml-1"></i>
+                        </button>
+                        <button type="submit" class="btn btn-success" id="btnWizardFinalizar" style="display: none;" data-loading-text="Agendando cita...">
+                            <i class="fas fa-check mr-1"></i>Agendar Cita
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Script de horarios y wizard incluido directamente -->
+<script th:fragment="scriptHorariosWizard" th:src="@{/js/horarios-citas.js}"></script>
+
+</body>
+</html>

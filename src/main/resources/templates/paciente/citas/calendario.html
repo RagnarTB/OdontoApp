@@ -73,77 +73,8 @@
         </div>
     </section>
 
-    <!-- MODAL: Agendar Cita -->
-    <div class="modal fade" id="modalAgendarCita" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-primary">
-                    <h4 class="modal-title"><i class="fas fa-calendar-plus"></i> Agendar Nueva Cita</h4>
-                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-                </div>
-                <form th:action="@{/paciente/citas/agendar}" method="post" id="formAgendarCita">
-                    <div class="modal-body">
-
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i>
-                            <strong>Importante:</strong> Tu cita quedará en estado PENDIENTE hasta que sea confirmada por el personal de la clínica.
-                        </div>
-
-                        <div class="form-group">
-                            <label for="agendarOdontologo">Odontólogo <span class="text-danger">*</span></label>
-                            <select name="odontologoUsuarioId" id="agendarOdontologo" class="form-control" required>
-                                <option value="">Seleccione un odontólogo...</option>
-                                <option th:each="odontologo : ${listaOdontologos}"
-                                        th:value="${odontologo.id}"
-                                        th:text="${odontologo.nombreCompleto}"></option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="agendarProcedimiento">Procedimiento <span class="text-danger">*</span></label>
-                            <select name="procedimientoId" id="agendarProcedimiento" class="form-control" required>
-                                <option value="">Seleccione un procedimiento...</option>
-                                <option th:each="proc : ${listaProcedimientos}"
-                                        th:value="${proc.id}"
-                                        th:text="${proc.nombre + ' (' + proc.duracionBaseMinutos + ' min)'}"
-                                        th:data-duracion="${proc.duracionBaseMinutos}"></option>
-                            </select>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="agendarFecha">Fecha <span class="text-danger">*</span></label>
-                                    <input type="date" name="fecha" id="agendarFecha" class="form-control" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="agendarHora">Hora Disponible <span class="text-danger">*</span></label>
-                                    <select name="hora" id="agendarHora" class="form-control" required disabled>
-                                        <option value="">Primero seleccione fecha, odontólogo y procedimiento</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="agendarMotivo">Motivo de Consulta</label>
-                            <textarea name="motivoConsulta" id="agendarMotivo" class="form-control" rows="3"
-                                      placeholder="Describa el motivo de su consulta (opcional)"></textarea>
-                        </div>
-
-                        <input type="hidden" name="fechaHoraInicio" id="agendarFechaHoraInicio">
-
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Agendar Cita</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <!-- MODAL: Agendar Cita con Wizard -->
+    <div th:replace="~{paciente/citas/fragmentos :: modalAgendarCita}"></div>
 
     <!-- MODAL: Detalle de Cita -->
     <div class="modal fade" id="modalDetalleCita" tabindex="-1" role="dialog">
@@ -291,6 +222,9 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.8/locales/es.global.min.js"></script>
 
+    <!-- Script de horarios y wizard -->
+    <script th:src="@{/js/horarios-citas.js}"></script>
+
     <script th:inline="javascript">
         $(document).ready(function() {
             // Variables globales
@@ -300,9 +234,7 @@
             // Inicializar calendario
             inicializarCalendario();
 
-            // Event Listeners
-            $('#agendarFecha, #agendarOdontologo, #agendarProcedimiento').on('change', cargarHorariosDisponibles);
-            $('#agendarHora').on('change', actualizarFechaHoraCompleta);
+            // Event Listeners (reprogramar y cancelar - el wizard se encarga del agendar)
             $('#reprogramarFecha').on('change', cargarHorariosReprogramacion);
             $('#reprogramarHora').on('change', actualizarFechaHoraReprogramacion);
             $('#btnReprogramar').on('click', abrirModalReprogramar);
@@ -388,63 +320,6 @@
                 }
 
                 $('#modalDetalleCita').modal('show');
-            }
-
-            function cargarHorariosDisponibles() {
-                const fecha = $('#agendarFecha').val();
-                const odontologoId = $('#agendarOdontologo').val();
-                const procedimientoId = $('#agendarProcedimiento').val();
-
-                if (!fecha || !odontologoId || !procedimientoId) {
-                    $('#agendarHora').prop('disabled', true);
-                    return;
-                }
-
-                const duracion = $('#agendarProcedimiento option:selected').data('duracion') || 30;
-
-                fetch('/paciente/citas/api/horarios-disponibles?' + new URLSearchParams({
-                    odontologoId: odontologoId,
-                    fecha: fecha,
-                    duracion: duracion
-                }))
-                .then(response => response.json())
-                .then(data => {
-                    const select = $('#agendarHora');
-                    select.empty();
-
-                    if (data.error) {
-                        select.append('<option value="">Error: ' + data.mensaje + '</option>');
-                        select.prop('disabled', true);
-                        return;
-                    }
-
-                    if (!data.disponible || !data.horariosDisponibles || data.horariosDisponibles.length === 0) {
-                        select.append('<option value="">No hay horarios disponibles</option>');
-                        select.prop('disabled', true);
-                        return;
-                    }
-
-                    select.append('<option value="">Seleccione un horario...</option>');
-                    data.horariosDisponibles.forEach(slot => {
-                        if (slot.disponible) {
-                            select.append(`<option value="${slot.inicio}">${slot.inicio} - ${slot.fin}</option>`);
-                        }
-                    });
-                    select.prop('disabled', false);
-                })
-                .catch(error => {
-                    console.error('Error al cargar horarios:', error);
-                    mostrarError('Error al cargar horarios disponibles');
-                });
-            }
-
-            function actualizarFechaHoraCompleta() {
-                const fecha = $('#agendarFecha').val();
-                const hora = $('#agendarHora').val();
-
-                if (fecha && hora) {
-                    $('#agendarFechaHoraInicio').val(fecha + 'T' + hora);
-                }
             }
 
             function abrirModalReprogramar() {
@@ -545,12 +420,7 @@
                 return badges[estado] || '<span class="badge badge-light">' + estado + '</span>';
             }
 
-            // Limpiar modales al cerrar
-            $('#modalAgendarCita').on('hidden.bs.modal', function() {
-                $('#formAgendarCita')[0].reset();
-                $('#agendarHora').prop('disabled', true);
-            });
-
+            // Limpiar modales al cerrar (el wizard se encarga de limpiar el modal de agendar)
             $('#modalReprogramarCita').on('hidden.bs.modal', function() {
                 $('#formReprogramarCita')[0].reset();
                 $('#reprogramarHora').prop('disabled', true);
