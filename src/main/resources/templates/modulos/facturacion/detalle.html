@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: layout(titulo='Detalle de Comprobante', contenido=~{::#contenido-principal})}">
+      th:replace="~{layout/base :: layout(titulo='Detalle de Comprobante', contenido=~{::#contenido-principal}, scripts=~{::#detalle-scripts})}">
 
 <body>
 <div id="contenido-principal">
@@ -316,8 +316,10 @@
     <!-- Incluir Modal de Registrar Pago -->
     <div th:replace="~{modulos/facturacion/fragmentos :: modalRegistrarPago}"></div>
 
-</div>
+</div><!-- #contenido-principal -->
 
+<!-- Scripts - Se cargan DESPUÉS de jQuery -->
+<th:block id="detalle-scripts">
 <!-- Incluir el script del modal de pagos al final (después de jQuery) -->
 <div th:replace="~{modulos/facturacion/fragmentos :: scriptModalPago}"></div>
 
@@ -441,6 +443,7 @@
     }
     /*]]>*/
 </script>
+</th:block>
 
 </body>
 </html>

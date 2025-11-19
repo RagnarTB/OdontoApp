@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: layout(titulo='Mi Historial Clínico', contenido=~{::#contenido-principal})}">
+      th:replace="~{layout/base :: layout(titulo='Mi Historial Clínico', contenido=~{::#contenido-principal}, scripts=~{::#historial-scripts})}">
 
 <body>
 <div id="contenido-principal">
@@ -426,15 +426,19 @@
         </div>
     </section>
 
-</div>
+</div><!-- #contenido-principal -->
 
+<th:block id="historial-scripts">
 <script>
     $(document).ready(function() {
+        console.log('✅ Script de tabs del historial cargado');
+
         // Detectar parámetro 'tab' en la URL y activar el tab correspondiente
         const urlParams = new URLSearchParams(window.location.search);
         const tabParam = urlParams.get('tab');
 
         if (tabParam) {
+            console.log('Activando tab desde URL:', tabParam);
             // Desactivar todos los tabs
             $('.nav-link').removeClass('active');
             $('.tab-pane').removeClass('show active');
@@ -445,6 +449,7 @@
         }
     });
 </script>
+</th:block>
 
 </body>
 </html>

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: layout(titulo='Odontograma', contenido=~{::#contenido-principal})}">
+      th:replace="~{layout/base :: layout(titulo='Odontograma', contenido=~{::#contenido-principal}, scripts=~{::#odontograma-scripts})}">
 
 <body>
 <div id="contenido-principal">
@@ -406,6 +406,7 @@
 
 </div><!-- #contenido-principal -->
 
+<th:block id="odontograma-scripts">
 <script th:inline="javascript">
         /*<![CDATA[*/
         console.log('🦷 Script de odontograma cargado');
@@ -590,6 +591,7 @@
         }
         /*]]>*/
 </script>
+</th:block>
 
 </body>
 </html>
