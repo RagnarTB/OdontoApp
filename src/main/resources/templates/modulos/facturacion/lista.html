@@ -109,14 +109,17 @@
                                             <i class="fas fa-eye"></i>
                                         </a>
 
-                                        <!-- Botón Anular -->
-                                        <a th:href="@{/facturacion/anular/{id}(id=${comprobante.id})}"
-                                           class="btn btn-danger"
-                                           title="Anular comprobante"
-                                           th:if="${comprobante.estadoPago.nombre != 'ANULADO' && comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
-                                           onclick="return confirm('¿Está seguro de que desea anular este comprobante? Esta acción no se puede deshacer.');">
+                                        <!-- Botón Anular con Modal -->
+                                        <button type="button"
+                                                class="btn btn-danger btn-anular-comprobante"
+                                                title="Anular comprobante"
+                                                th:if="${comprobante.estadoPago.nombre != 'ANULADO' && comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
+                                                th:data-comprobante-id="${comprobante.id}"
+                                                th:data-numero-comprobante="${comprobante.numeroComprobante}"
+                                                th:data-paciente-nombre="${comprobante.paciente.nombreCompleto}"
+                                                th:data-monto-total="${comprobante.montoTotal}">
                                             <i class="fas fa-ban"></i>
-                                        </a>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -171,6 +174,63 @@
 
         </div>
     </section>
+
+    <!-- Incluir el modal de anulación -->
+    <div th:replace="~{modulos/facturacion/fragmentos :: modalAnularComprobante}"></div>
+
 </div>
+
+<!-- Script para manejar los botones de anular -->
+<script>
+$(document).ready(function() {
+    // Manejar click en botones de anular
+    $('.btn-anular-comprobante').on('click', function() {
+        var $btn = $(this);
+        var comprobanteId = $btn.data('comprobante-id');
+        var numeroComprobante = $btn.data('numero-comprobante');
+        var pacienteNombre = $btn.data('paciente-nombre');
+        var montoTotal = $btn.data('monto-total');
+
+        // Cargar detalles del comprobante via AJAX
+        $.ajax({
+            url: '/facturacion/detalle/' + comprobanteId + '/json',
+            type: 'GET',
+            success: function(data) {
+                // Preparar datos para el modal
+                var detalles = data.detalles || [];
+
+                // Crear el evento con los datos cargados
+                var fakeButton = $('<button></button>');
+                fakeButton.data('comprobante-id', comprobanteId);
+                fakeButton.data('numero-comprobante', numeroComprobante);
+                fakeButton.data('paciente-nombre', pacienteNombre);
+                fakeButton.data('monto-total', montoTotal);
+                fakeButton.data('detalles', detalles);
+
+                // Abrir el modal con los datos
+                var modalEvent = $.Event('show.bs.modal');
+                modalEvent.relatedTarget = fakeButton[0];
+                $('#modalAnularComprobante').trigger(modalEvent);
+                $('#modalAnularComprobante').modal('show');
+            },
+            error: function() {
+                // Si falla el AJAX, abrir el modal sin detalles
+                var fakeButton = $('<button></button>');
+                fakeButton.data('comprobante-id', comprobanteId);
+                fakeButton.data('numero-comprobante', numeroComprobante);
+                fakeButton.data('paciente-nombre', pacienteNombre);
+                fakeButton.data('monto-total', montoTotal);
+                fakeButton.data('detalles', []);
+
+                var modalEvent = $.Event('show.bs.modal');
+                modalEvent.relatedTarget = fakeButton[0];
+                $('#modalAnularComprobante').trigger(modalEvent);
+                $('#modalAnularComprobante').modal('show');
+            }
+        });
+    });
+});
+</script>
+
 </body>
 </html>

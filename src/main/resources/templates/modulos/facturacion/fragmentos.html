@@ -432,5 +432,283 @@
 </script>
 </th:block>
 
+<!-- ========================================== -->
+<!-- MODAL: Anular Comprobante con Opción de Devolución de Inventario -->
+<!-- ========================================== -->
+<th:block th:fragment="modalAnularComprobante">
+<div class="modal fade" id="modalAnularComprobante" tabindex="-1" role="dialog" aria-labelledby="modalAnularComprobanteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalAnularComprobanteLabel">
+                    <i class="fas fa-ban mr-2"></i>Anular Comprobante
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Información del Comprobante -->
+                <div class="alert alert-warning" role="alert">
+                    <h5 class="mb-2">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <strong>Comprobante:</strong> <span id="anularNumeroComprobante"></span>
+                    </h5>
+                    <p class="mb-0">
+                        <strong>Paciente:</strong> <span id="anularPacienteNombre"></span><br>
+                        <strong>Total:</strong> S/ <span id="anularMontoTotal"></span>
+                    </p>
+                </div>
+
+                <!-- Listado de Insumos a Devolver -->
+                <div id="listaInsumosDevolucion" style="display: none;">
+                    <h6 class="text-primary mb-3">
+                        <i class="fas fa-boxes mr-2"></i>Insumos que pueden devolverse al inventario:
+                    </h6>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-bordered">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Insumo</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-center">Unidad</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaInsumosDevolucion">
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>¿Desea devolver estos insumos al inventario?</strong><br>
+                        Si selecciona <strong>"Sí"</strong>, se registrará un movimiento de ENTRADA por "Anulación de Comprobante" y el stock se incrementará automáticamente.
+                    </div>
+                </div>
+
+                <!-- Mensaje si NO hay insumos -->
+                <div id="sinInsumosDevolucion" style="display: none;">
+                    <div class="alert alert-secondary" role="alert">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Este comprobante no tiene insumos para devolver. Solo se anulará el comprobante.
+                    </div>
+                </div>
+
+                <!-- Motivo de Anulación -->
+                <div class="form-group mt-3">
+                    <label for="motivoAnulacion">
+                        <i class="fas fa-comment mr-1"></i>Motivo de la Anulación <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control" id="motivoAnulacion" name="motivo" rows="3"
+                              placeholder="Ingrese el motivo por el cual se anula este comprobante (obligatorio)..."
+                              required maxlength="500"></textarea>
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i> Este motivo quedará registrado en el comprobante
+                    </small>
+                </div>
+
+                <!-- Advertencia Final -->
+                <div class="alert alert-danger mb-0" role="alert">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <strong>ADVERTENCIA:</strong> Esta acción no se puede deshacer. El comprobante quedará marcado como ANULADO.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-warning" id="btnAnularSinDevolver">
+                    <i class="fas fa-ban mr-1"></i>No, Solo Anular
+                </button>
+                <button type="button" class="btn btn-danger" id="btnAnularConDevolver" style="display: none;">
+                    <i class="fas fa-undo-alt mr-1"></i>Sí, Devolver al Inventario
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para el modal de anulación -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    $(document).ready(function() {
+        console.log('✅ Script del modal de anulación cargado');
+
+        var comprobanteIdGlobal = 0;
+        var tieneInsumosGlobal = false;
+
+        // Cargar datos cuando se abre el modal
+        $('#modalAnularComprobante').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+
+            // Obtener datos del botón
+            var comprobanteId = button.data('comprobante-id');
+            var numeroComprobante = button.data('numero-comprobante');
+            var pacienteNombre = button.data('paciente-nombre');
+            var montoTotal = button.data('monto-total');
+            var detalles = button.data('detalles'); // JSON array con los detalles
+
+            // Guardar ID globalmente
+            comprobanteIdGlobal = comprobanteId;
+
+            // Cargar información general
+            $('#anularNumeroComprobante').text(numeroComprobante);
+            $('#anularPacienteNombre').text(pacienteNombre);
+            $('#anularMontoTotal').text(parseFloat(montoTotal).toFixed(2));
+
+            // Limpiar tabla de insumos
+            $('#tablaInsumosDevolucion').empty();
+
+            // Procesar detalles para encontrar insumos
+            var insumos = [];
+            if (detalles && Array.isArray(detalles)) {
+                detalles.forEach(function(detalle) {
+                    if (detalle.tipoItem === 'INSUMO') {
+                        insumos.push(detalle);
+                    }
+                });
+            }
+
+            // Mostrar/ocultar secciones según haya insumos
+            if (insumos.length > 0) {
+                tieneInsumosGlobal = true;
+                $('#listaInsumosDevolucion').show();
+                $('#sinInsumosDevolucion').hide();
+                $('#btnAnularConDevolver').show();
+
+                // Llenar tabla de insumos
+                insumos.forEach(function(insumo) {
+                    var fila = '<tr>' +
+                        '<td>' + insumo.descripcionItem + '</td>' +
+                        '<td class="text-center"><strong>' + insumo.cantidad + '</strong></td>' +
+                        '<td class="text-center">' + (insumo.unidad || 'ud') + '</td>' +
+                        '</tr>';
+                    $('#tablaInsumosDevolucion').append(fila);
+                });
+            } else {
+                tieneInsumosGlobal = false;
+                $('#listaInsumosDevolucion').hide();
+                $('#sinInsumosDevolucion').show();
+                $('#btnAnularConDevolver').hide();
+            }
+
+            // Limpiar motivo
+            $('#motivoAnulacion').val('');
+        });
+
+        // Limpiar modal al cerrar
+        $('#modalAnularComprobante').on('hidden.bs.modal', function() {
+            comprobanteIdGlobal = 0;
+            tieneInsumosGlobal = false;
+            $('#motivoAnulacion').val('');
+            $('#tablaInsumosDevolucion').empty();
+        });
+
+        // Botón: Anular SIN devolver inventario
+        $('#btnAnularSinDevolver').on('click', function() {
+            var motivo = $('#motivoAnulacion').val().trim();
+
+            if (!motivo) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Motivo Requerido',
+                    text: 'Por favor ingrese el motivo de la anulación.',
+                    confirmButtonText: 'Entendido'
+                });
+                $('#motivoAnulacion').focus();
+                return;
+            }
+
+            // Confirmar acción
+            Swal.fire({
+                title: '¿Está seguro?',
+                html: '<strong>Se anulará el comprobante SIN devolver insumos al inventario.</strong><br>Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f39c12',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, Anular',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    anularComprobante(comprobanteIdGlobal, motivo, false);
+                }
+            });
+        });
+
+        // Botón: Anular CON devolución de inventario
+        $('#btnAnularConDevolver').on('click', function() {
+            var motivo = $('#motivoAnulacion').val().trim();
+
+            if (!motivo) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Motivo Requerido',
+                    text: 'Por favor ingrese el motivo de la anulación.',
+                    confirmButtonText: 'Entendido'
+                });
+                $('#motivoAnulacion').focus();
+                return;
+            }
+
+            // Confirmar acción
+            Swal.fire({
+                title: '¿Está seguro?',
+                html: '<strong>Se anulará el comprobante Y se devolverán los insumos al inventario.</strong><br>Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, Anular y Devolver',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    anularComprobante(comprobanteIdGlobal, motivo, true);
+                }
+            });
+        });
+
+        // Función para anular comprobante
+        function anularComprobante(id, motivo, regresarInventario) {
+            // Crear formulario y enviarlo
+            var form = $('<form></form>');
+            form.attr('method', 'POST');
+            form.attr('action', '/facturacion/anular/' + id);
+
+            var inputMotivo = $('<input></input>');
+            inputMotivo.attr('type', 'hidden');
+            inputMotivo.attr('name', 'motivo');
+            inputMotivo.attr('value', motivo);
+            form.append(inputMotivo);
+
+            if (regresarInventario) {
+                var inputDevolver = $('<input></input>');
+                inputDevolver.attr('type', 'hidden');
+                inputDevolver.attr('name', 'regresarInventario');
+                inputDevolver.attr('value', 'true');
+                form.append(inputDevolver);
+            }
+
+            // Agregar token CSRF si está disponible
+            var token = $("meta[name='_csrf']").attr("content");
+            var header = $("meta[name='_csrf_header']").attr("content");
+            if (token && header) {
+                var inputToken = $('<input></input>');
+                inputToken.attr('type', 'hidden');
+                inputToken.attr('name', '_csrf');
+                inputToken.attr('value', token);
+                form.append(inputToken);
+            }
+
+            $('body').append(form);
+            form.submit();
+        }
+
+        console.log('✅ Event handlers del modal de anulación registrados');
+    });
+    /*]]>*/
+</script>
+</th:block>
+
 </body>
 </html>

@@ -295,6 +295,45 @@ public class FacturacionController {
     }
 
     /**
+     * Obtiene los detalles del comprobante en formato JSON para el modal de anulación.
+     *
+     * @param id ID del comprobante
+     * @return Map con los detalles del comprobante en formato JSON
+     */
+    @GetMapping("/detalle/{id}/json")
+    @ResponseBody
+    public Map<String, Object> obtenerDetallesJSON(@PathVariable Long id) {
+        try {
+            var comprobanteOpt = facturacionService.buscarComprobantePorId(id);
+
+            if (comprobanteOpt.isEmpty()) {
+                return Map.of("error", "Comprobante no encontrado");
+            }
+
+            Comprobante comprobante = comprobanteOpt.get();
+
+            // Crear lista de detalles simplificada para el JSON
+            var detalles = comprobante.getDetalles().stream()
+                    .map(detalle -> Map.of(
+                            "tipoItem", detalle.getTipoItem(),
+                            "descripcionItem", detalle.getDescripcionItem(),
+                            "cantidad", detalle.getCantidad(),
+                            "unidad", "ud" // Podríamos obtener la unidad real si está disponible
+                    ))
+                    .toList();
+
+            return Map.of(
+                    "id", comprobante.getId(),
+                    "numeroComprobante", comprobante.getNumeroComprobante(),
+                    "detalles", detalles
+            );
+
+        } catch (Exception e) {
+            return Map.of("error", "Error al obtener detalles: " + e.getMessage());
+        }
+    }
+
+    /**
      * Busca comprobantes de un paciente específico.
      *
      * @param pacienteId ID del paciente
