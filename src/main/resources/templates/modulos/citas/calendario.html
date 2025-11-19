@@ -244,9 +244,10 @@
     <div th:replace="~{modulos/citas/fragmentos :: modalReprogramarCita}"></div>
     <div th:replace="~{modulos/citas/fragmentos :: modalCancelarCita}"></div>
     <div th:replace="~{modulos/citas/fragmentos :: modalPlanificarTratamiento}"></div>
-    <div th:replace="~{modulos/citas/fragmentos :: modalRegistrarTratamiento}"></div>
+    <!-- Solo incluir el HTML del modal, NO el script (se incluye abajo en page-scripts) -->
+    <div th:replace="~{modulos/citas/modal-tratamiento-avanzado :: modalRegistrarTratamiento}"></div>
 
-</div>
+</div><!-- #contenido-principal -->
 
 <th:block id="page-scripts">
     <!-- Moment.js -->
@@ -843,6 +844,9 @@
 
     <!-- Incluir script de validaciones de citas -->
     <div th:replace="~{modulos/citas/fragmentos :: scriptValidacionesCita}"></div>
+
+    <!-- Incluir script del modal de tratamiento (DESPUÉS de jQuery) -->
+    <th:block th:replace="~{modulos/citas/modal-tratamiento-avanzado :: scriptModalTratamiento}"></th:block>
 </th:block>
 
 </body>

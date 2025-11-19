@@ -116,39 +116,12 @@
     </div>
 </div>
 
-<!-- Script del modal de tratamiento (debe incluirse donde se usa el modal) -->
+<!-- Script del modal de tratamiento (se incluye en el bloque scripts del layout) -->
 <th:block th:fragment="scriptModalTratamiento">
 <script th:inline="javascript">
 /*<![CDATA[*/
-// Usar función auto-ejecutable que espera a que jQuery y DOM estén listos
-(function() {
-    // Si jQuery no está disponible, intentar esperar un momento
-    if (typeof jQuery === 'undefined') {
-        console.warn('jQuery aún no está cargado, esperando...');
-        setTimeout(function() {
-            if (typeof jQuery !== 'undefined') {
-                console.log('jQuery cargado, inicializando modal de tratamiento...');
-                initModalTratamiento();
-            } else {
-                console.error('ERROR: jQuery no se cargó. El modal de tratamiento no funcionará.');
-            }
-        }, 1000);
-        return;
-    }
-
-    // Si jQuery está listo, inicializar inmediatamente
-    console.log('jQuery detectado, inicializando modal de tratamiento...');
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        initModalTratamiento();
-    } else {
-        $(document).ready(function() {
-            initModalTratamiento();
-        });
-    }
-})();
-
-function initModalTratamiento() {
-    console.log('Inicializando modal de tratamiento...'); // Debug
+$(document).ready(function() {
+    console.log('✅ Inicializando modal de tratamiento (jQuery disponible)...'); // Debug
     // Configurar token CSRF para todas las peticiones AJAX
     var token = $("meta[name='_csrf']").attr("content");
     var header = $("meta[name='_csrf_header']").attr("content");
@@ -1055,7 +1028,7 @@ function initModalTratamiento() {
             insumosAdicionales: insumosAdicionales
         };
     }
-} // Fin de initModalTratamiento
+}); // Fin de $(document).ready
 /*]]>*/
 </script>
 </th:block>
