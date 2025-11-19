@@ -32,6 +32,7 @@ public class TratamientoController {
     private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
     private final CitaRepository citaRepository;
     private final ProcedimientoRepository procedimientoRepository;
+    private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
     private final InsumoRepository insumoRepository;
     private final ComprobanteRepository comprobanteRepository;
     private final EstadoPagoRepository estadoPagoRepository;
@@ -47,6 +48,7 @@ public class TratamientoController {
             TratamientoPlanificadoRepository tratamientoPlanificadoRepository,
             CitaRepository citaRepository,
             ProcedimientoRepository procedimientoRepository,
+            ProcedimientoInsumoRepository procedimientoInsumoRepository,
             InsumoRepository insumoRepository,
             ComprobanteRepository comprobanteRepository,
             EstadoPagoRepository estadoPagoRepository,
@@ -60,6 +62,7 @@ public class TratamientoController {
         this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
         this.citaRepository = citaRepository;
         this.procedimientoRepository = procedimientoRepository;
+        this.procedimientoInsumoRepository = procedimientoInsumoRepository;
         this.insumoRepository = insumoRepository;
         this.comprobanteRepository = comprobanteRepository;
         this.estadoPagoRepository = estadoPagoRepository;
@@ -302,6 +305,54 @@ public class TratamientoController {
 
             // Guardar la nueva cita
             citaRepository.save(citaTratamiento);
+
+            // **DESCONTAR INSUMOS PREDETERMINADOS DEL PROCEDIMIENTO**
+            // (Excepto si es "Consulta General" - CON-001)
+            if (!procedimiento.getCodigo().equals("CON-001")) {
+                List<ProcedimientoInsumo> insumosPredeterminados =
+                    procedimientoInsumoRepository.findByProcedimientoId(procedimiento.getId());
+
+                if (!insumosPredeterminados.isEmpty()) {
+                    System.out.println("✓ Descontando " + insumosPredeterminados.size() +
+                        " insumos predeterminados del procedimiento: " + procedimiento.getNombre());
+
+                    for (ProcedimientoInsumo pi : insumosPredeterminados) {
+                        Insumo insumo = pi.getInsumo();
+                        BigDecimal cantidadRequerida = pi.getCantidadDefecto();
+
+                        // Validar stock disponible
+                        if (insumo.getStockActual().compareTo(cantidadRequerida) < 0) {
+                            // Si es obligatorio, lanzar excepción
+                            if (pi.isEsObligatorio()) {
+                                throw new RuntimeException(
+                                    String.format("Stock insuficiente del insumo obligatorio '%s'. " +
+                                        "Disponible: %.2f %s, Requerido: %.2f %s",
+                                        insumo.getNombre(),
+                                        insumo.getStockActual(),
+                                        insumo.getUnidadMedida().getAbreviatura(),
+                                        cantidadRequerida,
+                                        insumo.getUnidadMedida().getAbreviatura()));
+                            } else {
+                                // Si es opcional, solo advertir y continuar
+                                System.out.println("⚠ Advertencia: Stock insuficiente del insumo opcional '" +
+                                    insumo.getNombre() + "'. Se omitirá el descuento.");
+                                continue;
+                            }
+                        }
+
+                        // Descontar stock
+                        BigDecimal nuevoStock = insumo.getStockActual().subtract(cantidadRequerida);
+                        insumo.setStockActual(nuevoStock);
+                        insumoRepository.save(insumo);
+
+                        System.out.println("  ✓ " + insumo.getNombre() +
+                            " | Cantidad: " + cantidadRequerida + " " + insumo.getUnidadMedida().getAbreviatura() +
+                            " | Nuevo stock: " + nuevoStock);
+                    }
+                }
+            } else {
+                System.out.println("ℹ Consulta General detectada - No se descontarán insumos predeterminados");
+            }
 
             // **OBTENER O GENERAR COMPROBANTE**
             // Verificar si ya existe un comprobante para esta cita
