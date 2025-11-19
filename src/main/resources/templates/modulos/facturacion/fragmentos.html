@@ -283,9 +283,39 @@
                 return false;
             }
 
+            // Validar método de pago antes de procesar
+            var metodoPagoId = $('#metodoPagoId').val();
+            if (!metodoPagoId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Método de Pago Requerido',
+                    text: 'Por favor seleccione un método de pago.',
+                    confirmButtonText: 'Entendido'
+                });
+                $('#metodoPagoId').focus();
+                return false;
+            }
+
             // Validar tipo de pago y monto
             var tipoPago = $('input[name="tipoPago"]:checked').val();
             var montoFinal = parseFloat($('#montoFinal').val() || 0);
+            var metodoTexto = $('#metodoPagoId option:selected').text().toUpperCase();
+
+            // VALIDACIÓN YAPE > 500 SOLES EN PAGO TOTAL
+            if (tipoPago === 'total' && metodoTexto.includes('YAPE') && montoFinal > 500) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Límite de Yape Excedido',
+                    html: '<strong>El monto total es S/ ' + montoFinal.toFixed(2) + '</strong><br><br>' +
+                          'El método Yape tiene un límite de <strong>S/ 500.00</strong> por transacción.<br><br>' +
+                          'Por favor, realice:<br>' +
+                          '• <strong>Pagos Parciales</strong> menores a S/ 500 usando Yape, o<br>' +
+                          '• <strong>Pago Total</strong> usando <strong>Efectivo</strong>',
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#3085d6'
+                });
+                return false;
+            }
 
             if (tipoPago === 'parcial') {
                 var montoParcial = parseFloat($('#monto').val() || 0);
@@ -323,21 +353,7 @@
                 return false;
             }
 
-            // Validar método de pago
-            var metodoPagoId = $('#metodoPagoId').val();
-            if (!metodoPagoId) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Método de Pago Requerido',
-                    text: 'Por favor seleccione un método de pago.',
-                    confirmButtonText: 'Entendido'
-                });
-                $('#metodoPagoId').focus();
-                return false;
-            }
-
             // Validar referencia para Yape/Transferencia/Tarjeta
-            var metodoTexto = $('#metodoPagoId option:selected').text().toUpperCase();
             if (metodoTexto.includes('YAPE') || metodoTexto.includes('TRANSFERENCIA') || metodoTexto.includes('TARJETA')) {
                 var referenciaYape = $('#referenciaYape').val().trim();
                 if (!referenciaYape) {
