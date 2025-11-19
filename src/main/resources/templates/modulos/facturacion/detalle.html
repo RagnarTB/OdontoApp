@@ -274,18 +274,21 @@
                             </h3>
                         </div>
                         <div class="card-body">
-                            <!-- Botón Imprimir: Solo habilitado cuando está PAGADO_TOTAL -->
+                            <!-- Botón Imprimir: Habilitado para todos los estados excepto ANULADO -->
                             <a th:href="@{/facturacion/imprimir/{id}(id=${comprobante.id})}"
                                class="btn btn-block"
-                               th:classappend="${comprobante.estadoPago.nombre == 'PAGADO_TOTAL'} ? 'btn-primary' : 'btn-secondary disabled'"
-                               th:disabled="${comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
-                               th:attr="aria-disabled=${comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
+                               th:classappend="${comprobante.estadoPago.nombre == 'ANULADO'} ? 'btn-secondary disabled' : 'btn-primary'"
+                               th:disabled="${comprobante.estadoPago.nombre == 'ANULADO'}"
+                               th:attr="aria-disabled=${comprobante.estadoPago.nombre == 'ANULADO'}"
                                target="_blank">
                                 <i class="fas fa-print mr-2"></i>Imprimir Comprobante
                             </a>
 
-                            <small th:if="${comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}" class="text-muted d-block mt-2">
-                                <i class="fas fa-info-circle"></i> Solo se puede imprimir comprobantes pagados totalmente
+                            <small th:if="${comprobante.estadoPago.nombre == 'PENDIENTE' || comprobante.estadoPago.nombre == 'PAGADO_PARCIAL'}" class="text-info d-block mt-2">
+                                <i class="fas fa-info-circle"></i> El comprobante mostrará el saldo pendiente
+                            </small>
+                            <small th:if="${comprobante.estadoPago.nombre == 'ANULADO'}" class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> No se puede imprimir comprobantes anulados
                             </small>
 
                             <button type="button"
