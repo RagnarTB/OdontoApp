@@ -499,27 +499,9 @@ public class TratamientoController {
         String numeroComprobante = generarNumeroComprobante();
         comprobante.setNumeroComprobante(numeroComprobante);
 
-        // Calcular monto total
+        // Calcular monto total - SOLO incluye el precio del procedimiento
+        // Los insumos NO se cobran por separado (están incluidos en el precio del procedimiento)
         BigDecimal montoTotal = procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO;
-
-        // Agregar insumos adicionales al monto
-        if (insumosAdicionales != null) {
-            for (Map<String, Object> insumo : insumosAdicionales) {
-                try {
-                    Long insumoId = Long.parseLong(insumo.get("insumoId").toString());
-                    BigDecimal cantidad = new BigDecimal(insumo.get("cantidad").toString());
-                    Insumo insumoEntity = insumoRepository.findById(insumoId).orElse(null);
-
-                    if (insumoEntity != null && insumoEntity.getPrecioUnitario() != null) {
-                        BigDecimal subtotalInsumo = insumoEntity.getPrecioUnitario().multiply(cantidad);
-                        montoTotal = montoTotal.add(subtotalInsumo);
-                    }
-                } catch (Exception e) {
-                    // Continuar si hay error con un insumo específico
-                    System.err.println("Error procesando insumo: " + e.getMessage());
-                }
-            }
-        }
 
         comprobante.setMontoTotal(montoTotal);
         comprobante.setMontoPagado(BigDecimal.ZERO);
@@ -553,8 +535,9 @@ public class TratamientoController {
         detalleProcedimiento.setSubtotal(procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO);
         detalleComprobanteRepository.save(detalleProcedimiento);
 
-        // Crear detalles de insumos adicionales
-        if (insumosAdicionales != null) {
+        // Crear detalles de insumos adicionales (INFORMATIVOS - Sin cargo)
+        // Los insumos se descuentan del inventario pero NO se cobran (incluidos en el precio del procedimiento)
+        if (insumosAdicionales != null && !insumosAdicionales.isEmpty()) {
             for (Map<String, Object> insumo : insumosAdicionales) {
                 try {
                     Long insumoId = Long.parseLong(insumo.get("insumoId").toString());
@@ -562,20 +545,23 @@ public class TratamientoController {
                     Insumo insumoEntity = insumoRepository.findById(insumoId).orElse(null);
 
                     if (insumoEntity != null) {
+                        // Crear detalle INFORMATIVO con precio S/ 0.00 (sin cargo)
                         DetalleComprobante detalleInsumo = new DetalleComprobante();
                         detalleInsumo.setComprobante(comprobante);
                         detalleInsumo.setTipoItem("INSUMO");
                         detalleInsumo.setItemId(insumoEntity.getId());
-                        detalleInsumo.setDescripcionItem(insumoEntity.getCodigo() + " - " + insumoEntity.getNombre());
+                        detalleInsumo.setDescripcionItem(insumoEntity.getCodigo() + " - " + insumoEntity.getNombre() + " (Incluido)");
                         detalleInsumo.setCantidad(cantidad);
-                        detalleInsumo.setPrecioUnitario(insumoEntity.getPrecioUnitario() != null ?
-                                insumoEntity.getPrecioUnitario() : BigDecimal.ZERO);
-                        detalleInsumo.setSubtotal(detalleInsumo.getPrecioUnitario().multiply(cantidad));
+                        detalleInsumo.setPrecioUnitario(BigDecimal.ZERO); // ← SIN CARGO
+                        detalleInsumo.setSubtotal(BigDecimal.ZERO); // ← SIN CARGO
                         detalleComprobanteRepository.save(detalleInsumo);
 
                         // **REGISTRAR MOVIMIENTO DE INVENTARIO Y ACTUALIZAR STOCK**
                         String referencia = "Cita #" + comprobante.getCita().getId() + " - " + comprobante.getNumeroComprobante();
                         registrarUsoInsumo(insumoEntity, cantidad, referencia);
+
+                        System.out.println("✓ Insumo agregado al comprobante (sin cargo): " +
+                                          insumoEntity.getNombre() + " x " + cantidad);
                     }
                 } catch (Exception e) {
                     System.err.println("Error guardando detalle de insumo: " + e.getMessage());

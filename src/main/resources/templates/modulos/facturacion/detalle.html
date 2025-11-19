@@ -315,6 +315,9 @@
 
 </div>
 
+<!-- Incluir el script del modal de pagos al final (después de jQuery) -->
+<div th:replace="~{modulos/facturacion/fragmentos :: scriptModalPago}"></div>
+
 <script th:inline="javascript">
     /*<\![CDATA[*/
     // Función auxiliar para enviar POST de anulación

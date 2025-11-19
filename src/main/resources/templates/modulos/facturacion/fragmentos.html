@@ -116,11 +116,12 @@
         </div>
     </div>
 </div>
+</th:block>
 
-<!-- Script para el modal de pago -->
+<!-- Script para el modal de pago (incluir al final de la página) -->
+<th:block th:fragment="scriptModalPago">
 <script th:inline="javascript">
     /*<![CDATA[*/
-    // Esperar a que jQuery esté disponible
     $(document).ready(function() {
         console.log('✅ Script del modal de pagos cargado (jQuery disponible)');
 
