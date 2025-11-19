@@ -198,7 +198,7 @@
                                                 <tbody>
                                                     <tr th:each="tratamiento : ${tratamientosPlanificados}">
                                                         <td th:text="${tratamiento.procedimiento != null ? tratamiento.procedimiento.nombre : 'N/A'}">Procedimiento</td>
-                                                        <td th:text="${tratamiento.fechaInicio != null ? #temporals.format(tratamiento.fechaInicio, 'dd/MM/yyyy') : 'Pendiente'}">01/11/2025</td>
+                                                        <td th:text="${tratamiento.fechaPlanificada != null ? #temporals.format(tratamiento.fechaPlanificada, 'dd/MM/yyyy') : 'Pendiente'}">01/11/2025</td>
                                                         <td th:text="${tratamiento.piezasDentales ?: 'N/A'}">11</td>
                                                         <td>
                                                             <span class="badge badge-warning" th:if="${tratamiento.estado == 'PLANIFICADO'}">PLANIFICADO</span>
