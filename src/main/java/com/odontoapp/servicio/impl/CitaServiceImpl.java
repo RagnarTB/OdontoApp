@@ -598,15 +598,25 @@ public class CitaServiceImpl implements CitaService {
 
         if (tratamientoPlanificado != null) {
             String estadoActualTrat = tratamientoPlanificado.getEstado();
+            System.out.println("🔍 [DEBUG] Tratamiento planificado encontrado:");
+            System.out.println("   - ID: " + tratamientoPlanificado.getId());
+            System.out.println("   - Estado actual: " + estadoActualTrat);
+            System.out.println("   - Procedimiento: " + (tratamientoPlanificado.getProcedimiento() != null ? tratamientoPlanificado.getProcedimiento().getNombre() : "N/A"));
+            System.out.println("   - Paciente ID: " + tratamientoPlanificado.getPaciente().getId());
 
             if (asistio) {
                 // PACIENTE ASISTIÓ: Marcar tratamiento como COMPLETADO para excluirlo de pendientes
                 if ("EN_CURSO".equals(estadoActualTrat) || "PLANIFICADO".equals(estadoActualTrat)) {
                     tratamientoPlanificado.setEstado("COMPLETADO");
                     tratamientoPlanificadoRepository.save(tratamientoPlanificado);
+                    tratamientoPlanificadoRepository.flush(); // Forzar escritura inmediata
 
                     System.out.println("✅ Tratamiento planificado marcado como COMPLETADO (Cita: " + citaId + ")");
+                    System.out.println("   → ID: " + tratamientoPlanificado.getId());
+                    System.out.println("   → Nuevo estado: COMPLETADO");
                     System.out.println("   → El TratamientoRealizado se creará desde el Modal Avanzado de Tratamientos");
+                } else {
+                    System.out.println("⚠️ El tratamiento planificado ya está en estado: " + estadoActualTrat + " (no se actualiza)");
                 }
             } else {
                 // PACIENTE NO ASISTIÓ: Volver a PLANIFICADO para poder reagendar
@@ -614,9 +624,12 @@ public class CitaServiceImpl implements CitaService {
                     tratamientoPlanificado.setEstado("PLANIFICADO");
                     tratamientoPlanificado.setCitaAsociada(null); // Desvincular la cita
                     tratamientoPlanificadoRepository.save(tratamientoPlanificado);
+                    tratamientoPlanificadoRepository.flush(); // Forzar escritura inmediata
                     System.out.println("⚠️ Paciente no asistió - Tratamiento planificado vuelto a PLANIFICADO para cita: " + citaId);
                 }
             }
+        } else {
+            System.out.println("ℹ️ No se encontró tratamiento planificado asociado a la cita: " + citaId);
         }
 
         Cita citaActualizada = citaRepository.save(cita);

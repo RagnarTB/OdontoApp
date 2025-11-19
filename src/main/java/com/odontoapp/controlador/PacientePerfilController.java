@@ -159,6 +159,20 @@ public class PacientePerfilController {
         }
 
         try {
+            // Validar si el email cambió
+            boolean emailCambio = !usuario.getEmail().equals(pacienteDTO.getEmail());
+
+            if (emailCambio) {
+                // Verificar que el nuevo email no esté en uso por otro usuario
+                Optional<Usuario> usuarioExistente = usuarioRepository.findByEmail(pacienteDTO.getEmail());
+                if (usuarioExistente.isPresent() && !usuarioExistente.get().getId().equals(usuario.getId())) {
+                    model.addAttribute("paciente", paciente);
+                    model.addAttribute("pacienteDTO", pacienteDTO);
+                    model.addAttribute("error", "El email '" + pacienteDTO.getEmail() + "' ya está en uso por otro usuario.");
+                    return "paciente/perfil/editar";
+                }
+            }
+
             // SOLO actualizar campos permitidos: email, teléfono, dirección, alergias, antecedentes
             paciente.setEmail(pacienteDTO.getEmail());
             paciente.setTelefono(pacienteDTO.getTelefono());
@@ -166,13 +180,15 @@ public class PacientePerfilController {
             paciente.setAlergias(pacienteDTO.getAlergias());
             paciente.setAntecedentesMedicos(pacienteDTO.getAntecedentesMedicos());
 
-            // Guardar cambios
+            // Guardar cambios en paciente
             pacienteRepository.save(paciente);
 
             // Si el email cambió, también actualizar el usuario
-            if (!usuario.getEmail().equals(pacienteDTO.getEmail())) {
+            if (emailCambio) {
                 usuario.setEmail(pacienteDTO.getEmail());
                 usuarioRepository.save(usuario);
+                redirectAttributes.addFlashAttribute("info",
+                    "Tu email ha sido actualizado. Usa el nuevo email para iniciar sesión la próxima vez.");
             }
 
             redirectAttributes.addFlashAttribute("success", "Datos personales actualizados con éxito.");
@@ -182,6 +198,8 @@ public class PacientePerfilController {
             model.addAttribute("paciente", paciente);
             model.addAttribute("pacienteDTO", pacienteDTO);
             model.addAttribute("error", "Error al actualizar datos personales: " + e.getMessage());
+            System.err.println("Error al actualizar perfil del paciente: " + e.getMessage());
+            e.printStackTrace();
             return "paciente/perfil/editar";
         }
     }

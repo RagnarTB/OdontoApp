@@ -123,13 +123,14 @@
                                                     <span class="input-group-text"><i class="fas fa-phone"></i></span>
                                                 </div>
                                                 <input type="text" th:field="*{telefono}" id="telefono" class="form-control"
-                                                       placeholder="999-999-999" maxlength="20" pattern="[0-9\-\s]+"
+                                                       placeholder="987654321" maxlength="9" pattern="[0-9]{9}"
+                                                       data-validar="telefono"
                                                        th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid' : ''">
                                                 <div class="invalid-feedback" th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}">
                                                     Error en teléfono
                                                 </div>
                                             </div>
-                                            <small class="form-text text-muted">Campo editable - 9 dígitos</small>
+                                            <small class="form-text text-muted">Campo editable - 9 dígitos numéricos</small>
                                         </div>
                                     </div>
 
@@ -230,6 +231,7 @@
 
 </div>
 
+<script th:src="@{/js/validaciones-input.js}"></script>
 <script>
     $(document).ready(function() {
         // Validación de email en tiempo real
@@ -245,10 +247,8 @@
             }
         });
 
-        // Validación de teléfono (solo números, guiones y espacios)
-        $('#telefono').on('input', function() {
-            this.value = this.value.replace(/[^0-9\-\s]/g, '');
-        });
+        // La validación de teléfono se maneja automáticamente por validaciones-input.js
+        // gracias al atributo data-validar="telefono"
     });
 </script>
 

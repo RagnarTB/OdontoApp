@@ -27,7 +27,11 @@ public interface TratamientoPlanificadoRepository extends JpaRepository<Tratamie
     List<TratamientoPlanificado> findByPacienteAndEstadoOrderByFechaPlanificadaAsc(Usuario paciente, String estado);
 
     /**
-     * Obtener tratamientos PLANIFICADOS y EN_CURSO de un paciente
+     * Obtener tratamientos PLANIFICADOS y EN_CURSO de un paciente.
+     * IMPORTANTE: Este query EXCLUYE tratamientos con estado 'COMPLETADO',
+     * evitando duplicación con los tratamientos realizados.
+     * Estados válidos: PLANIFICADO, EN_CURSO
+     * Estados excluidos: COMPLETADO, CANCELADO, etc.
      */
     @Query("SELECT t FROM TratamientoPlanificado t WHERE t.paciente = :paciente " +
            "AND t.estado IN ('PLANIFICADO', 'EN_CURSO') " +
