@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(titulo='Odontograma', contenido=~{::#contenido-principal})}">
+
+<body>
+<div id="contenido-principal">
+    <style>
+        /* Estilos para el odontograma */
+        .odontograma-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .cuadrante {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+        .diente {
+            width: 60px;
+            height: 80px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .diente:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .diente .numero {
+            position: absolute;
+            top: 5px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .diente .icon {
+            font-size: 28px;
+            margin: 10px 0;
+        }
+
+        .diente .nombre {
+            font-size: 8px;
+            text-align: center;
+            padding: 0 2px;
+        }
+
+        /* Estados de los dientes con colores */
+        .diente[data-estado="SANO"] {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border-color: #45a049;
+        }
+
+        .diente[data-estado="CARIES"] {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+            border-color: #d32f2f;
+        }
+
+        .diente[data-estado="RESTAURADO"] {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            border-color: #1976D2;
+        }
+
+        .diente[data-estado="ENDODONCIA"] {
+            background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+            color: white;
+            border-color: #7B1FA2;
+        }
+
+        .diente[data-estado="CORONA"] {
+            background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+            color: white;
+            border-color: #F57C00;
+        }
+
+        .diente[data-estado="EXTRACCION"] {
+            background: linear-gradient(135deg, #9E9E9E 0%, #616161 100%);
+            color: white;
+            border-color: #616161;
+        }
+
+        .diente[data-estado="IMPLANTE"] {
+            background: linear-gradient(135deg, #00BCD4 0%, #0097A7 100%);
+            color: white;
+            border-color: #0097A7;
+        }
+
+        .diente[data-estado="AUSENTE"] {
+            background: linear-gradient(135deg, #212121 0%, #000000 100%);
+            color: white;
+            border-color: #000000;
+        }
+
+        .diente[data-estado="FRACTURADO"] {
+            background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%);
+            color: white;
+            border-color: #E64A19;
+        }
+
+        .cuadrante-label {
+            text-align: center;
+            font-weight: bold;
+            color: #666;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .leyenda {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .leyenda-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .leyenda-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid #ddd;
+        }
+    </style>
+
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1><i class="fas fa-tooth mr-2"></i>Odontograma</h1>
+                    <p class="text-muted">Paciente: <strong th:text="${paciente.nombreCompleto}">Juan Pérez</strong></p>
+                </div>
+                <div class="col-sm-6">
+                    <a th:href="@{/pacientes/historial/{id}(id=${pacienteId})}" class="btn btn-secondary float-right ml-2">
+                        <i class="fas fa-arrow-left mr-2"></i>Volver al Historial
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            <!-- Estadísticas -->
+            <div class="row">
+                <div class="col-md-2 col-sm-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3 th:text="${estadisticas.sanos}">0</h3>
+                            <p>Sanos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-tooth"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3 th:text="${estadisticas.caries}">0</h3>
+                            <p>Caries</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3 th:text="${estadisticas.restaurados}">0</h3>
+                            <p>Restaurados</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <div class="small-box bg-purple">
+                        <div class="inner">
+                            <h3 th:text="${estadisticas.endodoncia}">0</h3>
+                            <p>Endodoncia</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-tooth"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3 th:text="${estadisticas.coronas}">0</h3>
+                            <p>Coronas</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <div class="small-box bg-secondary">
+                        <div class="inner">
+                            <h3 th:text="${estadisticas.extraidos}">0</h3>
+                            <p>Extraídos</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Odontograma -->
+            <div class="card">
+                <div class="card-body odontograma-container">
+
+                    <!-- Cuadrantes Superiores -->
+                    <div class="row">
+                        <!-- Cuadrante 1: Superior Derecho -->
+                        <div class="col-md-6">
+                            <div class="cuadrante-label">Cuadrante 1: Superior Derecho</div>
+                            <div class="cuadrante" id="cuadrante-1"></div>
+                        </div>
+
+                        <!-- Cuadrante 2: Superior Izquierdo -->
+                        <div class="col-md-6">
+                            <div class="cuadrante-label">Cuadrante 2: Superior Izquierdo</div>
+                            <div class="cuadrante" id="cuadrante-2"></div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Cuadrantes Inferiores -->
+                    <div class="row">
+                        <!-- Cuadrante 4: Inferior Derecho -->
+                        <div class="col-md-6">
+                            <div class="cuadrante-label">Cuadrante 4: Inferior Derecho</div>
+                            <div class="cuadrante" id="cuadrante-4"></div>
+                        </div>
+
+                        <!-- Cuadrante 3: Inferior Izquierdo -->
+                        <div class="col-md-6">
+                            <div class="cuadrante-label">Cuadrante 3: Inferior Izquierdo</div>
+                            <div class="cuadrante" id="cuadrante-3"></div>
+                        </div>
+                    </div>
+
+                    <!-- Leyenda -->
+                    <div class="mt-4">
+                        <h5><i class="fas fa-info-circle mr-2"></i>Leyenda de Estados</h5>
+                        <div class="leyenda">
+                            <div class="leyenda-item">
+                                <div class="leyenda-color" style="background: #4CAF50;"></div>
+                                <span>Sano</span>
+                            </div>
+                            <div class="leyenda-item">
+                                <div class="leyenda-color" style="background: #f44336;"></div>
+                                <span>Caries</span>
+                            </div>
+                            <div class="leyenda-item">
+                                <div class="leyenda-color" style="background: #2196F3;"></div>
+                                <span>Restaurado</span>
+                            </div>
+                            <div class="leyenda-item">
+                                <div class="leyenda-color" style="background: #9C27B0;"></div>
+                                <span>Endodoncia</span>
+                            </div>
+                            <div class="leyenda-item">
+                                <div class="leyenda-color" style="background: #FF9800;"></div>
+                                <span>Corona</span>
+                            </div>
+                            <div class="leyenda-item">
+                                <div class="leyenda-color" style="background: #9E9E9E;"></div>
+                                <span>Extraído</span>
+                            </div>
+                            <div class="leyenda-item">
+                                <div class="leyenda-color" style="background: #00BCD4;"></div>
+                                <span>Implante</span>
+                            </div>
+                            <div class="leyenda-item">
+                                <div class="leyenda-color" style="background: #212121;"></div>
+                                <span>Ausente</span>
+                            </div>
+                            <div class="leyenda-item">
+                                <div class="leyenda-color" style="background: #FF5722;"></div>
+                                <span>Fracturado</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal para editar diente -->
+    <div class="modal fade" id="modalEditarDiente" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-tooth mr-2"></i>Editar Diente <span id="dienteNumero"></span>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="dienteId">
+                    <input type="hidden" id="dienteNumeroInput">
+
+                    <div class="form-group">
+                        <label>Nombre del Diente</label>
+                        <input type="text" class="form-control" id="dienteNombre" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Estado del Diente <span class="text-danger">*</span></label>
+                        <select class="form-control" id="dienteEstado" required>
+                            <option value="SANO">🟢 Sano</option>
+                            <option value="CARIES">🔴 Caries</option>
+                            <option value="RESTAURADO">🔵 Restaurado/Obturado</option>
+                            <option value="ENDODONCIA">🟣 Endodoncia</option>
+                            <option value="CORONA">🟠 Corona</option>
+                            <option value="EXTRACCION">⚫ Extraído</option>
+                            <option value="IMPLANTE">🔷 Implante</option>
+                            <option value="AUSENTE">⬛ Ausente</option>
+                            <option value="FRACTURADO">🟧 Fracturado</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Superficies Afectadas</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input superficie-check" id="check-oclusal" value="Oclusal">
+                                    <label class="custom-control-label" for="check-oclusal">Oclusal</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input superficie-check" id="check-vestibular" value="Vestibular">
+                                    <label class="custom-control-label" for="check-vestibular">Vestibular</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input superficie-check" id="check-lingual" value="Lingual">
+                                    <label class="custom-control-label" for="check-lingual">Lingual</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input superficie-check" id="check-mesial" value="Mesial">
+                                    <label class="custom-control-label" for="check-mesial">Mesial</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input superficie-check" id="check-distal" value="Distal">
+                                    <label class="custom-control-label" for="check-distal">Distal</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notas</label>
+                        <textarea class="form-control" id="dienteNotas" rows="3"
+                                  placeholder="Observaciones adicionales sobre el diente..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarDiente()">
+                        <i class="fas fa-save mr-2"></i>Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- #contenido-principal -->
+
+<script th:inline="javascript">
+        /*<![CDATA[*/
+        console.log('🦷 Script de odontograma cargado');
+        console.log('jQuery disponible:', typeof jQuery !== 'undefined');
+
+        const pacienteId = /*[[${pacienteId}]]*/ 0;
+        let dientesData = /*[[${dientes}]]*/ [];
+
+        const NOMBRES_DIENTES = {
+            '1': 'Incisivo Central',
+            '2': 'Incisivo Lateral',
+            '3': 'Canino',
+            '4': '1er Premolar',
+            '5': '2do Premolar',
+            '6': '1er Molar',
+            '7': '2do Molar',
+            '8': '3er Molar'
+        };
+
+        // Renderizar odontograma al cargar la página
+        $(document).ready(function() {
+            console.log('=== ODONTOGRAMA DEBUG ===');
+            console.log('PacienteId:', pacienteId);
+            console.log('Dientes recibidos:', dientesData);
+            console.log('Total dientes:', dientesData.length);
+            console.log('jQuery version:', $.fn.jquery);
+            console.log('========================');
+
+            if (dientesData.length === 0) {
+                console.warn('⚠️ No hay dientes en dientesData. Se renderizarán 32 dientes por defecto (todos SANOS).');
+            }
+
+            renderizarOdontograma();
+        });
+
+        function renderizarOdontograma() {
+            console.log('🦷 Iniciando renderizado de odontograma...');
+
+            // Renderizar cada cuadrante
+            for (let cuadrante = 1; cuadrante <= 4; cuadrante++) {
+                const container = document.getElementById(`cuadrante-${cuadrante}`);
+                if (!container) {
+                    console.error('❌ No se encontró el contenedor cuadrante-' + cuadrante);
+                    continue;
+                }
+
+                console.log('✅ Renderizando cuadrante ' + cuadrante);
+
+                container.innerHTML = '';
+
+                for (let posicion = 1; posicion <= 8; posicion++) {
+                    const numeroDiente = `${cuadrante}${posicion}`;
+                    const diente = dientesData.find(d => d.numeroDiente === numeroDiente) || {
+                        numeroDiente: numeroDiente,
+                        estado: 'SANO',
+                        notas: '',
+                        superficiesAfectadas: '',
+                        nombreDiente: NOMBRES_DIENTES[posicion.toString()] || 'Diente'
+                    };
+
+                    const dienteElement = crearElementoDiente(diente);
+                    container.appendChild(dienteElement);
+                }
+            }
+
+            console.log('✅ Odontograma renderizado completamente (32 dientes)');
+        }
+
+        function crearElementoDiente(diente) {
+            const div = document.createElement('div');
+            div.className = 'diente';
+            div.setAttribute('data-estado', diente.estado);
+            div.setAttribute('data-numero', diente.numeroDiente);
+            div.onclick = () => abrirModalEdicion(diente);
+
+            const numero = document.createElement('div');
+            numero.className = 'numero';
+            numero.textContent = diente.numeroDiente;
+
+            const icon = document.createElement('div');
+            icon.className = 'icon';
+            icon.innerHTML = '<i class="fas fa-tooth"></i>';
+
+            const nombre = document.createElement('div');
+            nombre.className = 'nombre';
+            nombre.textContent = diente.nombreDiente || NOMBRES_DIENTES[diente.numeroDiente.charAt(1)] || '';
+
+            div.appendChild(numero);
+            div.appendChild(icon);
+            div.appendChild(nombre);
+
+            return div;
+        }
+
+        function abrirModalEdicion(diente) {
+            console.log('Editando diente:', diente);
+
+            $('#dienteNumero').text(diente.numeroDiente);
+            $('#dienteId').val(diente.id || '');
+            $('#dienteNumeroInput').val(diente.numeroDiente);
+            $('#dienteEstado').val(diente.estado);
+            $('#dienteNotas').val(diente.notas || '');
+            $('#dienteNombre').val(diente.nombreDiente || '');
+
+            // Limpiar superficies
+            $('.superficie-check').prop('checked', false);
+
+            // Marcar superficies afectadas
+            if (diente.superficiesAfectadas) {
+                diente.superficiesAfectadas.split(',').forEach(sup => {
+                    const checkbox = $(`.superficie-check[value="${sup.trim()}"]`);
+                    checkbox.prop('checked', true);
+                });
+            }
+
+            $('#modalEditarDiente').modal('show');
+        }
+
+        function guardarDiente() {
+            const dienteNumero = $('#dienteNumeroInput').val();
+            const dienteEstado = $('#dienteEstado').val();
+
+            if (!dienteEstado) {
+                Swal.fire('Error', 'Debe seleccionar un estado', 'error');
+                return;
+            }
+
+            // Obtener superficies seleccionadas
+            const superficies = $('.superficie-check:checked').map(function() {
+                return $(this).val();
+            }).get().join(',');
+
+            const dienteDTO = {
+                numeroDiente: dienteNumero,
+                estado: dienteEstado,
+                notas: $('#dienteNotas').val() || '',
+                superficiesAfectadas: superficies
+            };
+
+            console.log('Guardando diente:', dienteDTO);
+
+            $.ajax({
+                url: `/api/odontograma/paciente/${pacienteId}/diente`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(dienteDTO),
+                success: function(response) {
+                    console.log('Respuesta del servidor:', response);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: 'Diente actualizado correctamente',
+                        timer: 2000
+                    });
+
+                    $('#modalEditarDiente').modal('hide');
+
+                    // Actualizar el diente en el array
+                    const index = dientesData.findIndex(d => d.numeroDiente === dienteDTO.numeroDiente);
+                    if (index >= 0) {
+                        dientesData[index] = response.diente;
+                    } else {
+                        dientesData.push(response.diente);
+                    }
+
+                    // Re-renderizar
+                    renderizarOdontograma();
+
+                    // Recargar estadísticas
+                    setTimeout(() => location.reload(), 2000);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al guardar:', xhr);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo actualizar el diente: ' + (xhr.responseJSON?.mensaje || error)
+                    });
+                }
+            });
+        }
+        /*]]>*/
+</script>
+
+</body>
+</html>

@@ -3,6 +3,7 @@ package com.odontoapp.controlador;
 import com.odontoapp.dto.ComprobanteDTO;
 import com.odontoapp.dto.PagoDTO;
 import com.odontoapp.entidad.Comprobante;
+import com.odontoapp.entidad.Pago;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.MetodoPagoRepository;
 import com.odontoapp.repositorio.PacienteRepository;
@@ -11,10 +12,14 @@ import com.odontoapp.servicio.FacturacionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Controlador para la gestión de facturación y pagos.
@@ -164,30 +169,52 @@ public class FacturacionController {
     }
 
     /**
-     * Registra un pago sobre un comprobante existente.
+     * Registra un pago sobre un comprobante existente (versión AJAX).
+     * Devuelve JSON para ser procesado por el frontend.
      *
      * @param dto DTO con datos del pago
-     * @param attributes Atributos para mensajes flash
-     * @return Redirección a la lista de facturación
+     * @return ResponseEntity con resultado en JSON
      */
     @PostMapping("/registrar-pago")
-    public String registrarPago(@ModelAttribute PagoDTO dto,
-                               RedirectAttributes attributes) {
-        try {
-            facturacionService.registrarPago(dto);
-            attributes.addFlashAttribute("success", "Pago registrado con éxito.");
-        } catch (IllegalArgumentException e) {
-            attributes.addFlashAttribute("error",
-                    "Error en los datos del pago: " + e.getMessage());
-        } catch (IllegalStateException e) {
-            attributes.addFlashAttribute("error",
-                    "Error al procesar el pago: " + e.getMessage());
-        } catch (Exception e) {
-            attributes.addFlashAttribute("error",
-                    "Error inesperado al registrar el pago: " + e.getMessage());
-        }
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> registrarPago(@RequestBody PagoDTO dto) {
+        Map<String, Object> response = new HashMap<>();
 
-        return "redirect:/facturacion";
+        try {
+            // Validar que el ID del comprobante esté presente
+            if (dto.getComprobanteId() == null) {
+                response.put("success", false);
+                response.put("mensaje", "El ID del comprobante es obligatorio");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Registrar el pago
+            Pago pago = facturacionService.registrarPago(dto);
+
+            response.put("success", true);
+            response.put("mensaje", "Pago registrado con éxito");
+            response.put("pagoId", pago.getId());
+            response.put("comprobanteId", pago.getComprobante().getId());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("mensaje", "Error en los datos del pago: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (IllegalStateException e) {
+            response.put("success", false);
+            response.put("mensaje", "Error al procesar el pago: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("mensaje", "Error inesperado al registrar el pago: " + e.getMessage());
+            System.err.println("Error en registrarPago: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(response);
+        }
     }
 
     /**
@@ -200,7 +227,7 @@ public class FacturacionController {
      * @param attributes Atributos para mensajes flash
      * @return Redirección a la lista de facturación
      */
-    @GetMapping("/anular/{id}")
+    @PostMapping("/anular/{id}")
     public String anularComprobante(@PathVariable Long id,
                                    @RequestParam(defaultValue = "Anulado por usuario") String motivo,
                                    @RequestParam(required = false) Boolean regresarInventario,
@@ -264,6 +291,45 @@ public class FacturacionController {
             attributes.addFlashAttribute("error",
                     "Error al cargar el detalle: " + e.getMessage());
             return "redirect:/facturacion";
+        }
+    }
+
+    /**
+     * Obtiene los detalles del comprobante en formato JSON para el modal de anulación.
+     *
+     * @param id ID del comprobante
+     * @return Map con los detalles del comprobante en formato JSON
+     */
+    @GetMapping("/detalle/{id}/json")
+    @ResponseBody
+    public Map<String, Object> obtenerDetallesJSON(@PathVariable Long id) {
+        try {
+            var comprobanteOpt = facturacionService.buscarComprobantePorId(id);
+
+            if (comprobanteOpt.isEmpty()) {
+                return Map.of("error", "Comprobante no encontrado");
+            }
+
+            Comprobante comprobante = comprobanteOpt.get();
+
+            // Crear lista de detalles simplificada para el JSON
+            var detalles = comprobante.getDetalles().stream()
+                    .map(detalle -> Map.of(
+                            "tipoItem", detalle.getTipoItem(),
+                            "descripcionItem", detalle.getDescripcionItem(),
+                            "cantidad", detalle.getCantidad(),
+                            "unidad", "ud" // Podríamos obtener la unidad real si está disponible
+                    ))
+                    .toList();
+
+            return Map.of(
+                    "id", comprobante.getId(),
+                    "numeroComprobante", comprobante.getNumeroComprobante(),
+                    "detalles", detalles
+            );
+
+        } catch (Exception e) {
+            return Map.of("error", "Error al obtener detalles: " + e.getMessage());
         }
     }
 

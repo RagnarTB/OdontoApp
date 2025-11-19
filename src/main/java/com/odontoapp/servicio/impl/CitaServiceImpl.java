@@ -25,6 +25,8 @@ import com.odontoapp.repositorio.TipoMovimientoRepository;
 import com.odontoapp.repositorio.MotivoMovimientoRepository;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.EmailService;
+import com.odontoapp.servicio.InventarioService;
+import com.odontoapp.servicio.FacturacionService;
 import java.math.BigDecimal;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
@@ -71,6 +73,8 @@ public class CitaServiceImpl implements CitaService {
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final TipoMovimientoRepository tipoMovimientoRepository;
     private final MotivoMovimientoRepository motivoMovimientoRepository;
+    private final InventarioService inventarioService;
+    private final FacturacionService facturacionService;
 
     public CitaServiceImpl(CitaRepository citaRepository,
                           UsuarioRepository usuarioRepository,
@@ -83,7 +87,9 @@ public class CitaServiceImpl implements CitaService {
                           TratamientoRealizadoRepository tratamientoRealizadoRepository,
                           MovimientoInventarioRepository movimientoInventarioRepository,
                           TipoMovimientoRepository tipoMovimientoRepository,
-                          MotivoMovimientoRepository motivoMovimientoRepository) {
+                          MotivoMovimientoRepository motivoMovimientoRepository,
+                          InventarioService inventarioService,
+                          FacturacionService facturacionService) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
@@ -96,6 +102,8 @@ public class CitaServiceImpl implements CitaService {
         this.movimientoInventarioRepository = movimientoInventarioRepository;
         this.tipoMovimientoRepository = tipoMovimientoRepository;
         this.motivoMovimientoRepository = motivoMovimientoRepository;
+        this.inventarioService = inventarioService;
+        this.facturacionService = facturacionService;
     }
 
     @Override
@@ -539,22 +547,50 @@ public class CitaServiceImpl implements CitaService {
             cita.setNotas(notasActuales + "Asistencia: " + notas);
         }
 
-        // Si el paciente asistió, descontar insumos asociados al procedimiento
+        // LÓGICA DE COHERENCIA: ASISTIO = REALIZADO + DESCUENTO DE STOCK
+        // Si el paciente asistió, asegurar que exista un TratamientoRealizado MÍNIMO
+        // y descontar inmediatamente el inventario asociado al procedimiento.
+
         if (asistio && cita.getProcedimiento() != null) {
-            descontarInsumosDelProcedimiento(cita.getProcedimiento().getId(), citaId);
+            System.out.println("ℹ️ Paciente ASISTIÓ - Cita ID: " + citaId + ", Procedimiento: " + cita.getProcedimiento().getNombre());
 
-            // Crear TratamientoRealizado automáticamente cuando asiste y tiene procedimiento
-            TratamientoRealizado tratamientoRealizado = new TratamientoRealizado();
-            tratamientoRealizado.setCita(cita);
-            tratamientoRealizado.setProcedimiento(cita.getProcedimiento());
-            tratamientoRealizado.setOdontologo(cita.getOdontologo());
-            tratamientoRealizado.setPiezaDental(null); // Se puede mejorar si se captura en la cita
-            tratamientoRealizado.setDescripcionTrabajo("Tratamiento realizado en cita del " +
-                cita.getFechaHoraInicio().toLocalDate());
-            tratamientoRealizado.setFechaRealizacion(cita.getFechaHoraInicio());
+            // Verificar si ya existe un TratamientoRealizado para esta cita
+            List<TratamientoRealizado> tratamientosExistentes = tratamientoRealizadoRepository.findByCitaId(citaId);
 
-            tratamientoRealizadoRepository.save(tratamientoRealizado);
-            System.out.println("✅ TratamientoRealizado creado automáticamente para cita: " + citaId);
+            if (tratamientosExistentes.isEmpty()) {
+                // NO existe TratamientoRealizado → Crear uno MÍNIMO para coherencia
+                TratamientoRealizado tratamientoMinimo = new TratamientoRealizado();
+                tratamientoMinimo.setCita(cita);
+                tratamientoMinimo.setProcedimiento(cita.getProcedimiento());
+                tratamientoMinimo.setOdontologo(cita.getOdontologo());
+                tratamientoMinimo.setPiezaDental(null);
+                tratamientoMinimo.setDescripcionTrabajo("Tratamiento realizado en cita del " +
+                    cita.getFechaHoraInicio().toLocalDate());
+                tratamientoMinimo.setFechaRealizacion(cita.getFechaHoraInicio());
+
+                TratamientoRealizado guardado = tratamientoRealizadoRepository.save(tratamientoMinimo);
+                System.out.println("✅ TratamientoRealizado MÍNIMO creado - ID: " + guardado.getId() +
+                                 " (Coherencia: ASISTIO = REALIZADO)");
+
+                // DESCUENTO DE STOCK INMEDIATO
+                try {
+                    String referenciaCita = "Cita #" + citaId;
+                    inventarioService.descontarStockPorProcedimientoRealizado(
+                        guardado.getProcedimiento().getId(),
+                        null,  // cantidadAjustada: null = usar cantidad por defecto
+                        null,  // insumoAjustadoId: null = descontar todos los insumos por defecto
+                        referenciaCita
+                    );
+                    System.out.println("✅ Stock descontado automáticamente para procedimiento: " +
+                                     guardado.getProcedimiento().getNombre() + " (Cita #" + citaId + ")");
+                } catch (Exception e) {
+                    System.err.println("⚠️ Error al descontar stock: " + e.getMessage());
+                    // Log pero no fallar la cita - el descuento se puede hacer manualmente
+                }
+            } else {
+                System.out.println("✓ Ya existe TratamientoRealizado para esta cita - ID: " +
+                                 tratamientosExistentes.get(0).getId() + " (stock ya procesado)");
+            }
         }
 
         // Manejar tratamiento planificado asociado según asistencia
@@ -564,26 +600,13 @@ public class CitaServiceImpl implements CitaService {
             String estadoActualTrat = tratamientoPlanificado.getEstado();
 
             if (asistio) {
-                // PACIENTE ASISTIÓ: Marcar tratamiento como COMPLETADO y crear TratamientoRealizado
+                // PACIENTE ASISTIÓ: Marcar tratamiento como COMPLETADO para excluirlo de pendientes
                 if ("EN_CURSO".equals(estadoActualTrat) || "PLANIFICADO".equals(estadoActualTrat)) {
                     tratamientoPlanificado.setEstado("COMPLETADO");
-
-                    // Crear TratamientoRealizado a partir del TratamientoPlanificado
-                    TratamientoRealizado tratamientoRealizado = new TratamientoRealizado();
-                    tratamientoRealizado.setCita(cita);
-                    tratamientoRealizado.setProcedimiento(tratamientoPlanificado.getProcedimiento());
-                    tratamientoRealizado.setOdontologo(cita.getOdontologo());
-                    tratamientoRealizado.setPiezaDental(tratamientoPlanificado.getPiezasDentales());
-                    tratamientoRealizado.setDescripcionTrabajo(tratamientoPlanificado.getDescripcion());
-                    tratamientoRealizado.setFechaRealizacion(cita.getFechaHoraInicio());
-
-                    TratamientoRealizado tratRealizado = tratamientoRealizadoRepository.save(tratamientoRealizado);
-
-                    // Vincular el tratamiento realizado al planificado
-                    tratamientoPlanificado.setTratamientoRealizadoId(tratRealizado.getId());
                     tratamientoPlanificadoRepository.save(tratamientoPlanificado);
 
-                    System.out.println("✅ Tratamiento planificado COMPLETADO y TratamientoRealizado creado para cita: " + citaId);
+                    System.out.println("✅ Tratamiento planificado marcado como COMPLETADO (Cita: " + citaId + ")");
+                    System.out.println("   → El TratamientoRealizado se creará desde el Modal Avanzado de Tratamientos");
                 }
             } else {
                 // PACIENTE NO ASISTIÓ: Volver a PLANIFICADO para poder reagendar
@@ -596,7 +619,28 @@ public class CitaServiceImpl implements CitaService {
             }
         }
 
-        return citaRepository.save(cita);
+        Cita citaActualizada = citaRepository.save(cita);
+
+        // GENERAR COMPROBANTE AUTOMÁTICO cuando el paciente asiste
+        if (asistio && cita.getProcedimiento() != null) {
+            try {
+                // Generar comprobante automáticamente (sin detalles adicionales)
+                // Solo incluye el procedimiento de la cita con su precio base
+                // Los insumos ya fueron descontados del inventario pero NO se cobran por separado
+                // El método generarComprobanteDesdeCita ya valida que no exista un comprobante previo
+                facturacionService.generarComprobanteDesdeCita(citaId, null);
+                System.out.println("✅ Comprobante generado automáticamente para cita: " + citaId);
+            } catch (IllegalStateException e) {
+                // Si ya existe comprobante o hay otro error de estado, solo logueamos
+                System.out.println("ℹ️ No se generó comprobante para cita " + citaId + ": " + e.getMessage());
+            } catch (Exception e) {
+                // Log del error pero no fallar la marcación de asistencia
+                System.err.println("⚠️ Error al generar comprobante automático para cita " + citaId + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        return citaActualizada;
     }
 
     /**

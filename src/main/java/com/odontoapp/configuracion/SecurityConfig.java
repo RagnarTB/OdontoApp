@@ -54,8 +54,12 @@ public class SecurityConfig {
                                                 // ADMIN: Acceso total
                                                 .requestMatchers("/usuarios/**", "/roles/**").hasRole("ADMIN")
 
-                                                // PACIENTE: Solo citas propias y perfil
-                                                .requestMatchers("/citas/mis-citas/**", "/perfil/**").hasAnyRole("PACIENTE", "ADMIN", "ODONTOLOGO", "RECEPCIONISTA")
+                                                // PACIENTE: Portal exclusivo para pacientes
+                                                .requestMatchers("/paciente/**").hasRole("PACIENTE")
+
+                                                // Dashboard general: NO permitir a PACIENTE (usan /paciente/dashboard)
+                                                .requestMatchers("/", "/home", "/dashboard")
+                                                .hasAnyRole("ADMIN", "ODONTOLOGO", "RECEPCIONISTA", "ALMACEN")
 
                                                 // ODONTOLOGO: Todo menos usuarios/roles
                                                 .requestMatchers("/pacientes/**", "/servicios/**", "/facturacion/**",
@@ -72,9 +76,6 @@ public class SecurityConfig {
                                                 .requestMatchers("/insumos/**", "/categorias-insumo/**",
                                                                 "/unidades-medida/**", "/movimientos-inventario/**")
                                                 .hasAnyRole("ALMACEN", "ADMIN", "ODONTOLOGO")
-
-                                                // Dashboard y home - todos autenticados
-                                                .requestMatchers("/", "/home", "/dashboard").authenticated()
 
                                                 // Cualquier otra petición requiere autenticación
                                                 .anyRequest().authenticated())

@@ -94,4 +94,12 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
         LocalDateTime inicio,
         LocalDateTime fin
     );
+
+    /**
+     * Busca comprobantes de un paciente específico con un estado de pago determinado
+     * @param pacienteId El ID del usuario paciente
+     * @param estadoPago El estado de pago
+     * @return Lista de comprobantes del paciente con ese estado
+     */
+    List<Comprobante> findByPacienteIdAndEstadoPago(Long pacienteId, EstadoPago estadoPago);
 }

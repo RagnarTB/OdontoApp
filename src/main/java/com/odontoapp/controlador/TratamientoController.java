@@ -4,6 +4,7 @@ import com.odontoapp.dto.TratamientoRealizadoDTO;
 import com.odontoapp.entidad.*;
 import com.odontoapp.repositorio.*;
 import com.odontoapp.servicio.TratamientoRealizadoService;
+import com.odontoapp.servicio.OdontogramaDienteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +32,7 @@ public class TratamientoController {
     private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
     private final CitaRepository citaRepository;
     private final ProcedimientoRepository procedimientoRepository;
+    private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
     private final InsumoRepository insumoRepository;
     private final ComprobanteRepository comprobanteRepository;
     private final EstadoPagoRepository estadoPagoRepository;
@@ -38,6 +40,7 @@ public class TratamientoController {
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final TipoMovimientoRepository tipoMovimientoRepository;
     private final EstadoCitaRepository estadoCitaRepository;
+    private final OdontogramaDienteService odontogramaService;
 
     public TratamientoController(
             TratamientoRealizadoService tratamientoRealizadoService,
@@ -45,18 +48,21 @@ public class TratamientoController {
             TratamientoPlanificadoRepository tratamientoPlanificadoRepository,
             CitaRepository citaRepository,
             ProcedimientoRepository procedimientoRepository,
+            ProcedimientoInsumoRepository procedimientoInsumoRepository,
             InsumoRepository insumoRepository,
             ComprobanteRepository comprobanteRepository,
             EstadoPagoRepository estadoPagoRepository,
             DetalleComprobanteRepository detalleComprobanteRepository,
             MovimientoInventarioRepository movimientoInventarioRepository,
             TipoMovimientoRepository tipoMovimientoRepository,
-            EstadoCitaRepository estadoCitaRepository) {
+            EstadoCitaRepository estadoCitaRepository,
+            OdontogramaDienteService odontogramaService) {
         this.tratamientoRealizadoService = tratamientoRealizadoService;
         this.tratamientoRealizadoRepository = tratamientoRealizadoRepository;
         this.tratamientoPlanificadoRepository = tratamientoPlanificadoRepository;
         this.citaRepository = citaRepository;
         this.procedimientoRepository = procedimientoRepository;
+        this.procedimientoInsumoRepository = procedimientoInsumoRepository;
         this.insumoRepository = insumoRepository;
         this.comprobanteRepository = comprobanteRepository;
         this.estadoPagoRepository = estadoPagoRepository;
@@ -64,6 +70,7 @@ public class TratamientoController {
         this.movimientoInventarioRepository = movimientoInventarioRepository;
         this.tipoMovimientoRepository = tipoMovimientoRepository;
         this.estadoCitaRepository = estadoCitaRepository;
+        this.odontogramaService = odontogramaService;
     }
 
     /**
@@ -226,33 +233,52 @@ public class TratamientoController {
             // Guardar tratamiento
             tratamientoRealizadoRepository.save(tratamiento);
 
-            // **BUSCAR Y ACTUALIZAR TRATAMIENTO PLANIFICADO SI EXISTE**
-            // Buscar tratamiento planificado del mismo paciente y procedimiento que esté pendiente
-            List<TratamientoPlanificado> tratamientosplanificados = tratamientoPlanificadoRepository
-                    .findByPacienteAndProcedimientoAndEstado(
-                            cita.getPaciente(),
-                            procedimiento,
-                            "PLANIFICADO"
-                    );
+            // **ACTUALIZAR ODONTOGRAMA AUTOMÁTICAMENTE**
+            try {
+                odontogramaService.actualizarDesdeTratamiento(tratamiento.getId());
+                System.out.println("✓ Odontograma actualizado automáticamente para tratamiento ID: " + tratamiento.getId());
+            } catch (Exception e) {
+                System.err.println("⚠ Error al actualizar odontograma: " + e.getMessage());
+                // No fallar el tratamiento si falla la actualización del odontograma
+            }
 
-            // También buscar los que están EN_CURSO
-            if (tratamientosplanificados.isEmpty()) {
-                tratamientosplanificados = tratamientoPlanificadoRepository
+            // **BUSCAR Y ACTUALIZAR TRATAMIENTO PLANIFICADO SI EXISTE**
+            // Prioridad 1: Buscar por cita asociada (más preciso)
+            TratamientoPlanificado planificado = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
+
+            // Prioridad 2: Si no se encuentra por cita, buscar por paciente + procedimiento + estado
+            if (planificado == null) {
+                List<TratamientoPlanificado> tratamientosplanificados = tratamientoPlanificadoRepository
                         .findByPacienteAndProcedimientoAndEstado(
                                 cita.getPaciente(),
                                 procedimiento,
-                                "EN_CURSO"
+                                "PLANIFICADO"
                         );
+
+                // También buscar los que están EN_CURSO
+                if (tratamientosplanificados.isEmpty()) {
+                    tratamientosplanificados = tratamientoPlanificadoRepository
+                            .findByPacienteAndProcedimientoAndEstado(
+                                    cita.getPaciente(),
+                                    procedimiento,
+                                    "EN_CURSO"
+                            );
+                }
+
+                if (!tratamientosplanificados.isEmpty()) {
+                    planificado = tratamientosplanificados.get(0); // Tomar el primero
+                }
             }
 
             // Si encontramos un tratamiento planificado, marcarlo como COMPLETADO
-            if (!tratamientosplanificados.isEmpty()) {
-                TratamientoPlanificado planificado = tratamientosplanificados.get(0); // Tomar el primero
+            if (planificado != null) {
                 planificado.setEstado("COMPLETADO");
                 planificado.setTratamientoRealizadoId(tratamiento.getId());
                 tratamientoPlanificadoRepository.save(planificado);
                 System.out.println("✓ Tratamiento planificado ID " + planificado.getId() +
-                        " marcado como COMPLETADO");
+                        " marcado como COMPLETADO y vinculado a TratamientoRealizado ID " + tratamiento.getId());
+            } else {
+                System.out.println("ℹ️ No se encontró TratamientoPlanificado asociado - tratamiento directo");
             }
 
             // **CREAR CITA AUTOMÁTICA EN EL CALENDARIO**
@@ -279,6 +305,54 @@ public class TratamientoController {
 
             // Guardar la nueva cita
             citaRepository.save(citaTratamiento);
+
+            // **DESCONTAR INSUMOS PREDETERMINADOS DEL PROCEDIMIENTO**
+            // (Excepto si es "Consulta General" - CON-001)
+            if (!procedimiento.getCodigo().equals("CON-001")) {
+                List<ProcedimientoInsumo> insumosPredeterminados =
+                    procedimientoInsumoRepository.findByProcedimientoId(procedimiento.getId());
+
+                if (!insumosPredeterminados.isEmpty()) {
+                    System.out.println("✓ Descontando " + insumosPredeterminados.size() +
+                        " insumos predeterminados del procedimiento: " + procedimiento.getNombre());
+
+                    for (ProcedimientoInsumo pi : insumosPredeterminados) {
+                        Insumo insumo = pi.getInsumo();
+                        BigDecimal cantidadRequerida = pi.getCantidadDefecto();
+
+                        // Validar stock disponible
+                        if (insumo.getStockActual().compareTo(cantidadRequerida) < 0) {
+                            // Si es obligatorio, lanzar excepción
+                            if (pi.isEsObligatorio()) {
+                                throw new RuntimeException(
+                                    String.format("Stock insuficiente del insumo obligatorio '%s'. " +
+                                        "Disponible: %.2f %s, Requerido: %.2f %s",
+                                        insumo.getNombre(),
+                                        insumo.getStockActual(),
+                                        insumo.getUnidadMedida().getAbreviatura(),
+                                        cantidadRequerida,
+                                        insumo.getUnidadMedida().getAbreviatura()));
+                            } else {
+                                // Si es opcional, solo advertir y continuar
+                                System.out.println("⚠ Advertencia: Stock insuficiente del insumo opcional '" +
+                                    insumo.getNombre() + "'. Se omitirá el descuento.");
+                                continue;
+                            }
+                        }
+
+                        // Descontar stock
+                        BigDecimal nuevoStock = insumo.getStockActual().subtract(cantidadRequerida);
+                        insumo.setStockActual(nuevoStock);
+                        insumoRepository.save(insumo);
+
+                        System.out.println("  ✓ " + insumo.getNombre() +
+                            " | Cantidad: " + cantidadRequerida + " " + insumo.getUnidadMedida().getAbreviatura() +
+                            " | Nuevo stock: " + nuevoStock);
+                    }
+                }
+            } else {
+                System.out.println("ℹ Consulta General detectada - No se descontarán insumos predeterminados");
+            }
 
             // **OBTENER O GENERAR COMPROBANTE**
             // Verificar si ya existe un comprobante para esta cita
@@ -348,7 +422,8 @@ public class TratamientoController {
             tratamiento.setOdontologo(cita.getOdontologo());
             tratamiento.setPiezasDentales(piezasDentales);
             tratamiento.setDescripcion(descripcionCompleta);
-            tratamiento.setEstado("PLANIFICADO");
+            tratamiento.setEstado("EN_CURSO"); // Cambiar a EN_CURSO porque está asociado a una cita activa
+            tratamiento.setCitaAsociada(cita); // ← CRÍTICO: Asociar la cita
             tratamiento.setNotas("Detectado en cita del " + cita.getFechaHoraInicio().toLocalDate());
 
             // Guardar
@@ -475,27 +550,9 @@ public class TratamientoController {
         String numeroComprobante = generarNumeroComprobante();
         comprobante.setNumeroComprobante(numeroComprobante);
 
-        // Calcular monto total
+        // Calcular monto total - SOLO incluye el precio del procedimiento
+        // Los insumos NO se cobran por separado (están incluidos en el precio del procedimiento)
         BigDecimal montoTotal = procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO;
-
-        // Agregar insumos adicionales al monto
-        if (insumosAdicionales != null) {
-            for (Map<String, Object> insumo : insumosAdicionales) {
-                try {
-                    Long insumoId = Long.parseLong(insumo.get("insumoId").toString());
-                    BigDecimal cantidad = new BigDecimal(insumo.get("cantidad").toString());
-                    Insumo insumoEntity = insumoRepository.findById(insumoId).orElse(null);
-
-                    if (insumoEntity != null && insumoEntity.getPrecioUnitario() != null) {
-                        BigDecimal subtotalInsumo = insumoEntity.getPrecioUnitario().multiply(cantidad);
-                        montoTotal = montoTotal.add(subtotalInsumo);
-                    }
-                } catch (Exception e) {
-                    // Continuar si hay error con un insumo específico
-                    System.err.println("Error procesando insumo: " + e.getMessage());
-                }
-            }
-        }
 
         comprobante.setMontoTotal(montoTotal);
         comprobante.setMontoPagado(BigDecimal.ZERO);
@@ -529,8 +586,9 @@ public class TratamientoController {
         detalleProcedimiento.setSubtotal(procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO);
         detalleComprobanteRepository.save(detalleProcedimiento);
 
-        // Crear detalles de insumos adicionales
-        if (insumosAdicionales != null) {
+        // Crear detalles de insumos adicionales (INFORMATIVOS - Sin cargo)
+        // Los insumos se descuentan del inventario pero NO se cobran (incluidos en el precio del procedimiento)
+        if (insumosAdicionales != null && !insumosAdicionales.isEmpty()) {
             for (Map<String, Object> insumo : insumosAdicionales) {
                 try {
                     Long insumoId = Long.parseLong(insumo.get("insumoId").toString());
@@ -538,20 +596,23 @@ public class TratamientoController {
                     Insumo insumoEntity = insumoRepository.findById(insumoId).orElse(null);
 
                     if (insumoEntity != null) {
+                        // Crear detalle INFORMATIVO con precio S/ 0.00 (sin cargo)
                         DetalleComprobante detalleInsumo = new DetalleComprobante();
                         detalleInsumo.setComprobante(comprobante);
                         detalleInsumo.setTipoItem("INSUMO");
                         detalleInsumo.setItemId(insumoEntity.getId());
-                        detalleInsumo.setDescripcionItem(insumoEntity.getCodigo() + " - " + insumoEntity.getNombre());
+                        detalleInsumo.setDescripcionItem(insumoEntity.getCodigo() + " - " + insumoEntity.getNombre() + " (Incluido)");
                         detalleInsumo.setCantidad(cantidad);
-                        detalleInsumo.setPrecioUnitario(insumoEntity.getPrecioUnitario() != null ?
-                                insumoEntity.getPrecioUnitario() : BigDecimal.ZERO);
-                        detalleInsumo.setSubtotal(detalleInsumo.getPrecioUnitario().multiply(cantidad));
+                        detalleInsumo.setPrecioUnitario(BigDecimal.ZERO); // ← SIN CARGO
+                        detalleInsumo.setSubtotal(BigDecimal.ZERO); // ← SIN CARGO
                         detalleComprobanteRepository.save(detalleInsumo);
 
                         // **REGISTRAR MOVIMIENTO DE INVENTARIO Y ACTUALIZAR STOCK**
                         String referencia = "Cita #" + comprobante.getCita().getId() + " - " + comprobante.getNumeroComprobante();
                         registrarUsoInsumo(insumoEntity, cantidad, referencia);
+
+                        System.out.println("✓ Insumo agregado al comprobante (sin cargo): " +
+                                          insumoEntity.getNombre() + " x " + cantidad);
                     }
                 } catch (Exception e) {
                     System.err.println("Error guardando detalle de insumo: " + e.getMessage());

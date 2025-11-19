@@ -333,7 +333,7 @@ public class CitaController {
 
     /**
      * Marca la asistencia de un paciente a una cita.
-     * Si el paciente asistió, genera automáticamente el comprobante.
+     * El comprobante se genera automáticamente en CitaServiceImpl.marcarAsistencia()
      *
      * @param citaId ID de la cita
      * @param asistio true si el paciente asistió, false si no asistió
@@ -346,20 +346,12 @@ public class CitaController {
             @RequestParam boolean asistio,
             RedirectAttributes attributes) {
         try {
+            // El servicio maneja tanto la asistencia como la generación del comprobante
             citaService.marcarAsistencia(citaId, asistio, null);
 
-            // Si el paciente asistió, generar comprobante automáticamente
             if (asistio) {
-                try {
-                    facturacionService.generarComprobanteDesdeCita(citaId, null);
-                    attributes.addFlashAttribute("success",
-                            "Asistencia registrada y comprobante generado con éxito.");
-                } catch (Exception e) {
-                    // Si falla la generación del comprobante, informar pero mantener la asistencia
-                    attributes.addFlashAttribute("warning",
-                            "Asistencia registrada, pero hubo un error al generar el comprobante: "
-                                    + e.getMessage());
-                }
+                attributes.addFlashAttribute("success",
+                        "Asistencia registrada y comprobante generado con éxito.");
             } else {
                 attributes.addFlashAttribute("success", "Inasistencia registrada con éxito.");
             }

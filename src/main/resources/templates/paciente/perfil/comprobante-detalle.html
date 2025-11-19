@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(titulo='Detalle de Comprobante', contenido=~{::#contenido-principal})}">
+
+<body>
+<div id="contenido-principal">
+
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1><i class="fas fa-file-invoice"></i> Detalle de Comprobante</h1>
+                </div>
+                <div class="col-sm-6">
+                    <a th:href="@{/paciente/perfil?tab=comprobantes}" class="btn btn-secondary float-sm-right">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                    <button onclick="window.print()" class="btn btn-primary float-sm-right mr-2">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            <!-- Comprobante -->
+            <div class="invoice p-3 mb-3" id="comprobante-imprimir">
+
+                <!-- Encabezado -->
+                <div class="row">
+                    <div class="col-12">
+                        <h4>
+                            <i class="fas fa-tooth"></i> OdontoApp
+                            <small class="float-right">
+                                Fecha: <span th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy')}">01/01/2024</span>
+                            </small>
+                        </h4>
+                    </div>
+                </div>
+
+                <!-- Info del comprobante -->
+                <div class="row invoice-info">
+                    <div class="col-sm-4 invoice-col">
+                        <strong>De:</strong>
+                        <address>
+                            <strong>Clínica OdontoApp</strong><br>
+                            Dirección de la Clínica<br>
+                            Teléfono: (01) 123-4567<br>
+                            Email: info@odontoapp.com
+                        </address>
+                    </div>
+
+                    <div class="col-sm-4 invoice-col">
+                        <strong>Para:</strong>
+                        <address>
+                            <strong th:text="${comprobante.paciente.nombreCompleto}">Nombre del Paciente</strong><br>
+                            <span th:text="${comprobante.paciente.tipoDocumento.nombre + ': ' + comprobante.paciente.numeroDocumento}">DNI: 12345678</span><br>
+                            <span th:if="${comprobante.paciente.direccion}" th:text="${comprobante.paciente.direccion}">Dirección</span><br>
+                            <span th:if="${comprobante.paciente.telefono}">Teléfono: <span th:text="${comprobante.paciente.telefono}">999-999-999</span></span><br>
+                            <span>Email: <span th:text="${comprobante.paciente.email}">email@example.com</span></span>
+                        </address>
+                    </div>
+
+                    <div class="col-sm-4 invoice-col">
+                        <b>Comprobante #<span th:text="${comprobante.numeroComprobante}">B001-000001</span></b><br>
+                        <br>
+                        <b>Tipo:</b> <span th:text="${comprobante.tipoComprobante.nombre}">Boleta</span><br>
+                        <b>Fecha Emisión:</b> <span th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy')}">01/01/2024</span><br>
+                        <b>Estado:</b>
+                        <span class="badge"
+                              th:classappend="${
+                                  comprobante.estadoPago.nombre == 'PAGADO' ? 'badge-success' :
+                                  comprobante.estadoPago.nombre == 'PAGADO_PARCIAL' ? 'badge-warning' :
+                                  'badge-danger'
+                              }"
+                              th:text="${comprobante.estadoPago.descripcion}">Estado</span>
+                    </div>
+                </div>
+
+                <!-- Detalles de la cita asociada -->
+                <div class="row" th:if="${comprobante.cita != null}">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-calendar-check"></i>
+                            <strong>Cita Asociada:</strong>
+                            <span th:text="${#temporals.format(comprobante.cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}">Fecha</span> -
+                            <span th:text="${comprobante.cita.odontologo.nombreCompleto}">Doctor</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Detalles -->
+                <div class="row">
+                    <div class="col-12 table-responsive">
+                        <h5>Detalles del Comprobante:</h5>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Cantidad</th>
+                                    <th>Descripción</th>
+                                    <th>Precio Unit.</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="detalle : ${comprobante.detalles}">
+                                    <td th:text="${detalle.cantidad}">1</td>
+                                    <td>
+                                        <strong th:text="${detalle.descripcion}">Servicio</strong>
+                                        <br th:if="${detalle.observaciones}">
+                                        <small class="text-muted" th:if="${detalle.observaciones}" th:text="${detalle.observaciones}">Observaciones</small>
+                                    </td>
+                                    <td>S/ <span th:text="${#numbers.formatDecimal(detalle.precioUnitario, 1, 2)}">0.00</span></td>
+                                    <td>S/ <span th:text="${#numbers.formatDecimal(detalle.subtotal, 1, 2)}">0.00</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Totales -->
+                <div class="row">
+                    <div class="col-6">
+                        <!-- Información de pagos si existen -->
+                        <div th:if="${comprobante.pagos != null && !comprobante.pagos.isEmpty()}">
+                            <h5>Historial de Pagos:</h5>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Método</th>
+                                        <th>Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="pago : ${comprobante.pagos}">
+                                        <td th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy')}">Fecha</td>
+                                        <td th:text="${pago.metodoPago.nombre}">Efectivo</td>
+                                        <td>S/ <span th:text="${#numbers.formatDecimal(pago.monto, 1, 2)}">0.00</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tr>
+                                    <th style="width:50%">Subtotal:</th>
+                                    <td>S/ <span th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">0.00</span></td>
+                                </tr>
+                                <tr th:if="${comprobante.descuento != null && comprobante.descuento > 0}">
+                                    <th>Descuento:</th>
+                                    <td>- S/ <span th:text="${#numbers.formatDecimal(comprobante.descuento, 1, 2)}">0.00</span></td>
+                                </tr>
+                                <tr>
+                                    <th>Total:</th>
+                                    <td><h4>S/ <span th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">0.00</span></h4></td>
+                                </tr>
+                                <tr th:if="${comprobante.montoPagado != null && comprobante.montoPagado > 0}">
+                                    <th>Pagado:</th>
+                                    <td class="text-success">S/ <span th:text="${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}">0.00</span></td>
+                                </tr>
+                                <tr th:if="${comprobante.montoPendiente != null && comprobante.montoPendiente > 0}">
+                                    <th>Pendiente:</th>
+                                    <td class="text-danger">
+                                        <h4>S/ <span th:text="${#numbers.formatDecimal(comprobante.montoPendiente, 1, 2)}">0.00</span></h4>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="row" th:if="${comprobante.observaciones}">
+                    <div class="col-12">
+                        <div class="alert alert-secondary">
+                            <strong><i class="fas fa-sticky-note"></i> Observaciones:</strong><br>
+                            <span th:text="${comprobante.observaciones}">Observaciones del comprobante</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nota de pago -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="alert alert-warning" th:if="${comprobante.montoPendiente > 0}">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Importante:</strong> Los pagos se realizan en la recepción de la clínica.
+                            Por favor, acércate con este comprobante para realizar tu pago.
+                        </div>
+                        <div class="alert alert-success" th:if="${comprobante.montoPendiente == 0}">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Comprobante Pagado:</strong> Este comprobante ha sido pagado en su totalidad.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer del comprobante -->
+                <div class="row no-print">
+                    <div class="col-12 text-center">
+                        <small class="text-muted">
+                            Este es un documento digital. Para cualquier consulta, comunícate con la clínica.
+                        </small>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <style media="print">
+        .no-print, .main-header, .main-sidebar, .content-header, .main-footer {
+            display: none !important;
+        }
+
+        .content-wrapper {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+
+        body {
+            background: white !important;
+        }
+
+        .invoice {
+            border: none !important;
+            box-shadow: none !important;
+        }
+    </style>
+
+</div>
+</body>
+</html>

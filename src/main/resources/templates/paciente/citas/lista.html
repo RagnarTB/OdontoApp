@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(titulo='Historial de Citas', contenido=~{::#contenido-principal})}">
+
+<body>
+<div id="contenido-principal">
+
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1><i class="fas fa-list"></i> Historial de Citas</h1>
+                    <p class="text-muted">Consulta todas tus citas pasadas y futuras</p>
+                </div>
+                <div class="col-sm-6">
+                    <a th:href="@{/paciente/citas}" class="btn btn-primary float-sm-right">
+                        <i class="fas fa-calendar"></i> Ver Calendario
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-filter"></i> Filtros de Búsqueda</h3>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/paciente/citas/lista}" method="get">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="filtroEstado">Estado:</label>
+                                    <select name="estadoId" id="filtroEstado" class="form-control">
+                                        <option value="">Todos los estados</option>
+                                        <option th:each="estado : ${listaEstados}"
+                                                th:value="${estado.id}"
+                                                th:text="${estado.descripcion}"
+                                                th:selected="${estadoIdFiltro != null && estadoIdFiltro == estado.id}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="filtroFechaDesde">Desde:</label>
+                                    <input type="date" name="fechaDesde" id="filtroFechaDesde" class="form-control"
+                                           th:value="${fechaDesdeFiltro}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="filtroFechaHasta">Hasta:</label>
+                                    <input type="date" name="fechaHasta" id="filtroFechaHasta" class="form-control"
+                                           th:value="${fechaHastaFiltro}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <div>
+                                        <button type="submit" class="btn btn-info btn-block">
+                                            <i class="fas fa-search"></i> Buscar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <a th:href="@{/paciente/citas/lista}" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-times"></i> Limpiar Filtros
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-calendar-check"></i> Mis Citas
+                    </h3>
+                    <div class="card-tools">
+                        <span class="badge badge-primary">
+                            Total: <span th:text="${paginaCitas.totalElements}">0</span> citas
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Odontólogo</th>
+                                <th>Procedimiento</th>
+                                <th>Duración</th>
+                                <th>Estado</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${paginaCitas.content.isEmpty()}">
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                    <p>No se encontraron citas con los filtros aplicados</p>
+                                </td>
+                            </tr>
+                            <tr th:each="cita : ${paginaCitas.content}">
+                                <td><strong>#<span th:text="${cita.id}">1</span></strong></td>
+                                <td>
+                                    <span class="text-primary"
+                                          th:text="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy')}">Fecha</span>
+                                </td>
+                                <td>
+                                    <span th:text="${#temporals.format(cita.fechaHoraInicio, 'HH:mm')}">Hora</span>
+                                </td>
+                                <td th:text="${cita.odontologo.nombreCompleto}">Doctor</td>
+                                <td th:text="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}">Procedimiento</td>
+                                <td>
+                                    <span class="badge badge-secondary">
+                                        <span th:text="${cita.procedimiento != null ? cita.procedimiento.duracionEstimada : 30}">30</span> min
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${
+                                              cita.estadoCita.nombre == 'PENDIENTE' ? 'badge-warning' :
+                                              cita.estadoCita.nombre == 'CONFIRMADA' ? 'badge-info' :
+                                              cita.estadoCita.nombre == 'ASISTIO' ? 'badge-success' :
+                                              cita.estadoCita.nombre == 'NO_ASISTIO' ? 'badge-danger' :
+                                              cita.estadoCita.nombre == 'REPROGRAMADA' ? 'badge-orange' :
+                                              'badge-secondary'
+                                          }"
+                                          th:text="${cita.estadoCita.descripcion}">Estado</span>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-info btn-ver-detalle"
+                                            th:data-cita-id="${cita.id}"
+                                            th:data-fecha="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}"
+                                            th:data-odontologo="${cita.odontologo.nombreCompleto}"
+                                            th:data-procedimiento="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}"
+                                            th:data-duracion="${cita.procedimiento != null ? cita.procedimiento.duracionEstimada : 30}"
+                                            th:data-estado="${cita.estadoCita.descripcion}"
+                                            th:data-estado-nombre="${cita.estadoCita.nombre}"
+                                            th:data-motivo="${cita.motivoConsulta}"
+                                            title="Ver detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+
+                                    <!-- Botones solo para citas modificables -->
+                                    <th:block th:if="${cita.estadoCita.nombre == 'PENDIENTE' || cita.estadoCita.nombre == 'CONFIRMADA'}">
+                                        <button class="btn btn-sm btn-warning btn-reprogramar"
+                                                th:data-cita-id="${cita.id}"
+                                                th:data-odontologo-id="${cita.odontologo.id}"
+                                                th:data-fecha="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}"
+                                                th:data-procedimiento="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}"
+                                                title="Reprogramar">
+                                            <i class="fas fa-calendar"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger btn-cancelar"
+                                                th:data-cita-id="${cita.id}"
+                                                th:data-fecha="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}"
+                                                th:data-procedimiento="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}"
+                                                title="Cancelar">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </th:block>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                <div class="card-footer clearfix" th:if="${!paginaCitas.content.isEmpty()}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="text-muted">
+                                Mostrando
+                                <span th:text="${paginaCitas.size * paginaCitas.number + 1}">1</span> -
+                                <span th:text="${paginaCitas.size * paginaCitas.number + paginaCitas.numberOfElements}">10</span>
+                                de <span th:text="${paginaCitas.totalElements}">0</span> citas
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="pagination pagination-sm m-0 float-right">
+                                <!-- Primera página -->
+                                <li class="page-item" th:classappend="${paginaCitas.first ? 'disabled' : ''}">
+                                    <a class="page-link"
+                                       th:href="@{/paciente/citas/lista(page=0, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                        &laquo;
+                                    </a>
+                                </li>
+
+                                <!-- Página anterior -->
+                                <li class="page-item" th:classappend="${!paginaCitas.hasPrevious() ? 'disabled' : ''}">
+                                    <a class="page-link"
+                                       th:href="@{/paciente/citas/lista(page=${paginaCitas.number - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                        &lsaquo;
+                                    </a>
+                                </li>
+
+                                <!-- Números de página -->
+                                <li class="page-item"
+                                    th:each="pageNum : ${#numbers.sequence(0, paginaCitas.totalPages - 1)}"
+                                    th:if="${pageNum >= (paginaCitas.number - 2) && pageNum <= (paginaCitas.number + 2)}"
+                                    th:classappend="${pageNum == paginaCitas.number ? 'active' : ''}">
+                                    <a class="page-link"
+                                       th:href="@{/paciente/citas/lista(page=${pageNum}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}"
+                                       th:text="${pageNum + 1}">1</a>
+                                </li>
+
+                                <!-- Página siguiente -->
+                                <li class="page-item" th:classappend="${!paginaCitas.hasNext() ? 'disabled' : ''}">
+                                    <a class="page-link"
+                                       th:href="@{/paciente/citas/lista(page=${paginaCitas.number + 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                        &rsaquo;
+                                    </a>
+                                </li>
+
+                                <!-- Última página -->
+                                <li class="page-item" th:classappend="${paginaCitas.last ? 'disabled' : ''}">
+                                    <a class="page-link"
+                                       th:href="@{/paciente/citas/lista(page=${paginaCitas.totalPages - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                        &raquo;
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- MODAL: Detalle de Cita -->
+    <div class="modal fade" id="modalDetalle" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info">
+                    <h4 class="modal-title"><i class="fas fa-info-circle"></i> Detalle de Cita</h4>
+                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">ID de Cita:</dt>
+                        <dd class="col-sm-8" id="detalleCitaId"></dd>
+
+                        <dt class="col-sm-4">Fecha y Hora:</dt>
+                        <dd class="col-sm-8" id="detalleFechaHora"></dd>
+
+                        <dt class="col-sm-4">Odontólogo:</dt>
+                        <dd class="col-sm-8" id="detalleOdontologo"></dd>
+
+                        <dt class="col-sm-4">Procedimiento:</dt>
+                        <dd class="col-sm-8" id="detalleProcedimiento"></dd>
+
+                        <dt class="col-sm-4">Duración:</dt>
+                        <dd class="col-sm-8" id="detalleDuracion"></dd>
+
+                        <dt class="col-sm-4">Estado:</dt>
+                        <dd class="col-sm-8" id="detalleEstado"></dd>
+
+                        <dt class="col-sm-4">Motivo:</dt>
+                        <dd class="col-sm-8" id="detalleMotivo"></dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Reprogramar -->
+    <div class="modal fade" id="modalReprogramar" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h4 class="modal-title"><i class="fas fa-calendar"></i> Reprogramar Cita</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <form th:action="@{/paciente/citas/reprogramar}" method="post">
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            La cita reprogramada deberá ser confirmada nuevamente por el personal de la clínica.
+                        </div>
+
+                        <input type="hidden" name="citaId" id="reprogramarCitaId">
+                        <input type="hidden" name="odontologoUsuarioId" id="reprogramarOdontologoId">
+
+                        <div class="form-group">
+                            <label>Cita Actual:</label>
+                            <p id="reprogramarCitaActual" class="form-control-plaintext font-weight-bold"></p>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="reprogramarFecha">Nueva Fecha <span class="text-danger">*</span></label>
+                                    <input type="date" name="fecha" id="reprogramarFecha" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="reprogramarHora">Nueva Hora <span class="text-danger">*</span></label>
+                                    <select name="hora" id="reprogramarHora" class="form-control" required disabled>
+                                        <option value="">Seleccione fecha primero</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="nuevaFechaHoraInicio" id="reprogramarNuevaFechaHora">
+                        <input type="hidden" name="motivo" value="Reprogramado por el paciente">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning"><i class="fas fa-save"></i> Reprogramar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Cancelar -->
+    <div class="modal fade" id="modalCancelar" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger">
+                    <h4 class="modal-title"><i class="fas fa-ban"></i> Cancelar Cita</h4>
+                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                </div>
+                <form th:action="@{/paciente/citas/cancelar}" method="post">
+                    <div class="modal-body">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Atención:</strong> Esta acción no se puede deshacer.
+                        </div>
+
+                        <input type="hidden" name="citaId" id="cancelarCitaId">
+
+                        <div class="form-group">
+                            <label>Cita a cancelar:</label>
+                            <p id="cancelarCitaInfo" class="form-control-plaintext font-weight-bold"></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cancelarMotivo">Motivo de Cancelación <span class="text-danger">*</span></label>
+                            <textarea name="motivo" id="cancelarMotivo" class="form-control" rows="3" required
+                                      placeholder="Por favor indique el motivo de la cancelación"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Volver</button>
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-ban"></i> Confirmar Cancelación</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .badge-orange {
+            background-color: #fd7e14;
+            color: white;
+        }
+    </style>
+
+    <script th:inline="javascript">
+        $(document).ready(function() {
+            // Event Listeners
+            $('.btn-ver-detalle').on('click', function() {
+                const btn = $(this);
+                $('#detalleCitaId').text('#' + btn.data('cita-id'));
+                $('#detalleFechaHora').text(btn.data('fecha'));
+                $('#detalleOdontologo').text(btn.data('odontologo'));
+                $('#detalleProcedimiento').text(btn.data('procedimiento'));
+                $('#detalleDuracion').text(btn.data('duracion') + ' minutos');
+                $('#detalleEstado').html(obtenerBadgeEstado(btn.data('estado-nombre'), btn.data('estado')));
+                $('#detalleMotivo').text(btn.data('motivo') || 'No especificado');
+                $('#modalDetalle').modal('show');
+            });
+
+            $('.btn-reprogramar').on('click', function() {
+                const btn = $(this);
+                $('#reprogramarCitaId').val(btn.data('cita-id'));
+                $('#reprogramarOdontologoId').val(btn.data('odontologo-id'));
+                $('#reprogramarCitaActual').text(btn.data('fecha') + ' - ' + btn.data('procedimiento'));
+                $('#modalReprogramar').modal('show');
+            });
+
+            $('.btn-cancelar').on('click', function() {
+                const btn = $(this);
+                $('#cancelarCitaId').val(btn.data('cita-id'));
+                $('#cancelarCitaInfo').text(btn.data('fecha') + ' - ' + btn.data('procedimiento'));
+                $('#modalCancelar').modal('show');
+            });
+
+            // Cargar horarios disponibles al cambiar fecha
+            $('#reprogramarFecha').on('change', function() {
+                const fecha = $(this).val();
+                const odontologoId = $('#reprogramarOdontologoId').val();
+                const citaId = $('#reprogramarCitaId').val();
+
+                if (!fecha || !odontologoId) return;
+
+                fetch('/paciente/citas/api/horarios-disponibles?' + new URLSearchParams({
+                    odontologoId: odontologoId,
+                    fecha: fecha,
+                    duracion: 30,
+                    citaIdExcluir: citaId
+                }))
+                .then(response => response.json())
+                .then(data => {
+                    const select = $('#reprogramarHora');
+                    select.empty();
+
+                    if (!data.disponible || !data.horariosDisponibles || data.horariosDisponibles.length === 0) {
+                        select.append('<option value="">No hay horarios disponibles</option>');
+                        select.prop('disabled', true);
+                        return;
+                    }
+
+                    select.append('<option value="">Seleccione un horario...</option>');
+                    data.horariosDisponibles.forEach(slot => {
+                        if (slot.disponible) {
+                            select.append(`<option value="${slot.inicio}">${slot.inicio} - ${slot.fin}</option>`);
+                        }
+                    });
+                    select.prop('disabled', false);
+                });
+            });
+
+            // Actualizar fecha-hora completa al seleccionar hora
+            $('#reprogramarHora').on('change', function() {
+                const fecha = $('#reprogramarFecha').val();
+                const hora = $(this).val();
+                if (fecha && hora) {
+                    $('#reprogramarNuevaFechaHora').val(fecha + 'T' + hora);
+                }
+            });
+
+            function obtenerBadgeEstado(estadoNombre, estadoDescripcion) {
+                const badges = {
+                    'PENDIENTE': 'badge-warning',
+                    'CONFIRMADA': 'badge-info',
+                    'ASISTIO': 'badge-success',
+                    'NO_ASISTIO': 'badge-danger',
+                    'REPROGRAMADA': 'badge-orange',
+                    'CANCELADA_PACIENTE': 'badge-secondary',
+                    'CANCELADA_CLINICA': 'badge-secondary'
+                };
+                const badgeClass = badges[estadoNombre] || 'badge-light';
+                return `<span class="badge ${badgeClass}">${estadoDescripcion}</span>`;
+            }
+        });
+    </script>
+
+</div>
+</body>
+</html>

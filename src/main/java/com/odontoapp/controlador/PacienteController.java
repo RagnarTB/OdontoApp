@@ -249,6 +249,7 @@ public class PacienteController {
             @RequestParam(defaultValue = "10") int citasSize,
             @RequestParam(defaultValue = "0") int comprobantesPageNum,
             @RequestParam(defaultValue = "10") int comprobantesSize,
+            @RequestParam(defaultValue = "0") int tratamientosPage,
             Model model,
             RedirectAttributes redirectAttributes) {
 
@@ -273,20 +274,19 @@ public class PacienteController {
             );
             model.addAttribute("citasPage", citasPage);
 
-            // Obtener tratamientos realizados del paciente (sin paginación, generalmente son pocos)
-            java.util.List<Cita> todasLasCitas = citaRepository.findByPacienteId(usuarioId,
-                    PageRequest.of(0, 1000)).getContent();
-            java.util.List<TratamientoRealizado> tratamientos = new java.util.ArrayList<>();
-            for (Cita cita : todasLasCitas) {
-                java.util.List<TratamientoRealizado> tratamientosCita =
-                        tratamientoRealizadoRepository.findByCitaId(cita.getId());
-                tratamientos.addAll(tratamientosCita);
-            }
-            model.addAttribute("tratamientos", tratamientos);
+            // Obtener tratamientos realizados del paciente con paginación
+            int tratamientosSize = 10; // 10 tratamientos por página
 
-            // Obtener tratamientos planificados del paciente
+            org.springframework.data.domain.Page<TratamientoRealizado> tratamientosPageData =
+                    tratamientoRealizadoRepository.findByPacienteId(
+                        usuarioId, // ← FIX: Usar usuarioId en lugar de paciente.getId()
+                        PageRequest.of(tratamientosPage, tratamientosSize, Sort.by("fechaRealizacion").descending())
+                    );
+            model.addAttribute("tratamientosPage", tratamientosPageData);
+
+            // Obtener tratamientos planificados del paciente (solo PLANIFICADO y EN_CURSO, no los COMPLETADOS)
             java.util.List<TratamientoPlanificado> tratamientosPlanificados =
-                    tratamientoPlanificadoRepository.findByPacienteId(usuarioId);
+                    tratamientoPlanificadoRepository.findTratamientosPendientes(paciente.getUsuario());
             model.addAttribute("tratamientosPlanificados", tratamientosPlanificados);
 
             // Obtener comprobantes del paciente con paginación

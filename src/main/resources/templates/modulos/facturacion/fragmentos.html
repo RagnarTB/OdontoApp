@@ -3,12 +3,13 @@
 <body>
 
 <!-- ========================================== -->
-<!-- MODAL: Registrar Pago -->
+<!-- MODAL: Registrar Pago (Simplificado) -->
 <!-- ========================================== -->
-<div th:fragment="modalRegistrarPago" class="modal fade" id="modalRegistrarPago" tabindex="-1" role="dialog" aria-labelledby="modalRegistrarPagoLabel" aria-hidden="true">
+<th:block th:fragment="modalRegistrarPago">
+<div class="modal fade" id="modalRegistrarPago" tabindex="-1" role="dialog" aria-labelledby="modalRegistrarPagoLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <form th:action="@{/facturacion/registrar-pago}" method="post" th:object="${pagoDTO}">
+            <form id="formRegistrarPago" onsubmit="return false;">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title" id="modalRegistrarPagoLabel">
                         <i class="fas fa-money-bill-wave mr-2"></i>Registrar Pago
@@ -26,14 +27,59 @@
 
                     <!-- Información del Comprobante -->
                     <div class="alert alert-info" role="alert">
-                        <strong>Comprobante:</strong> <span id="infoNumeroComprobante"></span><br>
-                        <strong>Saldo Pendiente:</strong> S/ <span id="infoSaldoPendiente"></span>
+                        <h5 class="mb-2"><i class="fas fa-file-invoice mr-2"></i><strong>Comprobante:</strong> <span id="infoNumeroComprobante"></span></h5>
+                        <h4 class="mb-0 text-danger"><i class="fas fa-exclamation-circle mr-2"></i><strong>Saldo Pendiente:</strong> S/ <span id="infoSaldoPendiente"></span></h4>
                     </div>
+
+                    <!-- Tipo de Pago -->
+                    <div class="form-group">
+                        <label class="d-block mb-3">
+                            <i class="fas fa-hand-holding-usd mr-1"></i>Tipo de Pago
+                        </label>
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="pagoTotal" name="tipoPago" class="custom-control-input" value="total" checked>
+                            <label class="custom-control-label" for="pagoTotal">
+                                <strong>Pago Total</strong> - Pagar el saldo completo (<span class="text-success">S/ <span id="montoTotalDisplay">0.00</span></span>)
+                            </label>
+                        </div>
+                        <div class="custom-control custom-radio mt-2">
+                            <input type="radio" id="pagoParcial" name="tipoPago" class="custom-control-input" value="parcial">
+                            <label class="custom-control-label" for="pagoParcial">
+                                <strong>Pago Parcial</strong> - Pagar solo una parte
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Campo de Monto (aparece solo si es pago parcial) -->
+                    <div id="campomonto" style="display: none;">
+                        <div class="form-group">
+                            <label for="monto"><i class="fas fa-money-bill-wave mr-1"></i>Monto a Pagar <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">S/</span>
+                                </div>
+                                <input type="number" class="form-control" id="monto" name="monto"
+                                       step="0.01" min="0.01" placeholder="0.00">
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> Debe ser mayor a 0 y no exceder el saldo pendiente
+                            </small>
+                            <div id="montoError" class="text-danger small mt-1" style="display: none;">
+                                <i class="fas fa-exclamation-triangle"></i> <span id="montoErrorMsg"></span>
+                            </div>
+                            <div id="montoInfo" class="text-success small mt-1" style="display: none;">
+                                <i class="fas fa-check-circle"></i> Quedará pendiente: S/ <span id="montoRestante">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Monto hidden que siempre se envía -->
+                    <input type="hidden" id="montoFinal" name="monto">
 
                     <!-- Método de Pago -->
                     <div class="form-group">
-                        <label for="metodoPagoId">Método de Pago <span class="text-danger">*</span></label>
-                        <select class="form-control" id="metodoPagoId" name="metodoPagoId" required>
+                        <label for="metodoPagoId"><i class="fas fa-credit-card mr-1"></i>Método de Pago <span class="text-danger">*</span></label>
+                        <select class="form-control form-control-lg" id="metodoPagoId" name="metodoPagoId" required>
                             <option value="">Seleccione un método</option>
                             <option th:each="metodo : ${listaMetodosPago}"
                                     th:value="${metodo.id}"
@@ -41,94 +87,28 @@
                         </select>
                     </div>
 
-                    <!-- Campos Opcionales para Yape -->
+                    <!-- Campo para Referencia Yape/Transferencia (aparece dinámicamente) -->
                     <div id="camposYape" style="display: none;">
                         <div class="form-group">
-                            <label for="referenciaYape">Referencia Yape</label>
-                            <input type="text" class="form-control" id="referenciaYape" name="referenciaYape" placeholder="Número de operación Yape">
+                            <label for="referenciaYape"><i class="fas fa-hashtag mr-1"></i>Referencia / Número de Operación</label>
+                            <input type="text" class="form-control" id="referenciaYape" name="referenciaYape" placeholder="Ingrese número de operación">
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> Requerido para Yape, transferencias y tarjeta
+                            </small>
                         </div>
                     </div>
 
-                    <!-- Campos Opcionales para Pago Mixto -->
-                    <div id="camposMixto" style="display: none;">
-                        <div class="alert alert-info alert-sm">
-                            <i class="fas fa-info-circle"></i> <strong>Pago Mixto:</strong> Ingrese cuánto pagará por cada método
-                        </div>
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label for="montoEfectivo">Monto Efectivo <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text">S/</span>
-                                        </div>
-                                        <input type="number" class="form-control" id="montoEfectivo" name="montoEfectivo"
-                                               step="0.01" min="0"
-                                               data-validar="decimal"
-                                               data-max-decimals="2"
-                                               placeholder="0.00">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label for="montoYape">Monto Yape <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text">S/</span>
-                                        </div>
-                                        <input type="number" class="form-control" id="montoYape" name="montoYape"
-                                               step="0.01" min="0"
-                                               data-validar="decimal"
-                                               data-max-decimals="2"
-                                               placeholder="0.00">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Monto Total a Pagar -->
+                    <!-- Notas Opcionales -->
                     <div class="form-group">
-                        <label for="monto">Monto a Pagar <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-money-bill-wave"></i> S/</span>
-                            </div>
-                            <input type="number" class="form-control" id="monto" name="monto"
-                                   step="0.01" min="0.01"
-                                   data-validar="decimal"
-                                   data-max-decimals="2"
-                                   required>
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-success" type="button" id="btnPagarTotal"
-                                        title="Pagar el saldo completo">
-                                    <i class="fas fa-check-double"></i> Total
-                                </button>
-                            </div>
-                        </div>
-                        <small class="form-text text-muted">
-                            <i class="fas fa-info-circle"></i> El monto no debe exceder el saldo pendiente
-                        </small>
-                        <div id="montoValidacion" class="invalid-feedback" style="display: none;">
-                            El monto excede el saldo pendiente
-                        </div>
-                        <div id="montoInfo" class="text-success small mt-1" style="display: none;">
-                            <i class="fas fa-check-circle"></i> <span id="montoRestante"></span>
-                        </div>
-                    </div>
-
-                    <!-- Notas -->
-                    <div class="form-group">
-                        <label for="notasPago">Notas</label>
-                        <textarea class="form-control" id="notasPago" name="notas" rows="2" placeholder="Notas adicionales sobre el pago"></textarea>
+                        <label for="notasPago"><i class="fas fa-sticky-note mr-1"></i>Notas (Opcional)</label>
+                        <textarea class="form-control" id="notasPago" name="notas" rows="2" placeholder="Agregue alguna observación si lo desea"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i>Cancelar
                     </button>
-                    <button type="submit" class="btn btn-success">
+                    <button type="submit" class="btn btn-success btn-lg" id="btnSubmitPago">
                         <i class="fas fa-check mr-1"></i>Registrar Pago
                     </button>
                 </div>
@@ -136,138 +116,165 @@
         </div>
     </div>
 </div>
+</th:block>
 
-<!-- Script para el modal de pago -->
+<!-- Script para el modal de pago (incluir al final de la página) -->
+<th:block th:fragment="scriptModalPago">
 <script th:inline="javascript">
     /*<![CDATA[*/
     $(document).ready(function() {
-        // ✅ Botón "Pagar Total" - setea el monto al saldo pendiente completo
-        $('#btnPagarTotal').click(function() {
-            const saldoPendiente = parseFloat($('#infoSaldoPendiente').text()) || 0;
-            $('#monto').val(saldoPendiente.toFixed(2));
-            $('#monto').trigger('input'); // Trigger validación
-        });
+        console.log('✅ Script del modal de pagos cargado (jQuery disponible)');
 
-        // ✅ Validación en tiempo real del monto
-        $('#monto').on('input', function() {
-            const montoIngresado = parseFloat($(this).val()) || 0;
-            const saldoPendiente = parseFloat($('#infoSaldoPendiente').text()) || 0;
+        var saldoPendienteGlobal = 0;
 
-            if (montoIngresado > saldoPendiente) {
-                $('#montoValidacion').show();
-                $(this).addClass('is-invalid');
-                $('#montoInfo').hide();
+        // Mostrar/ocultar campo de monto según tipo de pago
+        $('input[name="tipoPago"]').change(function() {
+            if ($(this).val() === 'parcial') {
+                $('#campomonto').slideDown();
+                $('#monto').prop('required', true);
+                $('#monto').focus();
             } else {
-                $('#montoValidacion').hide();
-                $(this).removeClass('is-invalid');
-
-                if (montoIngresado > 0) {
-                    const restante = saldoPendiente - montoIngresado;
-                    if (restante > 0) {
-                        $('#montoRestante').text('Quedará pendiente: S/ ' + restante.toFixed(2));
-                    } else {
-                        $('#montoRestante').text('Pago completo - Saldará la deuda');
-                    }
-                    $('#montoInfo').show();
-                } else {
-                    $('#montoInfo').hide();
-                }
+                $('#campomonto').slideUp();
+                $('#monto').prop('required', false);
+                $('#monto').val('');
+                $('#montoError').hide();
+                $('#montoInfo').hide();
+                // Para pago total, setear el monto al saldo pendiente
+                $('#montoFinal').val(saldoPendienteGlobal.toFixed(2));
             }
         });
 
-        // Event listener para cambio de método de pago
+        // Validación en tiempo real del monto parcial
+        $('#monto').on('input', function() {
+            var montoIngresado = parseFloat($(this).val()) || 0;
+
+            $('#montoError').hide();
+            $('#montoInfo').hide();
+
+            if (montoIngresado <= 0) {
+                $('#montoError').show();
+                $('#montoErrorMsg').text('El monto debe ser mayor a 0');
+                $(this).addClass('is-invalid');
+                return;
+            }
+
+            if (montoIngresado > saldoPendienteGlobal) {
+                $('#montoError').show();
+                $('#montoErrorMsg').text('El monto excede el saldo pendiente (S/ ' + saldoPendienteGlobal.toFixed(2) + ')');
+                $(this).addClass('is-invalid');
+                return;
+            }
+
+            $(this).removeClass('is-invalid');
+            var restante = saldoPendienteGlobal - montoIngresado;
+
+            if (restante > 0) {
+                $('#montoRestante').text(restante.toFixed(2));
+                $('#montoInfo').show();
+            } else {
+                $('#montoInfo').hide();
+            }
+
+            // Actualizar monto final
+            $('#montoFinal').val(montoIngresado.toFixed(2));
+        });
+
+        // Mostrar campo de referencia según el método de pago seleccionado
         $('#metodoPagoId').change(function() {
             var metodoTexto = $(this).find('option:selected').text().toUpperCase();
 
             // Ocultar todos los campos opcionales
             $('#camposYape').hide();
-            $('#camposMixto').hide();
             $('#referenciaYape').prop('required', false);
-            $('#montoEfectivo').prop('required', false);
-            $('#montoYape').prop('required', false);
-
-            // Limpiar valores previos
             $('#referenciaYape').val('');
-            $('#montoEfectivo').val('');
-            $('#montoYape').val('');
 
-            // Mostrar campos según el método seleccionado
-            if (metodoTexto.includes('YAPE') || metodoTexto.includes('TRANSFERENCIA')) {
+            // Mostrar campo de referencia para Yape, Transferencia y Tarjeta
+            if (metodoTexto.includes('YAPE') || metodoTexto.includes('TRANSFERENCIA') || metodoTexto.includes('TARJETA')) {
                 $('#camposYape').show();
                 $('#referenciaYape').prop('required', true);
             }
-            if (metodoTexto.includes('MIXTO')) {
-                $('#camposMixto').show();
-                $('#montoEfectivo').prop('required', true);
-                $('#montoYape').prop('required', true);
-
-                // Auto-distribuir el monto del saldo pendiente en dos partes iguales
-                var saldoPendiente = parseFloat($('#infoSaldoPendiente').text()) || 0;
-                if (saldoPendiente > 0) {
-                    var mitad = (saldoPendiente / 2).toFixed(2);
-                    $('#montoEfectivo').val(mitad);
-                    $('#montoYape').val(mitad);
-
-                    // Actualizar el monto total
-                    $('#monto').val(saldoPendiente.toFixed(2));
-                    $('#monto').trigger('input'); // Trigger validación
-                }
-            }
         });
 
-        // ✅ Auto-calcular monto total cuando cambian los montos mixtos
-        $('#montoEfectivo, #montoYape').on('input', function() {
-            var metodoTexto = $('#metodoPagoId option:selected').text().toUpperCase();
-
-            if (metodoTexto.includes('MIXTO')) {
-                var montoEfectivo = parseFloat($('#montoEfectivo').val()) || 0;
-                var montoYape = parseFloat($('#montoYape').val()) || 0;
-                var sumaActual = montoEfectivo + montoYape;
-                var saldoPendiente = parseFloat($('#infoSaldoPendiente').text()) || 0;
-
-                // Actualizar el monto total automáticamente
-                $('#monto').val(sumaActual.toFixed(2));
-                $('#monto').trigger('input'); // Trigger validación
-
-                // Validar que no exceda el saldo pendiente
-                if (sumaActual > saldoPendiente) {
-                    $('#montoEfectivo, #montoYape').addClass('border-danger');
-                    if (!$('#warningMixto').length) {
-                        $('#camposMixto').append(
-                            '<small id="warningMixto" class="text-danger d-block mt-2">' +
-                            '<i class="fas fa-exclamation-triangle mr-1"></i>La suma excede el saldo pendiente: S/ ' + saldoPendiente.toFixed(2) +
-                            '</small>'
-                        );
-                    } else {
-                        $('#warningMixto').html('<i class="fas fa-exclamation-triangle mr-1"></i>La suma excede el saldo pendiente: S/ ' + saldoPendiente.toFixed(2));
-                        $('#warningMixto').removeClass('text-success').addClass('text-danger');
-                    }
-                } else if (sumaActual > 0) {
-                    // Suma válida
-                    $('#montoEfectivo, #montoYape').removeClass('border-danger border-warning').addClass('border-success');
-                    if (!$('#warningMixto').length) {
-                        $('#camposMixto').append(
-                            '<small id="warningMixto" class="text-success d-block mt-2">' +
-                            '<i class="fas fa-check-circle mr-1"></i>Total: S/ ' + sumaActual.toFixed(2) +
-                            '</small>'
-                        );
-                    } else {
-                        $('#warningMixto').html('<i class="fas fa-check-circle mr-1"></i>Total: S/ ' + sumaActual.toFixed(2));
-                        $('#warningMixto').removeClass('text-danger').addClass('text-success');
-                    }
-                } else {
-                    $('#montoEfectivo, #montoYape').removeClass('border-danger border-warning border-success');
-                    $('#warningMixto').remove();
-                }
-            }
+        // Limpiar modal al cerrar
+        $('#modalRegistrarPago').on('hidden.bs.modal', function() {
+            $(this).find('form')[0].reset();
+            $('#camposYape').hide();
+            $('#campomonto').hide();
+            $('#referenciaYape').prop('required', false);
+            $('#monto').prop('required', false);
+            $('#montoError').hide();
+            $('#montoInfo').hide();
+            $('#pagoTotal').prop('checked', true);
         });
 
-        // ✅ Validación mejorada para pago mixto con SweetAlert2
-        $('#modalRegistrarPago form').submit(function(e) {
-            // ✅ VALIDAR QUE EL ID DEL COMPROBANTE ESTÉ PRESENTE
+        // Cargar datos cuando se abre el modal
+        $('#modalRegistrarPago').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Botón que abrió el modal
+
+            // Obtener datos del botón
+            var comprobanteId = button.data('comprobante-id');
+            var numeroComprobante = button.data('numero-comprobante');
+            var saldoPendiente = parseFloat(button.data('saldo-pendiente')) || 0;
+
+            // Validar que los datos estén presentes
+            if (!comprobanteId || !numeroComprobante || saldoPendiente <= 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudieron cargar los datos del comprobante. Por favor, recargue la página.',
+                    confirmButtonText: 'Entendido'
+                });
+                $(this).modal('hide');
+                return;
+            }
+
+            // Guardar saldo pendiente globalmente
+            saldoPendienteGlobal = saldoPendiente;
+
+            // Cargar datos en el formulario
+            $('#pagoComprobanteId').val(comprobanteId);
+            $('#infoNumeroComprobante').text(numeroComprobante);
+            $('#infoSaldoPendiente').text(saldoPendiente.toFixed(2));
+            $('#montoTotalDisplay').text(saldoPendiente.toFixed(2));
+
+            // Setear el monto final al saldo pendiente por defecto (pago total)
+            $('#montoFinal').val(saldoPendiente.toFixed(2));
+
+            // Setear atributo max en el campo de monto parcial
+            $('#monto').attr('max', saldoPendiente.toFixed(2));
+
+            // Setear la fecha de pago automáticamente a la fecha/hora actual
+            var now = new Date();
+            var year = now.getFullYear();
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var day = String(now.getDate()).padStart(2, '0');
+            var hours = String(now.getHours()).padStart(2, '0');
+            var minutes = String(now.getMinutes()).padStart(2, '0');
+            var fechaHoraActual = year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+            $('#fechaPago').val(fechaHoraActual);
+
+            // Auto-focus: enfocar el selector de método de pago al abrir modal
+            setTimeout(function() {
+                $('#metodoPagoId').focus();
+            }, 500);
+        });
+
+        // Listener en el botón como backup
+        $('#btnSubmitPago').on('click', function(e) {
+            console.log('🔵 Click en botón Registrar Pago');
+            e.preventDefault();
+            $('#formRegistrarPago').trigger('submit');
+        });
+
+        // Validación y envío AJAX del formulario
+        $('#formRegistrarPago').on('submit', function(e) {
+            console.log('🟢 Submit event capturado');
+            e.preventDefault(); // Prevenir submit por defecto
+            e.stopPropagation(); // Detener propagación del evento
+
+            // Validar que el ID del comprobante esté presente
             var comprobanteId = $('#pagoComprobanteId').val();
             if (!comprobanteId || comprobanteId === '' || comprobanteId === '0') {
-                e.preventDefault();
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -277,46 +284,80 @@
                 return false;
             }
 
+            // Validar método de pago antes de procesar
+            var metodoPagoId = $('#metodoPagoId').val();
+            if (!metodoPagoId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Método de Pago Requerido',
+                    text: 'Por favor seleccione un método de pago.',
+                    confirmButtonText: 'Entendido'
+                });
+                $('#metodoPagoId').focus();
+                return false;
+            }
+
+            // Validar tipo de pago y monto
+            var tipoPago = $('input[name="tipoPago"]:checked').val();
+            var montoFinal = parseFloat($('#montoFinal').val() || 0);
             var metodoTexto = $('#metodoPagoId option:selected').text().toUpperCase();
 
-            // Validar pago mixto
-            if (metodoTexto.includes('MIXTO')) {
-                var montoTotal = parseFloat($('#monto').val() || 0);
-                var montoEfectivo = parseFloat($('#montoEfectivo').val() || 0);
-                var montoYape = parseFloat($('#montoYape').val() || 0);
-                var suma = montoEfectivo + montoYape;
+            // VALIDACIÓN YAPE > 500 SOLES EN PAGO TOTAL
+            if (tipoPago === 'total' && metodoTexto.includes('YAPE') && montoFinal > 500) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Límite de Yape Excedido',
+                    html: '<strong>El monto total es S/ ' + montoFinal.toFixed(2) + '</strong><br><br>' +
+                          'El método Yape tiene un límite de <strong>S/ 500.00</strong> por transacción.<br><br>' +
+                          'Por favor, realice:<br>' +
+                          '• <strong>Pagos Parciales</strong> menores a S/ 500 usando Yape, o<br>' +
+                          '• <strong>Pago Total</strong> usando <strong>Efectivo</strong>',
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#3085d6'
+                });
+                return false;
+            }
 
-                if (montoEfectivo <= 0 || montoYape <= 0) {
-                    e.preventDefault();
+            if (tipoPago === 'parcial') {
+                var montoParcial = parseFloat($('#monto').val() || 0);
+
+                if (montoParcial <= 0) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error en Pago Mixto',
-                        html: 'Ambos montos (Efectivo y Yape) deben ser <strong>mayores a cero</strong>.',
+                        title: 'Monto Inválido',
+                        text: 'El monto del pago parcial debe ser mayor a cero.',
                         confirmButtonText: 'Entendido'
                     });
+                    $('#monto').focus();
                     return false;
                 }
 
-                if (Math.abs(suma - montoTotal) > 0.01) {
-                    e.preventDefault();
+                if (montoParcial > saldoPendienteGlobal) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error en Pago Mixto',
-                        html: 'La suma de <strong>Efectivo (S/ ' + montoEfectivo.toFixed(2) + ')</strong> + ' +
-                              '<strong>Yape (S/ ' + montoYape.toFixed(2) + ')</strong> = ' +
-                              '<strong>S/ ' + suma.toFixed(2) + '</strong><br><br>' +
-                              'Debe ser igual al <strong>Monto Total: S/ ' + montoTotal.toFixed(2) + '</strong>',
-                        confirmButtonText: 'Corregir'
+                        title: 'Monto Excedido',
+                        text: 'El monto ingresado (S/ ' + montoParcial.toFixed(2) + ') excede el saldo pendiente (S/ ' + saldoPendienteGlobal.toFixed(2) + ')',
+                        confirmButtonText: 'Entendido'
                     });
+                    $('#monto').focus();
                     return false;
                 }
             }
 
-            // Validar referencia Yape/Transferencia
-            if ((metodoTexto.includes('YAPE') || metodoTexto.includes('TRANSFERENCIA')) && !metodoTexto.includes('MIXTO')) {
+            if (montoFinal <= 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El monto del pago debe ser mayor a cero.',
+                    confirmButtonText: 'Entendido'
+                });
+                return false;
+            }
+
+            // Validar referencia para Yape/Transferencia/Tarjeta
+            if (metodoTexto.includes('YAPE') || metodoTexto.includes('TRANSFERENCIA') || metodoTexto.includes('TARJETA')) {
                 var referenciaYape = $('#referenciaYape').val().trim();
                 if (!referenciaYape) {
-                    e.preventDefault();
                     Swal.fire({
                         icon: 'warning',
                         title: 'Referencia Requerida',
@@ -328,11 +369,363 @@
                 }
             }
 
-            return true;
+            // Validar fecha de pago
+            var fechaPago = $('#fechaPago').val();
+            if (!fechaPago) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'La fecha de pago no está configurada. Por favor, cierre y vuelva a abrir el modal.',
+                    confirmButtonText: 'Entendido'
+                });
+                return false;
+            }
+
+            // Construir objeto de pago (DTO)
+            var pagoDTO = {
+                comprobanteId: parseInt(comprobanteId),
+                metodoPagoId: parseInt(metodoPagoId),
+                monto: parseFloat(montoFinal),
+                fechaPago: fechaPago,
+                notas: $('#notasPago').val() || null,
+                referenciaYape: $('#referenciaYape').val() || null
+            };
+
+            console.log('Enviando pago:', pagoDTO);
+
+            // Deshabilitar botón mientras se procesa
+            var $submitBtn = $(this).find('button[type="submit"]');
+            $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+
+            // Enviar AJAX
+            $.ajax({
+                url: '/facturacion/registrar-pago',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(pagoDTO),
+                success: function(response) {
+                    console.log('Respuesta exitosa:', response);
+
+                    $('#modalRegistrarPago').modal('hide');
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: response.mensaje || 'Pago registrado con éxito',
+                        confirmButtonText: 'Aceptar'
+                    }).then(function() {
+                        // Recargar la página para ver los cambios
+                        window.location.reload();
+                    });
+                },
+                error: function(xhr) {
+                    console.error('Error:', xhr);
+
+                    var mensaje = 'Error al registrar el pago';
+                    if (xhr.responseJSON && xhr.responseJSON.mensaje) {
+                        mensaje = xhr.responseJSON.mensaje;
+                    } else if (xhr.responseText) {
+                        mensaje = xhr.responseText;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: mensaje,
+                        confirmButtonText: 'Entendido'
+                    });
+
+                    // Rehabilitar botón
+                    $submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Registrar Pago');
+                }
+            });
+
+            return false;
         });
+
+        console.log('✅ Event handlers del modal registrados correctamente');
+    }); // document.ready
+    /*]]>*/
+</script>
+</th:block>
+
+<!-- ========================================== -->
+<!-- MODAL: Anular Comprobante con Opción de Devolución de Inventario -->
+<!-- ========================================== -->
+<th:block th:fragment="modalAnularComprobante">
+<div class="modal fade" id="modalAnularComprobante" tabindex="-1" role="dialog" aria-labelledby="modalAnularComprobanteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalAnularComprobanteLabel">
+                    <i class="fas fa-ban mr-2"></i>Anular Comprobante
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Información del Comprobante -->
+                <div class="alert alert-warning" role="alert">
+                    <h5 class="mb-2">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <strong>Comprobante:</strong> <span id="anularNumeroComprobante"></span>
+                    </h5>
+                    <p class="mb-0">
+                        <strong>Paciente:</strong> <span id="anularPacienteNombre"></span><br>
+                        <strong>Total:</strong> S/ <span id="anularMontoTotal"></span>
+                    </p>
+                </div>
+
+                <!-- Listado de Insumos a Devolver -->
+                <div id="listaInsumosDevolucion" style="display: none;">
+                    <h6 class="text-primary mb-3">
+                        <i class="fas fa-boxes mr-2"></i>Insumos que pueden devolverse al inventario:
+                    </h6>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-bordered">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Insumo</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-center">Unidad</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaInsumosDevolucion">
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>¿Desea devolver estos insumos al inventario?</strong><br>
+                        Si selecciona <strong>"Sí"</strong>, se registrará un movimiento de ENTRADA por "Anulación de Comprobante" y el stock se incrementará automáticamente.
+                    </div>
+                </div>
+
+                <!-- Mensaje si NO hay insumos -->
+                <div id="sinInsumosDevolucion" style="display: none;">
+                    <div class="alert alert-secondary" role="alert">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Este comprobante no tiene insumos para devolver. Solo se anulará el comprobante.
+                    </div>
+                </div>
+
+                <!-- Motivo de Anulación -->
+                <div class="form-group mt-3">
+                    <label for="motivoAnulacion">
+                        <i class="fas fa-comment mr-1"></i>Motivo de la Anulación <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control" id="motivoAnulacion" name="motivo" rows="3"
+                              placeholder="Ingrese el motivo por el cual se anula este comprobante (obligatorio)..."
+                              required maxlength="500"></textarea>
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i> Este motivo quedará registrado en el comprobante
+                    </small>
+                </div>
+
+                <!-- Advertencia Final -->
+                <div class="alert alert-danger mb-0" role="alert">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <strong>ADVERTENCIA:</strong> Esta acción no se puede deshacer. El comprobante quedará marcado como ANULADO.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-warning" id="btnAnularSinDevolver">
+                    <i class="fas fa-ban mr-1"></i>No, Solo Anular
+                </button>
+                <button type="button" class="btn btn-danger" id="btnAnularConDevolver" style="display: none;">
+                    <i class="fas fa-undo-alt mr-1"></i>Sí, Devolver al Inventario
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para el modal de anulación -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    $(document).ready(function() {
+        console.log('✅ Script del modal de anulación cargado');
+
+        var comprobanteIdGlobal = 0;
+        var tieneInsumosGlobal = false;
+
+        // Cargar datos cuando se abre el modal
+        $('#modalAnularComprobante').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+
+            // Obtener datos del botón
+            var comprobanteId = button.data('comprobante-id');
+            var numeroComprobante = button.data('numero-comprobante');
+            var pacienteNombre = button.data('paciente-nombre');
+            var montoTotal = button.data('monto-total');
+            var detalles = button.data('detalles'); // JSON array con los detalles
+
+            // Guardar ID globalmente
+            comprobanteIdGlobal = comprobanteId;
+
+            // Cargar información general
+            $('#anularNumeroComprobante').text(numeroComprobante);
+            $('#anularPacienteNombre').text(pacienteNombre);
+            $('#anularMontoTotal').text(parseFloat(montoTotal).toFixed(2));
+
+            // Limpiar tabla de insumos
+            $('#tablaInsumosDevolucion').empty();
+
+            // Procesar detalles para encontrar insumos
+            var insumos = [];
+            if (detalles && Array.isArray(detalles)) {
+                detalles.forEach(function(detalle) {
+                    if (detalle.tipoItem === 'INSUMO') {
+                        insumos.push(detalle);
+                    }
+                });
+            }
+
+            // Mostrar/ocultar secciones según haya insumos
+            if (insumos.length > 0) {
+                tieneInsumosGlobal = true;
+                $('#listaInsumosDevolucion').show();
+                $('#sinInsumosDevolucion').hide();
+                $('#btnAnularConDevolver').show();
+
+                // Llenar tabla de insumos
+                insumos.forEach(function(insumo) {
+                    var fila = '<tr>' +
+                        '<td>' + insumo.descripcionItem + '</td>' +
+                        '<td class="text-center"><strong>' + insumo.cantidad + '</strong></td>' +
+                        '<td class="text-center">' + (insumo.unidad || 'ud') + '</td>' +
+                        '</tr>';
+                    $('#tablaInsumosDevolucion').append(fila);
+                });
+            } else {
+                tieneInsumosGlobal = false;
+                $('#listaInsumosDevolucion').hide();
+                $('#sinInsumosDevolucion').show();
+                $('#btnAnularConDevolver').hide();
+            }
+
+            // Limpiar motivo
+            $('#motivoAnulacion').val('');
+        });
+
+        // Limpiar modal al cerrar
+        $('#modalAnularComprobante').on('hidden.bs.modal', function() {
+            comprobanteIdGlobal = 0;
+            tieneInsumosGlobal = false;
+            $('#motivoAnulacion').val('');
+            $('#tablaInsumosDevolucion').empty();
+        });
+
+        // Botón: Anular SIN devolver inventario
+        $('#btnAnularSinDevolver').on('click', function() {
+            var motivo = $('#motivoAnulacion').val().trim();
+
+            if (!motivo) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Motivo Requerido',
+                    text: 'Por favor ingrese el motivo de la anulación.',
+                    confirmButtonText: 'Entendido'
+                });
+                $('#motivoAnulacion').focus();
+                return;
+            }
+
+            // Confirmar acción
+            Swal.fire({
+                title: '¿Está seguro?',
+                html: '<strong>Se anulará el comprobante SIN devolver insumos al inventario.</strong><br>Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f39c12',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, Anular',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    anularComprobante(comprobanteIdGlobal, motivo, false);
+                }
+            });
+        });
+
+        // Botón: Anular CON devolución de inventario
+        $('#btnAnularConDevolver').on('click', function() {
+            var motivo = $('#motivoAnulacion').val().trim();
+
+            if (!motivo) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Motivo Requerido',
+                    text: 'Por favor ingrese el motivo de la anulación.',
+                    confirmButtonText: 'Entendido'
+                });
+                $('#motivoAnulacion').focus();
+                return;
+            }
+
+            // Confirmar acción
+            Swal.fire({
+                title: '¿Está seguro?',
+                html: '<strong>Se anulará el comprobante Y se devolverán los insumos al inventario.</strong><br>Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, Anular y Devolver',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    anularComprobante(comprobanteIdGlobal, motivo, true);
+                }
+            });
+        });
+
+        // Función para anular comprobante
+        function anularComprobante(id, motivo, regresarInventario) {
+            // Crear formulario y enviarlo
+            var form = $('<form></form>');
+            form.attr('method', 'POST');
+            form.attr('action', '/facturacion/anular/' + id);
+
+            var inputMotivo = $('<input></input>');
+            inputMotivo.attr('type', 'hidden');
+            inputMotivo.attr('name', 'motivo');
+            inputMotivo.attr('value', motivo);
+            form.append(inputMotivo);
+
+            if (regresarInventario) {
+                var inputDevolver = $('<input></input>');
+                inputDevolver.attr('type', 'hidden');
+                inputDevolver.attr('name', 'regresarInventario');
+                inputDevolver.attr('value', 'true');
+                form.append(inputDevolver);
+            }
+
+            // Agregar token CSRF si está disponible
+            var token = $("meta[name='_csrf']").attr("content");
+            var header = $("meta[name='_csrf_header']").attr("content");
+            if (token && header) {
+                var inputToken = $('<input></input>');
+                inputToken.attr('type', 'hidden');
+                inputToken.attr('name', '_csrf');
+                inputToken.attr('value', token);
+                form.append(inputToken);
+            }
+
+            $('body').append(form);
+            form.submit();
+        }
+
+        console.log('✅ Event handlers del modal de anulación registrados');
     });
     /*]]>*/
 </script>
+</th:block>
 
 </body>
 </html>

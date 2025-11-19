@@ -132,7 +132,29 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             return;
         }
 
-        // Lógica SavedRequest (con try-catch y verificación de /error)
+        // ✅ REGLA ESPECIAL PARA PACIENTES: Siempre redirigir a /paciente/dashboard
+        // Ignorar SavedRequest para usuarios con rol PACIENTE
+        boolean esPaciente = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> role.equals("ROLE_PACIENTE"));
+
+        if (esPaciente) {
+            String targetUrl = "/paciente/dashboard";
+            log.info("Usuario PACIENTE detectado. Redirigiendo directamente a: {}", targetUrl);
+            try {
+                if (!response.isCommitted()) {
+                    response.sendRedirect(request.getContextPath() + targetUrl);
+                    log.info("Redirección a portal de paciente enviada.");
+                } else {
+                    log.warn("La respuesta ya estaba 'committed'. No se pudo redirigir a {}", targetUrl);
+                }
+            } catch (IllegalStateException | IOException e) {
+                log.error("¡ERROR al intentar redirigir a portal de paciente!", e);
+            }
+            return; // Salir para pacientes
+        }
+
+        // Lógica SavedRequest (solo para personal - con try-catch y verificación de /error)
         SavedRequest savedRequest = null;
         try {
             savedRequest = requestCache.getRequest(request, response);
@@ -140,7 +162,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             log.error("¡ERROR al obtener SavedRequest de la caché!", e);
         }
 
-        // --- NUEVA VERIFICACIÓN: Ignorar si SavedRequest apunta a /error ---
+        // --- VERIFICACIÓN: Ignorar si SavedRequest apunta a /error ---
         if (savedRequest != null) {
             String targetUrl = savedRequest.getRedirectUrl();
             // Verifica si la URL obtenida es relativa o absoluta y si empieza con /error

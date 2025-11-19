@@ -47,4 +47,12 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
      * @return Total de pacientes activos
      */
     Long countByEliminadoFalse();
+
+    /**
+     * Busca un paciente por su usuario asociado
+     * @param usuario El usuario asociado al paciente
+     * @return Optional con el paciente si existe
+     */
+    @Query("SELECT p FROM Paciente p WHERE p.usuario = :usuario")
+    Optional<Paciente> findByUsuario(@Param("usuario") com.odontoapp.entidad.Usuario usuario);
 }

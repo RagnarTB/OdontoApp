@@ -14,7 +14,8 @@ import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.TipoMovimientoRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -101,7 +102,7 @@ public class InventarioServiceImpl implements InventarioService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void descontarStockPorProcedimientoRealizado(Long procedimientoId, BigDecimal cantidadAjustada,
                                                          Long insumoAjustadoId, String referenciaCita) {
         // Validar que el procedimiento existe
@@ -109,14 +110,15 @@ public class InventarioServiceImpl implements InventarioService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Procedimiento no encontrado con ID: " + procedimientoId));
 
-        // Buscar el tipo de movimiento "SALIDA" y motivo "USO_PROCEDIMIENTO"
-        TipoMovimiento tipoSalida = tipoMovimientoRepository.findByNombre("SALIDA")
+        // Buscar el tipo de movimiento "SALIDA" por CÓDIGO (más confiable)
+        TipoMovimiento tipoSalida = tipoMovimientoRepository.findByCodigo("SALIDA")
                 .orElseThrow(() -> new IllegalStateException(
                         "Tipo de movimiento 'SALIDA' no encontrado en el sistema"));
 
-        MotivoMovimiento motivoProcedimiento = motivoMovimientoRepository.findByNombre("USO_PROCEDIMIENTO")
+        // Buscar motivo con el nombre correcto según DataInitializer
+        MotivoMovimiento motivoProcedimiento = motivoMovimientoRepository.findByNombre("Uso en procedimiento")
                 .orElseThrow(() -> new IllegalStateException(
-                        "Motivo 'USO_PROCEDIMIENTO' no encontrado en el sistema"));
+                        "Motivo 'Uso en procedimiento' no encontrado en el sistema"));
 
         // Caso 1: Se especificó un insumo ajustado (se usa solo ese insumo con cantidad ajustada)
         if (insumoAjustadoId != null && cantidadAjustada != null) {

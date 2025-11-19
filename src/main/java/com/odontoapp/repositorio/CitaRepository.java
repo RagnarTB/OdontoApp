@@ -76,4 +76,68 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @return Número de citas en el rango
      */
     Long countByFechaHoraInicioBetween(LocalDateTime inicio, LocalDateTime fin);
+
+    /**
+     * Busca citas futuras de un paciente específico
+     * @param fechaHora Fecha y hora de referencia
+     * @param pacienteId ID del usuario paciente
+     * @param pageable Paginación
+     * @return Página de citas futuras del paciente
+     */
+    @Query("SELECT c FROM Cita c WHERE c.fechaHoraInicio > :fechaHora AND c.paciente.id = :pacienteId")
+    Page<Cita> findByFechaHoraInicioAfterAndPacienteId(
+        @Param("fechaHora") LocalDateTime fechaHora,
+        @Param("pacienteId") Long pacienteId,
+        Pageable pageable
+    );
+
+    /**
+     * Busca citas pasadas de un paciente específico
+     * @param fechaHora Fecha y hora de referencia
+     * @param pacienteId ID del usuario paciente
+     * @param pageable Paginación
+     * @return Página de citas pasadas del paciente
+     */
+    @Query("SELECT c FROM Cita c WHERE c.fechaHoraInicio < :fechaHora AND c.paciente.id = :pacienteId")
+    Page<Cita> findByFechaHoraInicioBeforeAndPacienteId(
+        @Param("fechaHora") LocalDateTime fechaHora,
+        @Param("pacienteId") Long pacienteId,
+        Pageable pageable
+    );
+
+    /**
+     * Busca citas de un paciente en un rango de fechas
+     * @param pacienteId ID del usuario paciente
+     * @param inicio Fecha y hora de inicio del rango
+     * @param fin Fecha y hora de fin del rango
+     * @return Lista de citas del paciente en el rango
+     */
+    @Query("SELECT c FROM Cita c WHERE c.paciente.id = :pacienteId " +
+           "AND c.fechaHoraInicio >= :inicio AND c.fechaHoraInicio <= :fin")
+    List<Cita> findByPacienteIdAndFechaHoraInicioBetween(
+        @Param("pacienteId") Long pacienteId,
+        @Param("inicio") LocalDateTime inicio,
+        @Param("fin") LocalDateTime fin
+    );
+
+    /**
+     * Busca citas de un paciente con filtros opcionales (estado, fechas)
+     * @param pacienteId ID del usuario paciente
+     * @param estadoId ID del estado de cita (opcional)
+     * @param fechaDesde Fecha de inicio del rango (opcional)
+     * @param fechaHasta Fecha de fin del rango (opcional)
+     * @param pageable Paginación
+     * @return Página de citas del paciente con filtros aplicados
+     */
+    @Query("SELECT c FROM Cita c WHERE c.paciente.id = :pacienteId " +
+           "AND (:estadoId IS NULL OR c.estadoCita.id = :estadoId) " +
+           "AND (:fechaDesde IS NULL OR c.fechaHoraInicio >= :fechaDesde) " +
+           "AND (:fechaHasta IS NULL OR c.fechaHoraInicio <= :fechaHasta)")
+    Page<Cita> findByPacienteIdWithFilters(
+        @Param("pacienteId") Long pacienteId,
+        @Param("estadoId") Long estadoId,
+        @Param("fechaDesde") LocalDateTime fechaDesde,
+        @Param("fechaHasta") LocalDateTime fechaHasta,
+        Pageable pageable
+    );
 }
