@@ -105,8 +105,8 @@
                                 <option value="">Seleccione un procedimiento...</option>
                                 <option th:each="proc : ${listaProcedimientos}"
                                         th:value="${proc.id}"
-                                        th:text="${proc.nombre + ' (' + proc.duracionEstimada + ' min)'}"
-                                        th:data-duracion="${proc.duracionEstimada}"></option>
+                                        th:text="${proc.nombre + ' (' + proc.duracionBaseMinutos + ' min)'}"
+                                        th:data-duracion="${proc.duracionBaseMinutos}"></option>
                             </select>
                         </div>
 
