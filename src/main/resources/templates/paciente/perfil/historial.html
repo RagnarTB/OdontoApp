@@ -427,5 +427,24 @@
     </section>
 
 </div>
+
+<script>
+    $(document).ready(function() {
+        // Detectar parámetro 'tab' en la URL y activar el tab correspondiente
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+
+        if (tabParam) {
+            // Desactivar todos los tabs
+            $('.nav-link').removeClass('active');
+            $('.tab-pane').removeClass('show active');
+
+            // Activar el tab solicitado
+            $(`#${tabParam}-tab`).addClass('active');
+            $(`#${tabParam}`).addClass('show active');
+        }
+    });
+</script>
+
 </body>
 </html>

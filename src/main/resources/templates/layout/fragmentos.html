@@ -25,7 +25,13 @@
 
     <!-- Sidebar -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4" th:fragment="sidebar">
-        <a th:href="@{/dashboard}" class="brand-link">
+        <!-- Logo con redirección condicional según rol -->
+        <a sec:authorize="hasRole('PACIENTE')" th:href="@{/paciente/dashboard}" class="brand-link">
+            <img th:src="@{/adminlte/dist/img/AdminLTELogo.png}" alt="OdontoApp Logo"
+                class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-light">OdontoApp</span>
+        </a>
+        <a sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA','ALMACEN')" th:href="@{/dashboard}" class="brand-link">
             <img th:src="@{/adminlte/dist/img/AdminLTELogo.png}" alt="OdontoApp Logo"
                 class="brand-image img-circle elevation-3" style="opacity: .8">
             <span class="brand-text font-weight-light">OdontoApp</span>

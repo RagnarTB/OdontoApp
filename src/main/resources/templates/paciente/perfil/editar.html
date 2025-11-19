@@ -40,6 +40,11 @@
                                 </div>
 
                                 <input type="hidden" th:field="*{id}">
+                                <!-- Campos obligatorios del DTO que no se editan -->
+                                <input type="hidden" th:field="*{tipoDocumentoId}">
+                                <input type="hidden" th:field="*{numeroDocumento}">
+                                <input type="hidden" th:field="*{nombreCompleto}">
+                                <input type="hidden" th:field="*{fechaNacimiento}">
 
                                 <div class="row">
                                     <!-- CAMPOS PROTEGIDOS (SOLO LECTURA) -->
