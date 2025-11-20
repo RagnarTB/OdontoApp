@@ -48,54 +48,6 @@
                 <button type="submit" class="btn btn-primary">Registrar Movimiento</button>
             </div>
         </form>
-
-        <!-- Script para filtrar motivos según el tipo seleccionado -->
-        <script th:inline="javascript">
-            $(document).ready(function() {
-                // Filtrar motivos cuando cambia el tipo de movimiento
-                $('#tipoMovimientoId').on('change', function() {
-                    var tipoSeleccionado = $(this).val();
-                    var $selectMotivo = $('#motivoMovimientoId');
-
-                    // Resetear y deshabilitar select de motivo si no hay tipo seleccionado
-                    if (!tipoSeleccionado) {
-                        $selectMotivo.val('').prop('disabled', true);
-                        $selectMotivo.find('option:not(:first)').hide();
-                        return;
-                    }
-
-                    // Habilitar select de motivo
-                    $selectMotivo.prop('disabled', false);
-
-                    // Mostrar solo los motivos que corresponden al tipo seleccionado
-                    $selectMotivo.find('option').each(function() {
-                        var $option = $(this);
-
-                        // Siempre mostrar la opción por defecto
-                        if ($option.val() === '') {
-                            $option.show();
-                            return;
-                        }
-
-                        var tipoIdMotivo = $option.data('tipo-id');
-
-                        if (tipoIdMotivo == tipoSeleccionado) {
-                            $option.show();
-                        } else {
-                            $option.hide();
-                        }
-                    });
-
-                    // Resetear la selección de motivo
-                    $selectMotivo.val('');
-                });
-
-                // Ejecutar el filtrado al cargar si ya hay un tipo seleccionado
-                if ($('#tipoMovimientoId').val()) {
-                    $('#tipoMovimientoId').trigger('change');
-                }
-            });
-        </script>
     </div>
 
     <div th:fragment="historialMovimientos" th:if="${paginaMovimientos}">

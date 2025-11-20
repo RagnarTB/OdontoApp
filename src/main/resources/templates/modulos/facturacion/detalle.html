@@ -250,7 +250,7 @@
                                     th:if="${comprobante.estadoPago.nombre != 'ANULADO' && comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
                                     th:attr="data-comprobante-id=${comprobante.id},
                                              data-numero-comprobante=${comprobante.numeroComprobante},
-                                             data-saldo-pendiente=${comprobante.montoPendiente}">
+                                             data-saldo-pendiente=${#numbers.formatDecimal(comprobante.montoPendiente, 1, 'POINT', 2, 'POINT')}">
                                 <i class="fas fa-money-bill-wave mr-2"></i>Registrar Pago
                             </button>
 

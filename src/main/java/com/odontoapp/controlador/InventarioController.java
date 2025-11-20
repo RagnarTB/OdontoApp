@@ -65,12 +65,24 @@ public class InventarioController {
     @GetMapping("/movimientos/historial/{insumoId}")
     public String getHistorialMovimientos(@PathVariable Long insumoId,
             @RequestParam(defaultValue = "0") int page,
-            Model model) { // <-- Se quita @ResponseBody, se añade Model
+            Model model) {
 
-        Page<MovimientoInventario> paginaMovimientos = inventarioService.listarMovimientosPorInsumo(insumoId,
-                PageRequest.of(page, 10));
+        try {
+            Page<MovimientoInventario> paginaMovimientos = inventarioService.listarMovimientosPorInsumo(insumoId,
+                    PageRequest.of(page, 10));
 
-        model.addAttribute("paginaMovimientos", paginaMovimientos);
+            // Si la página es null o vacía, pasar lista vacía para evitar error 500
+            if (paginaMovimientos == null) {
+                model.addAttribute("paginaMovimientos", Page.empty());
+            } else {
+                model.addAttribute("paginaMovimientos", paginaMovimientos);
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error al cargar historial de movimientos: " + e.getMessage());
+            // En caso de error, pasar página vacía para que la vista pueda renderizar
+            model.addAttribute("paginaMovimientos", Page.empty());
+        }
 
         // Se devuelve la ruta al fragmento HTML, no los datos JSON
         return "modulos/insumos/fragments :: historialMovimientos";

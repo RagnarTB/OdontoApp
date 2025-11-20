@@ -205,7 +205,12 @@ public class TratamientoController {
             @SuppressWarnings("unchecked")
             List<Map<String, String>> camposDinamicos = (List<Map<String, String>>) datos.get("camposDinamicos");
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> insumosAdicionales = (List<Map<String, Object>>) datos.get("insumosAdicionales");
+            List<Map<String, Object>> insumosTotales = (List<Map<String, Object>>) datos.get("insumosTotales");
+
+            // Extraer ID del tratamiento planificado (si viene de un flujo planificado->realizado)
+            Long tratamientoPlanificadoId = datos.get("tratamientoPlanificadoId") != null
+                ? Long.parseLong(datos.get("tratamientoPlanificadoId").toString())
+                : null;
 
             // Buscar entidades relacionadas
             Cita cita = citaRepository.findById(citaId)
@@ -242,43 +247,23 @@ public class TratamientoController {
                 // No fallar el tratamiento si falla la actualización del odontograma
             }
 
-            // **BUSCAR Y ACTUALIZAR TRATAMIENTO PLANIFICADO SI EXISTE**
-            // Prioridad 1: Buscar por cita asociada (más preciso)
-            TratamientoPlanificado planificado = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
+            // **ACTUALIZAR TRATAMIENTO PLANIFICADO SI EXISTE (FLUJO PLANIFICADO->REALIZADO)**
+            // Usar el ID explícito enviado desde el frontend (más preciso y confiable)
+            if (tratamientoPlanificadoId != null) {
+                TratamientoPlanificado planificado = tratamientoPlanificadoRepository.findById(tratamientoPlanificadoId)
+                        .orElse(null);
 
-            // Prioridad 2: Si no se encuentra por cita, buscar por paciente + procedimiento + estado
-            if (planificado == null) {
-                List<TratamientoPlanificado> tratamientosplanificados = tratamientoPlanificadoRepository
-                        .findByPacienteAndProcedimientoAndEstado(
-                                cita.getPaciente(),
-                                procedimiento,
-                                "PLANIFICADO"
-                        );
-
-                // También buscar los que están EN_CURSO
-                if (tratamientosplanificados.isEmpty()) {
-                    tratamientosplanificados = tratamientoPlanificadoRepository
-                            .findByPacienteAndProcedimientoAndEstado(
-                                    cita.getPaciente(),
-                                    procedimiento,
-                                    "EN_CURSO"
-                            );
+                if (planificado != null) {
+                    planificado.setEstado("COMPLETADO");
+                    planificado.setTratamientoRealizadoId(tratamiento.getId());
+                    tratamientoPlanificadoRepository.save(planificado);
+                    System.out.println("✓ Tratamiento planificado ID " + planificado.getId() +
+                            " marcado como COMPLETADO y vinculado a TratamientoRealizado ID " + tratamiento.getId());
+                } else {
+                    System.err.println("⚠️ No se encontró TratamientoPlanificado con ID " + tratamientoPlanificadoId);
                 }
-
-                if (!tratamientosplanificados.isEmpty()) {
-                    planificado = tratamientosplanificados.get(0); // Tomar el primero
-                }
-            }
-
-            // Si encontramos un tratamiento planificado, marcarlo como COMPLETADO
-            if (planificado != null) {
-                planificado.setEstado("COMPLETADO");
-                planificado.setTratamientoRealizadoId(tratamiento.getId());
-                tratamientoPlanificadoRepository.save(planificado);
-                System.out.println("✓ Tratamiento planificado ID " + planificado.getId() +
-                        " marcado como COMPLETADO y vinculado a TratamientoRealizado ID " + tratamiento.getId());
             } else {
-                System.out.println("ℹ️ No se encontró TratamientoPlanificado asociado - tratamiento directo");
+                System.out.println("ℹ️ Tratamiento directo (sin planificación previa)");
             }
 
             // **CREAR CITA AUTOMÁTICA EN EL CALENDARIO**
@@ -306,52 +291,47 @@ public class TratamientoController {
             // Guardar la nueva cita
             citaRepository.save(citaTratamiento);
 
-            // **DESCONTAR INSUMOS PREDETERMINADOS DEL PROCEDIMIENTO**
-            // (Excepto si es "Consulta General" - CON-001)
-            if (!procedimiento.getCodigo().equals("CON-001")) {
-                List<ProcedimientoInsumo> insumosPredeterminados =
-                    procedimientoInsumoRepository.findByProcedimientoId(procedimiento.getId());
+            // **DESCONTAR INSUMOS USANDO LA LISTA UNIFICADA DEL FRONTEND**
+            // La lista insumosTotales contiene todos los insumos con cantidades modificadas por el usuario
+            if (insumosTotales != null && !insumosTotales.isEmpty()) {
+                System.out.println("✓ Procesando " + insumosTotales.size() + " insumos del frontend");
 
-                if (!insumosPredeterminados.isEmpty()) {
-                    System.out.println("✓ Descontando " + insumosPredeterminados.size() +
-                        " insumos predeterminados del procedimiento: " + procedimiento.getNombre());
+                for (Map<String, Object> insumoData : insumosTotales) {
+                    try {
+                        Long insumoId = Long.parseLong(insumoData.get("insumoId").toString());
+                        BigDecimal cantidad = new BigDecimal(insumoData.get("cantidad").toString());
 
-                    for (ProcedimientoInsumo pi : insumosPredeterminados) {
-                        Insumo insumo = pi.getInsumo();
-                        BigDecimal cantidadRequerida = pi.getCantidadDefecto();
+                        // Buscar el insumo
+                        Insumo insumo = insumoRepository.findById(insumoId)
+                                .orElseThrow(() -> new RuntimeException("Insumo ID " + insumoId + " no encontrado"));
 
                         // Validar stock disponible
-                        if (insumo.getStockActual().compareTo(cantidadRequerida) < 0) {
-                            // Si es obligatorio, lanzar excepción
-                            if (pi.isEsObligatorio()) {
-                                throw new RuntimeException(
-                                    String.format("Stock insuficiente del insumo obligatorio '%s'. " +
-                                        "Disponible: %.2f %s, Requerido: %.2f %s",
-                                        insumo.getNombre(),
-                                        insumo.getStockActual(),
-                                        insumo.getUnidadMedida().getAbreviatura(),
-                                        cantidadRequerida,
-                                        insumo.getUnidadMedida().getAbreviatura()));
-                            } else {
-                                // Si es opcional, solo advertir y continuar
-                                System.out.println("⚠ Advertencia: Stock insuficiente del insumo opcional '" +
-                                    insumo.getNombre() + "'. Se omitirá el descuento.");
-                                continue;
-                            }
+                        if (insumo.getStockActual().compareTo(cantidad) < 0) {
+                            throw new RuntimeException(
+                                    String.format("Stock insuficiente del insumo '%s'. " +
+                                            "Disponible: %.2f %s, Requerido: %.2f %s",
+                                            insumo.getNombre(),
+                                            insumo.getStockActual(),
+                                            insumo.getUnidadMedida().getAbreviatura(),
+                                            cantidad,
+                                            insumo.getUnidadMedida().getAbreviatura()));
                         }
 
-                        // Descontar stock
-                        BigDecimal nuevoStock = insumo.getStockActual().subtract(cantidadRequerida);
-                        insumo.setStockActual(nuevoStock);
-                        insumoRepository.save(insumo);
+                        // Descontar stock y registrar movimiento
+                        String referencia = "Cita #" + cita.getId() + " - Tratamiento inmediato";
+                        registrarUsoInsumo(insumo, cantidad, referencia);
 
                         System.out.println("  ✓ " + insumo.getNombre() +
-                            " | Cantidad: " + cantidadRequerida + " " + insumo.getUnidadMedida().getAbreviatura() +
-                            " | Nuevo stock: " + nuevoStock);
+                                " | Cantidad: " + cantidad + " " + insumo.getUnidadMedida().getAbreviatura() +
+                                " | Nuevo stock: " + insumo.getStockActual());
+
+                    } catch (Exception e) {
+                        System.err.println("Error procesando insumo: " + e.getMessage());
+                        throw new RuntimeException("Error al procesar insumo: " + e.getMessage());
                     }
                 }
             } else {
-                System.out.println("ℹ Consulta General detectada - No se descontarán insumos predeterminados");
+                System.out.println("ℹ️ No hay insumos para descontar");
             }
 
             // **OBTENER O GENERAR COMPROBANTE**
@@ -363,8 +343,8 @@ public class TratamientoController {
                 // Reutilizar el comprobante existente
                 comprobante = comprobanteExistente.get();
             } else {
-                // Generar nuevo comprobante
-                comprobante = generarComprobante(cita, procedimiento, insumosAdicionales);
+                // Generar nuevo comprobante con los insumos totales
+                comprobante = generarComprobante(cita, procedimiento, insumosTotales);
             }
 
             Map<String, Object> response = new HashMap<>();

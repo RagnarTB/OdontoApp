@@ -12,6 +12,7 @@
             </div>
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                 <input type="hidden" id="tratamientoCitaId" name="citaId">
+                <input type="hidden" id="tratamientoPlanificadoId" name="tratamientoPlanificadoId">
 
                 <!-- Información Precargada de la Cita -->
                 <div class="alert alert-info mb-3 py-2">
@@ -766,7 +767,12 @@ $(document).ready(function() {
                     html += `
                         <tr>
                             <td>${ins.insumoNombre}</td>
-                            <td><input type="number" class="form-control form-control-sm" value="${ins.cantidadDefecto}" min="0" style="width:50px;"></td>
+                            <td><input type="number" class="form-control form-control-sm"
+                                       value="${ins.cantidadDefecto}"
+                                       min="0"
+                                       step="0.01"
+                                       style="width:50px;"
+                                       data-insumo-id="${ins.insumoId}"></td>
                             <td>${ins.unidad}</td>
                             <td><span class="badge badge-${tipoBadge}" style="font-size:0.7rem;">${tipoTexto}</span></td>
                         </tr>
@@ -1004,19 +1010,42 @@ $(document).ready(function() {
     });
 
     function recopilarDatosTratamiento(tipo) {
-        // Recopilar insumos adicionales
-        const insumosAdicionales = [];
+        // Recopilar TODOS los insumos (predeterminados + adicionales) con cantidades modificadas
+        const insumosTotales = [];
+
+        // 1. Recopilar insumos predeterminados de la tabla (capturando cantidades de inputs)
+        $('#tablaInsumosDefault tr').not('.insumo-adicional').each(function() {
+            const $row = $(this);
+            const $cantidadInput = $row.find('input[type="number"]');
+
+            // Solo procesar filas que tienen input de cantidad (no la fila de "Seleccione procedimiento")
+            if ($cantidadInput.length > 0) {
+                const insumoId = $cantidadInput.data('insumo-id');
+                const cantidad = $cantidadInput.val();
+
+                if (insumoId && cantidad && parseFloat(cantidad) > 0) {
+                    insumosTotales.push({
+                        insumoId: insumoId,
+                        cantidad: cantidad
+                    });
+                }
+            }
+        });
+
+        // 2. Recopilar insumos adicionales agregados manualmente
         $('.insumo-adicional').each(function() {
             const insumoId = $(this).find('.select-insumo-adicional').val();
             const cantidad = $(this).find('.insumo-cantidad').val();
 
-            if (insumoId && cantidad) {
-                insumosAdicionales.push({
+            if (insumoId && cantidad && parseFloat(cantidad) > 0) {
+                insumosTotales.push({
                     insumoId: insumoId,
                     cantidad: cantidad
                 });
             }
         });
+
+        console.log('📦 Insumos totales a enviar:', insumosTotales);
 
         return {
             citaId: $('#tratamientoCitaId').val(),
@@ -1025,7 +1054,8 @@ $(document).ready(function() {
             descripcion: $('#tratamientoDescripcion').val(),
             tipo: tipo,
             camposDinamicos: $('#camposDinamicos').find('input, select, textarea').serializeArray(),
-            insumosAdicionales: insumosAdicionales
+            insumosTotales: insumosTotales, // ← Lista unificada
+            tratamientoPlanificadoId: $('#tratamientoPlanificadoId').val() || null // ← ID explícito para flujo planificado->realizado
         };
     }
 }); // Fin de $(document).ready
