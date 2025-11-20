@@ -507,9 +507,14 @@
                                                                 <span class="text-muted" th:if="${comprobante.montoPendiente == 0}">S/ 0.00</span>
                                                             </td>
                                                             <td>
-                                                                <span class="badge badge-success" th:if="${comprobante.estadoPago.nombre == 'PAGADO'}">PAGADO</span>
-                                                                <span class="badge badge-warning" th:if="${comprobante.estadoPago.nombre == 'PENDIENTE'}">PENDIENTE</span>
-                                                                <span class="badge badge-info" th:if="${comprobante.estadoPago.nombre == 'PARCIAL'}">PARCIAL</span>
+                                                                <span class="badge"
+                                                                      th:classappend="${comprobante.estadoPago.nombre == 'PENDIENTE'} ? 'badge-warning' :
+                                                                                      (${comprobante.estadoPago.nombre == 'PAGADO_PARCIAL'} ? 'badge-info' :
+                                                                                      (${comprobante.estadoPago.nombre == 'PAGADO_TOTAL'} ? 'badge-success' :
+                                                                                      (${comprobante.estadoPago.nombre == 'ANULADO'} ? 'badge-danger' : 'badge-secondary')))"
+                                                                      th:text="${comprobante.estadoPago.nombre}">
+                                                                    PENDIENTE
+                                                                </span>
                                                             </td>
                                                             <td>
                                                                 <a th:href="@{/facturacion/detalle/{id}(id=${comprobante.id})}" class="btn btn-sm btn-info" title="Ver Detalle">

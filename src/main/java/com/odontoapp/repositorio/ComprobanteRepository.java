@@ -116,4 +116,20 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
      * @return Lista de comprobantes del paciente con ese estado
      */
     List<Comprobante> findByPacienteIdAndEstadoPago(Long pacienteId, EstadoPago estadoPago);
+
+    /**
+     * Busca un comprobante por ID cargando todas las relaciones necesarias para impresión.
+     * Evita LazyInitializationException al acceder a las propiedades en la vista.
+     * @param id El ID del comprobante
+     * @return Optional con el comprobante y todas sus relaciones cargadas
+     */
+    @Query("SELECT c FROM Comprobante c " +
+           "LEFT JOIN FETCH c.paciente " +
+           "LEFT JOIN FETCH c.estadoPago " +
+           "LEFT JOIN FETCH c.detalles " +
+           "LEFT JOIN FETCH c.cita cita " +
+           "LEFT JOIN FETCH cita.procedimiento " +
+           "LEFT JOIN FETCH cita.odontologo " +
+           "WHERE c.id = :id")
+    Optional<Comprobante> findByIdWithAllRelations(@Param("id") Long id);
 }

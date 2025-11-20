@@ -109,7 +109,10 @@
                                             No hay detalles registrados.
                                         </td>
                                     </tr>
-                                    <tr th:each="detalle : ${comprobante.detalles}" class="detalle-row" th:data-tipo="${detalle.tipoItem}">
+                                    <tr th:each="detalle : ${comprobante.detalles}"
+                                        class="detalle-row"
+                                        th:data-tipo="${detalle.tipoItem}"
+                                        th:data-item-id="${detalle.itemId}">
                                         <td>
                                             <span class="badge"
                                                   th:classappend="${detalle.tipoItem == 'PROCEDIMIENTO'} ? 'badge-primary' : 'badge-warning'"

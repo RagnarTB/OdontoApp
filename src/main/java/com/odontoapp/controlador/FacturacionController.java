@@ -4,6 +4,7 @@ import com.odontoapp.dto.ComprobanteDTO;
 import com.odontoapp.dto.PagoDTO;
 import com.odontoapp.entidad.Comprobante;
 import com.odontoapp.entidad.Pago;
+import com.odontoapp.repositorio.ComprobanteRepository;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.MetodoPagoRepository;
 import com.odontoapp.repositorio.PacienteRepository;
@@ -34,17 +35,20 @@ public class FacturacionController {
     private final ProcedimientoRepository procedimientoRepository;
     private final InsumoRepository insumoRepository;
     private final MetodoPagoRepository metodoPagoRepository;
+    private final ComprobanteRepository comprobanteRepository;
 
     public FacturacionController(FacturacionService facturacionService,
                                 PacienteRepository pacienteRepository,
                                 ProcedimientoRepository procedimientoRepository,
                                 InsumoRepository insumoRepository,
-                                MetodoPagoRepository metodoPagoRepository) {
+                                MetodoPagoRepository metodoPagoRepository,
+                                ComprobanteRepository comprobanteRepository) {
         this.facturacionService = facturacionService;
         this.pacienteRepository = pacienteRepository;
         this.procedimientoRepository = procedimientoRepository;
         this.insumoRepository = insumoRepository;
         this.metodoPagoRepository = metodoPagoRepository;
+        this.comprobanteRepository = comprobanteRepository;
     }
 
     /**
@@ -457,8 +461,9 @@ public class FacturacionController {
                                      Model model,
                                      RedirectAttributes attributes) {
         try {
-            // Obtener el comprobante con todos sus detalles
-            Comprobante comprobante = facturacionService.buscarComprobantePorId(id)
+            // Obtener el comprobante con todas las relaciones cargadas (EAGER)
+            // para evitar LazyInitializationException en la vista
+            Comprobante comprobante = comprobanteRepository.findByIdWithAllRelations(id)
                     .orElseThrow(() -> new RuntimeException("Comprobante no encontrado"));
 
             // Añadir al modelo
@@ -469,6 +474,7 @@ public class FacturacionController {
         } catch (Exception e) {
             attributes.addFlashAttribute("error",
                     "Error al cargar el comprobante para impresión: " + e.getMessage());
+            e.printStackTrace(); // Para debug en consola
             return "redirect:/facturacion";
         }
     }
