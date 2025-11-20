@@ -215,6 +215,13 @@ public class TratamientoController {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> insumosTotales = (List<Map<String, Object>>) datos.get("insumosTotales");
 
+            // Buscar entidades relacionadas PRIMERO
+            Cita cita = citaRepository.findById(citaId)
+                    .orElseThrow(() -> new RuntimeException("Cita no encontrada"));
+
+            Procedimiento procedimiento = procedimientoRepository.findById(procedimientoId)
+                    .orElseThrow(() -> new RuntimeException("Procedimiento no encontrado"));
+
             // Extraer ID del tratamiento planificado (si viene de un flujo planificado->realizado)
             Long tratamientoPlanificadoId = datos.get("tratamientoPlanificadoId") != null
                 ? Long.parseLong(datos.get("tratamientoPlanificadoId").toString())
@@ -302,13 +309,6 @@ public class TratamientoController {
             }
             System.out.println();
 
-            // Buscar entidades relacionadas
-            Cita cita = citaRepository.findById(citaId)
-                    .orElseThrow(() -> new RuntimeException("Cita no encontrada"));
-
-            Procedimiento procedimiento = procedimientoRepository.findById(procedimientoId)
-                    .orElseThrow(() -> new RuntimeException("Procedimiento no encontrado"));
-
             // Construir descripción completa con campos dinámicos
             String descripcionCompleta = construirDescripcionCompleta(descripcion, camposDinamicos);
 
@@ -352,20 +352,13 @@ public class TratamientoController {
             }
 
             // **ACTUALIZAR TRATAMIENTO PLANIFICADO SI EXISTE (FLUJO PLANIFICADO->REALIZADO)**
-            // Usar el ID explícito enviado desde el frontend (más preciso y confiable)
-            if (tratamientoPlanificadoId != null) {
-                TratamientoPlanificado planificado = tratamientoPlanificadoRepository.findById(tratamientoPlanificadoId)
-                        .orElse(null);
-
-                if (planificado != null) {
-                    planificado.setEstado("COMPLETADO");
-                    planificado.setTratamientoRealizadoId(tratamiento.getId());
-                    tratamientoPlanificadoRepository.save(planificado);
-                    System.out.println("✓ Tratamiento planificado ID " + planificado.getId() +
-                            " marcado como COMPLETADO y vinculado a TratamientoRealizado ID " + tratamiento.getId());
-                } else {
-                    System.err.println("⚠️ No se encontró TratamientoPlanificado con ID " + tratamientoPlanificadoId);
-                }
+            // Ya tenemos la variable planificado del bloque anterior
+            if (planificado != null) {
+                planificado.setEstado("COMPLETADO");
+                planificado.setTratamientoRealizadoId(tratamiento.getId());
+                tratamientoPlanificadoRepository.save(planificado);
+                System.out.println("✓ Tratamiento planificado ID " + planificado.getId() +
+                        " marcado como COMPLETADO y vinculado a TratamientoRealizado ID " + tratamiento.getId());
             } else {
                 System.out.println("ℹ️ Tratamiento directo (sin planificación previa)");
             }
