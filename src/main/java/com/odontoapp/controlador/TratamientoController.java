@@ -39,6 +39,7 @@ public class TratamientoController {
     private final DetalleComprobanteRepository detalleComprobanteRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final TipoMovimientoRepository tipoMovimientoRepository;
+    private final MotivoMovimientoRepository motivoMovimientoRepository;
     private final EstadoCitaRepository estadoCitaRepository;
     private final OdontogramaDienteService odontogramaService;
 
@@ -55,6 +56,7 @@ public class TratamientoController {
             DetalleComprobanteRepository detalleComprobanteRepository,
             MovimientoInventarioRepository movimientoInventarioRepository,
             TipoMovimientoRepository tipoMovimientoRepository,
+            MotivoMovimientoRepository motivoMovimientoRepository,
             EstadoCitaRepository estadoCitaRepository,
             OdontogramaDienteService odontogramaService) {
         this.tratamientoRealizadoService = tratamientoRealizadoService;
@@ -69,6 +71,7 @@ public class TratamientoController {
         this.detalleComprobanteRepository = detalleComprobanteRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
         this.tipoMovimientoRepository = tipoMovimientoRepository;
+        this.motivoMovimientoRepository = motivoMovimientoRepository;
         this.estadoCitaRepository = estadoCitaRepository;
         this.odontogramaService = odontogramaService;
     }
@@ -735,13 +738,37 @@ public class TratamientoController {
             TipoMovimiento tipoSalida = tipoMovimientoRepository.findByCodigo("SALIDA")
                     .orElseThrow(() -> new RuntimeException("Tipo de movimiento SALIDA no encontrado"));
 
+            // ✅ CORRECCIÓN: Obtener motivo de movimiento "Uso en procedimiento"
+            MotivoMovimiento motivoUsoProcedimiento = motivoMovimientoRepository.findByNombre("Uso en procedimiento")
+                    .orElseGet(() -> {
+                        // Si no existe, buscar alternativas comunes
+                        Optional<MotivoMovimiento> alternativo = motivoMovimientoRepository.findByNombre("Uso en tratamiento");
+                        if (alternativo.isPresent()) {
+                            return alternativo.get();
+                        }
+                        // Si tampoco existe, intentar crear uno automáticamente
+                        System.err.println("⚠️ ADVERTENCIA: No se encontró motivo 'Uso en procedimiento'. Buscando primer motivo de tipo SALIDA...");
+                        // Buscar el primer motivo asociado al tipo SALIDA
+                        return motivoMovimientoRepository.findAll().stream()
+                                .filter(m -> m.getTipoMovimiento() != null &&
+                                           m.getTipoMovimiento().getId().equals(tipoSalida.getId()))
+                                .findFirst()
+                                .orElse(null);
+                    });
+
+            if (motivoUsoProcedimiento == null) {
+                System.err.println("❌ ERROR CRÍTICO: No se pudo encontrar ningún motivo válido para movimientos de SALIDA");
+                throw new RuntimeException("No existe motivo de movimiento para uso en procedimientos. " +
+                                         "Configure los motivos de movimiento en la base de datos.");
+            }
+
             // Guardar stock anterior
             BigDecimal stockAnterior = insumo.getStockActual();
             BigDecimal stockNuevo = stockAnterior.subtract(cantidad);
 
             // Validar que no quede stock negativo
             if (stockNuevo.compareTo(BigDecimal.ZERO) < 0) {
-                System.err.println("Advertencia: Stock insuficiente para insumo " + insumo.getNombre() +
+                System.err.println("⚠️ Advertencia: Stock insuficiente para insumo " + insumo.getNombre() +
                         ". Stock actual: " + stockAnterior + ", Cantidad solicitada: " + cantidad);
                 // Permitir el movimiento pero registrar como stock 0
                 stockNuevo = BigDecimal.ZERO;
@@ -751,11 +778,19 @@ public class TratamientoController {
             MovimientoInventario movimiento = new MovimientoInventario();
             movimiento.setInsumo(insumo);
             movimiento.setTipoMovimiento(tipoSalida);
+            movimiento.setMotivoMovimiento(motivoUsoProcedimiento); // ✅ ASIGNAR MOTIVO
             movimiento.setCantidad(cantidad);
             movimiento.setStockAnterior(stockAnterior);
             movimiento.setStockNuevo(stockNuevo);
             movimiento.setReferencia(referencia);
             movimiento.setNotas("Uso en tratamiento odontológico");
+
+            System.out.println("  💾 Guardando movimiento:");
+            System.out.println("     ├─ Insumo: " + insumo.getNombre());
+            System.out.println("     ├─ Tipo: " + tipoSalida.getNombre());
+            System.out.println("     ├─ Motivo: " + motivoUsoProcedimiento.getNombre());
+            System.out.println("     ├─ Cantidad: " + cantidad);
+            System.out.println("     └─ Referencia: " + referencia);
 
             // Guardar movimiento
             movimientoInventarioRepository.save(movimiento);
@@ -765,8 +800,9 @@ public class TratamientoController {
             insumoRepository.save(insumo);
 
         } catch (Exception e) {
-            System.err.println("Error al registrar movimiento de inventario: " + e.getMessage());
+            System.err.println("❌ Error al registrar movimiento de inventario: " + e.getMessage());
             e.printStackTrace();
+            throw new RuntimeException("Error al registrar uso de insumo: " + e.getMessage());
         }
     }
 }

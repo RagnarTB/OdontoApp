@@ -71,7 +71,13 @@
                             th:classappend="${mov.tipoMovimiento.afectaStock.name() == 'SUMA' ? 'badge-success' : 'badge-danger'}"
                             th:text="${mov.tipoMovimiento.nombre}"></span>
                     </td>
-                    <td th:text="${mov.motivoMovimiento.nombre}"></td>
+                    <td>
+                        <!-- ✅ SAFE NAVIGATION: Evita NullPointerException si motivoMovimiento es NULL -->
+                        <span th:if="${mov.motivoMovimiento != null}"
+                              th:text="${mov.motivoMovimiento.nombre}"></span>
+                        <span th:unless="${mov.motivoMovimiento != null}"
+                              class="text-muted font-italic">Sin motivo</span>
+                    </td>
                     <td class="text-right"
                         th:classappend="${mov.tipoMovimiento.afectaStock.name() == 'SUMA' ? 'text-success' : 'text-danger'}"
                         th:text="${(mov.tipoMovimiento.afectaStock.name() == 'SUMA' ? '+' : '-') + mov.cantidad.toPlainString()}">
