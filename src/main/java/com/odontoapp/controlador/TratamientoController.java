@@ -197,6 +197,11 @@ public class TratamientoController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> realizarInmediato(@RequestBody Map<String, Object> datos) {
         try {
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("📥 ENDPOINT /realizar-inmediato INICIADO");
+            System.out.println("=".repeat(80));
+            System.out.println("📦 Datos RAW recibidos: " + datos);
+
             // Extraer datos básicos
             Long citaId = Long.parseLong(datos.get("citaId").toString());
             Long procedimientoId = Long.parseLong(datos.get("procedimientoId").toString());
@@ -211,6 +216,25 @@ public class TratamientoController {
             Long tratamientoPlanificadoId = datos.get("tratamientoPlanificadoId") != null
                 ? Long.parseLong(datos.get("tratamientoPlanificadoId").toString())
                 : null;
+
+            System.out.println("\n📊 DATOS PROCESADOS:");
+            System.out.println("  ├─ Cita ID: " + citaId);
+            System.out.println("  ├─ Procedimiento ID: " + procedimientoId);
+            System.out.println("  ├─ Piezas Dentales: " + piezasDentales);
+            System.out.println("  ├─ Tratamiento Planificado ID: " + tratamientoPlanificadoId);
+            System.out.println("  └─ Insumos Totales: " + (insumosTotales != null ? insumosTotales.size() : 0) + " items");
+
+            if (insumosTotales != null && !insumosTotales.isEmpty()) {
+                System.out.println("\n📦 DETALLE DE INSUMOS RECIBIDOS:");
+                for (int i = 0; i < insumosTotales.size(); i++) {
+                    Map<String, Object> insumo = insumosTotales.get(i);
+                    System.out.println("  [" + (i+1) + "] Insumo ID: " + insumo.get("insumoId") +
+                                     ", Cantidad: " + insumo.get("cantidad"));
+                }
+            } else {
+                System.out.println("\n⚠️ ADVERTENCIA: No se recibieron insumos o la lista está vacía");
+            }
+            System.out.println();
 
             // Buscar entidades relacionadas
             Cita cita = citaRepository.findById(citaId)
@@ -335,6 +359,7 @@ public class TratamientoController {
             }
 
             // **OBTENER O GENERAR COMPROBANTE**
+            System.out.println("\n🧾 PROCESAMIENTO DE COMPROBANTE:");
             // Verificar si ya existe un comprobante para esta cita
             Optional<Comprobante> comprobanteExistente = comprobanteRepository.findByCitaId(citaId);
             Comprobante comprobante;
@@ -342,10 +367,12 @@ public class TratamientoController {
             if (comprobanteExistente.isPresent()) {
                 // Reutilizar el comprobante existente
                 comprobante = comprobanteExistente.get();
+                System.out.println("  ✓ Comprobante EXISTENTE encontrado: #" + comprobante.getId() +
+                                 " (" + comprobante.getNumeroComprobante() + ")");
 
                 // AGREGAR: Crear detalles de insumos para este nuevo tratamiento
                 if (insumosTotales != null && !insumosTotales.isEmpty()) {
-                    System.out.println("✓ Agregando " + insumosTotales.size() + " insumos al comprobante existente #" + comprobante.getId());
+                    System.out.println("  └─ Agregando " + insumosTotales.size() + " insumos al comprobante existente");
 
                     for (Map<String, Object> insumoData : insumosTotales) {
                         try {
@@ -365,17 +392,26 @@ public class TratamientoController {
                                 detalleInsumo.setSubtotal(BigDecimal.ZERO);
                                 detalleComprobanteRepository.save(detalleInsumo);
 
-                                System.out.println("  ✓ Insumo agregado: " + insumo.getNombre() + " x " + cantidad);
+                                System.out.println("     ✓ Detalle agregado: " + insumo.getNombre() + " x " + cantidad);
                             }
                         } catch (Exception e) {
-                            System.err.println("Error agregando detalle de insumo al comprobante existente: " + e.getMessage());
+                            System.err.println("     ❌ Error agregando detalle: " + e.getMessage());
                         }
                     }
                 }
             } else {
+                System.out.println("  ➕ Generando NUEVO comprobante...");
                 // Generar nuevo comprobante con los insumos totales
                 comprobante = generarComprobante(cita, procedimiento, insumosTotales);
+                System.out.println("  ✓ Comprobante NUEVO creado: #" + comprobante.getId() +
+                                 " (" + comprobante.getNumeroComprobante() + ")");
             }
+
+            System.out.println("\n✅ TRATAMIENTO COMPLETADO EXITOSAMENTE");
+            System.out.println("  ├─ Tratamiento ID: " + tratamiento.getId());
+            System.out.println("  ├─ Comprobante ID: " + comprobante.getId());
+            System.out.println("  └─ Número Comprobante: " + comprobante.getNumeroComprobante());
+            System.out.println("=".repeat(80) + "\n");
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -407,6 +443,9 @@ public class TratamientoController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> planificar(@RequestBody Map<String, Object> datos) {
         try {
+            System.out.println("📥 ENDPOINT /planificar - Datos recibidos:");
+            System.out.println("  Datos completos: " + datos);
+
             // Extraer datos básicos
             Long citaId = Long.parseLong(datos.get("citaId").toString());
             Long procedimientoId = Long.parseLong(datos.get("procedimientoId").toString());
@@ -414,6 +453,17 @@ public class TratamientoController {
             String descripcion = (String) datos.get("descripcion");
             @SuppressWarnings("unchecked")
             List<Map<String, String>> camposDinamicos = (List<Map<String, String>>) datos.get("camposDinamicos");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> insumosTotales = (List<Map<String, Object>>) datos.get("insumosTotales");
+
+            System.out.println("  CitaId: " + citaId);
+            System.out.println("  ProcedimientoId: " + procedimientoId);
+            System.out.println("  Insumos recibidos: " + (insumosTotales != null ? insumosTotales.size() : 0));
+            if (insumosTotales != null) {
+                for (Map<String, Object> insumo : insumosTotales) {
+                    System.out.println("    - Insumo ID: " + insumo.get("insumoId") + ", Cantidad: " + insumo.get("cantidad"));
+                }
+            }
 
             // Buscar entidades relacionadas
             Cita cita = citaRepository.findById(citaId)
@@ -436,17 +486,37 @@ public class TratamientoController {
             tratamiento.setCitaAsociada(cita); // ← CRÍTICO: Asociar la cita
             tratamiento.setNotas("Detectado en cita del " + cita.getFechaHoraInicio().toLocalDate());
 
+            // **GUARDAR LOS INSUMOS MODIFICADOS EN FORMATO JSON**
+            if (insumosTotales != null && !insumosTotales.isEmpty()) {
+                try {
+                    // Usar ObjectMapper de Jackson para serializar a JSON
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    String insumosJson = mapper.writeValueAsString(insumosTotales);
+                    tratamiento.setInsumosJson(insumosJson);
+                    System.out.println("✓ Insumos guardados en JSON: " + insumosJson);
+                } catch (Exception e) {
+                    System.err.println("⚠ Error al serializar insumos a JSON: " + e.getMessage());
+                    // No fallar el guardado por esto
+                }
+            } else {
+                System.out.println("ℹ️ No hay insumos modificados para guardar");
+            }
+
             // Guardar
             tratamientoPlanificadoRepository.save(tratamiento);
+            System.out.println("✓ Tratamiento planificado guardado con ID: " + tratamiento.getId());
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("mensaje", "Tratamiento planificado correctamente");
+            response.put("mensaje", "Tratamiento planificado correctamente con " +
+                        (insumosTotales != null ? insumosTotales.size() : 0) + " insumos guardados");
             response.put("tratamientoId", tratamiento.getId());
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
+            System.err.println("❌ ERROR en /planificar: " + e.getMessage());
+            e.printStackTrace();
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("mensaje", "Error al planificar tratamiento: " + e.getMessage());

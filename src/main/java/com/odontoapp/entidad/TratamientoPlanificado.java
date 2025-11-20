@@ -78,5 +78,13 @@ public class TratamientoPlanificado extends EntidadAuditable {
     @Column(name = "tratamiento_realizado_id")
     private Long tratamientoRealizadoId;
 
+    /**
+     * JSON con los insumos modificados/adicionales para este tratamiento
+     * Formato: [{"insumoId": 1, "cantidad": "2.5"}, ...]
+     */
+    @Lob
+    @Column(name = "insumos_json", length = 5000)
+    private String insumosJson;
+
     private boolean eliminado = false;
 }

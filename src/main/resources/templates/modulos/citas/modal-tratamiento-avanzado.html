@@ -1026,13 +1026,27 @@ $(document).ready(function() {
     });
 
     function recopilarDatosTratamiento(tipo) {
+        console.log('\n' + '='.repeat(60));
+        console.log('🔍 INICIANDO recopilarDatosTratamiento()');
+        console.log('  Tipo: ' + tipo);
+        console.log('='.repeat(60));
+
         // Recopilar TODOS los insumos (predeterminados + adicionales) con cantidades modificadas
         const insumosTotales = [];
 
         // 1. Recopilar insumos predeterminados de la tabla (capturando cantidades de inputs)
-        $('#tablaInsumosDefault tr').not('.insumo-adicional').each(function() {
+        console.log('\n📦 Paso 1: Recopilando insumos predeterminados...');
+        let contadorPredeterminados = 0;
+        $('#tablaInsumosDefault tr').not('.insumo-adicional').each(function(index) {
             const $row = $(this);
             const $cantidadInput = $row.find('input[type="number"]');
+
+            console.log(`  Fila ${index}:`, {
+                tieneInput: $cantidadInput.length > 0,
+                insumoId: $cantidadInput.data('insumo-id'),
+                cantidad: $cantidadInput.val(),
+                cantidadParseada: parseFloat($cantidadInput.val())
+            });
 
             // Solo procesar filas que tienen input de cantidad (no la fila de "Seleccione procedimiento")
             if ($cantidadInput.length > 0) {
@@ -1044,26 +1058,43 @@ $(document).ready(function() {
                         insumoId: insumoId,
                         cantidad: cantidad
                     });
+                    contadorPredeterminados++;
+                    console.log(`    ✓ Agregado: ID=${insumoId}, Cantidad=${cantidad}`);
+                } else {
+                    console.log(`    ✗ Omitido: insumoId=${insumoId}, cantidad=${cantidad}`);
                 }
             }
         });
+        console.log(`  Total predeterminados: ${contadorPredeterminados}`);
 
         // 2. Recopilar insumos adicionales agregados manualmente
-        $('.insumo-adicional').each(function() {
+        console.log('\n📦 Paso 2: Recopilando insumos adicionales...');
+        let contadorAdicionales = 0;
+        $('.insumo-adicional').each(function(index) {
             const insumoId = $(this).find('.select-insumo-adicional').val();
             const cantidad = $(this).find('.insumo-cantidad').val();
+
+            console.log(`  Insumo adicional ${index}:`, {
+                insumoId: insumoId,
+                cantidad: cantidad
+            });
 
             if (insumoId && cantidad && parseFloat(cantidad) > 0) {
                 insumosTotales.push({
                     insumoId: insumoId,
                     cantidad: cantidad
                 });
+                contadorAdicionales++;
+                console.log(`    ✓ Agregado: ID=${insumoId}, Cantidad=${cantidad}`);
             }
         });
+        console.log(`  Total adicionales: ${contadorAdicionales}`);
 
-        console.log('📦 Insumos totales a enviar:', insumosTotales);
+        console.log('\n📦 RESUMEN DE INSUMOS:');
+        console.log('  Total insumos a enviar:', insumosTotales.length);
+        console.log('  Detalle:', insumosTotales);
 
-        return {
+        const datosCompletos = {
             citaId: $('#tratamientoCitaId').val(),
             procedimientoId: $('#tratamientoProcedimientoId').val(),
             piezasDentales: $('#tratamientoPiezasDentales').val(),
@@ -1073,6 +1104,12 @@ $(document).ready(function() {
             insumosTotales: insumosTotales, // ← Lista unificada
             tratamientoPlanificadoId: $('#tratamientoPlanificadoId').val() || null // ← ID explícito para flujo planificado->realizado
         };
+
+        console.log('\n✅ DATOS COMPLETOS A ENVIAR:');
+        console.log(datosCompletos);
+        console.log('='.repeat(60) + '\n');
+
+        return datosCompletos;
     }
 }); // Fin de $(document).ready
 /*]]>*/
