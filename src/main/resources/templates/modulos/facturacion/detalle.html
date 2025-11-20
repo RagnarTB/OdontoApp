@@ -515,17 +515,61 @@
                     $('.insumo-checkbox').prop('checked', $(this).is(':checked'));
                 });
 
-                // Handler para validar cantidades
+                // Handler para validar cantidades en tiempo real
                 $('.insumo-cantidad').on('input', function() {
-                    var val = parseFloat($(this).val()) || 0;
-                    var max = parseFloat($(this).data('max'));
+                    var $input = $(this);
+                    var val = parseFloat($input.val());
+                    var max = parseFloat($input.data('max'));
 
+                    // Si está vacío o no es número, no validar aún
+                    if ($input.val() === '' || isNaN(val)) {
+                        $input.removeClass('is-valid is-invalid');
+                        return;
+                    }
+
+                    // Validar rango
+                    if (val < 0) {
+                        $input.val(0);
+                        $input.addClass('is-invalid');
+                        $input.removeClass('is-valid');
+                        Swal.showValidationMessage('No se permiten cantidades negativas');
+                        setTimeout(() => {
+                            $input.removeClass('is-invalid');
+                            Swal.resetValidationMessage();
+                        }, 2000);
+                    } else if (val > max) {
+                        $input.val(max);
+                        $input.addClass('is-invalid');
+                        $input.removeClass('is-valid');
+                        Swal.showValidationMessage(`Cantidad máxima: ${max}`);
+                        setTimeout(() => {
+                            $input.removeClass('is-invalid');
+                            $input.addClass('is-valid');
+                            Swal.resetValidationMessage();
+                        }, 2000);
+                    } else if (val > 0 && val <= max) {
+                        $input.removeClass('is-invalid');
+                        $input.addClass('is-valid');
+                        Swal.resetValidationMessage();
+                    } else {
+                        $input.removeClass('is-valid is-invalid');
+                    }
+                });
+
+                // Validar también al perder el foco
+                $('.insumo-cantidad').on('blur', function() {
+                    var $input = $(this);
+                    var val = parseFloat($input.val());
+                    var max = parseFloat($input.data('max'));
+
+                    // Si está vacío, poner 0
+                    if ($input.val() === '' || isNaN(val) || val < 0) {
+                        $input.val(0);
+                    }
+
+                    // Asegurar que no exceda el máximo
                     if (val > max) {
-                        $(this).val(max);
-                        $(this).addClass('is-invalid');
-                        setTimeout(() => $(this).removeClass('is-invalid'), 1000);
-                    } else if (val < 0) {
-                        $(this).val(0);
+                        $input.val(max);
                     }
                 });
 
@@ -539,20 +583,50 @@
             preConfirm: () => {
                 // Recopilar insumos seleccionados
                 var insumosSeleccionados = [];
+                var errores = [];
 
                 $('.insumo-checkbox:checked').each(function() {
                     var index = $(this).data('index');
                     var $row = $(this).closest('tr');
                     var insumoId = $row.find('.insumo-id').val();
-                    var cantidad = parseFloat($row.find('.insumo-cantidad[data-index="' + index + '"]').val()) || 0;
+                    var $cantidadInput = $row.find('.insumo-cantidad[data-index="' + index + '"]');
+                    var cantidad = parseFloat($cantidadInput.val()) || 0;
+                    var max = parseFloat($cantidadInput.data('max'));
 
-                    if (cantidad > 0) {
-                        insumosSeleccionados.push({
-                            insumoId: insumoId,
-                            cantidad: cantidad
-                        });
+                    // Validación 1: ID válido
+                    if (!insumoId || insumoId === 'undefined' || insumoId === 'null') {
+                        errores.push('Hay un insumo sin ID válido. Por favor, refresque la página.');
+                        return;
                     }
+
+                    // Validación 2: Cantidad positiva
+                    if (cantidad <= 0) {
+                        return; // Skip este insumo pero no es error
+                    }
+
+                    // Validación 3: No exceder cantidad máxima
+                    if (cantidad > max) {
+                        errores.push(`La cantidad a devolver (${cantidad}) excede la cantidad usada (${max})`);
+                        return;
+                    }
+
+                    // Validación 4: Número válido
+                    if (isNaN(cantidad)) {
+                        errores.push('Cantidad inválida detectada');
+                        return;
+                    }
+
+                    insumosSeleccionados.push({
+                        insumoId: parseInt(insumoId),
+                        cantidad: cantidad
+                    });
                 });
+
+                // Mostrar errores si hay
+                if (errores.length > 0) {
+                    Swal.showValidationMessage(errores.join('<br>'));
+                    return false;
+                }
 
                 if (insumosSeleccionados.length === 0) {
                     Swal.showValidationMessage('Debe seleccionar al menos un insumo con cantidad mayor a 0');

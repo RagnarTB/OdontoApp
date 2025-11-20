@@ -220,6 +220,28 @@ public class TratamientoController {
                 ? Long.parseLong(datos.get("tratamientoPlanificadoId").toString())
                 : null;
 
+            // **SI VIENE DE UN TRATAMIENTO PLANIFICADO, USAR LOS INSUMOS GUARDADOS EN EL JSON**
+            if (tratamientoPlanificadoId != null) {
+                TratamientoPlanificado planificado = tratamientoPlanificadoRepository.findById(tratamientoPlanificadoId)
+                        .orElse(null);
+
+                if (planificado != null && planificado.getInsumosJson() != null && !planificado.getInsumosJson().isEmpty()) {
+                    try {
+                        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                        @SuppressWarnings("unchecked")
+                        List<Map<String, Object>> insumosGuardados = mapper.readValue(
+                                planificado.getInsumosJson(),
+                                List.class
+                        );
+                        insumosTotales = insumosGuardados;
+                        System.out.println("✓ Cargados " + insumosTotales.size() + " insumos desde tratamiento planificado");
+                    } catch (Exception e) {
+                        System.err.println("⚠️ Error al deserializar insumos del JSON: " + e.getMessage());
+                        // Continuar con los insumos del request si falla la deserialización
+                    }
+                }
+            }
+
             System.out.println("\n📊 DATOS PROCESADOS:");
             System.out.println("  ├─ Cita ID: " + citaId);
             System.out.println("  ├─ Procedimiento ID: " + procedimientoId);

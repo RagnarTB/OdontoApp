@@ -756,6 +756,19 @@ public class FacturacionServiceImpl implements FacturacionService {
             Long insumoId = entry.getKey();
             BigDecimal cantidadADevolver = entry.getValue();
 
+            // Validar que el insumo ID sea válido
+            if (insumoId == null || insumoId <= 0) {
+                throw new IllegalArgumentException(
+                        "ID de insumo inválido: " + insumoId);
+            }
+
+            // Validar que la cantidad sea positiva
+            if (cantidadADevolver == null || cantidadADevolver.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException(
+                        "La cantidad a devolver debe ser mayor a cero para el insumo ID " + insumoId +
+                        ". Cantidad recibida: " + cantidadADevolver);
+            }
+
             BigDecimal cantidadUsada = cantidadesUsadas.get(insumoId);
             if (cantidadUsada == null) {
                 throw new IllegalArgumentException(
