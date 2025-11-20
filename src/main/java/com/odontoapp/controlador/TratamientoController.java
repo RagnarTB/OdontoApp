@@ -314,9 +314,11 @@ public class TratamientoController {
             citaTratamiento.setMotivoConsulta("Tratamiento realizado: " + procedimiento.getNombre());
             citaTratamiento.setEstadoCita(estadoCompletada);
             citaTratamiento.setNotas("Cita generada automáticamente al registrar tratamiento inmediato");
+            citaTratamiento.setCitaGeneradaPorTratamiento(cita); // ✅ VINCULAR CON CITA ORIGEN (CADENA)
 
             // Guardar la nueva cita
             citaRepository.save(citaTratamiento);
+            System.out.println("✓ Cita generada y vinculada: Cita #" + cita.getId() + " → Cita #" + citaTratamiento.getId());
 
             // **DESCONTAR INSUMOS USANDO LA LISTA UNIFICADA DEL FRONTEND**
             // La lista insumosTotales contiene todos los insumos con cantidades modificadas por el usuario
@@ -372,6 +374,31 @@ public class TratamientoController {
                 comprobante = comprobanteExistente.get();
                 System.out.println("  ✓ Comprobante EXISTENTE encontrado: #" + comprobante.getId() +
                                  " (" + comprobante.getNumeroComprobante() + ")");
+
+                // ✅ AGREGAR EL TRATAMIENTO REALIZADO AL COMPROBANTE CON SU PRECIO
+                BigDecimal precioTratamiento = procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO;
+
+                DetalleComprobante detalleTratamiento = new DetalleComprobante();
+                detalleTratamiento.setComprobante(comprobante);
+                detalleTratamiento.setTipoItem("TRATAMIENTO");
+                detalleTratamiento.setItemId(tratamiento.getId());
+                detalleTratamiento.setDescripcionItem(procedimiento.getCodigo() + " - " + procedimiento.getNombre());
+                detalleTratamiento.setCantidad(BigDecimal.ONE);
+                detalleTratamiento.setPrecioUnitario(precioTratamiento);
+                detalleTratamiento.setSubtotal(precioTratamiento);
+                detalleComprobanteRepository.save(detalleTratamiento);
+
+                System.out.println("  ✅ Tratamiento agregado: " + procedimiento.getNombre() +
+                                 " | Precio: S/ " + precioTratamiento);
+
+                // ✅ ACTUALIZAR MONTO TOTAL DEL COMPROBANTE
+                BigDecimal nuevoMontoTotal = comprobante.getMontoTotal().add(precioTratamiento);
+                BigDecimal nuevoMontoPendiente = comprobante.getMontoPendiente().add(precioTratamiento);
+                comprobante.setMontoTotal(nuevoMontoTotal);
+                comprobante.setMontoPendiente(nuevoMontoPendiente);
+                comprobanteRepository.save(comprobante);
+
+                System.out.println("  ✅ Monto total actualizado: S/ " + nuevoMontoTotal);
 
                 // AGREGAR: Crear detalles de insumos para este nuevo tratamiento
                 if (insumosTotales != null && !insumosTotales.isEmpty()) {
