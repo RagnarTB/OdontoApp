@@ -447,8 +447,8 @@ public class FacturacionServiceImpl implements FacturacionService {
             throw new IllegalArgumentException("El ID del método de pago es obligatorio");
         }
 
-        // 2. Obtener entidades
-        Comprobante comprobante = comprobanteRepository.findById(dto.getComprobanteId())
+        // 2. Obtener entidades con bloqueo pesimista para evitar deadlocks
+        Comprobante comprobante = comprobanteRepository.findByIdWithLock(dto.getComprobanteId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Comprobante no encontrado con ID: " + dto.getComprobanteId()));
 

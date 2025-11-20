@@ -133,8 +133,17 @@ public class OdontogramaDienteServiceImpl implements OdontogramaDienteService {
 
     @Override
     @Transactional
-    public List<OdontogramaDienteDTO> inicializarOdontograma(Long pacienteUsuarioId) {
+    public synchronized List<OdontogramaDienteDTO> inicializarOdontograma(Long pacienteUsuarioId) {
         Usuario paciente = buscarPaciente(pacienteUsuarioId);
+
+        // Verificar nuevamente si ya tiene dientes (puede que se hayan creado entre tanto)
+        List<OdontogramaDiente> existentes = odontogramaDienteRepository.findByPaciente(paciente);
+        if (!existentes.isEmpty()) {
+            return existentes.stream()
+                .map(this::convertirADTO)
+                .sorted(Comparator.comparing(OdontogramaDienteDTO::getNumeroDiente))
+                .collect(Collectors.toList());
+        }
 
         List<OdontogramaDiente> dientes = new ArrayList<>();
 
@@ -157,12 +166,32 @@ public class OdontogramaDienteServiceImpl implements OdontogramaDienteService {
             }
         }
 
-        List<OdontogramaDiente> guardados = odontogramaDienteRepository.saveAll(dientes);
+        // Si no hay dientes nuevos para crear, retornar lista vacía o existentes
+        if (dientes.isEmpty()) {
+            List<OdontogramaDiente> recientes = odontogramaDienteRepository.findByPaciente(paciente);
+            return recientes.stream()
+                .map(this::convertirADTO)
+                .sorted(Comparator.comparing(OdontogramaDienteDTO::getNumeroDiente))
+                .collect(Collectors.toList());
+        }
 
-        return guardados.stream()
-            .map(this::convertirADTO)
-            .sorted(Comparator.comparing(OdontogramaDienteDTO::getNumeroDiente))
-            .collect(Collectors.toList());
+        try {
+            List<OdontogramaDiente> guardados = odontogramaDienteRepository.saveAll(dientes);
+
+            return guardados.stream()
+                .map(this::convertirADTO)
+                .sorted(Comparator.comparing(OdontogramaDienteDTO::getNumeroDiente))
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            // Si hay error de duplicate entry, simplemente retornar los existentes
+            System.out.println("⚠️ Posible duplicate entry al crear odontograma para paciente " + pacienteUsuarioId +
+                             ". Retornando dientes existentes.");
+            List<OdontogramaDiente> recientes = odontogramaDienteRepository.findByPaciente(paciente);
+            return recientes.stream()
+                .map(this::convertirADTO)
+                .sorted(Comparator.comparing(OdontogramaDienteDTO::getNumeroDiente))
+                .collect(Collectors.toList());
+        }
     }
 
     @Override

@@ -4,7 +4,11 @@ import com.odontoapp.entidad.Comprobante;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +24,16 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
      * @return Optional con el comprobante si existe
      */
     Optional<Comprobante> findByNumeroComprobante(String numeroComprobante);
+
+    /**
+     * Busca un comprobante por ID con bloqueo pesimista para evitar deadlocks.
+     * Utilizado al registrar pagos para asegurar consistencia transaccional.
+     * @param id El ID del comprobante
+     * @return Optional con el comprobante bloqueado si existe
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Comprobante c WHERE c.id = :id")
+    Optional<Comprobante> findByIdWithLock(@Param("id") Long id);
 
     /**
      * Busca todos los comprobantes de un paciente específico.

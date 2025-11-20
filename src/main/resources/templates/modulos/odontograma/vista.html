@@ -548,11 +548,22 @@
 
             console.log('Guardando diente:', dienteDTO);
 
+            // Obtener CSRF token
+            var token = $("meta[name='_csrf']").attr("content");
+            var header = $("meta[name='_csrf_header']").attr("content");
+
             $.ajax({
                 url: `/api/odontograma/paciente/${pacienteId}/diente`,
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(dienteDTO),
+                beforeSend: function(xhr) {
+                    // Agregar CSRF token al header
+                    if (token && header) {
+                        xhr.setRequestHeader(header, token);
+                        console.log('✅ CSRF token agregado al request');
+                    }
+                },
                 success: function(response) {
                     console.log('Respuesta del servidor:', response);
 
