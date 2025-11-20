@@ -1037,8 +1037,11 @@ $(document).ready(function() {
             piezasDentales: datosTratamiento.piezasDentales || '',
             descripcion: datosTratamiento.descripcion || '',
             camposDinamicos: datosTratamiento.camposDinamicos || [],
+            insumosTotales: datosTratamiento.insumosTotales || [], // ← AGREGAR LOS INSUMOS
             tipo: 'PLANIFICADO'
         };
+
+        console.log('📤 Enviando tratamiento planificado:', tratamientoData); // Debug
 
         $.ajax({
             url: '/tratamientos/planificar',

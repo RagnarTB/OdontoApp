@@ -435,11 +435,13 @@ public class TratamientoController {
 
             // **OBTENER O GENERAR COMPROBANTE**
             System.out.println("\n🧾 PROCESAMIENTO DE COMPROBANTE:");
-            // Verificar si ya existe un comprobante para esta cita
+            // Verificar si ya existe un comprobante ACTIVO (no anulado) para esta cita
             Optional<Comprobante> comprobanteExistente = comprobanteRepository.findByCitaId(citaId);
             Comprobante comprobante;
 
-            if (comprobanteExistente.isPresent()) {
+            // Verificar si el comprobante existe Y no está anulado
+            if (comprobanteExistente.isPresent() &&
+                !"ANULADO".equals(comprobanteExistente.get().getEstadoPago().getNombre())) {
                 // Reutilizar el comprobante existente
                 comprobante = comprobanteExistente.get();
                 System.out.println("  ✓ Comprobante EXISTENTE encontrado: #" + comprobante.getId() +
@@ -500,7 +502,11 @@ public class TratamientoController {
                     }
                 }
             } else {
-                System.out.println("  ➕ Generando NUEVO comprobante...");
+                if (comprobanteExistente.isPresent()) {
+                    System.out.println("  ℹ️ Comprobante existente está ANULADO - Generando NUEVO comprobante...");
+                } else {
+                    System.out.println("  ➕ Generando NUEVO comprobante...");
+                }
                 // Generar nuevo comprobante con los insumos totales
                 comprobante = generarComprobante(cita, procedimiento, insumosTotales);
                 System.out.println("  ✓ Comprobante NUEVO creado: #" + comprobante.getId() +
