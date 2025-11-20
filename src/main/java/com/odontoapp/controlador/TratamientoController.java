@@ -435,17 +435,86 @@ public class TratamientoController {
 
             // **OBTENER O GENERAR COMPROBANTE**
             System.out.println("\n🧾 PROCESAMIENTO DE COMPROBANTE:");
-            // Verificar si ya existe un comprobante ACTIVO (no anulado) para esta cita
+            // Verificar si ya existe un comprobante para esta cita
             Optional<Comprobante> comprobanteExistente = comprobanteRepository.findByCitaId(citaId);
             Comprobante comprobante;
 
             // Verificar si el comprobante existe Y no está anulado
-            if (comprobanteExistente.isPresent() &&
-                !"ANULADO".equals(comprobanteExistente.get().getEstadoPago().getNombre())) {
-                // Reutilizar el comprobante existente
+            if (comprobanteExistente.isPresent()) {
                 comprobante = comprobanteExistente.get();
-                System.out.println("  ✓ Comprobante EXISTENTE encontrado: #" + comprobante.getId() +
-                                 " (" + comprobante.getNumeroComprobante() + ")");
+
+                if ("ANULADO".equals(comprobante.getEstadoPago().getNombre())) {
+                    // Reutilizar el comprobante anulado, resetear sus valores
+                    System.out.println("  ♻️ Reutilizando comprobante ANULADO: #" + comprobante.getId() +
+                                     " (" + comprobante.getNumeroComprobante() + ")");
+
+                    // Resetear el comprobante anulado
+                    comprobante.getDetalles().clear(); // Limpiar detalles anteriores
+                    comprobante.setMontoTotal(BigDecimal.ZERO);
+                    comprobante.setMontoPagado(BigDecimal.ZERO);
+                    comprobante.setMontoPendiente(BigDecimal.ZERO);
+                    comprobante.setFechaEmision(LocalDateTime.now());
+                    comprobante.setDescripcion("Comprobante por tratamiento: " + procedimiento.getNombre());
+
+                    // Cambiar estado a PENDIENTE
+                    EstadoPago estadoPendiente = estadoPagoRepository.findByNombre("PENDIENTE")
+                            .orElseThrow(() -> new RuntimeException("Estado de pago PENDIENTE no encontrado"));
+                    comprobante.setEstadoPago(estadoPendiente);
+
+                    System.out.println("  ✓ Comprobante reseteado y reactivado");
+
+                    // Agregar tratamiento y insumos al comprobante reseteado
+                    BigDecimal precioTratamiento = procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO;
+
+                    DetalleComprobante detalleTratamiento = new DetalleComprobante();
+                    detalleTratamiento.setComprobante(comprobante);
+                    detalleTratamiento.setTipoItem("TRATAMIENTO");
+                    detalleTratamiento.setItemId(tratamiento.getId());
+                    detalleTratamiento.setDescripcionItem(procedimiento.getNombre());
+                    detalleTratamiento.setCantidad(BigDecimal.ONE);
+                    detalleTratamiento.setPrecioUnitario(precioTratamiento);
+                    detalleTratamiento.setSubtotal(precioTratamiento);
+                    comprobante.getDetalles().add(detalleTratamiento);
+                    comprobante.setMontoTotal(comprobante.getMontoTotal().add(precioTratamiento));
+
+                    // Agregar insumos si hay
+                    if (insumosTotales != null && !insumosTotales.isEmpty()) {
+                        for (Map<String, Object> insumoData : insumosTotales) {
+                            try {
+                                Long insumoId = Long.parseLong(insumoData.get("insumoId").toString());
+                                BigDecimal cantidad = new BigDecimal(insumoData.get("cantidad").toString());
+
+                                Insumo insumo = insumoRepository.findById(insumoId)
+                                        .orElseThrow(() -> new RuntimeException("Insumo ID " + insumoId + " no encontrado"));
+
+                                BigDecimal precioInsumo = insumo.getCosto() != null ? insumo.getCosto() : BigDecimal.ZERO;
+                                BigDecimal subtotalInsumo = precioInsumo.multiply(cantidad);
+
+                                DetalleComprobante detalleInsumo = new DetalleComprobante();
+                                detalleInsumo.setComprobante(comprobante);
+                                detalleInsumo.setTipoItem("INSUMO");
+                                detalleInsumo.setItemId(insumoId);
+                                detalleInsumo.setDescripcionItem(insumo.getNombre());
+                                detalleInsumo.setCantidad(cantidad);
+                                detalleInsumo.setPrecioUnitario(precioInsumo);
+                                detalleInsumo.setSubtotal(subtotalInsumo);
+                                comprobante.getDetalles().add(detalleInsumo);
+                                comprobante.setMontoTotal(comprobante.getMontoTotal().add(subtotalInsumo));
+
+                                System.out.println("     ✓ Detalle agregado: " + insumo.getNombre() + " x " + cantidad);
+                            } catch (Exception e) {
+                                System.err.println("     ❌ Error agregando detalle: " + e.getMessage());
+                            }
+                        }
+                    }
+
+                    comprobante.setMontoPendiente(comprobante.getMontoTotal());
+                    comprobanteRepository.save(comprobante);
+
+                } else {
+                    // Comprobante activo, reutilizarlo
+                    System.out.println("  ✓ Comprobante EXISTENTE encontrado: #" + comprobante.getId() +
+                                     " (" + comprobante.getNumeroComprobante() + ")");
 
                 // ✅ AGREGAR EL TRATAMIENTO REALIZADO AL COMPROBANTE CON SU PRECIO
                 BigDecimal precioTratamiento = procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO;
@@ -501,13 +570,10 @@ public class TratamientoController {
                         }
                     }
                 }
-            } else {
-                if (comprobanteExistente.isPresent()) {
-                    System.out.println("  ℹ️ Comprobante existente está ANULADO - Generando NUEVO comprobante...");
-                } else {
-                    System.out.println("  ➕ Generando NUEVO comprobante...");
                 }
-                // Generar nuevo comprobante con los insumos totales
+            } else {
+                // No existe ningún comprobante para esta cita, crear uno nuevo
+                System.out.println("  ➕ Generando NUEVO comprobante...");
                 comprobante = generarComprobante(cita, procedimiento, insumosTotales);
                 System.out.println("  ✓ Comprobante NUEVO creado: #" + comprobante.getId() +
                                  " (" + comprobante.getNumeroComprobante() + ")");
