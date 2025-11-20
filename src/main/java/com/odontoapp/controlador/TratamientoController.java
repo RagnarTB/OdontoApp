@@ -243,10 +243,6 @@ public class TratamientoController {
             Cita cita = citaRepository.findById(citaId)
                     .orElseThrow(() -> new RuntimeException("Cita no encontrada"));
 
-            // Verificar tratamientos existentes (para información, pero permitir múltiples)
-            List<TratamientoRealizado> tratamientosExistentes = tratamientoRealizadoRepository.findByCitaId(citaId);
-            int numeroTratamiento = tratamientosExistentes.size() + 1;
-
             Procedimiento procedimiento = procedimientoRepository.findById(procedimientoId)
                     .orElseThrow(() -> new RuntimeException("Procedimiento no encontrado"));
 
