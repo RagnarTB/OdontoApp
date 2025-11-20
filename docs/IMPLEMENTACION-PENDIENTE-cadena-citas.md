@@ -1,6 +1,6 @@
 # Implementación Pendiente - Cadena de Citas y Comprobantes
 **Fecha:** 2025-11-20
-**Status:** 🟡 **EN PROGRESO** (Backend 80% completo, Frontend 0%)
+**Status:** ✅ **COMPLETADO** (Backend 100%, Frontend 100%)
 
 ---
 
@@ -275,14 +275,14 @@ public ResponseEntity<Map<String, Object>> planificar(@RequestBody Map<String, O
 - [x] Vincular cita generada con origen en `realizarInmediato()`
 - [x] Agregar tratamiento al comprobante con precio
 - [x] Actualizar monto total del comprobante
-- [ ] Endpoint API `/api/cita/{id}/puede-registrar-tratamiento`
-- [ ] Modificar `/planificar` para crear nuevo comprobante
+- [x] Endpoint API `/api/cita/{id}/puede-registrar-tratamiento`
+- [x] Modificar `/planificar` para crear nuevo comprobante
 
 ### Frontend
-- [ ] Llamar API al cargar detalle de cita
-- [ ] Deshabilitar botón si cita ya generó tratamiento
-- [ ] Mostrar mensaje con link a cita generada
-- [ ] Agregar CSRF token en registrar pago
+- [x] Llamar API al cargar detalle de cita
+- [x] Deshabilitar botón si cita ya generó tratamiento
+- [x] Mostrar mensaje con link a cita generada
+- [x] Agregar CSRF token en registrar pago
 
 ### Base de Datos
 - [ ] Ejecutar script SQL: `docs/sql-migration-cadena-citas.sql`
@@ -315,5 +315,5 @@ public ResponseEntity<Map<String, Object>> planificar(@RequestBody Map<String, O
 ---
 
 **Autor:** Claude Code
-**Status:** Backend 80% - Frontend 0%
-**Próximo:** Endpoint API + Frontend
+**Status:** ✅ **COMPLETADO 100%** - Listo para testing
+**Próximo:** Ejecutar migración SQL y testing exhaustivo

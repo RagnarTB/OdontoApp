@@ -536,11 +536,91 @@ public class TratamientoController {
             tratamientoPlanificadoRepository.save(tratamiento);
             System.out.println("✓ Tratamiento planificado guardado con ID: " + tratamiento.getId());
 
+            // ========== CREAR NUEVO COMPROBANTE PARA EL TRATAMIENTO PLANIFICADO ==========
+            System.out.println("\n💰 Creando comprobante para tratamiento planificado...");
+
+            Comprobante comprobanteNuevo = new Comprobante();
+            comprobanteNuevo.setCita(cita);
+            comprobanteNuevo.setPaciente(cita.getPaciente());
+            comprobanteNuevo.setFechaEmision(LocalDateTime.now());
+            comprobanteNuevo.setTipoComprobante("TRATAMIENTO_PLANIFICADO");
+            comprobanteNuevo.setDescripcion("Tratamiento planificado: " + procedimiento.getNombre());
+            comprobanteNuevo.setNumeroComprobante(generarNumeroComprobante());
+
+            // Calcular monto (precio del procedimiento)
+            BigDecimal montoTotal = procedimiento.getPrecio() != null
+                ? procedimiento.getPrecio()
+                : BigDecimal.ZERO;
+
+            comprobanteNuevo.setMontoTotal(montoTotal);
+            comprobanteNuevo.setMontoPagado(BigDecimal.ZERO);
+            comprobanteNuevo.setMontoPendiente(montoTotal);
+
+            // Obtener estado PENDIENTE
+            EstadoPago estadoPendiente = estadoPagoRepository.findByNombre("PENDIENTE")
+                .orElseThrow(() -> new RuntimeException("Estado PENDIENTE no encontrado"));
+            comprobanteNuevo.setEstadoPago(estadoPendiente);
+
+            // Guardar comprobante
+            comprobanteRepository.save(comprobanteNuevo);
+            System.out.println("  ✓ Comprobante creado: #" + comprobanteNuevo.getId() +
+                             " (" + comprobanteNuevo.getNumeroComprobante() + ")");
+
+            // Agregar detalle del tratamiento planificado
+            DetalleComprobante detalleTratamiento = new DetalleComprobante();
+            detalleTratamiento.setComprobante(comprobanteNuevo);
+            detalleTratamiento.setTipoItem("TRATAMIENTO_PLANIFICADO");
+            detalleTratamiento.setItemId(tratamiento.getId());
+            detalleTratamiento.setDescripcionItem(procedimiento.getCodigo() + " - " +
+                                                 procedimiento.getNombre() + " (Planificado)");
+            detalleTratamiento.setCantidad(BigDecimal.ONE);
+            detalleTratamiento.setPrecioUnitario(montoTotal);
+            detalleTratamiento.setSubtotal(montoTotal);
+            detalleComprobanteRepository.save(detalleTratamiento);
+            System.out.println("  ✓ Detalle tratamiento agregado al comprobante");
+
+            // Agregar detalles informativos de insumos (si existen)
+            if (insumosTotales != null && !insumosTotales.isEmpty()) {
+                System.out.println("  📦 Agregando " + insumosTotales.size() + " insumos como detalles informativos...");
+                for (Map<String, Object> insumoData : insumosTotales) {
+                    try {
+                        Long insumoId = Long.parseLong(insumoData.get("insumoId").toString());
+                        BigDecimal cantidad = new BigDecimal(insumoData.get("cantidad").toString());
+                        Insumo insumo = insumoRepository.findById(insumoId).orElse(null);
+
+                        if (insumo != null) {
+                            DetalleComprobante detalleInsumo = new DetalleComprobante();
+                            detalleInsumo.setComprobante(comprobanteNuevo);
+                            detalleInsumo.setTipoItem("INSUMO");
+                            detalleInsumo.setItemId(insumo.getId());
+                            detalleInsumo.setDescripcionItem(insumo.getCodigo() + " - " + insumo.getNombre() +
+                                                            " (Planificado - Incluido en precio)");
+                            detalleInsumo.setCantidad(cantidad);
+                            detalleInsumo.setPrecioUnitario(BigDecimal.ZERO);
+                            detalleInsumo.setSubtotal(BigDecimal.ZERO);
+                            detalleComprobanteRepository.save(detalleInsumo);
+                            System.out.println("    ✓ Insumo agregado: " + insumo.getNombre() + " x " + cantidad);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("    ⚠️ Error agregando insumo: " + e.getMessage());
+                    }
+                }
+            }
+
+            System.out.println("✅ Comprobante completado:");
+            System.out.println("  ├─ Comprobante ID: " + comprobanteNuevo.getId());
+            System.out.println("  ├─ Número: " + comprobanteNuevo.getNumeroComprobante());
+            System.out.println("  ├─ Monto Total: S/ " + montoTotal);
+            System.out.println("  └─ Estado: PENDIENTE\n");
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("mensaje", "Tratamiento planificado correctamente con " +
-                        (insumosTotales != null ? insumosTotales.size() : 0) + " insumos guardados");
+                        (insumosTotales != null ? insumosTotales.size() : 0) + " insumos guardados. " +
+                        "Comprobante generado: " + comprobanteNuevo.getNumeroComprobante());
             response.put("tratamientoId", tratamiento.getId());
+            response.put("comprobanteId", comprobanteNuevo.getId());
+            response.put("numeroComprobante", comprobanteNuevo.getNumeroComprobante());
 
             return ResponseEntity.ok(response);
 

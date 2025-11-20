@@ -397,12 +397,27 @@
             var $submitBtn = $(this).find('button[type="submit"]');
             $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
 
-            // Enviar AJAX
+            // Obtener CSRF token de las meta tags
+            var token = $("meta[name='_csrf']").attr("content");
+            var header = $("meta[name='_csrf_header']").attr("content");
+
+            console.log('CSRF Token:', token ? 'Presente' : 'NO ENCONTRADO');
+
+            // Enviar AJAX con CSRF token
             $.ajax({
                 url: '/facturacion/registrar-pago',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(pagoDTO),
+                beforeSend: function(xhr) {
+                    // Agregar CSRF token al header
+                    if (token && header) {
+                        xhr.setRequestHeader(header, token);
+                        console.log('✅ CSRF token agregado al request');
+                    } else {
+                        console.warn('⚠️ CSRF token no encontrado en meta tags');
+                    }
+                },
                 success: function(response) {
                     console.log('Respuesta exitosa:', response);
 

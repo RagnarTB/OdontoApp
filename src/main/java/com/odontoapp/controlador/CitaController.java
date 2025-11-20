@@ -4,6 +4,7 @@ import com.odontoapp.dto.CitaDTO;
 import com.odontoapp.dto.FullCalendarEventDTO;
 import com.odontoapp.entidad.Cita;
 import com.odontoapp.entidad.EstadoCita;
+import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.EstadoCitaRepository;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.PacienteRepository;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 public class CitaController {
 
     private final CitaService citaService;
+    private final CitaRepository citaRepository;
     private final FacturacionService facturacionService;
     private final RolRepository rolRepository;
     private final UsuarioRepository usuarioRepository;
@@ -51,6 +53,7 @@ public class CitaController {
     private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
 
     public CitaController(CitaService citaService,
+                         CitaRepository citaRepository,
                          FacturacionService facturacionService,
                          RolRepository rolRepository,
                          UsuarioRepository usuarioRepository,
@@ -60,6 +63,7 @@ public class CitaController {
                          EstadoCitaRepository estadoCitaRepository,
                          TratamientoPlanificadoRepository tratamientoPlanificadoRepository) {
         this.citaService = citaService;
+        this.citaRepository = citaRepository;
         this.facturacionService = facturacionService;
         this.rolRepository = rolRepository;
         this.usuarioRepository = usuarioRepository;
@@ -581,6 +585,52 @@ public class CitaController {
 
         } catch (Exception e) {
             return ResponseEntity.ok(Map.of("existe", false));
+        }
+    }
+
+    /**
+     * Verifica si una cita puede registrar nuevos tratamientos.
+     * Una cita NO puede registrar tratamientos si ya generó otra cita de tratamiento.
+     * Esto implementa la lógica de cadena de citas:
+     * Cita1 → Cita2 (tratamiento) → Cita3 (otro tratamiento)
+     * Solo la última cita de la cadena puede registrar tratamientos.
+     *
+     * @param citaId ID de la cita a verificar
+     * @return ResponseEntity con estado de si puede registrar y datos de cita generada si existe
+     */
+    @GetMapping("/api/cita/{citaId}/puede-registrar-tratamiento")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> puedeRegistrarTratamiento(@PathVariable Long citaId) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            System.out.println("🔍 Verificando si Cita #" + citaId + " puede registrar tratamiento...");
+
+            // Buscar si esta cita ya generó otra cita de tratamiento
+            Cita citaGenerada = citaRepository.findByCitaGeneradaPorTratamientoId(citaId);
+
+            boolean puedeRegistrar = (citaGenerada == null);
+            Long citaGeneradaId = (citaGenerada != null) ? citaGenerada.getId() : null;
+
+            response.put("puedeRegistrar", puedeRegistrar);
+            response.put("citaGeneradaId", citaGeneradaId);
+
+            if (puedeRegistrar) {
+                response.put("mensaje", "Esta cita puede registrar tratamientos");
+                System.out.println("  ✅ Puede registrar: NO tiene cita generada");
+            } else {
+                response.put("mensaje", "Esta cita ya generó tratamiento en Cita #" + citaGeneradaId);
+                System.out.println("  ❌ NO puede registrar: Ya generó Cita #" + citaGeneradaId);
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al verificar cita: " + e.getMessage());
+            e.printStackTrace();
+            response.put("error", e.getMessage());
+            response.put("puedeRegistrar", true); // Por seguridad, permitir en caso de error
+            return ResponseEntity.ok(response);
         }
     }
 
