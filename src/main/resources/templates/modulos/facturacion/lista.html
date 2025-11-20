@@ -1,116 +1,121 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: layout(titulo='Gestión de Comprobantes', contenido=~{::#contenido-principal})}">
+    th:replace="~{layout/base :: layout(titulo='Gestión de Comprobantes', contenido=~{::#contenido-principal})}">
 
 <body>
-<div id="contenido-principal">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Gestión de Comprobantes</h1>
-                    <p class="text-muted">Administra los comprobantes y pagos de la clínica</p>
-                </div>
-                <div class="col-sm-6">
-                    <a th:href="@{/facturacion/pos}" class="btn btn-success float-sm-right">
-                        <i class="fas fa-cash-register"></i> Ir al POS (Venta Directa)
-                    </a>
+    <div id="contenido-principal">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Gestión de Comprobantes</h1>
+                        <p class="text-muted">Administra los comprobantes y pagos de la clínica</p>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/facturacion/pos}" class="btn btn-success float-sm-right">
+                            <i class="fas fa-cash-register"></i> Ir al POS (Venta Directa)
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section class="content">
-        <div class="container-fluid">
+        <section class="content">
+            <div class="container-fluid">
 
-            <!-- Mensajes flash -->
-            <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle mr-2"></i>
-                <span th:text="${success}"></span>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle mr-2"></i>
-                <span th:text="${error}"></span>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-
-            <!-- Tabla de Comprobantes -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Comprobantes Pendientes
-                        <span class="badge badge-secondary ml-1" th:if="${comprobantes}" th:text="${comprobantes.totalElements}">0</span>
-                    </h3>
+                <!-- Mensajes flash -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span th:text="${success}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="card-body table-responsive p-0">
-                    <table class="table table-hover text-nowrap">
-                        <thead>
-                            <tr>
-                                <th>Serie y Número</th>
-                                <th>Tipo</th>
-                                <th>Paciente</th>
-                                <th>Fecha Emisión</th>
-                                <th class="text-right">Total</th>
-                                <th class="text-right">Pagado</th>
-                                <th class="text-right">Saldo Pendiente</th>
-                                <th class="text-center">Estado</th>
-                                <th class="text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:if="${comprobantes == null || comprobantes.empty}">
-                                <td colspan="9" class="text-center text-muted py-4">
-                                    <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
-                                    No se encontraron comprobantes pendientes.
-                                </td>
-                            </tr>
-                            <tr th:each="comprobante : ${comprobantes}">
-                                <td>
-                                    <strong th:text="${comprobante.numeroComprobante}">B001-0000001</strong>
-                                </td>
-                                <td>
-                                    <span class="badge badge-info" th:text="${comprobante.tipoComprobante}">CITA</span>
-                                </td>
-                                <td th:text="${comprobante.paciente.nombreCompleto}">Juan Pérez</td>
-                                <td th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy HH:mm')}">01/11/2025 10:30</td>
-                                <td class="text-right">
-                                    <strong>S/ </strong>
-                                    <span th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">150.00</span>
-                                </td>
-                                <td class="text-right">
-                                    <span class="text-success">S/ </span>
-                                    <span th:text="${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}">0.00</span>
-                                </td>
-                                <td class="text-right">
-                                    <strong class="text-danger">S/ </strong>
-                                    <span th:text="${#numbers.formatDecimal(comprobante.montoPendiente, 1, 2)}">150.00</span>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge"
-                                          th:classappend="${comprobante.estadoPago.nombre == 'PENDIENTE'} ? 'badge-warning' :
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <!-- Tabla de Comprobantes -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Comprobantes Pendientes
+                            <span class="badge badge-secondary ml-1" th:if="${comprobantes}"
+                                th:text="${comprobantes.totalElements}">0</span>
+                        </h3>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-hover text-nowrap">
+                            <thead>
+                                <tr>
+                                    <th>Serie y Número</th>
+                                    <th>Tipo</th>
+                                    <th>Paciente</th>
+                                    <th>Fecha Emisión</th>
+                                    <th class="text-right">Total</th>
+                                    <th class="text-right">Pagado</th>
+                                    <th class="text-right">Saldo Pendiente</th>
+                                    <th class="text-center">Estado</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${comprobantes == null || comprobantes.empty}">
+                                    <td colspan="9" class="text-center text-muted py-4">
+                                        <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                        No se encontraron comprobantes pendientes.
+                                    </td>
+                                </tr>
+                                <tr th:each="comprobante : ${comprobantes}">
+                                    <td>
+                                        <strong th:text="${comprobante.numeroComprobante}">B001-0000001</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info"
+                                            th:text="${comprobante.tipoComprobante}">CITA</span>
+                                    </td>
+                                    <td th:text="${comprobante.paciente.nombreCompleto}">Juan Pérez</td>
+                                    <td th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy HH:mm')}">
+                                        01/11/2025 10:30</td>
+                                    <td class="text-right">
+                                        <strong>S/ </strong>
+                                        <span
+                                            th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">150.00</span>
+                                    </td>
+                                    <td class="text-right">
+                                        <span class="text-success">S/ </span>
+                                        <span
+                                            th:text="${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}">0.00</span>
+                                    </td>
+                                    <td class="text-right">
+                                        <strong class="text-danger">S/ </strong>
+                                        <span
+                                            th:text="${#numbers.formatDecimal(comprobante.montoPendiente, 1, 2)}">150.00</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge"
+                                            th:classappend="${comprobante.estadoPago.nombre == 'PENDIENTE'} ? 'badge-warning' :
                                                           (${comprobante.estadoPago.nombre == 'PAGADO_PARCIAL'} ? 'badge-info' :
                                                           (${comprobante.estadoPago.nombre == 'PAGADO_TOTAL'} ? 'badge-success' :
                                                           (${comprobante.estadoPago.nombre == 'ANULADO'} ? 'badge-danger' : 'badge-secondary')))"
-                                          th:text="${comprobante.estadoPago.nombre}">
-                                        PENDIENTE
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <!-- Botón Ver Detalle / Registrar Pago -->
-                                        <a th:href="@{/facturacion/detalle/{id}(id=${comprobante.id})}"
-                                           class="btn btn-info"
-                                           title="Ver detalle y registrar pago"
-                                           th:if="${comprobante.estadoPago.nombre != 'ANULADO'}">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
+                                            th:text="${comprobante.estadoPago.nombre}">
+                                            PENDIENTE
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <!-- Botón Ver Detalle / Registrar Pago -->
+                                            <a th:href="@{/facturacion/detalle/{id}(id=${comprobante.id})}"
+                                                class="btn btn-info" title="Ver detalle y registrar pago"
+                                                th:if="${comprobante.estadoPago.nombre != 'ANULADO'}">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
 
-                                        <!-- Botón Anular con Modal -->
-                                        <button type="button"
+                                            <!-- Botón Anular con Modal -->
+                                            <!--<button type="button"
                                                 class="btn btn-danger btn-anular-comprobante"
                                                 title="Anular comprobante"
                                                 th:if="${comprobante.estadoPago.nombre != 'ANULADO' && comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
@@ -119,118 +124,122 @@
                                                 th:data-paciente-nombre="${comprobante.paciente.nombreCompleto}"
                                                 th:data-monto-total="${comprobante.montoTotal}">
                                             <i class="fas fa-ban"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Paginación -->
-                <div class="card-footer clearfix" th:if="${comprobantes != null && comprobantes.totalPages > 0}">
-                    <div class="float-left">
-                        <small class="text-muted">
-                            Mostrando <span th:text="${comprobantes.numberOfElements}"></span> de
-                            <span th:text="${comprobantes.totalElements}"></span> comprobantes
-                            (Página <span th:text="${comprobantes.number + 1}"></span> de
-                            <span th:text="${comprobantes.totalPages}"></span>)
-                        </small>
+                                        </button>-->
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <ul class="pagination pagination-sm m-0 float-right" th:if="${comprobantes.totalPages > 1}">
-                        <!-- Primera página -->
-                        <li class="page-item" th:classappend="${comprobantes.first} ? 'disabled'">
-                            <a class="page-link" th:href="@{/facturacion(page=0)}" aria-label="Primera">
-                                <span aria-hidden="true">&laquo;&laquo;</span>
-                            </a>
-                        </li>
-                        <!-- Página anterior -->
-                        <li class="page-item" th:classappend="${comprobantes.first} ? 'disabled'">
-                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.number - 1})}" aria-label="Anterior">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        <!-- Números de página -->
-                        <li class="page-item" th:each="i : ${#numbers.sequence(0, comprobantes.totalPages - 1)}"
-                            th:if="${i >= comprobantes.number - 2 && i <= comprobantes.number + 2}"
-                            th:classappend="${i == comprobantes.number} ? 'active'">
-                            <a class="page-link" th:href="@{/facturacion(page=${i})}" th:text="${i + 1}"></a>
-                        </li>
-                        <!-- Página siguiente -->
-                        <li class="page-item" th:classappend="${comprobantes.last} ? 'disabled'">
-                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.number + 1})}" aria-label="Siguiente">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <!-- Última página -->
-                        <li class="page-item" th:classappend="${comprobantes.last} ? 'disabled'">
-                            <a class="page-link" th:href="@{/facturacion(page=${comprobantes.totalPages - 1})}" aria-label="Última">
-                                <span aria-hidden="true">&raquo;&raquo;</span>
-                            </a>
-                        </li>
-                    </ul>
+
+                    <!-- Paginación -->
+                    <div class="card-footer clearfix" th:if="${comprobantes != null && comprobantes.totalPages > 0}">
+                        <div class="float-left">
+                            <small class="text-muted">
+                                Mostrando <span th:text="${comprobantes.numberOfElements}"></span> de
+                                <span th:text="${comprobantes.totalElements}"></span> comprobantes
+                                (Página <span th:text="${comprobantes.number + 1}"></span> de
+                                <span th:text="${comprobantes.totalPages}"></span>)
+                            </small>
+                        </div>
+                        <ul class="pagination pagination-sm m-0 float-right" th:if="${comprobantes.totalPages > 1}">
+                            <!-- Primera página -->
+                            <li class="page-item" th:classappend="${comprobantes.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/facturacion(page=0)}" aria-label="Primera">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <!-- Página anterior -->
+                            <li class="page-item" th:classappend="${comprobantes.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/facturacion(page=${comprobantes.number - 1})}"
+                                    aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            <!-- Números de página -->
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, comprobantes.totalPages - 1)}"
+                                th:if="${i >= comprobantes.number - 2 && i <= comprobantes.number + 2}"
+                                th:classappend="${i == comprobantes.number} ? 'active'">
+                                <a class="page-link" th:href="@{/facturacion(page=${i})}" th:text="${i + 1}"></a>
+                            </li>
+                            <!-- Página siguiente -->
+                            <li class="page-item" th:classappend="${comprobantes.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/facturacion(page=${comprobantes.number + 1})}"
+                                    aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <!-- Última página -->
+                            <li class="page-item" th:classappend="${comprobantes.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/facturacion(page=${comprobantes.totalPages - 1})}"
+                                    aria-label="Última">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
+
             </div>
+        </section>
 
-        </div>
-    </section>
+        <!-- Incluir el modal de anulación -->
+        <div th:replace="~{modulos/facturacion/fragmentos :: modalAnularComprobante}"></div>
 
-    <!-- Incluir el modal de anulación -->
-    <div th:replace="~{modulos/facturacion/fragmentos :: modalAnularComprobante}"></div>
+    </div>
 
-</div>
+    <!-- Script para manejar los botones de anular -->
+    <script>
+        $(document).ready(function () {
+            // Manejar click en botones de anular
+            $('.btn-anular-comprobante').on('click', function () {
+                var $btn = $(this);
+                var comprobanteId = $btn.data('comprobante-id');
+                var numeroComprobante = $btn.data('numero-comprobante');
+                var pacienteNombre = $btn.data('paciente-nombre');
+                var montoTotal = $btn.data('monto-total');
 
-<!-- Script para manejar los botones de anular -->
-<script>
-$(document).ready(function() {
-    // Manejar click en botones de anular
-    $('.btn-anular-comprobante').on('click', function() {
-        var $btn = $(this);
-        var comprobanteId = $btn.data('comprobante-id');
-        var numeroComprobante = $btn.data('numero-comprobante');
-        var pacienteNombre = $btn.data('paciente-nombre');
-        var montoTotal = $btn.data('monto-total');
+                // Cargar detalles del comprobante via AJAX
+                $.ajax({
+                    url: '/facturacion/detalle/' + comprobanteId + '/json',
+                    type: 'GET',
+                    success: function (data) {
+                        // Preparar datos para el modal
+                        var detalles = data.detalles || [];
 
-        // Cargar detalles del comprobante via AJAX
-        $.ajax({
-            url: '/facturacion/detalle/' + comprobanteId + '/json',
-            type: 'GET',
-            success: function(data) {
-                // Preparar datos para el modal
-                var detalles = data.detalles || [];
+                        // Crear el evento con los datos cargados
+                        var fakeButton = $('<button></button>');
+                        fakeButton.data('comprobante-id', comprobanteId);
+                        fakeButton.data('numero-comprobante', numeroComprobante);
+                        fakeButton.data('paciente-nombre', pacienteNombre);
+                        fakeButton.data('monto-total', montoTotal);
+                        fakeButton.data('detalles', detalles);
 
-                // Crear el evento con los datos cargados
-                var fakeButton = $('<button></button>');
-                fakeButton.data('comprobante-id', comprobanteId);
-                fakeButton.data('numero-comprobante', numeroComprobante);
-                fakeButton.data('paciente-nombre', pacienteNombre);
-                fakeButton.data('monto-total', montoTotal);
-                fakeButton.data('detalles', detalles);
+                        // Abrir el modal con los datos
+                        var modalEvent = $.Event('show.bs.modal');
+                        modalEvent.relatedTarget = fakeButton[0];
+                        $('#modalAnularComprobante').trigger(modalEvent);
+                        $('#modalAnularComprobante').modal('show');
+                    },
+                    error: function () {
+                        // Si falla el AJAX, abrir el modal sin detalles
+                        var fakeButton = $('<button></button>');
+                        fakeButton.data('comprobante-id', comprobanteId);
+                        fakeButton.data('numero-comprobante', numeroComprobante);
+                        fakeButton.data('paciente-nombre', pacienteNombre);
+                        fakeButton.data('monto-total', montoTotal);
+                        fakeButton.data('detalles', []);
 
-                // Abrir el modal con los datos
-                var modalEvent = $.Event('show.bs.modal');
-                modalEvent.relatedTarget = fakeButton[0];
-                $('#modalAnularComprobante').trigger(modalEvent);
-                $('#modalAnularComprobante').modal('show');
-            },
-            error: function() {
-                // Si falla el AJAX, abrir el modal sin detalles
-                var fakeButton = $('<button></button>');
-                fakeButton.data('comprobante-id', comprobanteId);
-                fakeButton.data('numero-comprobante', numeroComprobante);
-                fakeButton.data('paciente-nombre', pacienteNombre);
-                fakeButton.data('monto-total', montoTotal);
-                fakeButton.data('detalles', []);
-
-                var modalEvent = $.Event('show.bs.modal');
-                modalEvent.relatedTarget = fakeButton[0];
-                $('#modalAnularComprobante').trigger(modalEvent);
-                $('#modalAnularComprobante').modal('show');
-            }
+                        var modalEvent = $.Event('show.bs.modal');
+                        modalEvent.relatedTarget = fakeButton[0];
+                        $('#modalAnularComprobante').trigger(modalEvent);
+                        $('#modalAnularComprobante').modal('show');
+                    }
+                });
+            });
         });
-    });
-});
-</script>
+    </script>
 
 </body>
+
 </html>

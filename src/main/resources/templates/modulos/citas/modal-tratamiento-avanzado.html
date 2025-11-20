@@ -1,11 +1,13 @@
 <!-- Modal Registrar Tratamiento AVANZADO -->
-<div th:fragment="modalRegistrarTratamiento" class="modal fade" id="modalRegistrarTratamiento" tabindex="-1" role="dialog">
+<div th:fragment="modalRegistrarTratamiento" class="modal fade" id="modalRegistrarTratamiento" tabindex="-1"
+    role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title">
                     <i class="fas fa-tooth mr-2"></i>Registrar Tratamiento Dental
                 </h5>
+                <label class="font-weight-bold">Este modal solo se utilizara para tratamientos realizados ahora</label>
                 <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -18,27 +20,29 @@
                 <div class="alert alert-info mb-3 py-2">
                     <small>
                         <strong><i class="fas fa-info-circle mr-1"></i></strong>
-                        <span id="infoCitaPaciente"></span> | <span id="infoCitaOdontologo"></span> | <span id="infoCitaFecha"></span>
+                        <span id="infoCitaPaciente"></span> | <span id="infoCitaOdontologo"></span> | <span
+                            id="infoCitaFecha"></span>
                     </small>
                 </div>
 
                 <!-- Procedimiento Selection -->
                 <div class="form-group">
-                    <label for="tratamientoProcedimientoId" class="font-weight-bold">Procedimiento <span class="text-danger">*</span></label>
+                    <label for="tratamientoProcedimientoId" class="font-weight-bold">Procedimiento <span
+                            class="text-danger">*</span></label>
                     <select class="form-control form-control-sm" id="tratamientoProcedimientoId" required>
                         <option value="">Seleccione un procedimiento...</option>
-                        <option th:each="proc : ${listaProcedimientos}"
-                                th:value="${proc.id}"
-                                th:data-codigo="${proc.codigo}"
-                                th:attr="data-duracion=${proc.duracionBaseMinutos}"
-                                th:text="${proc.codigo + ' - ' + proc.nombre + ' (' + proc.duracionBaseMinutos + ' min)'}"></option>
+                        <option th:each="proc : ${listaProcedimientos}" th:value="${proc.id}"
+                            th:data-codigo="${proc.codigo}" th:attr="data-duracion=${proc.duracionBaseMinutos}"
+                            th:text="${proc.codigo + ' - ' + proc.nombre + ' (' + proc.duracionBaseMinutos + ' min)'}">
+                        </option>
                     </select>
                 </div>
 
                 <!-- Selector Visual de Dientes (FDI) - Compacto -->
                 <div class="card card-outline card-primary mb-2" id="selectorDientes" style="display:none;">
                     <div class="card-header py-1">
-                        <h6 class="mb-0" style="font-size: 0.9rem;"><i class="fas fa-teeth mr-1"></i>Pieza(s) Dental(es)</h6>
+                        <h6 class="mb-0" style="font-size: 0.9rem;"><i class="fas fa-teeth mr-1"></i>Pieza(s) Dental(es)
+                        </h6>
                     </div>
                     <div class="card-body text-center py-2">
                         <small class="text-muted d-block mb-1" style="font-size: 0.7rem;">MAXILAR SUPERIOR</small>
@@ -89,7 +93,8 @@
                                 </tbody>
                             </table>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="btnAgregarInsumoAdicional">
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                            id="btnAgregarInsumoAdicional">
                             <i class="fas fa-plus mr-1"></i>Agregar Insumo
                         </button>
                     </div>
@@ -99,17 +104,21 @@
                 <div class="form-group mb-2">
                     <label for="tratamientoDescripcion" class="font-weight-bold">Observaciones</label>
                     <textarea class="form-control form-control-sm" id="tratamientoDescripcion" rows="2"
-                              placeholder="Observaciones adicionales"></textarea>
+                        placeholder="Observaciones adicionales"></textarea>
+
                 </div>
+
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
                     <i class="fas fa-times mr-1"></i>Cancelar
                 </button>
-                <button type="button" class="btn btn-info" id="btnPlanificarTratamiento" data-loading-text="Planificando tratamiento...">
+                <button type="button" class="btn btn-info" id="btnPlanificarTratamiento"
+                    data-loading-text="Planificando tratamiento...">
                     <i class="fas fa-calendar-plus mr-1"></i>Planificar para Después
                 </button>
-                <button type="button" class="btn btn-success" id="btnRealizarInmediato" data-loading-text="Registrando tratamiento...">
+                <button type="button" class="btn btn-success" id="btnRealizarInmediato"
+                    data-loading-text="Registrando tratamiento...">
                     <i class="fas fa-check-circle mr-1"></i>Tratamiento Realizado Ahora
                 </button>
             </div>
@@ -119,177 +128,177 @@
 
 <!-- Script del modal de tratamiento (se incluye en el bloque scripts del layout) -->
 <th:block th:fragment="scriptModalTratamiento">
-<script th:inline="javascript">
-/*<![CDATA[*/
-$(document).ready(function() {
-    console.log('✅ Inicializando modal de tratamiento (jQuery disponible)...'); // Debug
-    // Configurar token CSRF para todas las peticiones AJAX
-    var token = $("meta[name='_csrf']").attr("content");
-    var header = $("meta[name='_csrf_header']").attr("content");
-    $.ajaxSetup({
-        beforeSend: function(xhr) {
-            xhr.setRequestHeader(header, token);
-        }
-    });
-
-    let citaDatos = {};
-    let dientesSeleccionadosArray = [];
-
-    // FDI Tooth Structure
-    const cuadrantes = {
-        1: [18, 17, 16, 15, 14, 13, 12, 11],
-        2: [21, 22, 23, 24, 25, 26, 27, 28],
-        3: [31, 32, 33, 34, 35, 36, 37, 38],
-        4: [48, 47, 46, 45, 44, 43, 42, 41]
-    };
-
-    // Procedimientos que requieren selector de dientes
-    // Todos excepto blanqueamiento (EST-001) y controles generales
-    const procedimientosConDientes = ['END-001', 'END-002', 'IMP-001', 'IMP-002',
-                                       'EST-002', 'CIR-001', 'CIR-002'];
-
-    // Generar selector de dientes
-    function generarSelectorDientes() {
-        Object.keys(cuadrantes).forEach(function(cuad) {
-            let html = '';
-            cuadrantes[cuad].forEach(function(num) {
-                html += `<button type="button" class="btn btn-outline-secondary btn-sm btn-diente"
-                                data-diente="${num}">${num}</button>`;
-            });
-            $(`#cuadrante-${cuad}`).html(html);
-        });
-    }
-
-    // Click en diente
-    $(document).on('click', '.btn-diente', function() {
-        const diente = $(this).data('diente');
-        if ($(this).hasClass('active')) {
-            $(this).removeClass('active');
-            dientesSeleccionadosArray = dientesSeleccionadosArray.filter(d => d != diente);
-        } else {
-            $(this).addClass('active');
-            dientesSeleccionadosArray.push(diente);
-        }
-        $('#dientesSeleccionados').text(dientesSeleccionadosArray.length > 0 ?
-            dientesSeleccionadosArray.join(', ') : 'Ninguno');
-        $('#tratamientoPiezasDentales').val(dientesSeleccionadosArray.join(','));
-    });
-
-    // Al abrir modal (desde detalle de cita)
-    $('#modalRegistrarTratamiento').on('show.bs.modal', function() {
-        // Limpiar el ID del tratamiento planificado
-        $('#tratamientoPlanificadoId').val('');
-
-        // Cargar datos de la cita
-        const citaId = $('#detalleCitaId').val();
-
-        if (citaId) {
-            // Buscar si hay un tratamiento planificado asociado a esta cita
-            $.get('/citas/api/tratamiento-planificado/' + citaId, function(response) {
-                if (response.existe && response.estado !== 'COMPLETADO') {
-                    // Hay un tratamiento planificado pendiente
-                    console.log('✅ Tratamiento planificado encontrado ID:', response.id);
-                    $('#tratamientoPlanificadoId').val(response.id);
-                } else {
-                    console.log('ℹ️ No hay tratamiento planificado pendiente para esta cita');
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        $(document).ready(function () {
+            console.log('✅ Inicializando modal de tratamiento (jQuery disponible)...'); // Debug
+            // Configurar token CSRF para todas las peticiones AJAX
+            var token = $("meta[name='_csrf']").attr("content");
+            var header = $("meta[name='_csrf_header']").attr("content");
+            $.ajaxSetup({
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader(header, token);
                 }
-            }).fail(function() {
-                console.warn('⚠️ Error al buscar tratamiento planificado');
             });
 
-            continuarCargaModal(citaId);
-        } else {
-            continuarCargaModal(null);
-        }
-    });
+            let citaDatos = {};
+            let dientesSeleccionadosArray = [];
 
-    // Función auxiliar para cargar el modal
-    function continuarCargaModal(citaId) {
-        // Limpiar form
-        $('#tratamientoProcedimientoId').val('');
-        $('#tratamientoDescripcion').val('');
-        $('#camposDinamicos').html('');
-        $('#selectorDientes').hide();
-        $('#seccionInsumos').hide();
-        dientesSeleccionadosArray = [];
-        $('.btn-diente').removeClass('active');
-        $('#dientesSeleccionados').text('Ninguno');
-        $('#tratamientoPiezasDentales').val('');
-
-        // Limpiar insumos adicionales
-        $('.insumo-adicional').remove();
-        contadorInsumosAdicionales = 0;
-
-        if (citaId) {
-            $('#tratamientoCitaId').val(citaId);
-
-            // Cargar información de la cita y guardar en citaDatos
-            const paciente = $('#detallePaciente').text();
-            const pacienteId = $('#detallePacienteId').val();
-            const odontologo = $('#detalleOdontologo').text();
-            const odontologoId = $('#detalleOdontologoId').val();
-            const fecha = $('#detalleFecha').val();
-            const hora = $('#detalleHora').val();
-            const procedimientoId = $('#detalleProcedimientoId').val();
-            const procedimiento = $('#detalleProcedimiento').text();
-
-            // **GUARDAR EN citaDatos para uso posterior**
-            citaDatos = {
-                id: citaId,
-                pacienteNombre: paciente,
-                pacienteId: pacienteId,
-                odontologoNombre: odontologo,
-                odontologoId: odontologoId,
-                procedimientoId: procedimientoId,
-                procedimientoNombre: procedimiento,
-                fecha: fecha,
-                hora: hora
+            // FDI Tooth Structure
+            const cuadrantes = {
+                1: [18, 17, 16, 15, 14, 13, 12, 11],
+                2: [21, 22, 23, 24, 25, 26, 27, 28],
+                3: [31, 32, 33, 34, 35, 36, 37, 38],
+                4: [48, 47, 46, 45, 44, 43, 42, 41]
             };
 
-            console.log('Datos de la cita cargados:', citaDatos); // Debug
+            // Procedimientos que requieren selector de dientes
+            // Todos excepto blanqueamiento (EST-001) y controles generales
+            const procedimientosConDientes = ['END-001', 'END-002', 'IMP-001', 'IMP-002',
+                'EST-002', 'CIR-001', 'CIR-002'];
 
-            $('#infoCitaPaciente').text(paciente);
-            $('#infoCitaOdontologo').text(odontologo);
-            $('#infoCitaFecha').text(fecha + ' ' + hora);
-
-            // Si hay procedimiento asociado, pre-seleccionarlo
-            if (procedimientoId) {
-                $('#tratamientoProcedimientoId').val(procedimientoId);
-                // Trigger change para cargar campos dinámicos e insumos
-                $('#tratamientoProcedimientoId').trigger('change');
+            // Generar selector de dientes
+            function generarSelectorDientes() {
+                Object.keys(cuadrantes).forEach(function (cuad) {
+                    let html = '';
+                    cuadrantes[cuad].forEach(function (num) {
+                        html += `<button type="button" class="btn btn-outline-secondary btn-sm btn-diente"
+                                data-diente="${num}">${num}</button>`;
+                    });
+                    $(`#cuadrante-${cuad}`).html(html);
+                });
             }
-        }
-    }
 
-    // Cambio de procedimiento
-    $('#tratamientoProcedimientoId').on('change', function() {
-        const codigo = $(this).find(':selected').data('codigo');
-        const procId = $(this).val();
+            // Click en diente
+            $(document).on('click', '.btn-diente', function () {
+                const diente = $(this).data('diente');
+                if ($(this).hasClass('active')) {
+                    $(this).removeClass('active');
+                    dientesSeleccionadosArray = dientesSeleccionadosArray.filter(d => d != diente);
+                } else {
+                    $(this).addClass('active');
+                    dientesSeleccionadosArray.push(diente);
+                }
+                $('#dientesSeleccionados').text(dientesSeleccionadosArray.length > 0 ?
+                    dientesSeleccionadosArray.join(', ') : 'Ninguno');
+                $('#tratamientoPiezasDentales').val(dientesSeleccionadosArray.join(','));
+            });
 
-        // Mostrar selector de dientes si aplica
-        if (procedimientosConDientes.includes(codigo)) {
-            $('#selectorDientes').show();
-            generarSelectorDientes();
-        } else {
-            $('#selectorDientes').hide();
-        }
+            // Al abrir modal (desde detalle de cita)
+            $('#modalRegistrarTratamiento').on('show.bs.modal', function () {
+                // Limpiar el ID del tratamiento planificado
+                $('#tratamientoPlanificadoId').val('');
 
-        // Cargar campos dinámicos
-        cargarCamposDinamicos(codigo);
+                // Cargar datos de la cita
+                const citaId = $('#detalleCitaId').val();
 
-        // Cargar insumos del procedimiento
-        if (procId) {
-            cargarInsumosProcedimiento(procId);
-        }
-    });
+                if (citaId) {
+                    // Buscar si hay un tratamiento planificado asociado a esta cita
+                    $.get('/citas/api/tratamiento-planificado/' + citaId, function (response) {
+                        if (response.existe && response.estado !== 'COMPLETADO') {
+                            // Hay un tratamiento planificado pendiente
+                            console.log('✅ Tratamiento planificado encontrado ID:', response.id);
+                            $('#tratamientoPlanificadoId').val(response.id);
+                        } else {
+                            console.log('ℹ️ No hay tratamiento planificado pendiente para esta cita');
+                        }
+                    }).fail(function () {
+                        console.warn('⚠️ Error al buscar tratamiento planificado');
+                    });
 
-    // Campos dinámicos por procedimiento
-    function cargarCamposDinamicos(codigo) {
-        let html = '';
+                    continuarCargaModal(citaId);
+                } else {
+                    continuarCargaModal(null);
+                }
+            });
 
-        switch(codigo) {
-            case 'CON-001': // Consulta General
-                html = `
+            // Función auxiliar para cargar el modal
+            function continuarCargaModal(citaId) {
+                // Limpiar form
+                $('#tratamientoProcedimientoId').val('');
+                $('#tratamientoDescripcion').val('');
+                $('#camposDinamicos').html('');
+                $('#selectorDientes').hide();
+                $('#seccionInsumos').hide();
+                dientesSeleccionadosArray = [];
+                $('.btn-diente').removeClass('active');
+                $('#dientesSeleccionados').text('Ninguno');
+                $('#tratamientoPiezasDentales').val('');
+
+                // Limpiar insumos adicionales
+                $('.insumo-adicional').remove();
+                contadorInsumosAdicionales = 0;
+
+                if (citaId) {
+                    $('#tratamientoCitaId').val(citaId);
+
+                    // Cargar información de la cita y guardar en citaDatos
+                    const paciente = $('#detallePaciente').text();
+                    const pacienteId = $('#detallePacienteId').val();
+                    const odontologo = $('#detalleOdontologo').text();
+                    const odontologoId = $('#detalleOdontologoId').val();
+                    const fecha = $('#detalleFecha').val();
+                    const hora = $('#detalleHora').val();
+                    const procedimientoId = $('#detalleProcedimientoId').val();
+                    const procedimiento = $('#detalleProcedimiento').text();
+
+                    // **GUARDAR EN citaDatos para uso posterior**
+                    citaDatos = {
+                        id: citaId,
+                        pacienteNombre: paciente,
+                        pacienteId: pacienteId,
+                        odontologoNombre: odontologo,
+                        odontologoId: odontologoId,
+                        procedimientoId: procedimientoId,
+                        procedimientoNombre: procedimiento,
+                        fecha: fecha,
+                        hora: hora
+                    };
+
+                    console.log('Datos de la cita cargados:', citaDatos); // Debug
+
+                    $('#infoCitaPaciente').text(paciente);
+                    $('#infoCitaOdontologo').text(odontologo);
+                    $('#infoCitaFecha').text(fecha + ' ' + hora);
+
+                    // Si hay procedimiento asociado, pre-seleccionarlo
+                    if (procedimientoId) {
+                        $('#tratamientoProcedimientoId').val(procedimientoId);
+                        // Trigger change para cargar campos dinámicos e insumos
+                        $('#tratamientoProcedimientoId').trigger('change');
+                    }
+                }
+            }
+
+            // Cambio de procedimiento
+            $('#tratamientoProcedimientoId').on('change', function () {
+                const codigo = $(this).find(':selected').data('codigo');
+                const procId = $(this).val();
+
+                // Mostrar selector de dientes si aplica
+                if (procedimientosConDientes.includes(codigo)) {
+                    $('#selectorDientes').show();
+                    generarSelectorDientes();
+                } else {
+                    $('#selectorDientes').hide();
+                }
+
+                // Cargar campos dinámicos
+                cargarCamposDinamicos(codigo);
+
+                // Cargar insumos del procedimiento
+                if (procId) {
+                    cargarInsumosProcedimiento(procId);
+                }
+            });
+
+            // Campos dinámicos por procedimiento
+            function cargarCamposDinamicos(codigo) {
+                let html = '';
+
+                switch (codigo) {
+                    case 'CON-001': // Consulta General
+                        html = `
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -309,10 +318,10 @@ $(document).ready(function() {
                         <textarea class="form-control" name="observaciones" rows="2"></textarea>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'CON-002': // Consulta Emergencia
-                html = `
+                    case 'CON-002': // Consulta Emergencia
+                        html = `
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -334,10 +343,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'END-001': // Endodoncia Molar
-                html = `
+                    case 'END-001': // Endodoncia Molar
+                        html = `
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -367,10 +376,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'ORT-001': // Instalación Brackets
-                html = `
+                    case 'ORT-001': // Instalación Brackets
+                        html = `
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -400,10 +409,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'END-002': // Endodoncia Unirradicular
-                html = `
+                    case 'END-002': // Endodoncia Unirradicular
+                        html = `
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -433,10 +442,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'ORT-002': // Control Ortodoncia
-                html = `
+                    case 'ORT-002': // Control Ortodoncia
+                        html = `
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -463,10 +472,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'PER-001': // Limpieza Dental Básica
-                html = `
+                    case 'PER-001': // Limpieza Dental Básica
+                        html = `
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -499,10 +508,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'PER-002': // Limpieza Profunda (Curetaje)
-                html = `
+                    case 'PER-002': // Limpieza Profunda (Curetaje)
+                        html = `
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -534,10 +543,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'IMP-001': // Instalación de Implante
-                html = `
+                    case 'IMP-001': // Instalación de Implante
+                        html = `
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -581,10 +590,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'IMP-002': // Corona sobre Implante
-                html = `
+                    case 'IMP-002': // Corona sobre Implante
+                        html = `
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -613,10 +622,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'EST-001': // Blanqueamiento Dental
-                html = `
+                    case 'EST-001': // Blanqueamiento Dental
+                        html = `
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -646,10 +655,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'EST-002': // Carillas de Resina
-                html = `
+                    case 'EST-002': // Carillas de Resina
+                        html = `
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -673,10 +682,10 @@ $(document).ready(function() {
                         <input type="text" class="form-control" name="tecnicaAdhesion" placeholder="Ej: Grabado ácido + adhesivo universal">
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'CIR-001': // Extracción Simple
-                html = `
+                    case 'CIR-001': // Extracción Simple
+                        html = `
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -711,10 +720,10 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
+                        break;
 
-            case 'CIR-002': // Extracción Quirúrgica
-                html = `
+                    case 'CIR-002': // Extracción Quirúrgica
+                        html = `
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -766,21 +775,21 @@ $(document).ready(function() {
                         </div>
                     </div>
                 `;
-                break;
-        }
+                        break;
+                }
 
-        $('#camposDinamicos').html(html);
-    }
+                $('#camposDinamicos').html(html);
+            }
 
-    // Cargar insumos del procedimiento
-    function cargarInsumosProcedimiento(procId) {
-        $.get(`/procedimientos/${procId}/insumos`, function(insumos) {
-            if (insumos && insumos.length > 0) {
-                let html = '';
-                insumos.forEach(function(ins) {
-                    const tipoBadge = ins.esObligatorio ? 'danger' : 'secondary';
-                    const tipoTexto = ins.esObligatorio ? 'Oblig.' : 'Opc.';
-                    html += `
+            // Cargar insumos del procedimiento
+            function cargarInsumosProcedimiento(procId) {
+                $.get(`/procedimientos/${procId}/insumos`, function (insumos) {
+                    if (insumos && insumos.length > 0) {
+                        let html = '';
+                        insumos.forEach(function (ins) {
+                            const tipoBadge = ins.esObligatorio ? 'danger' : 'secondary';
+                            const tipoTexto = ins.esObligatorio ? 'Oblig.' : 'Opc.';
+                            html += `
                         <tr>
                             <td>${ins.insumoNombre}</td>
                             <td><input type="number" class="form-control form-control-sm"
@@ -793,59 +802,59 @@ $(document).ready(function() {
                             <td><span class="badge badge-${tipoBadge}" style="font-size:0.7rem;">${tipoTexto}</span></td>
                         </tr>
                     `;
+                        });
+                        $('#tablaInsumosDefault').html(html);
+                        $('#seccionInsumos').show();
+                    } else {
+                        $('#seccionInsumos').hide();
+                    }
+                }).fail(function () {
+                    $('#seccionInsumos').hide();
                 });
-                $('#tablaInsumosDefault').html(html);
-                $('#seccionInsumos').show();
-            } else {
-                $('#seccionInsumos').hide();
             }
-        }).fail(function() {
-            $('#seccionInsumos').hide();
-        });
-    }
 
-    // Contador para insumos adicionales
-    let contadorInsumosAdicionales = 0;
-    let insumosDisponibles = [];
+            // Contador para insumos adicionales
+            let contadorInsumosAdicionales = 0;
+            let insumosDisponibles = [];
 
-    // Cargar lista de insumos al inicio
-    function cargarInsumosDisponibles() {
-        $.get('/tratamientos/insumos', function(insumos) {
-            insumosDisponibles = insumos;
-            console.log('Insumos cargados:', insumosDisponibles.length);
-        }).fail(function() {
-            console.error('Error cargando lista de insumos');
-        });
-    }
-
-    // Cargar insumos al inicializar
-    cargarInsumosDisponibles();
-
-    // Agregar insumo adicional
-    $(document).on('click', '#btnAgregarInsumoAdicional', function() {
-        console.log('Agregando insumo adicional...');
-
-        if (insumosDisponibles.length === 0) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire('Advertencia', 'No hay insumos disponibles en el sistema', 'warning');
-            } else {
-                alert('No hay insumos disponibles en el sistema');
+            // Cargar lista de insumos al inicio
+            function cargarInsumosDisponibles() {
+                $.get('/tratamientos/insumos', function (insumos) {
+                    insumosDisponibles = insumos;
+                    console.log('Insumos cargados:', insumosDisponibles.length);
+                }).fail(function () {
+                    console.error('Error cargando lista de insumos');
+                });
             }
-            return;
-        }
 
-        contadorInsumosAdicionales++;
+            // Cargar insumos al inicializar
+            cargarInsumosDisponibles();
 
-        // Construir options del select
-        let optionsHtml = '<option value="">Seleccione insumo...</option>';
-        insumosDisponibles.forEach(function(insumo) {
-            const stockInfo = insumo.stockActual > 0 ? `(Stock: ${insumo.stockActual})` : '(Sin stock)';
-            optionsHtml += `<option value="${insumo.id}" data-unidad="${insumo.unidad}" data-precio="${insumo.precioUnitario || 0}">
+            // Agregar insumo adicional
+            $(document).on('click', '#btnAgregarInsumoAdicional', function () {
+                console.log('Agregando insumo adicional...');
+
+                if (insumosDisponibles.length === 0) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('Advertencia', 'No hay insumos disponibles en el sistema', 'warning');
+                    } else {
+                        alert('No hay insumos disponibles en el sistema');
+                    }
+                    return;
+                }
+
+                contadorInsumosAdicionales++;
+
+                // Construir options del select
+                let optionsHtml = '<option value="">Seleccione insumo...</option>';
+                insumosDisponibles.forEach(function (insumo) {
+                    const stockInfo = insumo.stockActual > 0 ? `(Stock: ${insumo.stockActual})` : '(Sin stock)';
+                    optionsHtml += `<option value="${insumo.id}" data-unidad="${insumo.unidad}" data-precio="${insumo.precioUnitario || 0}">
                 ${insumo.codigo} - ${insumo.nombre} ${stockInfo}
             </option>`;
-        });
+                });
 
-        const nuevaFila = `
+                const nuevaFila = `
             <tr class="insumo-adicional" data-id="${contadorInsumosAdicionales}">
                 <td>
                     <select class="form-control form-control-sm select-insumo-adicional" required>
@@ -864,254 +873,254 @@ $(document).ready(function() {
             </tr>
         `;
 
-        $('#tablaInsumosDefault').append(nuevaFila);
+                $('#tablaInsumosDefault').append(nuevaFila);
 
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'success',
-                title: 'Insumo agregado',
-                showConfirmButton: false,
-                timer: 1500
-            });
-        }
-    });
-
-    // Cuando se selecciona un insumo, actualizar la unidad
-    $(document).on('change', '.select-insumo-adicional', function() {
-        const unidad = $(this).find(':selected').data('unidad');
-        $(this).closest('tr').find('.insumo-unidad-display').text(unidad || '-');
-    });
-
-    // Eliminar insumo adicional
-    $(document).on('click', '.btn-eliminar-insumo', function() {
-        $(this).closest('tr').remove();
-    });
-
-    // Botón Tratamiento Inmediato (usar delegación de eventos)
-    $(document).off('click', '#btnRealizarInmediato').on('click', '#btnRealizarInmediato', function() {
-        console.log('Botón Realizar Inmediato clickeado'); // Debug
-
-        // Validar que se haya seleccionado un procedimiento
-        const procedimientoId = $('#tratamientoProcedimientoId').val();
-        console.log('Procedimiento ID:', procedimientoId); // Debug
-
-        if (!procedimientoId) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire('Advertencia', 'Debe seleccionar un procedimiento antes de registrar el tratamiento', 'warning');
-            } else {
-                alert('Debe seleccionar un procedimiento antes de registrar el tratamiento');
-            }
-            return;
-        }
-
-        // Validar que haya una cita asociada
-        const citaId = $('#tratamientoCitaId').val();
-        console.log('Cita ID:', citaId); // Debug
-
-        if (!citaId) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire('Error', 'No se encontró la información de la cita', 'error');
-            } else {
-                alert('No se encontró la información de la cita');
-            }
-            return;
-        }
-
-        const datos = recopilarDatosTratamiento('INMEDIATO');
-        console.log('Datos del tratamiento:', datos); // Debug
-
-        // Activar loading usando el sistema global
-        const $btn = $(this);
-        setButtonLoading($btn, true);
-
-        $.ajax({
-            url: '/tratamientos/realizar-inmediato',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(datos),
-            success: function(response) {
-                console.log('Respuesta del servidor:', response); // Debug
-                setButtonLoading($btn, false);
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire('Éxito', response.mensaje || 'Tratamiento registrado correctamente', 'success');
-                } else {
-                    alert(response.mensaje || 'Tratamiento registrado correctamente');
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Insumo agregado',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
                 }
-                $('#modalRegistrarTratamiento').modal('hide');
-                location.reload();
-            },
-            error: function(xhr) {
-                console.error('Error completo:', xhr); // Debug
-                console.error('Status:', xhr.status); // Debug
-                console.error('Response:', xhr.responseJSON); // Debug
-                console.error('Response Text:', xhr.responseText); // Debug
-                setButtonLoading($btn, false);
+            });
 
-                let mensaje = 'No se pudo registrar el tratamiento';
+            // Cuando se selecciona un insumo, actualizar la unidad
+            $(document).on('change', '.select-insumo-adicional', function () {
+                const unidad = $(this).find(':selected').data('unidad');
+                $(this).closest('tr').find('.insumo-unidad-display').text(unidad || '-');
+            });
 
-                // Intentar obtener el mensaje de error del servidor
-                if (xhr.responseJSON) {
-                    mensaje = xhr.responseJSON.mensaje || xhr.responseJSON.error || mensaje;
-                } else if (xhr.responseText) {
-                    try {
-                        const errorObj = JSON.parse(xhr.responseText);
-                        mensaje = errorObj.mensaje || errorObj.error || mensaje;
-                    } catch (e) {
-                        mensaje = xhr.responseText.substring(0, 200); // Primeros 200 caracteres
+            // Eliminar insumo adicional
+            $(document).on('click', '.btn-eliminar-insumo', function () {
+                $(this).closest('tr').remove();
+            });
+
+            // Botón Tratamiento Inmediato (usar delegación de eventos)
+            $(document).off('click', '#btnRealizarInmediato').on('click', '#btnRealizarInmediato', function () {
+                console.log('Botón Realizar Inmediato clickeado'); // Debug
+
+                // Validar que se haya seleccionado un procedimiento
+                const procedimientoId = $('#tratamientoProcedimientoId').val();
+                console.log('Procedimiento ID:', procedimientoId); // Debug
+
+                if (!procedimientoId) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('Advertencia', 'Debe seleccionar un procedimiento antes de registrar el tratamiento', 'warning');
+                    } else {
+                        alert('Debe seleccionar un procedimiento antes de registrar el tratamiento');
                     }
+                    return;
                 }
 
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire('Error', mensaje, 'error');
-                } else {
-                    alert('Error: ' + mensaje);
+                // Validar que haya una cita asociada
+                const citaId = $('#tratamientoCitaId').val();
+                console.log('Cita ID:', citaId); // Debug
+
+                if (!citaId) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('Error', 'No se encontró la información de la cita', 'error');
+                    } else {
+                        alert('No se encontró la información de la cita');
+                    }
+                    return;
                 }
-            }
-        });
-    });
 
-    // Botón Planificar (abrir modal de planificación)
-    $(document).off('click', '#btnPlanificarTratamiento').on('click', '#btnPlanificarTratamiento', function() {
-        console.log('Botón Planificar clickeado'); // Debug
+                const datos = recopilarDatosTratamiento('INMEDIATO');
+                console.log('Datos del tratamiento:', datos); // Debug
 
-        // Validar que se haya seleccionado un procedimiento
-        const procedimientoId = $('#tratamientoProcedimientoId').val();
-        console.log('Procedimiento ID:', procedimientoId); // Debug
+                // Activar loading usando el sistema global
+                const $btn = $(this);
+                setButtonLoading($btn, true);
 
-        if (!procedimientoId) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire('Advertencia', 'Debe seleccionar un procedimiento antes de planificar el tratamiento', 'warning');
-            } else {
-                alert('Debe seleccionar un procedimiento antes de planificar el tratamiento');
-            }
-            return;
-        }
+                $.ajax({
+                    url: '/tratamientos/realizar-inmediato',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(datos),
+                    success: function (response) {
+                        console.log('Respuesta del servidor:', response); // Debug
+                        setButtonLoading($btn, false);
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire('Éxito', response.mensaje || 'Tratamiento registrado correctamente', 'success');
+                        } else {
+                            alert(response.mensaje || 'Tratamiento registrado correctamente');
+                        }
+                        $('#modalRegistrarTratamiento').modal('hide');
+                        location.reload();
+                    },
+                    error: function (xhr) {
+                        console.error('Error completo:', xhr); // Debug
+                        console.error('Status:', xhr.status); // Debug
+                        console.error('Response:', xhr.responseJSON); // Debug
+                        console.error('Response Text:', xhr.responseText); // Debug
+                        setButtonLoading($btn, false);
 
-        // Recopilar todos los datos del tratamiento
-        const datos = recopilarDatosTratamiento('PLANIFICADO');
-        console.log('Datos del tratamiento planificado:', datos); // Debug
+                        let mensaje = 'No se pudo registrar el tratamiento';
 
-        // Guardar datos temporalmente para usar en el modal de planificación
-        window.datosTratamientoPlanificar = datos;
+                        // Intentar obtener el mensaje de error del servidor
+                        if (xhr.responseJSON) {
+                            mensaje = xhr.responseJSON.mensaje || xhr.responseJSON.error || mensaje;
+                        } else if (xhr.responseText) {
+                            try {
+                                const errorObj = JSON.parse(xhr.responseText);
+                                mensaje = errorObj.mensaje || errorObj.error || mensaje;
+                            } catch (e) {
+                                mensaje = xhr.responseText.substring(0, 200); // Primeros 200 caracteres
+                            }
+                        }
 
-        // Obtener el procedimiento seleccionado
-        const procedimientoTexto = $('#tratamientoProcedimientoId option:selected').text();
-
-        // Pre-poblar modal con información de la cita actual
-        const citaId = citaDatos.id || '';
-        const pacienteId = citaDatos.pacienteId || '';
-        const pacienteNombre = citaDatos.pacienteNombre || 'N/A';
-        const odontologoNombre = citaDatos.odontologoNombre || 'N/A';
-        const odontologoId = citaDatos.odontologoId || '';
-
-        $('#planificarCitaId').val(citaId);
-        $('#planificarPacienteId').val(pacienteId);
-        $('#planificarProcedimientoId').val(procedimientoId);
-        $('#planificarOdontologoId').val(odontologoId);
-        $('#planificarPiezasDentales').val(datos.piezasDentales || '');
-        $('#planificarDescripcion').val(datos.descripcion || '');
-        $('#planificarCamposDinamicos').val(JSON.stringify(datos.camposDinamicos || []));
-        $('#planificarInsumosAdicionales').val(JSON.stringify(datos.insumosAdicionales || []));
-
-        $('#planificarPacienteNombre').text(pacienteNombre);
-        $('#planificarProcedimientoNombre').text(procedimientoTexto);
-
-        // Cerrar modal de tratamiento y abrir modal de planificación
-        $('#modalRegistrarTratamiento').modal('hide');
-        setTimeout(function() {
-            $('#modalPlanificarTratamiento').modal('show');
-        }, 300);
-    });
-
-    function recopilarDatosTratamiento(tipo) {
-        console.log('\n' + '='.repeat(60));
-        console.log('🔍 INICIANDO recopilarDatosTratamiento()');
-        console.log('  Tipo: ' + tipo);
-        console.log('='.repeat(60));
-
-        // Recopilar TODOS los insumos (predeterminados + adicionales) con cantidades modificadas
-        const insumosTotales = [];
-
-        // 1. Recopilar insumos predeterminados de la tabla (capturando cantidades de inputs)
-        console.log('\n📦 Paso 1: Recopilando insumos predeterminados...');
-        let contadorPredeterminados = 0;
-        $('#tablaInsumosDefault tr').not('.insumo-adicional').each(function(index) {
-            const $row = $(this);
-            const $cantidadInput = $row.find('input[type="number"]');
-
-            console.log(`  Fila ${index}:`, {
-                tieneInput: $cantidadInput.length > 0,
-                insumoId: $cantidadInput.data('insumo-id'),
-                cantidad: $cantidadInput.val(),
-                cantidadParseada: parseFloat($cantidadInput.val())
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire('Error', mensaje, 'error');
+                        } else {
+                            alert('Error: ' + mensaje);
+                        }
+                    }
+                });
             });
 
-            // Solo procesar filas que tienen input de cantidad (no la fila de "Seleccione procedimiento")
-            if ($cantidadInput.length > 0) {
-                const insumoId = $cantidadInput.data('insumo-id');
-                const cantidad = $cantidadInput.val();
+            // Botón Planificar (abrir modal de planificación)
+            $(document).off('click', '#btnPlanificarTratamiento').on('click', '#btnPlanificarTratamiento', function () {
+                console.log('Botón Planificar clickeado'); // Debug
 
-                if (insumoId && cantidad && parseFloat(cantidad) > 0) {
-                    insumosTotales.push({
+                // Validar que se haya seleccionado un procedimiento
+                const procedimientoId = $('#tratamientoProcedimientoId').val();
+                console.log('Procedimiento ID:', procedimientoId); // Debug
+
+                if (!procedimientoId) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('Advertencia', 'Debe seleccionar un procedimiento antes de planificar el tratamiento', 'warning');
+                    } else {
+                        alert('Debe seleccionar un procedimiento antes de planificar el tratamiento');
+                    }
+                    return;
+                }
+
+                // Recopilar todos los datos del tratamiento
+                const datos = recopilarDatosTratamiento('PLANIFICADO');
+                console.log('Datos del tratamiento planificado:', datos); // Debug
+
+                // Guardar datos temporalmente para usar en el modal de planificación
+                window.datosTratamientoPlanificar = datos;
+
+                // Obtener el procedimiento seleccionado
+                const procedimientoTexto = $('#tratamientoProcedimientoId option:selected').text();
+
+                // Pre-poblar modal con información de la cita actual
+                const citaId = citaDatos.id || '';
+                const pacienteId = citaDatos.pacienteId || '';
+                const pacienteNombre = citaDatos.pacienteNombre || 'N/A';
+                const odontologoNombre = citaDatos.odontologoNombre || 'N/A';
+                const odontologoId = citaDatos.odontologoId || '';
+
+                $('#planificarCitaId').val(citaId);
+                $('#planificarPacienteId').val(pacienteId);
+                $('#planificarProcedimientoId').val(procedimientoId);
+                $('#planificarOdontologoId').val(odontologoId);
+                $('#planificarPiezasDentales').val(datos.piezasDentales || '');
+                $('#planificarDescripcion').val(datos.descripcion || '');
+                $('#planificarCamposDinamicos').val(JSON.stringify(datos.camposDinamicos || []));
+                $('#planificarInsumosAdicionales').val(JSON.stringify(datos.insumosAdicionales || []));
+
+                $('#planificarPacienteNombre').text(pacienteNombre);
+                $('#planificarProcedimientoNombre').text(procedimientoTexto);
+
+                // Cerrar modal de tratamiento y abrir modal de planificación
+                $('#modalRegistrarTratamiento').modal('hide');
+                setTimeout(function () {
+                    $('#modalPlanificarTratamiento').modal('show');
+                }, 300);
+            });
+
+            function recopilarDatosTratamiento(tipo) {
+                console.log('\n' + '='.repeat(60));
+                console.log('🔍 INICIANDO recopilarDatosTratamiento()');
+                console.log('  Tipo: ' + tipo);
+                console.log('='.repeat(60));
+
+                // Recopilar TODOS los insumos (predeterminados + adicionales) con cantidades modificadas
+                const insumosTotales = [];
+
+                // 1. Recopilar insumos predeterminados de la tabla (capturando cantidades de inputs)
+                console.log('\n📦 Paso 1: Recopilando insumos predeterminados...');
+                let contadorPredeterminados = 0;
+                $('#tablaInsumosDefault tr').not('.insumo-adicional').each(function (index) {
+                    const $row = $(this);
+                    const $cantidadInput = $row.find('input[type="number"]');
+
+                    console.log(`  Fila ${index}:`, {
+                        tieneInput: $cantidadInput.length > 0,
+                        insumoId: $cantidadInput.data('insumo-id'),
+                        cantidad: $cantidadInput.val(),
+                        cantidadParseada: parseFloat($cantidadInput.val())
+                    });
+
+                    // Solo procesar filas que tienen input de cantidad (no la fila de "Seleccione procedimiento")
+                    if ($cantidadInput.length > 0) {
+                        const insumoId = $cantidadInput.data('insumo-id');
+                        const cantidad = $cantidadInput.val();
+
+                        if (insumoId && cantidad && parseFloat(cantidad) > 0) {
+                            insumosTotales.push({
+                                insumoId: insumoId,
+                                cantidad: cantidad
+                            });
+                            contadorPredeterminados++;
+                            console.log(`    ✓ Agregado: ID=${insumoId}, Cantidad=${cantidad}`);
+                        } else {
+                            console.log(`    ✗ Omitido: insumoId=${insumoId}, cantidad=${cantidad}`);
+                        }
+                    }
+                });
+                console.log(`  Total predeterminados: ${contadorPredeterminados}`);
+
+                // 2. Recopilar insumos adicionales agregados manualmente
+                console.log('\n📦 Paso 2: Recopilando insumos adicionales...');
+                let contadorAdicionales = 0;
+                $('.insumo-adicional').each(function (index) {
+                    const insumoId = $(this).find('.select-insumo-adicional').val();
+                    const cantidad = $(this).find('.insumo-cantidad').val();
+
+                    console.log(`  Insumo adicional ${index}:`, {
                         insumoId: insumoId,
                         cantidad: cantidad
                     });
-                    contadorPredeterminados++;
-                    console.log(`    ✓ Agregado: ID=${insumoId}, Cantidad=${cantidad}`);
-                } else {
-                    console.log(`    ✗ Omitido: insumoId=${insumoId}, cantidad=${cantidad}`);
-                }
-            }
-        });
-        console.log(`  Total predeterminados: ${contadorPredeterminados}`);
 
-        // 2. Recopilar insumos adicionales agregados manualmente
-        console.log('\n📦 Paso 2: Recopilando insumos adicionales...');
-        let contadorAdicionales = 0;
-        $('.insumo-adicional').each(function(index) {
-            const insumoId = $(this).find('.select-insumo-adicional').val();
-            const cantidad = $(this).find('.insumo-cantidad').val();
-
-            console.log(`  Insumo adicional ${index}:`, {
-                insumoId: insumoId,
-                cantidad: cantidad
-            });
-
-            if (insumoId && cantidad && parseFloat(cantidad) > 0) {
-                insumosTotales.push({
-                    insumoId: insumoId,
-                    cantidad: cantidad
+                    if (insumoId && cantidad && parseFloat(cantidad) > 0) {
+                        insumosTotales.push({
+                            insumoId: insumoId,
+                            cantidad: cantidad
+                        });
+                        contadorAdicionales++;
+                        console.log(`    ✓ Agregado: ID=${insumoId}, Cantidad=${cantidad}`);
+                    }
                 });
-                contadorAdicionales++;
-                console.log(`    ✓ Agregado: ID=${insumoId}, Cantidad=${cantidad}`);
+                console.log(`  Total adicionales: ${contadorAdicionales}`);
+
+                console.log('\n📦 RESUMEN DE INSUMOS:');
+                console.log('  Total insumos a enviar:', insumosTotales.length);
+                console.log('  Detalle:', insumosTotales);
+
+                const datosCompletos = {
+                    citaId: $('#tratamientoCitaId').val(),
+                    procedimientoId: $('#tratamientoProcedimientoId').val(),
+                    piezasDentales: $('#tratamientoPiezasDentales').val(),
+                    descripcion: $('#tratamientoDescripcion').val(),
+                    tipo: tipo,
+                    camposDinamicos: $('#camposDinamicos').find('input, select, textarea').serializeArray(),
+                    insumosTotales: insumosTotales, // ← Lista unificada
+                    tratamientoPlanificadoId: $('#tratamientoPlanificadoId').val() || null // ← ID explícito para flujo planificado->realizado
+                };
+
+                console.log('\n✅ DATOS COMPLETOS A ENVIAR:');
+                console.log(datosCompletos);
+                console.log('='.repeat(60) + '\n');
+
+                return datosCompletos;
             }
-        });
-        console.log(`  Total adicionales: ${contadorAdicionales}`);
-
-        console.log('\n📦 RESUMEN DE INSUMOS:');
-        console.log('  Total insumos a enviar:', insumosTotales.length);
-        console.log('  Detalle:', insumosTotales);
-
-        const datosCompletos = {
-            citaId: $('#tratamientoCitaId').val(),
-            procedimientoId: $('#tratamientoProcedimientoId').val(),
-            piezasDentales: $('#tratamientoPiezasDentales').val(),
-            descripcion: $('#tratamientoDescripcion').val(),
-            tipo: tipo,
-            camposDinamicos: $('#camposDinamicos').find('input, select, textarea').serializeArray(),
-            insumosTotales: insumosTotales, // ← Lista unificada
-            tratamientoPlanificadoId: $('#tratamientoPlanificadoId').val() || null // ← ID explícito para flujo planificado->realizado
-        };
-
-        console.log('\n✅ DATOS COMPLETOS A ENVIAR:');
-        console.log(datosCompletos);
-        console.log('='.repeat(60) + '\n');
-
-        return datosCompletos;
-    }
-}); // Fin de $(document).ready
-/*]]>*/
-</script>
+        }); // Fin de $(document).ready
+        /*]]>*/
+    </script>
 </th:block>
