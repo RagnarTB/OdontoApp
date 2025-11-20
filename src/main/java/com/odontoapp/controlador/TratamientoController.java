@@ -220,26 +220,67 @@ public class TratamientoController {
                 ? Long.parseLong(datos.get("tratamientoPlanificadoId").toString())
                 : null;
 
-            // **SI VIENE DE UN TRATAMIENTO PLANIFICADO, USAR LOS INSUMOS GUARDADOS EN EL JSON**
-            if (tratamientoPlanificadoId != null) {
-                TratamientoPlanificado planificado = tratamientoPlanificadoRepository.findById(tratamientoPlanificadoId)
-                        .orElse(null);
+            // **BUSCAR TRATAMIENTO PLANIFICADO ASOCIADO**
+            TratamientoPlanificado planificado = null;
 
-                if (planificado != null && planificado.getInsumosJson() != null && !planificado.getInsumosJson().isEmpty()) {
-                    try {
-                        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                        @SuppressWarnings("unchecked")
-                        List<Map<String, Object>> insumosGuardados = mapper.readValue(
-                                planificado.getInsumosJson(),
-                                List.class
-                        );
-                        insumosTotales = insumosGuardados;
-                        System.out.println("✓ Cargados " + insumosTotales.size() + " insumos desde tratamiento planificado");
-                    } catch (Exception e) {
-                        System.err.println("⚠️ Error al deserializar insumos del JSON: " + e.getMessage());
-                        // Continuar con los insumos del request si falla la deserialización
-                    }
+            // Intento 1: Si viene el ID explícito del tratamiento planificado, usarlo
+            if (tratamientoPlanificadoId != null) {
+                planificado = tratamientoPlanificadoRepository.findById(tratamientoPlanificadoId)
+                        .orElse(null);
+                if (planificado != null) {
+                    System.out.println("✓ Tratamiento planificado encontrado por ID: " + tratamientoPlanificadoId);
                 }
+            }
+
+            // Intento 2: Si no se encuentra por ID, buscar por cita asociada
+            if (planificado == null) {
+                planificado = tratamientoPlanificadoRepository.findByCitaAsociadaId(citaId);
+                if (planificado != null) {
+                    System.out.println("✓ Tratamiento planificado encontrado por cita asociada: " + citaId);
+                }
+            }
+
+            // Intento 3: Si no se encuentra por cita, buscar por paciente + procedimiento + estado
+            if (planificado == null) {
+                List<TratamientoPlanificado> tratamientosPendientes =
+                    tratamientoPlanificadoRepository.findByPacienteAndProcedimientoAndEstado(
+                        cita.getPaciente(),
+                        procedimiento,
+                        "PLANIFICADO"
+                    );
+
+                if (tratamientosPendientes.isEmpty()) {
+                    tratamientosPendientes = tratamientoPlanificadoRepository.findByPacienteAndProcedimientoAndEstado(
+                        cita.getPaciente(),
+                        procedimiento,
+                        "EN_CURSO"
+                    );
+                }
+
+                if (!tratamientosPendientes.isEmpty()) {
+                    planificado = tratamientosPendientes.get(0); // Tomar el más reciente
+                    System.out.println("✓ Tratamiento planificado encontrado por paciente + procedimiento: " + planificado.getId());
+                }
+            }
+
+            // **SI SE ENCONTRÓ UN TRATAMIENTO PLANIFICADO, USAR SUS INSUMOS**
+            if (planificado != null && planificado.getInsumosJson() != null && !planificado.getInsumosJson().isEmpty()) {
+                try {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> insumosGuardados = mapper.readValue(
+                            planificado.getInsumosJson(),
+                            List.class
+                    );
+                    insumosTotales = insumosGuardados;
+                    tratamientoPlanificadoId = planificado.getId(); // Actualizar el ID para usarlo más adelante
+                    System.out.println("✓ Cargados " + insumosTotales.size() + " insumos desde tratamiento planificado ID " + planificado.getId());
+                } catch (Exception e) {
+                    System.err.println("⚠️ Error al deserializar insumos del JSON: " + e.getMessage());
+                    // Continuar con los insumos del request si falla la deserialización
+                }
+            } else {
+                System.out.println("ℹ️ No se encontró tratamiento planificado con insumos guardados");
             }
 
             System.out.println("\n📊 DATOS PROCESADOS:");
