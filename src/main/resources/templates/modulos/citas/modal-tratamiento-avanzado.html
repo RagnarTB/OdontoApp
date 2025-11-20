@@ -177,10 +177,26 @@ $(document).ready(function() {
 
     // Al abrir modal (desde detalle de cita)
     $('#modalRegistrarTratamiento').on('show.bs.modal', function() {
-        // Cargar datos de la cita directamente sin verificar si ya existe tratamiento
+        // Limpiar el ID del tratamiento planificado
+        $('#tratamientoPlanificadoId').val('');
+
+        // Cargar datos de la cita
         const citaId = $('#detalleCitaId').val();
 
         if (citaId) {
+            // Buscar si hay un tratamiento planificado asociado a esta cita
+            $.get('/citas/api/tratamiento-planificado/' + citaId, function(response) {
+                if (response.existe && response.estado !== 'COMPLETADO') {
+                    // Hay un tratamiento planificado pendiente
+                    console.log('✅ Tratamiento planificado encontrado ID:', response.id);
+                    $('#tratamientoPlanificadoId').val(response.id);
+                } else {
+                    console.log('ℹ️ No hay tratamiento planificado pendiente para esta cita');
+                }
+            }).fail(function() {
+                console.warn('⚠️ Error al buscar tratamiento planificado');
+            });
+
             continuarCargaModal(citaId);
         } else {
             continuarCargaModal(null);
