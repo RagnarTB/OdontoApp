@@ -259,22 +259,25 @@
             }, 500);
         });
 
-        // Listener en el botón como backup
-        $('#btnSubmitPago').on('click', function(e) {
-            console.log('🔵 Click en botón Registrar Pago');
-            e.preventDefault();
-            $('#formRegistrarPago').trigger('submit');
-        });
-
         // Validación y envío AJAX del formulario
         $('#formRegistrarPago').on('submit', function(e) {
             console.log('🟢 Submit event capturado');
             e.preventDefault(); // Prevenir submit por defecto
             e.stopPropagation(); // Detener propagación del evento
+            e.stopImmediatePropagation(); // Detener TODOS los handlers
+
+            // Deshabilitar botón INMEDIATAMENTE para evitar doble submit
+            var $submitBtn = $('#btnSubmitPago');
+            if ($submitBtn.prop('disabled')) {
+                console.warn('⚠️ Botón ya está deshabilitado, ignorando submit duplicado');
+                return false;
+            }
+            $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
 
             // Validar que el ID del comprobante esté presente
             var comprobanteId = $('#pagoComprobanteId').val();
             if (!comprobanteId || comprobanteId === '' || comprobanteId === '0') {
+                $submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Registrar Pago');
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -287,6 +290,7 @@
             // Validar método de pago antes de procesar
             var metodoPagoId = $('#metodoPagoId').val();
             if (!metodoPagoId) {
+                $submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Registrar Pago');
                 Swal.fire({
                     icon: 'warning',
                     title: 'Método de Pago Requerido',
@@ -304,6 +308,7 @@
 
             // VALIDACIÓN YAPE > 500 SOLES EN PAGO TOTAL
             if (tipoPago === 'total' && metodoTexto.includes('YAPE') && montoFinal > 500) {
+                $submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Registrar Pago');
                 Swal.fire({
                     icon: 'warning',
                     title: 'Límite de Yape Excedido',
@@ -322,6 +327,7 @@
                 var montoParcial = parseFloat($('#monto').val() || 0);
 
                 if (montoParcial <= 0) {
+                    $submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Registrar Pago');
                     Swal.fire({
                         icon: 'error',
                         title: 'Monto Inválido',
@@ -333,6 +339,7 @@
                 }
 
                 if (montoParcial > saldoPendienteGlobal) {
+                    $submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Registrar Pago');
                     Swal.fire({
                         icon: 'error',
                         title: 'Monto Excedido',
@@ -345,6 +352,7 @@
             }
 
             if (montoFinal <= 0) {
+                $submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Registrar Pago');
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -358,6 +366,7 @@
             if (metodoTexto.includes('YAPE') || metodoTexto.includes('TRANSFERENCIA') || metodoTexto.includes('TARJETA')) {
                 var referenciaYape = $('#referenciaYape').val().trim();
                 if (!referenciaYape) {
+                    $submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Registrar Pago');
                     Swal.fire({
                         icon: 'warning',
                         title: 'Referencia Requerida',
@@ -372,6 +381,7 @@
             // Validar fecha de pago
             var fechaPago = $('#fechaPago').val();
             if (!fechaPago) {
+                $submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Registrar Pago');
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -392,10 +402,6 @@
             };
 
             console.log('Enviando pago:', pagoDTO);
-
-            // Deshabilitar botón mientras se procesa
-            var $submitBtn = $(this).find('button[type="submit"]');
-            $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
 
             // Obtener CSRF token de las meta tags
             var token = $("meta[name='_csrf']").attr("content");
