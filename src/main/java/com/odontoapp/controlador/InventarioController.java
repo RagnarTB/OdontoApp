@@ -79,7 +79,10 @@ public class InventarioController {
             }
 
         } catch (Exception e) {
-            System.err.println("Error al cargar historial de movimientos: " + e.getMessage());
+            System.err.println("❌ ERROR al cargar historial de movimientos para insumo ID " + insumoId + ":");
+            System.err.println("   Mensaje: " + e.getMessage());
+            System.err.println("   Tipo: " + e.getClass().getName());
+            e.printStackTrace(); // ← Stack trace completo para debugging
             // En caso de error, pasar página vacía para que la vista pueda renderizar
             model.addAttribute("paginaMovimientos", Page.empty());
         }

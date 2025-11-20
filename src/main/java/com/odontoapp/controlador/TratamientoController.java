@@ -342,6 +342,36 @@ public class TratamientoController {
             if (comprobanteExistente.isPresent()) {
                 // Reutilizar el comprobante existente
                 comprobante = comprobanteExistente.get();
+
+                // AGREGAR: Crear detalles de insumos para este nuevo tratamiento
+                if (insumosTotales != null && !insumosTotales.isEmpty()) {
+                    System.out.println("✓ Agregando " + insumosTotales.size() + " insumos al comprobante existente #" + comprobante.getId());
+
+                    for (Map<String, Object> insumoData : insumosTotales) {
+                        try {
+                            Long insumoId = Long.parseLong(insumoData.get("insumoId").toString());
+                            BigDecimal cantidad = new BigDecimal(insumoData.get("cantidad").toString());
+                            Insumo insumo = insumoRepository.findById(insumoId).orElse(null);
+
+                            if (insumo != null) {
+                                // Crear detalle INFORMATIVO (los insumos ya fueron descontados arriba)
+                                DetalleComprobante detalleInsumo = new DetalleComprobante();
+                                detalleInsumo.setComprobante(comprobante);
+                                detalleInsumo.setTipoItem("INSUMO");
+                                detalleInsumo.setItemId(insumo.getId());
+                                detalleInsumo.setDescripcionItem(insumo.getCodigo() + " - " + insumo.getNombre() + " (Incluido)");
+                                detalleInsumo.setCantidad(cantidad);
+                                detalleInsumo.setPrecioUnitario(BigDecimal.ZERO);
+                                detalleInsumo.setSubtotal(BigDecimal.ZERO);
+                                detalleComprobanteRepository.save(detalleInsumo);
+
+                                System.out.println("  ✓ Insumo agregado: " + insumo.getNombre() + " x " + cantidad);
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error agregando detalle de insumo al comprobante existente: " + e.getMessage());
+                        }
+                    }
+                }
             } else {
                 // Generar nuevo comprobante con los insumos totales
                 comprobante = generarComprobante(cita, procedimiento, insumosTotales);
@@ -514,10 +544,13 @@ public class TratamientoController {
 
     /**
      * Genera automáticamente un comprobante para el tratamiento realizado
-     * Incluye el procedimiento principal y los insumos adicionales utilizados
+     * Incluye el procedimiento principal y los insumos utilizados
+     *
+     * IMPORTANTE: Este método NO descuenta insumos del inventario.
+     * El descuento ya se hizo en realizarInmediato(), aquí solo se crean los detalles informativos.
      */
     private Comprobante generarComprobante(Cita cita, Procedimiento procedimiento,
-                                          List<Map<String, Object>> insumosAdicionales) {
+                                          List<Map<String, Object>> insumosTotales) {
         // Crear comprobante
         Comprobante comprobante = new Comprobante();
         comprobante.setCita(cita);
@@ -566,10 +599,11 @@ public class TratamientoController {
         detalleProcedimiento.setSubtotal(procedimiento.getPrecio() != null ? procedimiento.getPrecio() : BigDecimal.ZERO);
         detalleComprobanteRepository.save(detalleProcedimiento);
 
-        // Crear detalles de insumos adicionales (INFORMATIVOS - Sin cargo)
-        // Los insumos se descuentan del inventario pero NO se cobran (incluidos en el precio del procedimiento)
-        if (insumosAdicionales != null && !insumosAdicionales.isEmpty()) {
-            for (Map<String, Object> insumo : insumosAdicionales) {
+        // Crear detalles de insumos (INFORMATIVOS - Sin cargo)
+        // IMPORTANTE: Los insumos YA fueron descontados en realizarInmediato()
+        // Aquí solo creamos los detalles para que aparezcan en el comprobante
+        if (insumosTotales != null && !insumosTotales.isEmpty()) {
+            for (Map<String, Object> insumo : insumosTotales) {
                 try {
                     Long insumoId = Long.parseLong(insumo.get("insumoId").toString());
                     BigDecimal cantidad = new BigDecimal(insumo.get("cantidad").toString());
@@ -586,10 +620,6 @@ public class TratamientoController {
                         detalleInsumo.setPrecioUnitario(BigDecimal.ZERO); // ← SIN CARGO
                         detalleInsumo.setSubtotal(BigDecimal.ZERO); // ← SIN CARGO
                         detalleComprobanteRepository.save(detalleInsumo);
-
-                        // **REGISTRAR MOVIMIENTO DE INVENTARIO Y ACTUALIZAR STOCK**
-                        String referencia = "Cita #" + comprobante.getCita().getId() + " - " + comprobante.getNumeroComprobante();
-                        registrarUsoInsumo(insumoEntity, cantidad, referencia);
 
                         System.out.println("✓ Insumo agregado al comprobante (sin cargo): " +
                                           insumoEntity.getNombre() + " x " + cantidad);
