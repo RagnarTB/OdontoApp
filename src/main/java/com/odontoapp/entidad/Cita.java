@@ -21,8 +21,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = { "paciente", "odontologo", "procedimiento", "estadoCita", "citaReprogramada" })
-@ToString(callSuper = true, exclude = { "paciente", "odontologo", "procedimiento", "estadoCita", "citaReprogramada" })
+@EqualsAndHashCode(callSuper = true, exclude = { "paciente", "odontologo", "procedimiento", "estadoCita", "citaReprogramada", "citaGeneradaPorTratamiento" })
+@ToString(callSuper = true, exclude = { "paciente", "odontologo", "procedimiento", "estadoCita", "citaReprogramada", "citaGeneradaPorTratamiento" })
 @Entity
 @Table(name = "citas")
 @SQLDelete(sql = "UPDATE citas SET eliminado = true, fecha_eliminacion = NOW() WHERE id = ?")
@@ -77,6 +77,16 @@ public class Cita extends EntidadAuditable {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cita_reprogramada_id", nullable = true)
     private Cita citaReprogramada;
+
+    /**
+     * Cita que generó esta cita por un tratamiento realizado.
+     * Permite crear cadenas de citas: Cita1 → Cita2 (tratamiento) → Cita3 (otro tratamiento)
+     * Si esta cita fue generada por un "Tratamiento Realizado Ahora" desde otra cita,
+     * este campo apunta a la cita origen.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cita_generada_por_tratamiento_id", nullable = true)
+    private Cita citaGeneradaPorTratamiento;
 
     // --- Campos Soft Delete ---
     private boolean eliminado = false;
