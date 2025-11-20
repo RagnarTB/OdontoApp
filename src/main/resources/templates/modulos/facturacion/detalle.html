@@ -360,26 +360,9 @@
         var comprobanteId = $(button).data('comprobante-id');
         var tieneInsumos = $(button).data('tiene-insumos');
 
-        // Si tiene insumos, preguntar si desea regresar al inventario
+        // Si tiene insumos, mostrar flujo de selección
         if (tieneInsumos) {
-            // Obtener lista de insumos del comprobante desde la tabla
-            var insumosHTML = '';
-            var hayInsumos = false;
-
-            $('.detalle-row').each(function() {
-                var tipo = $(this).data('tipo');
-                if (tipo === 'INSUMO') {
-                    hayInsumos = true;
-                    var descripcion = $(this).find('.detalle-descripcion').text();
-                    var cantidad = $(this).find('.detalle-cantidad').text();
-                    insumosHTML += '<li class="mb-2"><i class="fas fa-box text-warning mr-2"></i><strong>' + descripcion + '</strong> - Cantidad: ' + cantidad + '</li>';
-                }
-            });
-
-            if (!hayInsumos) {
-                insumosHTML = '<li class="text-muted">No hay insumos en este comprobante</li>';
-            }
-
+            // Primera pregunta: ¿Desea devolver insumos?
             Swal.fire({
                 title: '¿Anular este comprobante?',
                 html: `
@@ -388,38 +371,27 @@
                             <i class="fas fa-exclamation-triangle mr-2"></i>
                             <strong>Esta acción no se puede deshacer.</strong>
                         </p>
-                        <div class="card">
-                            <div class="card-header bg-info text-white py-2">
-                                <strong><i class="fas fa-clipboard-list mr-2"></i>Insumos utilizados:</strong>
-                            </div>
-                            <div class="card-body p-3">
-                                <ul class="list-unstyled mb-0" style="max-height: 200px; overflow-y: auto;">
-                                    ${insumosHTML}
-                                </ul>
-                            </div>
-                        </div>
-                        <p class="mt-3 text-center font-weight-bold">¿Desea regresar estos insumos al inventario?</p>
-                        <p class="text-muted small text-center">El motivo será registrado como "Anulación de Venta"</p>
+                        <p class="mt-3">¿Desea devolver insumos al inventario?</p>
                     </div>
                 `,
                 icon: 'warning',
+                showDenyButton: true,
                 showCancelButton: true,
-                showDenyButton: hayInsumos,
-                confirmButtonText: '<i class="fas fa-check mr-1"></i> Sí, regresar insumos',
-                denyButtonText: '<i class="fas fa-times mr-1"></i> No regresar insumos',
+                confirmButtonText: '<i class="fas fa-undo mr-1"></i> Sí, seleccionar insumos',
+                denyButtonText: '<i class="fas fa-times mr-1"></i> No devolver',
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#28a745',
                 denyButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
                 reverseButtons: true,
-                width: '650px'
+                width: '550px'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Anular y regresar insumos con POST
-                    enviarAnulacion(comprobanteId, true);
+                    // Mostrar modal de selección de insumos
+                    mostrarModalSeleccionInsumos(comprobanteId);
                 } else if (result.isDenied) {
-                    // Anular sin regresar insumos con POST
-                    enviarAnulacion(comprobanteId, false);
+                    // Anular sin devolver insumos
+                    enviarAnulacionSimple(comprobanteId, false);
                 }
             });
         } else {
@@ -436,14 +408,241 @@
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    enviarAnulacion(comprobanteId, false);
+                    enviarAnulacionSimple(comprobanteId, false);
                 }
             });
         }
     }
+
+    // Función para mostrar modal de selección de insumos
+    function mostrarModalSeleccionInsumos(comprobanteId) {
+        // Recopilar insumos de la tabla
+        var insumos = [];
+        $('.detalle-row').each(function() {
+            var tipo = $(this).data('tipo');
+            if (tipo === 'INSUMO') {
+                var itemId = $(this).data('item-id');
+                var descripcion = $(this).find('.detalle-descripcion').text().trim();
+                var cantidad = parseFloat($(this).find('.detalle-cantidad').text());
+
+                insumos.push({
+                    id: itemId,
+                    descripcion: descripcion,
+                    cantidad: cantidad
+                });
+            }
+        });
+
+        if (insumos.length === 0) {
+            Swal.fire('Error', 'No se encontraron insumos en este comprobante', 'error');
+            return;
+        }
+
+        // Construir tabla HTML para selección
+        var tablaHTML = `
+            <div class="text-left">
+                <p class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Seleccione los insumos y cantidades a devolver al inventario
+                </p>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm table-bordered">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 50px;"><input type="checkbox" id="selectAllInsumos" checked></th>
+                                <th>Insumo</th>
+                                <th style="width: 120px;">Cantidad Usada</th>
+                                <th style="width: 120px;">Cantidad a Devolver</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+
+        insumos.forEach(function(insumo, index) {
+            tablaHTML += `
+                <tr>
+                    <td class="text-center">
+                        <input type="checkbox" class="insumo-checkbox" data-index="${index}" checked>
+                    </td>
+                    <td>
+                        <small>${insumo.descripcion}</small>
+                        <input type="hidden" class="insumo-id" value="${insumo.id}">
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-secondary">${insumo.cantidad}</span>
+                    </td>
+                    <td>
+                        <input type="number"
+                               class="form-control form-control-sm insumo-cantidad"
+                               data-index="${index}"
+                               data-max="${insumo.cantidad}"
+                               value="${insumo.cantidad}"
+                               min="0"
+                               max="${insumo.cantidad}"
+                               step="0.01">
+                    </td>
+                </tr>
+            `;
+        });
+
+        tablaHTML += `
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted small mt-2 mb-0">
+                    <i class="fas fa-exclamation-circle mr-1"></i>
+                    La cantidad a devolver no puede exceder la cantidad usada
+                </p>
+            </div>
+        `;
+
+        Swal.fire({
+            title: 'Seleccionar Insumos a Devolver',
+            html: tablaHTML,
+            icon: 'question',
+            width: '800px',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check mr-1"></i> Confirmar Devolución',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            didOpen: () => {
+                // Handler para "Seleccionar Todos"
+                $('#selectAllInsumos').on('change', function() {
+                    $('.insumo-checkbox').prop('checked', $(this).is(':checked'));
+                });
+
+                // Handler para validar cantidades
+                $('.insumo-cantidad').on('input', function() {
+                    var val = parseFloat($(this).val()) || 0;
+                    var max = parseFloat($(this).data('max'));
+
+                    if (val > max) {
+                        $(this).val(max);
+                        $(this).addClass('is-invalid');
+                        setTimeout(() => $(this).removeClass('is-invalid'), 1000);
+                    } else if (val < 0) {
+                        $(this).val(0);
+                    }
+                });
+
+                // Deshabilitar input si checkbox desmarcado
+                $('.insumo-checkbox').on('change', function() {
+                    var index = $(this).data('index');
+                    var $input = $('.insumo-cantidad[data-index="' + index + '"]');
+                    $input.prop('disabled', !$(this).is(':checked'));
+                });
+            },
+            preConfirm: () => {
+                // Recopilar insumos seleccionados
+                var insumosSeleccionados = [];
+
+                $('.insumo-checkbox:checked').each(function() {
+                    var index = $(this).data('index');
+                    var $row = $(this).closest('tr');
+                    var insumoId = $row.find('.insumo-id').val();
+                    var cantidad = parseFloat($row.find('.insumo-cantidad[data-index="' + index + '"]').val()) || 0;
+
+                    if (cantidad > 0) {
+                        insumosSeleccionados.push({
+                            insumoId: insumoId,
+                            cantidad: cantidad
+                        });
+                    }
+                });
+
+                if (insumosSeleccionados.length === 0) {
+                    Swal.showValidationMessage('Debe seleccionar al menos un insumo con cantidad mayor a 0');
+                    return false;
+                }
+
+                return insumosSeleccionados;
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                // Enviar anulación con lista de insumos
+                enviarAnulacionConInsumos(comprobanteId, result.value);
+            }
+        });
+    }
+
+    // Función para anulación simple (sin devolución o todos los insumos)
+    function enviarAnulacionSimple(comprobanteId, regresarInventario) {
+        // Crear formulario dinámico para POST
+        var form = $('<form>', {
+            'method': 'POST',
+            'action': '/facturacion/anular/' + comprobanteId
+        });
+
+        // Agregar campo regresarInventario
+        form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'regresarInventario',
+            'value': regresarInventario
+        }));
+
+        // Agregar token CSRF si existe
+        var csrfToken = $('meta[name="_csrf"]').attr('content');
+        var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+
+        if (csrfToken) {
+            form.append($('<input>', {
+                'type': 'hidden',
+                'name': '_csrf',
+                'value': csrfToken
+            }));
+        }
+
+        // Agregar al body y enviar
+        $('body').append(form);
+        form.submit();
+    }
+
+    // Función para anulación con lista selectiva de insumos
+    function enviarAnulacionConInsumos(comprobanteId, insumos) {
+        var csrfToken = $('meta[name="_csrf"]').attr('content');
+        var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+
+        $.ajax({
+            url: '/facturacion/anular-con-devolucion/' + comprobanteId,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ insumos: insumos }),
+            beforeSend: function(xhr) {
+                if (csrfToken && csrfHeader) {
+                    xhr.setRequestHeader(csrfHeader, csrfToken);
+                }
+            },
+            success: function(response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Comprobante Anulado!',
+                    text: response.mensaje || 'El comprobante ha sido anulado y los insumos devueltos al inventario',
+                    confirmButtonText: 'Aceptar'
+                }).then(() => {
+                    window.location.reload();
+                });
+            },
+            error: function(xhr) {
+                var mensaje = 'Error al anular el comprobante';
+                if (xhr.responseJSON && xhr.responseJSON.mensaje) {
+                    mensaje = xhr.responseJSON.mensaje;
+                }
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: mensaje,
+                    confirmButtonText: 'Entendido'
+                });
+            }
+        });
+    }
     /*]]>*/
 </script>
+<th:block th:replace="~{modulos/facturacion/fragmentos :: scriptModalPago}"></th:block>
 </th:block>
 
 </body>
 </html>
+

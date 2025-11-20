@@ -261,6 +261,85 @@ public class FacturacionController {
     }
 
     /**
+     * Anula un comprobante con devolución selectiva de insumos (AJAX).
+     * Permite seleccionar qué insumos y qué cantidades devolver al inventario.
+     *
+     * @param id ID del comprobante a anular
+     * @param request Objeto con lista de insumos a devolver
+     * @return ResponseEntity con resultado en JSON
+     */
+    @PostMapping("/anular-con-devolucion/{id}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> anularComprobanteConDevolucion(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> request) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // Extraer lista de insumos del request
+            @SuppressWarnings("unchecked")
+            java.util.List<Map<String, Object>> insumosRequest =
+                (java.util.List<Map<String, Object>>) request.get("insumos");
+
+            if (insumosRequest == null || insumosRequest.isEmpty()) {
+                response.put("success", false);
+                response.put("mensaje", "Debe seleccionar al menos un insumo para devolver");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Convertir a mapa insumoId → cantidad
+            Map<Long, java.math.BigDecimal> insumosADevolver = new HashMap<>();
+
+            for (Map<String, Object> insumoData : insumosRequest) {
+                try {
+                    Long insumoId = Long.parseLong(insumoData.get("insumoId").toString());
+                    java.math.BigDecimal cantidad = new java.math.BigDecimal(insumoData.get("cantidad").toString());
+
+                    if (cantidad.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                        response.put("success", false);
+                        response.put("mensaje", "Las cantidades deben ser mayores a 0");
+                        return ResponseEntity.badRequest().body(response);
+                    }
+
+                    insumosADevolver.put(insumoId, cantidad);
+                } catch (Exception e) {
+                    response.put("success", false);
+                    response.put("mensaje", "Error al procesar los datos de insumos: " + e.getMessage());
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            // Llamar al servicio para anular con devolución selectiva
+            Comprobante comprobante = facturacionService.anularComprobanteConDevolucionSelectiva(
+                id,
+                "Anulado por usuario con devolución selectiva de insumos",
+                insumosADevolver
+            );
+
+            response.put("success", true);
+            response.put("mensaje", "Comprobante " + comprobante.getNumeroComprobante() +
+                                   " anulado con éxito. Se devolvieron " + insumosADevolver.size() +
+                                   " insumo(s) al inventario.");
+            response.put("comprobanteId", comprobante.getId());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalStateException e) {
+            response.put("success", false);
+            response.put("mensaje", "Error al anular el comprobante: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("mensaje", "Error inesperado: " + e.getMessage());
+            System.err.println("Error en anularComprobanteConDevolucion: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
      * Muestra el detalle de un comprobante específico.
      *
      * @param id ID del comprobante
