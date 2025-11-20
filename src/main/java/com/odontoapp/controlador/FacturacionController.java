@@ -191,10 +191,14 @@ public class FacturacionController {
             // Registrar el pago
             Pago pago = facturacionService.registrarPago(dto);
 
+            // Obtener el comprobante actualizado con su nuevo estado
+            Comprobante comprobante = pago.getComprobante();
+
             response.put("success", true);
             response.put("mensaje", "Pago registrado con éxito");
             response.put("pagoId", pago.getId());
-            response.put("comprobanteId", pago.getComprobante().getId());
+            response.put("comprobanteId", comprobante.getId());
+            response.put("estadoPago", comprobante.getEstadoPago().getNombre()); // Para detectar si está PAGADO_TOTAL
 
             return ResponseEntity.ok(response);
 

@@ -423,15 +423,41 @@
 
                     $('#modalRegistrarPago').modal('hide');
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Éxito!',
-                        text: response.mensaje || 'Pago registrado con éxito',
-                        confirmButtonText: 'Aceptar'
-                    }).then(function() {
-                        // Recargar la página para ver los cambios
-                        window.location.reload();
-                    });
+                    // Verificar si el comprobante está PAGADO TOTALMENTE
+                    var esPagadoTotal = response.estadoPago === 'PAGADO_TOTAL' || response.estadoPago === 'PAGADO TOTAL';
+
+                    if (esPagadoTotal) {
+                        // Si está pagado totalmente, preguntar si desea imprimir
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Pago Completado!',
+                            text: response.mensaje || 'El comprobante ha sido pagado en su totalidad.',
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="fas fa-print mr-2"></i>Imprimir Comprobante',
+                            cancelButtonText: 'Cerrar',
+                            confirmButtonColor: '#0066cc',
+                            cancelButtonColor: '#6c757d'
+                        }).then(function(result) {
+                            if (result.isConfirmed) {
+                                // Redirigir a la vista de impresión
+                                window.location.href = '/facturacion/imprimir/' + comprobanteId;
+                            } else {
+                                // Solo recargar la página
+                                window.location.reload();
+                            }
+                        });
+                    } else {
+                        // Si no está pagado totalmente, solo mostrar éxito
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Éxito!',
+                            text: response.mensaje || 'Pago registrado con éxito',
+                            confirmButtonText: 'Aceptar'
+                        }).then(function() {
+                            // Recargar la página para ver los cambios
+                            window.location.reload();
+                        });
+                    }
                 },
                 error: function(xhr) {
                     console.error('Error:', xhr);
