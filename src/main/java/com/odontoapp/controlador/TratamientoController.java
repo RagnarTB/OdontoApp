@@ -487,7 +487,7 @@ public class TratamientoController {
                                 Insumo insumo = insumoRepository.findById(insumoId)
                                         .orElseThrow(() -> new RuntimeException("Insumo ID " + insumoId + " no encontrado"));
 
-                                BigDecimal precioInsumo = insumo.getCosto() != null ? insumo.getCosto() : BigDecimal.ZERO;
+                                BigDecimal precioInsumo = insumo.getPrecioUnitario() != null ? insumo.getPrecioUnitario() : BigDecimal.ZERO;
                                 BigDecimal subtotalInsumo = precioInsumo.multiply(cantidad);
 
                                 DetalleComprobante detalleInsumo = new DetalleComprobante();
