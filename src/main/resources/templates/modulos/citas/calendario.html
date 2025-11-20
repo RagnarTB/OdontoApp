@@ -244,9 +244,10 @@
     <div th:replace="~{modulos/citas/fragmentos :: modalReprogramarCita}"></div>
     <div th:replace="~{modulos/citas/fragmentos :: modalCancelarCita}"></div>
     <div th:replace="~{modulos/citas/fragmentos :: modalPlanificarTratamiento}"></div>
-    <div th:replace="~{modulos/citas/fragmentos :: modalRegistrarTratamiento}"></div>
+    <!-- Solo incluir el HTML del modal, NO el script (se incluye abajo en page-scripts) -->
+    <div th:replace="~{modulos/citas/modal-tratamiento-avanzado :: modalRegistrarTratamiento}"></div>
 
-</div>
+</div><!-- #contenido-principal -->
 
 <th:block id="page-scripts">
     <!-- Moment.js -->
@@ -424,6 +425,9 @@
                     // Mostrar/ocultar botones según el estado
                     mostrarBotonesSegunEstado(props.estadoNombre);
 
+                    // Verificar cadena de citas (si ya generó otra cita)
+                    verificarCadenaDeCitas(evento.id);
+
                     // Abrir el modal
                     $('#modalDetalleCita').modal('show');
                 }
@@ -465,6 +469,10 @@
                         });
 
                         mostrarBotonesSegunEstado(props.estadoNombre);
+
+                        // Verificar cadena de citas (si ya generó otra cita)
+                        verificarCadenaDeCitas(evento.id);
+
                         $('#modalDetalleCita').modal('show');
 
                         // Limpiar el parámetro de la URL
@@ -516,6 +524,68 @@
                     btnCancelar.style.display = 'none';
                     break;
             }
+        }
+
+        /**
+         * Verifica si la cita puede registrar tratamientos (cadena de citas).
+         * Si la cita ya generó otra cita, deshabilita el botón y muestra mensaje.
+         */
+        function verificarCadenaDeCitas(citaId) {
+            console.log('🔍 Verificando cadena de citas para Cita #' + citaId);
+
+            var btnRegistrarTratamiento = document.getElementById('btnRegistrarTratamiento');
+            var mensajeCitaGenerada = document.getElementById('mensajeCitaGenerada');
+            var linkCitaGenerada = document.getElementById('linkCitaGenerada');
+
+            // Solo verificar si el botón está visible
+            if (!btnRegistrarTratamiento || btnRegistrarTratamiento.style.display === 'none') {
+                console.log('  ⏭️ Botón no visible, omitiendo verificación');
+                return;
+            }
+
+            // Llamar a la API para verificar si puede registrar tratamientos
+            $.ajax({
+                url: '/citas/api/cita/' + citaId + '/puede-registrar-tratamiento',
+                method: 'GET',
+                success: function(response) {
+                    console.log('  📡 Respuesta API:', response);
+
+                    if (!response.puedeRegistrar && response.citaGeneradaId) {
+                        // Deshabilitar botón y mostrar mensaje
+                        btnRegistrarTratamiento.disabled = true;
+                        btnRegistrarTratamiento.classList.remove('btn-primary');
+                        btnRegistrarTratamiento.classList.add('btn-secondary');
+                        btnRegistrarTratamiento.title = 'Esta cita ya generó un tratamiento';
+
+                        // Mostrar mensaje con link a cita generada
+                        mensajeCitaGenerada.style.display = 'block';
+                        linkCitaGenerada.href = '/citas?verCita=' + response.citaGeneradaId;
+                        linkCitaGenerada.textContent = 'Ver Cita #' + response.citaGeneradaId + ' →';
+
+                        console.log('  ❌ Botón deshabilitado: Cita ya generó tratamiento en Cita #' + response.citaGeneradaId);
+                    } else {
+                        // Habilitar botón (estado normal)
+                        btnRegistrarTratamiento.disabled = false;
+                        btnRegistrarTratamiento.classList.remove('btn-secondary');
+                        btnRegistrarTratamiento.classList.add('btn-primary');
+                        btnRegistrarTratamiento.title = '';
+
+                        // Ocultar mensaje
+                        mensajeCitaGenerada.style.display = 'none';
+
+                        console.log('  ✅ Botón habilitado: Cita puede registrar tratamientos');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('  ⚠️ Error al verificar cadena de citas:', error);
+                    console.error('  Status:', status);
+                    console.error('  Response:', xhr.responseText);
+
+                    // En caso de error, permitir el registro (fail-open)
+                    btnRegistrarTratamiento.disabled = false;
+                    mensajeCitaGenerada.style.display = 'none';
+                }
+            });
         }
 
         // Event listeners para botones de acción en modal de detalle
@@ -843,6 +913,9 @@
 
     <!-- Incluir script de validaciones de citas -->
     <div th:replace="~{modulos/citas/fragmentos :: scriptValidacionesCita}"></div>
+
+    <!-- Incluir script del modal de tratamiento (DESPUÉS de jQuery) -->
+    <th:block th:replace="~{modulos/citas/modal-tratamiento-avanzado :: scriptModalTratamiento}"></th:block>
 </th:block>
 
 </body>

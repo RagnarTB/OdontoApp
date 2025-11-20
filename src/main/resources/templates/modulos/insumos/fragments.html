@@ -48,54 +48,6 @@
                 <button type="submit" class="btn btn-primary">Registrar Movimiento</button>
             </div>
         </form>
-
-        <!-- Script para filtrar motivos según el tipo seleccionado -->
-        <script th:inline="javascript">
-            $(document).ready(function() {
-                // Filtrar motivos cuando cambia el tipo de movimiento
-                $('#tipoMovimientoId').on('change', function() {
-                    var tipoSeleccionado = $(this).val();
-                    var $selectMotivo = $('#motivoMovimientoId');
-
-                    // Resetear y deshabilitar select de motivo si no hay tipo seleccionado
-                    if (!tipoSeleccionado) {
-                        $selectMotivo.val('').prop('disabled', true);
-                        $selectMotivo.find('option:not(:first)').hide();
-                        return;
-                    }
-
-                    // Habilitar select de motivo
-                    $selectMotivo.prop('disabled', false);
-
-                    // Mostrar solo los motivos que corresponden al tipo seleccionado
-                    $selectMotivo.find('option').each(function() {
-                        var $option = $(this);
-
-                        // Siempre mostrar la opción por defecto
-                        if ($option.val() === '') {
-                            $option.show();
-                            return;
-                        }
-
-                        var tipoIdMotivo = $option.data('tipo-id');
-
-                        if (tipoIdMotivo == tipoSeleccionado) {
-                            $option.show();
-                        } else {
-                            $option.hide();
-                        }
-                    });
-
-                    // Resetear la selección de motivo
-                    $selectMotivo.val('');
-                });
-
-                // Ejecutar el filtrado al cargar si ya hay un tipo seleccionado
-                if ($('#tipoMovimientoId').val()) {
-                    $('#tipoMovimientoId').trigger('change');
-                }
-            });
-        </script>
     </div>
 
     <div th:fragment="historialMovimientos" th:if="${paginaMovimientos}">
@@ -119,7 +71,13 @@
                             th:classappend="${mov.tipoMovimiento.afectaStock.name() == 'SUMA' ? 'badge-success' : 'badge-danger'}"
                             th:text="${mov.tipoMovimiento.nombre}"></span>
                     </td>
-                    <td th:text="${mov.motivoMovimiento.nombre}"></td>
+                    <td>
+                        <!-- ✅ SAFE NAVIGATION: Evita NullPointerException si motivoMovimiento es NULL -->
+                        <span th:if="${mov.motivoMovimiento != null}"
+                              th:text="${mov.motivoMovimiento.nombre}"></span>
+                        <span th:unless="${mov.motivoMovimiento != null}"
+                              class="text-muted font-italic">Sin motivo</span>
+                    </td>
                     <td class="text-right"
                         th:classappend="${mov.tipoMovimiento.afectaStock.name() == 'SUMA' ? 'text-success' : 'text-danger'}"
                         th:text="${(mov.tipoMovimiento.afectaStock.name() == 'SUMA' ? '+' : '-') + mov.cantidad.toPlainString()}">

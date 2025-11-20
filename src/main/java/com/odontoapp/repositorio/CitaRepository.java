@@ -140,4 +140,13 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
         @Param("fechaHasta") LocalDateTime fechaHasta,
         Pageable pageable
     );
+
+    /**
+     * Busca la cita generada por un tratamiento desde una cita origen.
+     * Permite verificar si una cita ya generó otra cita de tratamiento.
+     * @param citaOrigenId ID de la cita origen
+     * @return Cita generada por tratamiento, o null si no existe
+     */
+    @Query("SELECT c FROM Cita c WHERE c.citaGeneradaPorTratamiento.id = :citaOrigenId")
+    Cita findByCitaGeneradaPorTratamientoId(@Param("citaOrigenId") Long citaOrigenId);
 }

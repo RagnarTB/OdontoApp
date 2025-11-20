@@ -109,6 +109,23 @@ public interface FacturacionService {
     Comprobante anularComprobante(Long comprobanteId, String motivoAnulacion, boolean regresarInventario);
 
     /**
+     * Anula un comprobante con devolución selectiva de insumos.
+     * Permite especificar qué insumos y qué cantidades devolver al inventario.
+     *
+     * @param comprobanteId ID del comprobante a anular
+     * @param motivoAnulacion Motivo de la anulación
+     * @param insumosADevolver Mapa con insumoId → cantidad a devolver
+     * @return El comprobante anulado
+     * @throws jakarta.persistence.EntityNotFoundException si no se encuentra el comprobante
+     * @throws IllegalArgumentException si las cantidades son inválidas o los insumos no existen en el comprobante
+     * @throws IllegalStateException si el comprobante ya tiene pagos registrados o ya está anulado
+     */
+    Comprobante anularComprobanteConDevolucionSelectiva(
+            Long comprobanteId,
+            String motivoAnulacion,
+            java.util.Map<Long, java.math.BigDecimal> insumosADevolver);
+
+    /**
      * Busca todos los comprobantes con saldo pendiente.
      *
      * @param pageable Configuración de paginación

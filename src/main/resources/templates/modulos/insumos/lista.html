@@ -278,8 +278,52 @@
                         modalContent.load(url, function (response, status, xhr) {
                             if (status == "error") {
                                 modalContent.html('<div class="alert alert-danger m-3">Error al cargar el formulario.</div>');
+                            } else {
+                                // Ejecutar el filtrado inicial si ya hay un tipo seleccionado
+                                if ($('#tipoMovimientoId').val()) {
+                                    $('#tipoMovimientoId').trigger('change');
+                                }
                             }
                         });
+                    });
+
+                    // **DELEGACIÓN DE EVENTOS: Filtrar motivos cuando cambia el tipo de movimiento**
+                    // Usa delegación desde document para funcionar con elementos cargados dinámicamente
+                    $(document).on('change', '#tipoMovimientoId', function() {
+                        var tipoSeleccionado = $(this).val();
+                        var $selectMotivo = $('#motivoMovimientoId');
+
+                        // Resetear y deshabilitar select de motivo si no hay tipo seleccionado
+                        if (!tipoSeleccionado) {
+                            $selectMotivo.val('').prop('disabled', true);
+                            $selectMotivo.find('option:not(:first)').hide();
+                            return;
+                        }
+
+                        // Habilitar select de motivo
+                        $selectMotivo.prop('disabled', false);
+
+                        // Mostrar solo los motivos que corresponden al tipo seleccionado
+                        $selectMotivo.find('option').each(function() {
+                            var $option = $(this);
+
+                            // Siempre mostrar la opción por defecto
+                            if ($option.val() === '') {
+                                $option.show();
+                                return;
+                            }
+
+                            var tipoIdMotivo = $option.data('tipo-id');
+
+                            if (tipoIdMotivo == tipoSeleccionado) {
+                                $option.show();
+                            } else {
+                                $option.hide();
+                            }
+                        });
+
+                        // Resetear la selección de motivo
+                        $selectMotivo.val('');
                     });
 
                     $('.btn-historial').on('click', function () {

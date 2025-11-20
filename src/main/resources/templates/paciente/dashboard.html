@@ -224,12 +224,12 @@
                                     </thead>
                                     <tbody>
                                         <tr th:each="tratamiento : ${tratamientosEnCurso}">
-                                            <td th:text="${tratamiento.tratamiento.nombre}">Tratamiento</td>
+                                            <td th:text="${tratamiento.procedimiento != null ? tratamiento.procedimiento.nombre : 'N/A'}">Tratamiento</td>
                                             <td>
-                                                <span class="badge badge-warning"
-                                                    th:text="${tratamiento.estadoTratamiento.descripcion}">Estado</span>
+                                                <span class="badge badge-warning" th:if="${tratamiento.estado == 'PLANIFICADO'}">PLANIFICADO</span>
+                                                <span class="badge badge-info" th:if="${tratamiento.estado == 'EN_CURSO'}">EN CURSO</span>
                                             </td>
-                                            <td th:text="${tratamiento.fechaInicio != null ? #temporals.format(tratamiento.fechaInicio, 'dd/MM/yyyy') : 'N/A'}">Fecha</td>
+                                            <td th:text="${tratamiento.fechaPlanificada != null ? #temporals.format(tratamiento.fechaPlanificada, 'dd/MM/yyyy') : 'N/A'}">Fecha</td>
                                         </tr>
                                     </tbody>
                                 </table>

@@ -38,7 +38,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -445,8 +447,8 @@ public class FacturacionServiceImpl implements FacturacionService {
             throw new IllegalArgumentException("El ID del método de pago es obligatorio");
         }
 
-        // 2. Obtener entidades
-        Comprobante comprobante = comprobanteRepository.findById(dto.getComprobanteId())
+        // 2. Obtener entidades con bloqueo pesimista para evitar deadlocks
+        Comprobante comprobante = comprobanteRepository.findByIdWithLock(dto.getComprobanteId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Comprobante no encontrado con ID: " + dto.getComprobanteId()));
 
@@ -694,5 +696,160 @@ public class FacturacionServiceImpl implements FacturacionService {
     @Transactional(readOnly = true)
     public Page<Comprobante> buscarComprobantesPendientes(Pageable pageable) {
         return comprobanteRepository.findByMontoPendienteGreaterThan(BigDecimal.ZERO, pageable);
+    }
+
+    /**
+     * Anula un comprobante con devolución selectiva de insumos.
+     * Permite especificar qué insumos y qué cantidades devolver al inventario.
+     *
+     * @param comprobanteId ID del comprobante a anular
+     * @param motivoAnulacion Motivo de la anulación
+     * @param insumosADevolver Mapa con insumoId → cantidad a devolver
+     * @return Comprobante anulado
+     */
+    @Transactional
+    public Comprobante anularComprobanteConDevolucionSelectiva(
+            Long comprobanteId,
+            String motivoAnulacion,
+            Map<Long, BigDecimal> insumosADevolver) {
+
+        // 1. Validación de parámetros
+        if (comprobanteId == null) {
+            throw new IllegalArgumentException("El ID del comprobante es obligatorio");
+        }
+
+        if (insumosADevolver == null || insumosADevolver.isEmpty()) {
+            throw new IllegalArgumentException("Debe especificar al menos un insumo para devolver");
+        }
+
+        // 2. Obtener entidades
+        Comprobante comprobante = comprobanteRepository.findById(comprobanteId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Comprobante no encontrado con ID: " + comprobanteId));
+
+        EstadoPago estadoAnulado = estadoPagoRepository.findByNombre(ESTADO_PAGO_ANULADO)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Estado de pago ANULADO no encontrado en la base de datos"));
+
+        // 3. Validar estado actual
+        if (ESTADO_PAGO_ANULADO.equals(comprobante.getEstadoPago().getNombre())) {
+            throw new IllegalStateException("El comprobante ya se encuentra anulado");
+        }
+
+        // 4. Validar que no tenga pagos
+        List<Pago> pagos = pagoRepository.findByComprobanteIdOrderByFechaPagoDesc(comprobanteId);
+        if (pagos != null && !pagos.isEmpty()) {
+            throw new IllegalStateException(
+                    "No se puede anular un comprobante que ya tiene pagos registrados. " +
+                    "Debe revertir los pagos primero. Pagos encontrados: " + pagos.size());
+        }
+
+        // 5. Validar cantidades contra los detalles del comprobante
+        Map<Long, BigDecimal> cantidadesUsadas = new HashMap<>();
+        for (DetalleComprobante detalle : comprobante.getDetalles()) {
+            if ("INSUMO".equals(detalle.getTipoItem())) {
+                cantidadesUsadas.put(detalle.getItemId(), detalle.getCantidad());
+            }
+        }
+
+        for (Map.Entry<Long, BigDecimal> entry : insumosADevolver.entrySet()) {
+            Long insumoId = entry.getKey();
+            BigDecimal cantidadADevolver = entry.getValue();
+
+            // Validar que el insumo ID sea válido
+            if (insumoId == null || insumoId <= 0) {
+                throw new IllegalArgumentException(
+                        "ID de insumo inválido: " + insumoId);
+            }
+
+            // Validar que la cantidad sea positiva
+            if (cantidadADevolver == null || cantidadADevolver.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException(
+                        "La cantidad a devolver debe ser mayor a cero para el insumo ID " + insumoId +
+                        ". Cantidad recibida: " + cantidadADevolver);
+            }
+
+            BigDecimal cantidadUsada = cantidadesUsadas.get(insumoId);
+            if (cantidadUsada == null) {
+                throw new IllegalArgumentException(
+                        "El insumo ID " + insumoId + " no existe en este comprobante");
+            }
+
+            if (cantidadADevolver.compareTo(cantidadUsada) > 0) {
+                throw new IllegalArgumentException(
+                        "La cantidad a devolver (" + cantidadADevolver +
+                        ") excede la cantidad usada (" + cantidadUsada +
+                        ") para el insumo ID " + insumoId);
+            }
+        }
+
+        // 6. Revertir stock de insumos seleccionados
+        TipoMovimiento tipoEntrada = tipoMovimientoRepository.findByCodigo("ENTRADA")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Tipo de movimiento ENTRADA no encontrado"));
+
+        MotivoMovimiento motivoAnulacionVenta = motivoMovimientoRepository.findByNombre("Anulación de Venta")
+                .orElse(motivoMovimientoRepository.findByNombre("Anulacion de venta")
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Motivo de movimiento 'Anulación de Venta' no encontrado en la base de datos. " +
+                                "Por favor, cree este motivo con tipo ENTRADA.")));
+
+        int insumosRegresados = 0;
+        StringBuilder detalleInsumos = new StringBuilder();
+
+        for (Map.Entry<Long, BigDecimal> entry : insumosADevolver.entrySet()) {
+            Long insumoId = entry.getKey();
+            BigDecimal cantidad = entry.getValue();
+
+            // Crear MovimientoDTO para devolver el stock
+            MovimientoDTO movimientoDTO = new MovimientoDTO();
+            movimientoDTO.setInsumoId(insumoId);
+            movimientoDTO.setTipoMovimientoId(tipoEntrada.getId());
+            movimientoDTO.setMotivoMovimientoId(motivoAnulacionVenta.getId());
+            movimientoDTO.setCantidad(cantidad);
+            movimientoDTO.setReferencia("Anulación parcial de " + comprobante.getNumeroComprobante());
+            movimientoDTO.setNotas("Devolución selectiva de insumos por anulación de comprobante");
+
+            // Registrar movimiento de entrada (devolver stock)
+            inventarioService.registrarMovimiento(movimientoDTO);
+            insumosRegresados++;
+
+            // Obtener nombre del insumo para el log
+            Optional<Insumo> insumoOpt = insumoRepository.findById(insumoId);
+            if (insumoOpt.isPresent()) {
+                detalleInsumos.append(insumoOpt.get().getNombre())
+                              .append(": ")
+                              .append(cantidad)
+                              .append("; ");
+            }
+        }
+
+        if (insumosRegresados > 0) {
+            System.out.println("✓ Insumos devueltos selectivamente: " + insumosRegresados +
+                    " | Comprobante: " + comprobante.getNumeroComprobante());
+            System.out.println("  Detalle: " + detalleInsumos.toString());
+        }
+
+        // 7. Actualizar comprobante
+        comprobante.setEstadoPago(estadoAnulado);
+        comprobante.setMontoPendiente(BigDecimal.ZERO);
+
+        // Actualizar observaciones con el motivo de anulación
+        String observacionesActuales = comprobante.getDescripcion() != null
+                ? comprobante.getDescripcion()
+                : "";
+        String nuevaObservacion = observacionesActuales.isEmpty()
+                ? "ANULADO: " + motivoAnulacion
+                : observacionesActuales + " | ANULADO: " + motivoAnulacion;
+
+        nuevaObservacion += " | Insumos devueltos: " + detalleInsumos.toString();
+
+        comprobante.setDescripcion(nuevaObservacion);
+
+        // 8. Guardar y devolver
+        Comprobante comprobanteGuardado = comprobanteRepository.save(comprobante);
+        System.out.println("✅ Comprobante anulado con devolución selectiva: " + comprobante.getNumeroComprobante());
+
+        return comprobanteGuardado;
     }
 }

@@ -18,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Controlador para el perfil e historial clínico del paciente.

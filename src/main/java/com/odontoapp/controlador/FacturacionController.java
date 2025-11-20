@@ -4,6 +4,7 @@ import com.odontoapp.dto.ComprobanteDTO;
 import com.odontoapp.dto.PagoDTO;
 import com.odontoapp.entidad.Comprobante;
 import com.odontoapp.entidad.Pago;
+import com.odontoapp.repositorio.ComprobanteRepository;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.MetodoPagoRepository;
 import com.odontoapp.repositorio.PacienteRepository;
@@ -34,17 +35,20 @@ public class FacturacionController {
     private final ProcedimientoRepository procedimientoRepository;
     private final InsumoRepository insumoRepository;
     private final MetodoPagoRepository metodoPagoRepository;
+    private final ComprobanteRepository comprobanteRepository;
 
     public FacturacionController(FacturacionService facturacionService,
                                 PacienteRepository pacienteRepository,
                                 ProcedimientoRepository procedimientoRepository,
                                 InsumoRepository insumoRepository,
-                                MetodoPagoRepository metodoPagoRepository) {
+                                MetodoPagoRepository metodoPagoRepository,
+                                ComprobanteRepository comprobanteRepository) {
         this.facturacionService = facturacionService;
         this.pacienteRepository = pacienteRepository;
         this.procedimientoRepository = procedimientoRepository;
         this.insumoRepository = insumoRepository;
         this.metodoPagoRepository = metodoPagoRepository;
+        this.comprobanteRepository = comprobanteRepository;
     }
 
     /**
@@ -191,10 +195,14 @@ public class FacturacionController {
             // Registrar el pago
             Pago pago = facturacionService.registrarPago(dto);
 
+            // Obtener el comprobante actualizado con su nuevo estado
+            Comprobante comprobante = pago.getComprobante();
+
             response.put("success", true);
             response.put("mensaje", "Pago registrado con éxito");
             response.put("pagoId", pago.getId());
-            response.put("comprobanteId", pago.getComprobante().getId());
+            response.put("comprobanteId", comprobante.getId());
+            response.put("estadoPago", comprobante.getEstadoPago().getNombre()); // Para detectar si está PAGADO_TOTAL
 
             return ResponseEntity.ok(response);
 
@@ -254,6 +262,85 @@ public class FacturacionController {
         }
 
         return "redirect:/facturacion";
+    }
+
+    /**
+     * Anula un comprobante con devolución selectiva de insumos (AJAX).
+     * Permite seleccionar qué insumos y qué cantidades devolver al inventario.
+     *
+     * @param id ID del comprobante a anular
+     * @param request Objeto con lista de insumos a devolver
+     * @return ResponseEntity con resultado en JSON
+     */
+    @PostMapping("/anular-con-devolucion/{id}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> anularComprobanteConDevolucion(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> request) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // Extraer lista de insumos del request
+            @SuppressWarnings("unchecked")
+            java.util.List<Map<String, Object>> insumosRequest =
+                (java.util.List<Map<String, Object>>) request.get("insumos");
+
+            if (insumosRequest == null || insumosRequest.isEmpty()) {
+                response.put("success", false);
+                response.put("mensaje", "Debe seleccionar al menos un insumo para devolver");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Convertir a mapa insumoId → cantidad
+            Map<Long, java.math.BigDecimal> insumosADevolver = new HashMap<>();
+
+            for (Map<String, Object> insumoData : insumosRequest) {
+                try {
+                    Long insumoId = Long.parseLong(insumoData.get("insumoId").toString());
+                    java.math.BigDecimal cantidad = new java.math.BigDecimal(insumoData.get("cantidad").toString());
+
+                    if (cantidad.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                        response.put("success", false);
+                        response.put("mensaje", "Las cantidades deben ser mayores a 0");
+                        return ResponseEntity.badRequest().body(response);
+                    }
+
+                    insumosADevolver.put(insumoId, cantidad);
+                } catch (Exception e) {
+                    response.put("success", false);
+                    response.put("mensaje", "Error al procesar los datos de insumos: " + e.getMessage());
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            // Llamar al servicio para anular con devolución selectiva
+            Comprobante comprobante = facturacionService.anularComprobanteConDevolucionSelectiva(
+                id,
+                "Anulado por usuario con devolución selectiva de insumos",
+                insumosADevolver
+            );
+
+            response.put("success", true);
+            response.put("mensaje", "Comprobante " + comprobante.getNumeroComprobante() +
+                                   " anulado con éxito. Se devolvieron " + insumosADevolver.size() +
+                                   " insumo(s) al inventario.");
+            response.put("comprobanteId", comprobante.getId());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalStateException e) {
+            response.put("success", false);
+            response.put("mensaje", "Error al anular el comprobante: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("mensaje", "Error inesperado: " + e.getMessage());
+            System.err.println("Error en anularComprobanteConDevolucion: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(response);
+        }
     }
 
     /**
@@ -374,8 +461,9 @@ public class FacturacionController {
                                      Model model,
                                      RedirectAttributes attributes) {
         try {
-            // Obtener el comprobante con todos sus detalles
-            Comprobante comprobante = facturacionService.buscarComprobantePorId(id)
+            // Obtener el comprobante con todas las relaciones cargadas (EAGER)
+            // para evitar LazyInitializationException en la vista
+            Comprobante comprobante = comprobanteRepository.findByIdWithAllRelations(id)
                     .orElseThrow(() -> new RuntimeException("Comprobante no encontrado"));
 
             // Añadir al modelo
@@ -386,6 +474,7 @@ public class FacturacionController {
         } catch (Exception e) {
             attributes.addFlashAttribute("error",
                     "Error al cargar el comprobante para impresión: " + e.getMessage());
+            e.printStackTrace(); // Para debug en consola
             return "redirect:/facturacion";
         }
     }

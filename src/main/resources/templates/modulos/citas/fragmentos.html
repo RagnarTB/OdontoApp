@@ -356,6 +356,13 @@
                         <i class="fas fa-notes-medical mr-1"></i>Registrar Tratamiento
                     </button>
                 </div>
+
+                <!-- Mensaje: Cita ya generó tratamiento en otra cita -->
+                <div id="mensajeCitaGenerada" class="alert alert-info mt-3" style="display:none;">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Este tratamiento fue registrado en otra cita.
+                    <a href="#" id="linkCitaGenerada" class="alert-link font-weight-bold">Ver cita generada →</a>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
@@ -1030,8 +1037,11 @@ $(document).ready(function() {
             piezasDentales: datosTratamiento.piezasDentales || '',
             descripcion: datosTratamiento.descripcion || '',
             camposDinamicos: datosTratamiento.camposDinamicos || [],
+            insumosTotales: datosTratamiento.insumosTotales || [], // ← AGREGAR LOS INSUMOS
             tipo: 'PLANIFICADO'
         };
+
+        console.log('📤 Enviando tratamiento planificado:', tratamientoData); // Debug
 
         $.ajax({
             url: '/tratamientos/planificar',
