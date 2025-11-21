@@ -164,11 +164,14 @@
                     <i class="fas fa-times"></i> Cancelar
                 </a>
 
-                <a th:href="@{/logout}" class="btn btn-outline-danger btn-lg ml-2">
+                <button type="button" class="btn btn-outline-danger btn-lg ml-2" onclick="document.getElementById('logoutFormRol').submit();">
                     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                </a>
+                </button>
             </div>
         </form>
+
+        <!-- Form de logout separado -->
+        <form th:action="@{/logout}" method="post" id="logoutFormRol" style="display: none;"></form>
 
         <!-- Info adicional -->
         <div class="text-center mt-4">

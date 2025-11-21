@@ -518,14 +518,13 @@ public class DataInitializer implements CommandLineRunner {
         permisoRepository.findByModuloAndAccion("CITAS", "VER_DETALLE").ifPresent(permisosPaciente::add);
         crearRolSiNoExiste("PACIENTE", permisosPaciente);
 
-        // ODONTOLOGO: Todo menos USUARIOS y ROLES
+        // ODONTOLOGO: GESTIÓN CLÍNICA (Pacientes, Citas, Servicios) + FACTURACIÓN + Tratamientos + Odontograma
         Set<Permiso> permisosOdontologo = new HashSet<>();
         List<String> modulosOdontologo = Arrays.asList(
             "PACIENTES",
             "CITAS",
             "SERVICIOS",
             "FACTURACION",
-            "INVENTARIO",
             "TRATAMIENTOS",
             "ODONTOGRAMA"
         );

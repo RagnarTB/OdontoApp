@@ -68,9 +68,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/", "/home", "/dashboard")
                                                 .hasAnyRole("ADMIN", "ODONTOLOGO", "RECEPCIONISTA", "ALMACEN")
 
-                                                // ODONTOLOGO: Todo menos usuarios/roles
+                                                // ODONTOLOGO: GESTIÓN CLÍNICA + FACTURACIÓN (sin inventario)
                                                 .requestMatchers("/pacientes/**", "/servicios/**", "/facturacion/**",
-                                                                "/insumos/**", "/categorias-insumo/**", "/unidades-medida/**",
                                                                 "/tratamientos/**", "/odontograma/**", "/api/odontograma/**")
                                                 .hasAnyRole("ODONTOLOGO", "ADMIN")
 
@@ -82,7 +81,7 @@ public class SecurityConfig {
                                                 // ALMACEN: Solo inventario
                                                 .requestMatchers("/insumos/**", "/categorias-insumo/**",
                                                                 "/unidades-medida/**", "/movimientos-inventario/**")
-                                                .hasAnyRole("ALMACEN", "ADMIN", "ODONTOLOGO")
+                                                .hasAnyRole("ALMACEN", "ADMIN")
 
                                                 // Cualquier otra petición requiere autenticación
                                                 .anyRequest().authenticated())
