@@ -93,6 +93,18 @@
                                       th:classappend="${usuario.estaActivo} ? 'active' : 'inactive'"
                                       th:text="${usuario.estaActivo} ? 'Activo' : 'Inactivo'">
                                 </span>
+                                <!-- Badge de bloqueo por intentos fallidos -->
+                                <span th:if="${usuario.fechaBloqueo != null && usuario.fechaBloqueo.isAfter(T(java.time.LocalDateTime).now())}"
+                                      class="badge badge-danger d-block mt-1"
+                                      title="Usuario bloqueado temporalmente">
+                                    <i class="fas fa-lock"></i> Bloqueado
+                                </span>
+                                <!-- Badge de intentos fallidos (advertencia) -->
+                                <span th:if="${usuario.intentosFallidos > 0 && (usuario.fechaBloqueo == null || usuario.fechaBloqueo.isBefore(T(java.time.LocalDateTime).now()))}"
+                                      class="badge badge-warning d-block mt-1"
+                                      th:title="'Intentos fallidos: ' + ${usuario.intentosFallidos}">
+                                    <i class="fas fa-exclamation-triangle"></i> <span th:text="${usuario.intentosFallidos}">0</span> intentos
+                                </span>
                             </div>
 
                             <div class="user-access">

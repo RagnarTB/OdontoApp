@@ -277,21 +277,24 @@
                             </h3>
                         </div>
                         <div class="card-body">
-                            <!-- Botón Imprimir: Habilitado para todos los estados excepto ANULADO -->
+                            <!-- Botón Imprimir: SOLO habilitado si está PAGADO totalmente -->
                             <a th:href="@{/facturacion/imprimir/{id}(id=${comprobante.id})}"
                                class="btn btn-block"
-                               th:classappend="${comprobante.estadoPago.nombre == 'ANULADO'} ? 'btn-secondary disabled' : 'btn-primary'"
-                               th:disabled="${comprobante.estadoPago.nombre == 'ANULADO'}"
-                               th:attr="aria-disabled=${comprobante.estadoPago.nombre == 'ANULADO'}"
+                               th:classappend="${comprobante.estadoPago.nombre == 'PAGADO'} ? 'btn-primary' : 'btn-secondary disabled'"
+                               th:disabled="${comprobante.estadoPago.nombre != 'PAGADO'}"
+                               th:attr="aria-disabled=${comprobante.estadoPago.nombre != 'PAGADO'}"
                                target="_blank">
                                 <i class="fas fa-print mr-2"></i>Imprimir Comprobante
                             </a>
 
-                            <small th:if="${comprobante.estadoPago.nombre == 'PENDIENTE' || comprobante.estadoPago.nombre == 'PAGADO_PARCIAL'}" class="text-info d-block mt-2">
-                                <i class="fas fa-info-circle"></i> El comprobante mostrará el saldo pendiente
+                            <small th:if="${comprobante.estadoPago.nombre == 'PENDIENTE' || comprobante.estadoPago.nombre == 'PAGADO_PARCIAL'}" class="text-warning d-block mt-2">
+                                <i class="fas fa-exclamation-triangle"></i> Solo se puede imprimir cuando el comprobante esté totalmente pagado
                             </small>
                             <small th:if="${comprobante.estadoPago.nombre == 'ANULADO'}" class="text-muted d-block mt-2">
-                                <i class="fas fa-info-circle"></i> No se puede imprimir comprobantes anulados
+                                <i class="fas fa-ban"></i> No se puede imprimir comprobantes anulados
+                            </small>
+                            <small th:if="${comprobante.estadoPago.nombre == 'PAGADO'}" class="text-success d-block mt-2">
+                                <i class="fas fa-check-circle"></i> Comprobante listo para imprimir
                             </small>
 
                             <button type="button"

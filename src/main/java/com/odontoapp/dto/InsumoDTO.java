@@ -4,6 +4,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import com.odontoapp.validacion.FechaVencimientoValida;
 
 @Data
 public class InsumoDTO {
@@ -19,6 +20,8 @@ public class InsumoDTO {
     private String marca;
     private String ubicacion;
     private String lote;
+
+    @FechaVencimientoValida
     private LocalDate fechaVencimiento;
 
     @NotNull(message = "El stock mínimo es obligatorio")
