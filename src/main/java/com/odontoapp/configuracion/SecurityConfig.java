@@ -55,6 +55,9 @@ public class SecurityConfig {
                                                 // Cambiar password obligatorio - todos autenticados
                                                 .requestMatchers("/cambiar-password-obligatorio").authenticated()
 
+                                                // Selector de rol - todos autenticados
+                                                .requestMatchers("/seleccionar-rol", "/seleccionar-rol/**").authenticated()
+
                                                 // ADMIN: Acceso total
                                                 .requestMatchers("/usuarios/**", "/roles/**").hasRole("ADMIN")
 

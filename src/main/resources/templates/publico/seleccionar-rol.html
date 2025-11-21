@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OdontoApp | Seleccionar Rol</title>
+
+    <link rel="stylesheet" th:href="@{/adminlte/plugins/fontawesome-free/css/all.min.css}">
+    <link rel="stylesheet" th:href="@{/adminlte/dist/css/adminlte.min.css}">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .role-selector-container {
+            max-width: 900px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .role-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+            height: 100%;
+        }
+
+        .role-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border-color: #007bff;
+        }
+
+        .role-card.selected {
+            border-color: #28a745;
+            background-color: #f0fff4;
+        }
+
+        .role-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .header-box {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="role-selector-container">
+        <!-- Header -->
+        <div class="header-box text-center">
+            <h1 class="mb-2">
+                <i class="fas fa-user-shield text-primary"></i>
+                Seleccionar Rol
+            </h1>
+            <p class="text-muted mb-0">
+                <span th:if="${modoSeleccion}">
+                    Bienvenido <strong th:text="${usuario.nombreCompleto}"></strong><br>
+                    Tienes múltiples roles asignados. Por favor, selecciona el rol con el que deseas trabajar.
+                </span>
+                <span th:unless="${modoSeleccion}">
+                    Actualmente estás trabajando como <strong th:text="${rolActual}"></strong><br>
+                    Puedes cambiar de rol seleccionando uno diferente a continuación.
+                </span>
+            </p>
+        </div>
+
+        <!-- Mensajes de alerta -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i>
+            <span th:text="${success}"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+        <div th:if="${info}" class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="fas fa-info-circle"></i>
+            <span th:text="${info}"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+        <!-- Grid de Roles -->
+        <form th:action="@{/seleccionar-rol/seleccionar}" method="post" id="rolForm">
+            <div class="role-grid">
+                <div th:each="rol : ${roles}" class="role-card-container">
+                    <div class="card role-card text-center" th:attr="data-rol-id=${rol.id}">
+                        <div class="card-body">
+                            <input type="radio" name="rolId" th:value="${rol.id}"
+                                   th:id="'rol-' + ${rol.id}"
+                                   style="display: none;">
+                            <label th:for="'rol-' + ${rol.id}" style="cursor: pointer; width: 100%;">
+                                <!-- Icono según el rol -->
+                                <div class="role-icon text-primary">
+                                    <i th:if="${rol.nombre == 'ADMIN'}" class="fas fa-user-shield"></i>
+                                    <i th:if="${rol.nombre == 'ODONTOLOGO'}" class="fas fa-user-md"></i>
+                                    <i th:if="${rol.nombre == 'RECEPCIONISTA'}" class="fas fa-user-tie"></i>
+                                    <i th:if="${rol.nombre == 'ALMACEN'}" class="fas fa-warehouse"></i>
+                                    <i th:if="${rol.nombre != 'ADMIN' && rol.nombre != 'ODONTOLOGO' && rol.nombre != 'RECEPCIONISTA' && rol.nombre != 'ALMACEN'}"
+                                       class="fas fa-user-tag"></i>
+                                </div>
+
+                                <h4 class="card-title mb-2" th:text="${rol.nombre}">Rol</h4>
+
+                                <!-- Descripción del rol -->
+                                <p class="text-muted small">
+                                    <span th:if="${rol.nombre == 'ADMIN'}">Acceso completo al sistema</span>
+                                    <span th:if="${rol.nombre == 'ODONTOLOGO'}">Gestión de pacientes y tratamientos</span>
+                                    <span th:if="${rol.nombre == 'RECEPCIONISTA'}">Gestión de citas y facturación</span>
+                                    <span th:if="${rol.nombre == 'ALMACEN'}">Gestión de inventario</span>
+                                    <span th:if="${rol.nombre != 'ADMIN' && rol.nombre != 'ODONTOLOGO' && rol.nombre != 'RECEPCIONISTA' && rol.nombre != 'ALMACEN'}">
+                                        Rol personalizado
+                                    </span>
+                                </p>
+
+                                <!-- Badge de cantidad de permisos -->
+                                <span class="badge badge-info">
+                                    <i class="fas fa-key"></i>
+                                    <span th:text="${rol.permisos != null ? rol.permisos.size() : 0}">0</span> permisos
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg" id="btnConfirmar" disabled>
+                    <i class="fas fa-check"></i> Confirmar Selección
+                </button>
+
+                <a th:href="@{/dashboard}" class="btn btn-secondary btn-lg ml-2"
+                   th:if="${!modoSeleccion}">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+
+                <a th:href="@{/logout}" class="btn btn-outline-danger btn-lg ml-2">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </form>
+
+        <!-- Info adicional -->
+        <div class="text-center mt-4">
+            <small class="text-white">
+                <i class="fas fa-info-circle"></i>
+                Puedes cambiar de rol en cualquier momento desde el menú de usuario
+            </small>
+        </div>
+    </div>
+
+    <script th:src="@{/adminlte/plugins/jquery/jquery.min.js}"></script>
+    <script th:src="@{/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Manejar selección de rol
+            $('.role-card').on('click', function() {
+                // Remover selección previa
+                $('.role-card').removeClass('selected');
+                $('input[name="rolId"]').prop('checked', false);
+
+                // Marcar como seleccionado
+                $(this).addClass('selected');
+                $(this).find('input[name="rolId"]').prop('checked', true);
+
+                // Habilitar botón
+                $('#btnConfirmar').prop('disabled', false);
+            });
+
+            // Marcar el radio button si se hace clic en cualquier parte de la card
+            $('input[name="rolId"]').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#btnConfirmar').prop('disabled', false);
+                }
+            });
+
+            // Auto-submit al hacer doble clic en una card
+            $('.role-card').on('dblclick', function() {
+                $(this).find('input[name="rolId"]').prop('checked', true);
+                $('#rolForm').submit();
+            });
+        });
+    </script>
+</body>
+
+</html>

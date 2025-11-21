@@ -154,6 +154,36 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             return; // Salir para pacientes
         }
 
+        // ✅ DETECTAR MÚLTIPLES ROLES DE PERSONAL (NUEVO)
+        // Contar cuántos roles de personal tiene el usuario (excluyendo PACIENTE)
+        long rolesPersonalCount = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(role -> role.startsWith("ROLE_") && !role.equals("ROLE_PACIENTE"))
+                .distinct()
+                .count();
+
+        // Si tiene múltiples roles de personal, redirigir al selector de roles
+        // (a menos que ya tenga un rol seleccionado en la sesión)
+        if (rolesPersonalCount > 1) {
+            String rolActivo = (String) request.getSession().getAttribute("rolActivo");
+            if (rolActivo == null) {
+                String targetUrl = request.getContextPath() + "/seleccionar-rol";
+                log.info("Usuario con {} roles de personal detectado. Redirigiendo a selector de roles.", rolesPersonalCount);
+                try {
+                    if (!response.isCommitted()) {
+                        response.sendRedirect(targetUrl);
+                        log.info("Redirección a selector de roles enviada.");
+                    } else {
+                        log.warn("La respuesta ya estaba 'committed'. No se pudo redirigir a {}", targetUrl);
+                    }
+                } catch (IllegalStateException | IOException e) {
+                    log.error("¡ERROR al intentar redirigir a selector de roles!", e);
+                }
+                return; // Salir para forzar selección de rol
+            }
+            log.info("Usuario tiene rol activo seleccionado: {}", rolActivo);
+        }
+
         // Lógica SavedRequest (solo para personal - con try-catch y verificación de /error)
         SavedRequest savedRequest = null;
         try {
