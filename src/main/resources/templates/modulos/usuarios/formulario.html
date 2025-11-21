@@ -169,11 +169,12 @@
                                         <label for="email">Email</label>
                                         <input type="email" class="form-control" id="email" th:field="*{email}"
                                             placeholder="correo@ejemplo.com" required
+                                            th:readonly="${usuario.id != null}"
                                             th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback"
                                             th:errors="*{email}"></div>
-                                        <small th:if="${usuario.id != null}" class="form-text text-success">
-                                            <i class="fas fa-edit"></i> Campo editable - Se enviará nueva contraseña temporal si cambia
+                                        <small th:if="${usuario.id != null}" class="form-text text-muted">
+                                            <i class="fas fa-lock"></i> Campo no editable - El email no puede ser modificado
                                         </small>
                                     </div>
                                 </div>

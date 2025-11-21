@@ -27,6 +27,9 @@ public class SecurityConfig {
         @Autowired
         private CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
 
+        @Autowired
+        private com.odontoapp.seguridad.CustomAccessDeniedHandler customAccessDeniedHandler;
+
         @Bean
         public PasswordEncoder passwordEncoder() {
                 return new BCryptPasswordEncoder();
@@ -45,7 +48,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/login", "/adminlte/**", "/css/**", "/js/**",
                                                                 "/activar-cuenta", "/establecer-password",
                                                                 "/resultado-activacion", "/registro/**",
-                                                                "/recuperar-password/**", "/api/reniec")
+                                                                "/recuperar-password/**", "/api/reniec",
+                                                                "/error/**")
                                                 .permitAll()
 
                                                 // Cambiar password obligatorio - todos autenticados
@@ -64,7 +68,7 @@ public class SecurityConfig {
                                                 // ODONTOLOGO: Todo menos usuarios/roles
                                                 .requestMatchers("/pacientes/**", "/servicios/**", "/facturacion/**",
                                                                 "/insumos/**", "/categorias-insumo/**", "/unidades-medida/**",
-                                                                "/reportes/**", "/configuracion/**", "/tratamientos/**")
+                                                                "/tratamientos/**", "/odontograma/**", "/api/odontograma/**")
                                                 .hasAnyRole("ODONTOLOGO", "ADMIN")
 
                                                 // RECEPCIONISTA: Citas, pacientes y facturación
@@ -93,7 +97,9 @@ public class SecurityConfig {
                                                 .invalidateHttpSession(true)
                                                 .clearAuthentication(true)
                                                 .deleteCookies("JSESSIONID")
-                                                .permitAll());
+                                                .permitAll())
+                                .exceptionHandling(exception -> exception
+                                                .accessDeniedHandler(customAccessDeniedHandler));
                 return http.build();
         }
 }

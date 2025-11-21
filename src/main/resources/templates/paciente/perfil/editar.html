@@ -35,8 +35,8 @@
 
                                 <div class="alert alert-info">
                                     <i class="fas fa-info-circle"></i>
-                                    <strong>Campos editables:</strong> Email, Teléfono, Dirección, Alergias y Antecedentes Médicos.<br>
-                                    <strong>Campos protegidos:</strong> Tipo de documento, Número de documento, Nombre completo y Fecha de nacimiento.
+                                    <strong>Campos editables:</strong> Teléfono, Dirección, Alergias y Antecedentes Médicos.<br>
+                                    <strong>Campos protegidos:</strong> Tipo de documento, Número de documento, Nombre completo, Email y Fecha de nacimiento.
                                 </div>
 
                                 <input type="hidden" th:field="*{id}">
@@ -102,21 +102,18 @@
                                     <!-- CAMPOS EDITABLES -->
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="email">
-                                                Email <span class="text-danger">*</span>
-                                            </label>
+                                            <label>Email <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text"><i class="fas fa-envelope"></i></span>
                                                 </div>
-                                                <input type="email" th:field="*{email}" id="email" class="form-control"
-                                                       placeholder="ejemplo@email.com" required
-                                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
-                                                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">
-                                                    Error en email
+                                                <input type="email" th:field="*{email}" class="form-control" readonly
+                                                       th:value="${paciente.email}">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
                                                 </div>
                                             </div>
-                                            <small class="form-text text-muted">Campo editable</small>
+                                            <small class="text-muted">Campo no editable - El email no puede ser modificado</small>
                                         </div>
                                     </div>
 
@@ -212,10 +209,6 @@
 
                                 </div>
 
-                                <div class="alert alert-warning">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <strong>Recuerda:</strong> Si actualizas tu email, deberás usarlo para iniciar sesión la próxima vez.
-                                </div>
 
                             </div>
                             <div class="card-footer">
