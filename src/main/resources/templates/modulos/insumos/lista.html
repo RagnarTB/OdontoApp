@@ -95,7 +95,14 @@
                                         th:text="${cat.nombre}"
                                         th:selected="${categoriaId != null && categoriaId.toString() == cat.id.toString()}"></option>
                                 </select>
-                                <button type="submit" class="btn btn-default ml-2"><i
+                                <select class="form-control ml-2" name="filtroVencimiento" title="Filtrar por vencimiento">
+                                    <option value="">Todos los vencimientos</option>
+                                    <option value="VENCIDOS" th:selected="${filtroVencimiento == 'VENCIDOS'}">Vencidos</option>
+                                    <option value="POR_VENCER_1MES" th:selected="${filtroVencimiento == 'POR_VENCER_1MES'}">Por vencer (1 mes)</option>
+                                    <option value="POR_VENCER_3MESES" th:selected="${filtroVencimiento == 'POR_VENCER_3MESES'}">Por vencer (3 meses)</option>
+                                    <option value="POR_VENCER_6MESES" th:selected="${filtroVencimiento == 'POR_VENCER_6MESES'}">Por vencer (6 meses)</option>
+                                </select>
+                                <button type="submit" class="btn btn-default ml-2" title="Buscar"><i
                                         class="fas fa-search"></i></button>
                             </form>
                         </div>
