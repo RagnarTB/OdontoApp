@@ -136,7 +136,8 @@ public class PacientePerfilController {
 
     /**
      * Guarda los cambios en los datos personales del paciente.
-     * Solo permite editar: email, teléfono, dirección.
+     * Solo permite editar: teléfono, dirección, alergias y antecedentes médicos.
+     * NOTA: El email NO es editable por seguridad.
      */
     @PostMapping("/guardar")
     public String guardarDatosPersonales(
@@ -160,22 +161,8 @@ public class PacientePerfilController {
         }
 
         try {
-            // Validar si el email cambió
-            boolean emailCambio = !usuario.getEmail().equals(pacienteDTO.getEmail());
-
-            if (emailCambio) {
-                // Verificar que el nuevo email no esté en uso por otro usuario
-                Optional<Usuario> usuarioExistente = usuarioRepository.findByEmail(pacienteDTO.getEmail());
-                if (usuarioExistente.isPresent() && !usuarioExistente.get().getId().equals(usuario.getId())) {
-                    model.addAttribute("paciente", paciente);
-                    model.addAttribute("pacienteDTO", pacienteDTO);
-                    model.addAttribute("error", "El email '" + pacienteDTO.getEmail() + "' ya está en uso por otro usuario.");
-                    return "paciente/perfil/editar";
-                }
-            }
-
-            // SOLO actualizar campos permitidos: email, teléfono, dirección, alergias, antecedentes
-            paciente.setEmail(pacienteDTO.getEmail());
+            // SOLO actualizar campos permitidos: teléfono, dirección, alergias, antecedentes
+            // NOTA: El email NO es editable por seguridad
             paciente.setTelefono(pacienteDTO.getTelefono());
             paciente.setDireccion(pacienteDTO.getDireccion());
             paciente.setAlergias(pacienteDTO.getAlergias());
@@ -183,14 +170,6 @@ public class PacientePerfilController {
 
             // Guardar cambios en paciente
             pacienteRepository.save(paciente);
-
-            // Si el email cambió, también actualizar el usuario
-            if (emailCambio) {
-                usuario.setEmail(pacienteDTO.getEmail());
-                usuarioRepository.save(usuario);
-                redirectAttributes.addFlashAttribute("info",
-                    "Tu email ha sido actualizado. Usa el nuevo email para iniciar sesión la próxima vez.");
-            }
 
             redirectAttributes.addFlashAttribute("success", "Datos personales actualizados con éxito.");
             return "redirect:/paciente/perfil";
