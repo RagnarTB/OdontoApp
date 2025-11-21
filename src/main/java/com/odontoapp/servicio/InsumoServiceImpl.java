@@ -32,7 +32,13 @@ public class InsumoServiceImpl implements InsumoService {
     }
 
     @Override
-    public Page<Insumo> listarTodos(String keyword, Long categoriaId, Pageable pageable) {
+    public Page<Insumo> listarTodos(String keyword, Long categoriaId, String filtroVencimiento, Pageable pageable) {
+        // Si hay filtro de vencimiento, aplicarlo primero
+        if (filtroVencimiento != null && !filtroVencimiento.isBlank()) {
+            return aplicarFiltroVencimiento(filtroVencimiento, keyword, categoriaId, pageable);
+        }
+
+        // Lógica original sin filtro de vencimiento
         if (categoriaId != null) {
             // Filtrar por categoría específica
             if (keyword != null && !keyword.isBlank()) {
@@ -48,6 +54,27 @@ public class InsumoServiceImpl implements InsumoService {
                 return insumoRepository.findByKeyword(keyword, pageable);
             }
             return insumoRepository.findAllWithRelations(pageable);
+        }
+    }
+
+    private Page<Insumo> aplicarFiltroVencimiento(String filtro, String keyword, Long categoriaId, Pageable pageable) {
+        java.time.LocalDate hoy = java.time.LocalDate.now();
+        java.time.LocalDate fechaLimite;
+
+        switch (filtro) {
+            case "VENCIDOS":
+                return insumoRepository.findByFechaVencimientoBeforeWithFilters(hoy, keyword, categoriaId, pageable);
+            case "POR_VENCER_1MES":
+                fechaLimite = hoy.plusMonths(1);
+                return insumoRepository.findByFechaVencimientoBetweenWithFilters(hoy, fechaLimite, keyword, categoriaId, pageable);
+            case "POR_VENCER_3MESES":
+                fechaLimite = hoy.plusMonths(3);
+                return insumoRepository.findByFechaVencimientoBetweenWithFilters(hoy, fechaLimite, keyword, categoriaId, pageable);
+            case "POR_VENCER_6MESES":
+                fechaLimite = hoy.plusMonths(6);
+                return insumoRepository.findByFechaVencimientoBetweenWithFilters(hoy, fechaLimite, keyword, categoriaId, pageable);
+            default:
+                return listarTodos(keyword, categoriaId, null, pageable);
         }
     }
     

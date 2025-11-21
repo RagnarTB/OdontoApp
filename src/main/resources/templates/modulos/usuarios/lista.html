@@ -54,7 +54,7 @@
                 <div class="card-body">
 
                     <div class="user-list-card-header d-none d-md-flex">
-                        <div class="user-info-header">Usuario</div>          <div class="user-role-header">Rol</div>              <div class="user-contact-header">Contacto</div>      <div class="user-hiring-header">Contratación</div>  <div class="user-status-header">Estado</div>         <div class="user-access-header">Último Acceso</div>   <div class="user-actions-header">Acciones</div>      </div>
+                        <div class="user-info-header">Usuario</div>          <div class="user-role-header">Roles</div>              <div class="user-contact-header">Contacto</div>      <div class="user-hiring-header">Contratación</div>  <div class="user-status-header">Estado</div>         <div class="user-access-header">Último Acceso</div>   <div class="user-actions-header">Acciones</div>      </div>
 
                     <div th:if="${!paginaUsuarios.empty}">
                         <div class="user-card" th:each="usuario : ${paginaUsuarios.content}">
@@ -71,9 +71,11 @@
                             </div>
 
                             <div class="user-role">
-                                <span class="role-pill"
-                                      th:classappend="${#strings.toLowerCase(usuario.getRoles().iterator().next().getNombre())}"
-                                      th:text="${usuario.getRoles().iterator().next().getNombre()}"></span>
+                                <span th:each="rol, iterStat : ${usuario.getRoles()}"
+                                      class="role-pill"
+                                      th:classappend="${#strings.toLowerCase(rol.getNombre())}"
+                                      th:text="${rol.getNombre()}"
+                                      style="margin-right: 4px; margin-bottom: 4px; display: inline-block;"></span>
                             </div>
 
                             <div class="user-contact">
@@ -90,6 +92,18 @@
                                 <span class="status-pill"
                                       th:classappend="${usuario.estaActivo} ? 'active' : 'inactive'"
                                       th:text="${usuario.estaActivo} ? 'Activo' : 'Inactivo'">
+                                </span>
+                                <!-- Badge de bloqueo por intentos fallidos -->
+                                <span th:if="${usuario.fechaBloqueo != null && usuario.fechaBloqueo.isAfter(T(java.time.LocalDateTime).now())}"
+                                      class="badge badge-danger d-block mt-1"
+                                      title="Usuario bloqueado temporalmente">
+                                    <i class="fas fa-lock"></i> Bloqueado
+                                </span>
+                                <!-- Badge de intentos fallidos (advertencia) -->
+                                <span th:if="${usuario.intentosFallidos > 0 && (usuario.fechaBloqueo == null || usuario.fechaBloqueo.isBefore(T(java.time.LocalDateTime).now()))}"
+                                      class="badge badge-warning d-block mt-1"
+                                      th:title="'Intentos fallidos: ' + ${usuario.intentosFallidos}">
+                                    <i class="fas fa-exclamation-triangle"></i> <span th:text="${usuario.intentosFallidos}">0</span> intentos
                                 </span>
                             </div>
 

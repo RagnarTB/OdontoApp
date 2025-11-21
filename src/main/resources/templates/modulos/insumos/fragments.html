@@ -22,7 +22,10 @@
                     <label for="motivoMovimientoId">Motivo</label>
                     <select id="motivoMovimientoId" th:field="*{motivoMovimientoId}" class="form-control" required>
                         <option value="">-- Seleccione un motivo --</option>
-                        <option th:each="motivo : ${motivosMovimiento}" th:value="${motivo.id}"
+                        <!-- Ocultar motivos: "Anulación de venta" y "Venta directa" -->
+                        <option th:each="motivo : ${motivosMovimiento}"
+                            th:if="${motivo.nombre != 'Anulación de venta' && motivo.nombre != 'Venta directa'}"
+                            th:value="${motivo.id}"
                             th:text="${motivo.nombre}"
                             th:attr="data-tipo-id=${motivo.tipoMovimiento?.id}"></option>
                     </select>

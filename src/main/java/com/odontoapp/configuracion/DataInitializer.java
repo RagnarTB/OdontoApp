@@ -481,15 +481,31 @@ public class DataInitializer implements CommandLineRunner {
         crearMetodoPagoSiNoExiste("YAPE", "Pago mediante Yape");
         crearMetodoPagoSiNoExiste("MIXTO", "Pago combinado (Efectivo + Yape)");
 
-        // ... (Creación de Permisos - sin cambios) ...
-        List<String> modulos = Arrays.asList("USUARIOS", "ROLES", "PACIENTES", "CITAS", "SERVICIOS", "FACTURACION", "INVENTARIO", "REPORTES", "CONFIGURACION");
+        // === CREACIÓN DE PERMISOS GRANULARES ===
+        System.out.println(">>> Creando permisos granulares del sistema...");
+
+        // Módulos actuales del sistema (sin REPORTES ni CONFIGURACION que no existen)
+        List<String> modulos = Arrays.asList(
+            "USUARIOS",
+            "ROLES",
+            "PACIENTES",
+            "CITAS",
+            "SERVICIOS",
+            "FACTURACION",
+            "INVENTARIO",
+            "TRATAMIENTOS",
+            "ODONTOGRAMA"
+        );
+
         List<String> acciones = Arrays.asList("VER_LISTA", "VER_DETALLE", "CREAR", "EDITAR", "ELIMINAR");
+
         for (String modulo : modulos) {
             for (String accion : acciones) {
                 permisoRepository.findByModuloAndAccion(modulo, accion).orElseGet(() -> {
                     Permiso permiso = new Permiso();
                     permiso.setModulo(modulo);
                     permiso.setAccion(accion);
+                    System.out.println("  -> Creando permiso: " + accion + "_" + modulo);
                     return permisoRepository.save(permiso);
                 });
             }
@@ -502,9 +518,16 @@ public class DataInitializer implements CommandLineRunner {
         permisoRepository.findByModuloAndAccion("CITAS", "VER_DETALLE").ifPresent(permisosPaciente::add);
         crearRolSiNoExiste("PACIENTE", permisosPaciente);
 
-        // ODONTOLOGO: Todo menos USUARIOS y ROLES
+        // ODONTOLOGO: GESTIÓN CLÍNICA (Pacientes, Citas, Servicios) + FACTURACIÓN + Tratamientos + Odontograma
         Set<Permiso> permisosOdontologo = new HashSet<>();
-        List<String> modulosOdontologo = Arrays.asList("PACIENTES", "CITAS", "SERVICIOS", "FACTURACION", "INVENTARIO", "REPORTES", "CONFIGURACION");
+        List<String> modulosOdontologo = Arrays.asList(
+            "PACIENTES",
+            "CITAS",
+            "SERVICIOS",
+            "FACTURACION",
+            "TRATAMIENTOS",
+            "ODONTOGRAMA"
+        );
         for (String modulo : modulosOdontologo) {
             for (String accion : acciones) {
                 permisoRepository.findByModuloAndAccion(modulo, accion).ifPresent(permisosOdontologo::add);

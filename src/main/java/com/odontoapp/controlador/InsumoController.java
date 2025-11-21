@@ -35,17 +35,19 @@ public class InsumoController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long categoriaId) {
+            @RequestParam(required = false) Long categoriaId,
+            @RequestParam(required = false) String filtroVencimiento) {
 
         // 🔥 LÍNEA CLAVE: Carga las alertas de stock bajo y las envía a la vista
         model.addAttribute("alertasStockBajo", insumoService.listarConStockBajo());
 
-        // Carga la tabla principal con filtros de categoría y keyword
+        // Carga la tabla principal con filtros de categoría, keyword y vencimiento
         Pageable pageable = PageRequest.of(page, size);
-        Page<Insumo> paginaInsumos = insumoService.listarTodos(keyword, categoriaId, pageable);
+        Page<Insumo> paginaInsumos = insumoService.listarTodos(keyword, categoriaId, filtroVencimiento, pageable);
         model.addAttribute("paginaInsumos", paginaInsumos);
         model.addAttribute("keyword", keyword);
         model.addAttribute("categoriaId", categoriaId);
+        model.addAttribute("filtroVencimiento", filtroVencimiento);
 
         // Carga las categorías para el filtro (esto también lo tenías)
         model.addAttribute("todasLasCategorias", categoriaInsumoRepository.findAll());

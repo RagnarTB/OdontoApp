@@ -13,6 +13,27 @@
         </ul>
 
         <ul class="navbar-nav ml-auto">
+            <!-- Dropdown de Rol Activo (solo para personal con múltiples roles) -->
+            <li class="nav-item dropdown" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA','ALMACEN')">
+                <a class="nav-link dropdown-toggle" href="#" id="rolDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-user-tag"></i>
+                    <span th:text="${session.rolActivo != null ? session.rolActivo : 'Mi Rol'}">Mi Rol</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="rolDropdown">
+                    <div class="dropdown-item-text text-sm">
+                        <strong>Rol Activo:</strong>
+                        <span class="badge badge-primary" th:text="${session.rolActivo != null ? session.rolActivo : 'No seleccionado'}">
+                            No seleccionado
+                        </span>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a th:href="@{/seleccionar-rol/cambiar}" class="dropdown-item">
+                        <i class="fas fa-exchange-alt mr-2"></i> Cambiar de Rol
+                    </a>
+                </div>
+            </li>
+
+            <!-- Logout -->
             <li class="nav-item">
                 <form th:action="@{/logout}" method="post" id="logoutForm"></form>
 

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import java.time.LocalDate;
+import com.odontoapp.validacion.FechaNacimientoValida;
 
 @Data
 public class PacienteDTO {
@@ -27,7 +28,10 @@ public class PacienteDTO {
     private String email;
 
     private String telefono;
+
+    @FechaNacimientoValida
     private LocalDate fechaNacimiento;
+
     private String direccion;
     private String alergias;
     private String antecedentesMedicos;

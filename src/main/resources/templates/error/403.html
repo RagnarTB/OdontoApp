@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(titulo='Acceso Denegado', contenido=~{::#contenido-principal})}">
+
+<body>
+<div id="contenido-principal">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12 text-center">
+                    <h1 class="text-danger">
+                        <i class="fas fa-ban"></i>
+                        Acceso Denegado
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-10">
+                    <div class="error-page">
+                        <!-- Número de error grande -->
+                        <h2 class="headline text-danger">403</h2>
+
+                        <div class="error-content">
+                            <h3>
+                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                                ¡Acceso Denegado!
+                            </h3>
+
+                            <div class="card card-danger card-outline mt-4">
+                                <div class="card-body">
+                                    <div class="callout callout-danger">
+                                        <h5><i class="icon fas fa-ban"></i> No tienes permisos</h5>
+                                        <p th:text="${errorMessage ?: 'No tienes permisos para acceder a este recurso.'}">
+                                            No tienes permisos para acceder a este recurso.
+                                        </p>
+                                        <p class="mb-0 text-sm" th:if="${errorDetails}">
+                                            <strong>Detalle:</strong> <span th:text="${errorDetails}"></span>
+                                        </p>
+                                    </div>
+
+                                    <div class="row mt-4">
+                                        <div class="col-md-12">
+                                            <h5 class="text-muted mb-3">
+                                                <i class="fas fa-info-circle"></i> Posibles razones:
+                                            </h5>
+                                            <ul class="list-group list-group-flush">
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-user-slash text-danger mr-2"></i>
+                                                    <strong>Rol insuficiente:</strong> Tu rol actual no tiene acceso a este módulo
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-key text-warning mr-2"></i>
+                                                    <strong>Permisos granulares:</strong> Tu cuenta no tiene los permisos específicos requeridos
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-lock text-info mr-2"></i>
+                                                    <strong>Acción no autorizada:</strong> Intentaste realizar una operación restringida
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mt-4">
+                                        <div class="col-md-12 text-center">
+                                            <a href="javascript:history.back()" class="btn btn-secondary btn-lg">
+                                                <i class="fas fa-arrow-left mr-2"></i> Volver Atrás
+                                            </a>
+                                            <a th:href="@{/dashboard}" class="btn btn-primary btn-lg ml-2">
+                                                <i class="fas fa-home mr-2"></i> Ir al Dashboard
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info mt-4" role="alert">
+                                <i class="icon fas fa-info-circle"></i>
+                                <strong>¿Necesitas acceso?</strong>
+                                Si crees que deberías tener acceso a este recurso, contacta al administrador del sistema
+                                para que revise tus permisos.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    .error-page {
+        margin-top: 20px;
+    }
+    .error-page > .headline {
+        float: left;
+        font-size: 100px;
+        font-weight: 300;
+        margin-right: 20px;
+    }
+    .error-page > .error-content {
+        display: block;
+        margin-left: 150px;
+    }
+    .error-page > .error-content > h3 {
+        font-weight: 300;
+        font-size: 25px;
+    }
+    @media (max-width: 767px) {
+        .error-page > .headline {
+            float: none;
+            text-align: center;
+        }
+        .error-page > .error-content {
+            margin-left: 0;
+        }
+    }
+</style>
+
+</body>
+</html>

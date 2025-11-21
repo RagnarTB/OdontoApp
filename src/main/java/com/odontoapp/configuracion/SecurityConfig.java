@@ -27,6 +27,9 @@ public class SecurityConfig {
         @Autowired
         private CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
 
+        @Autowired
+        private com.odontoapp.seguridad.CustomAccessDeniedHandler customAccessDeniedHandler;
+
         @Bean
         public PasswordEncoder passwordEncoder() {
                 return new BCryptPasswordEncoder();
@@ -45,11 +48,15 @@ public class SecurityConfig {
                                                 .requestMatchers("/login", "/adminlte/**", "/css/**", "/js/**",
                                                                 "/activar-cuenta", "/establecer-password",
                                                                 "/resultado-activacion", "/registro/**",
-                                                                "/recuperar-password/**", "/api/reniec")
+                                                                "/recuperar-password/**", "/api/reniec",
+                                                                "/error/**")
                                                 .permitAll()
 
                                                 // Cambiar password obligatorio - todos autenticados
                                                 .requestMatchers("/cambiar-password-obligatorio").authenticated()
+
+                                                // Selector de rol - todos autenticados
+                                                .requestMatchers("/seleccionar-rol", "/seleccionar-rol/**").authenticated()
 
                                                 // ADMIN: Acceso total
                                                 .requestMatchers("/usuarios/**", "/roles/**").hasRole("ADMIN")
@@ -61,10 +68,9 @@ public class SecurityConfig {
                                                 .requestMatchers("/", "/home", "/dashboard")
                                                 .hasAnyRole("ADMIN", "ODONTOLOGO", "RECEPCIONISTA", "ALMACEN")
 
-                                                // ODONTOLOGO: Todo menos usuarios/roles
+                                                // ODONTOLOGO: GESTIÓN CLÍNICA + FACTURACIÓN (sin inventario)
                                                 .requestMatchers("/pacientes/**", "/servicios/**", "/facturacion/**",
-                                                                "/insumos/**", "/categorias-insumo/**", "/unidades-medida/**",
-                                                                "/reportes/**", "/configuracion/**", "/tratamientos/**")
+                                                                "/tratamientos/**", "/odontograma/**", "/api/odontograma/**")
                                                 .hasAnyRole("ODONTOLOGO", "ADMIN")
 
                                                 // RECEPCIONISTA: Citas, pacientes y facturación
@@ -75,7 +81,7 @@ public class SecurityConfig {
                                                 // ALMACEN: Solo inventario
                                                 .requestMatchers("/insumos/**", "/categorias-insumo/**",
                                                                 "/unidades-medida/**", "/movimientos-inventario/**")
-                                                .hasAnyRole("ALMACEN", "ADMIN", "ODONTOLOGO")
+                                                .hasAnyRole("ALMACEN", "ADMIN")
 
                                                 // Cualquier otra petición requiere autenticación
                                                 .anyRequest().authenticated())
@@ -93,7 +99,9 @@ public class SecurityConfig {
                                                 .invalidateHttpSession(true)
                                                 .clearAuthentication(true)
                                                 .deleteCookies("JSESSIONID")
-                                                .permitAll());
+                                                .permitAll())
+                                .exceptionHandling(exception -> exception
+                                                .accessDeniedHandler(customAccessDeniedHandler));
                 return http.build();
         }
 }
