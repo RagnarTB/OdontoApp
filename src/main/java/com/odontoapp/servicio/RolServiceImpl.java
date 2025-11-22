@@ -22,15 +22,18 @@ public class RolServiceImpl implements RolService {
 
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
+    private final SessionInvalidationService sessionInvalidationService;
 
     // Nombres de roles protegidos (constantes para evitar errores tipográficos)
     private static final String ROL_ADMIN = "ADMIN";
     private static final String ROL_PACIENTE = "PACIENTE";
     private static final String ROL_ODONTOLOGO = "ODONTOLOGO"; // Añadido para protección
 
-    public RolServiceImpl(RolRepository rolRepository, PermisoRepository permisoRepository) {
+    public RolServiceImpl(RolRepository rolRepository, PermisoRepository permisoRepository,
+                          SessionInvalidationService sessionInvalidationService) {
         this.rolRepository = rolRepository;
         this.permisoRepository = permisoRepository;
+        this.sessionInvalidationService = sessionInvalidationService;
     }
 
     @Override
@@ -93,6 +96,14 @@ public class RolServiceImpl implements RolService {
         }
 
         rolRepository.save(rol);
+
+        // ⚠️ INVALIDAR SESIONES: Si se modificaron los permisos de un rol existente,
+        // forzar logout a todos los usuarios con ese rol para que obtengan los nuevos permisos
+        if (rolDTO.getId() != null) {
+            int sesionesInvalidadas = sessionInvalidationService.invalidarSesionesPorRol(rol);
+            System.out.println("✅ Permisos del rol '" + rol.getNombre() + "' actualizados. " +
+                    sesionesInvalidadas + " sesión(es) invalidada(s).");
+        }
     }
 
     @Override
@@ -159,8 +170,16 @@ public class RolServiceImpl implements RolService {
         }
 
         // --- CAMBIO DE ESTADO ---
-        rol.setEstaActivo(!rol.isEstaActivo());
+        boolean nuevoEstado = !rol.isEstaActivo();
+        rol.setEstaActivo(nuevoEstado);
         rolRepository.save(rol);
+
+        // ⚠️ INVALIDAR SESIONES: Forzar logout a usuarios con este rol
+        // para que reflejen el cambio de estado
+        int sesionesInvalidadas = sessionInvalidationService.invalidarSesionesPorRol(rol);
+        System.out.println("✅ Estado del rol '" + rol.getNombre() + "' cambiado a " +
+                (nuevoEstado ? "ACTIVO" : "INACTIVO") + ". " +
+                sesionesInvalidadas + " sesión(es) invalidada(s).");
     }
 
 }

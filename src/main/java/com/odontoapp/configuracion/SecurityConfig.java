@@ -8,6 +8,8 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -41,6 +43,11 @@ public class SecurityConfig {
         }
 
         @Bean
+        public SessionRegistry sessionRegistry() {
+                return new SessionRegistryImpl();
+        }
+
+        @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
                                 .authorizeHttpRequests(authorize -> authorize
@@ -51,6 +58,9 @@ public class SecurityConfig {
                                                                 "/recuperar-password/**", "/api/reniec",
                                                                 "/error/**")
                                                 .permitAll()
+
+                                                // API de permisos - solo para usuarios autenticados
+                                                .requestMatchers("/api/permisos/**").authenticated()
 
                                                 // Cambiar password obligatorio - todos autenticados
                                                 .requestMatchers("/cambiar-password-obligatorio").authenticated()
@@ -101,7 +111,10 @@ public class SecurityConfig {
                                                 .deleteCookies("JSESSIONID")
                                                 .permitAll())
                                 .exceptionHandling(exception -> exception
-                                                .accessDeniedHandler(customAccessDeniedHandler));
+                                                .accessDeniedHandler(customAccessDeniedHandler))
+                                .sessionManagement(session -> session
+                                                .maximumSessions(-1) // Sin límite de sesiones concurrentes
+                                                .sessionRegistry(sessionRegistry()));
                 return http.build();
         }
 }
