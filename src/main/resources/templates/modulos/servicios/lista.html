@@ -51,7 +51,8 @@
                             data-toggle="modal" data-target="#modalCategoriasProc">
                             <i class="fas fa-tags mr-2"></i> Gestionar Categorías
                         </button>
-                        <a th:href="@{/servicios/nuevo}" class="btn btn-primary float-sm-right shadow-sm">
+                        <a th:href="@{/servicios/nuevo}" class="btn btn-primary float-sm-right shadow-sm"
+                            sec:authorize="hasAuthority('CREAR_SERVICIOS')">
                             <i class="fas fa-plus mr-2"></i> Nuevo Servicio
                         </a>
                     </div>
@@ -139,12 +140,16 @@
                                     </td>
                                     <td>
                                         <a th:href="@{/servicios/editar/{id}(id=${proc.id})}"
-                                            class="btn btn-sm btn-warning" title="Editar">
+                                            class="btn btn-sm btn-warning" title="Editar"
+                                            data-permiso="EDITAR_SERVICIOS"
+                                            data-accion-descripcion="editar servicios">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <a th:href="@{/servicios/eliminar/{id}(id=${proc.id})}"
                                             class="btn btn-sm btn-danger btn-eliminar-servicio" title="Eliminar"
-                                            th:data-nombre="${proc.nombre}">
+                                            th:data-nombre="${proc.nombre}"
+                                            data-permiso="ELIMINAR_SERVICIOS"
+                                            data-accion-descripcion="eliminar servicios">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </td>

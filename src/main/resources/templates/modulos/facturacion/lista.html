@@ -12,7 +12,8 @@
                         <p class="text-muted">Administra los comprobantes y pagos de la clínica</p>
                     </div>
                     <div class="col-sm-6">
-                        <a th:href="@{/facturacion/pos}" class="btn btn-success float-sm-right">
+                        <a th:href="@{/facturacion/pos}" class="btn btn-success float-sm-right"
+                            sec:authorize="hasAuthority('CREAR_FACTURACION')">
                             <i class="fas fa-cash-register"></i> Ir al POS (Venta Directa)
                         </a>
                     </div>
@@ -110,7 +111,9 @@
                                             <!-- Botón Ver Detalle / Registrar Pago -->
                                             <a th:href="@{/facturacion/detalle/{id}(id=${comprobante.id})}"
                                                 class="btn btn-info" title="Ver detalle y registrar pago"
-                                                th:if="${comprobante.estadoPago.nombre != 'ANULADO'}">
+                                                th:if="${comprobante.estadoPago.nombre != 'ANULADO'}"
+                                                data-permiso="VER_DETALLE_FACTURACION"
+                                                data-accion-descripcion="ver detalles de comprobantes">
                                                 <i class="fas fa-eye"></i>
                                             </a>
 

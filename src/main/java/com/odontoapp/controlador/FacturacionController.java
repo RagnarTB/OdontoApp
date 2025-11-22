@@ -10,10 +10,12 @@ import com.odontoapp.repositorio.MetodoPagoRepository;
 import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.servicio.FacturacionService;
+import com.odontoapp.util.Permisos;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -59,6 +61,7 @@ public class FacturacionController {
      * @return Vista de lista de facturación
      */
     @GetMapping
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_FACTURACION)")
     public String verFacturacion(Model model,
                                 @RequestParam(defaultValue = "0") int page) {
         // Crear paginación (10 comprobantes por página)
@@ -82,6 +85,7 @@ public class FacturacionController {
      * @return Vista del POS
      */
     @GetMapping("/pos")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_FACTURACION)")
     public String verPOS(Model model) {
         // Buscar todos los pacientes
         var listaPacientes = pacienteRepository.findAll();
@@ -120,6 +124,7 @@ public class FacturacionController {
      * @return Redirección a la lista de facturación
      */
     @PostMapping("/generar-venta-directa")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_FACTURACION)")
     public String generarVentaDirecta(@ModelAttribute ComprobanteDTO dto,
                                      @RequestParam(required = false) Boolean generarPago,
                                      @RequestParam(required = false) Long metodoPagoId,
@@ -180,6 +185,7 @@ public class FacturacionController {
      * @return ResponseEntity con resultado en JSON
      */
     @PostMapping("/registrar-pago")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_FACTURACION)")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> registrarPago(@RequestBody PagoDTO dto) {
         Map<String, Object> response = new HashMap<>();
@@ -236,6 +242,7 @@ public class FacturacionController {
      * @return Redirección a la lista de facturación
      */
     @PostMapping("/anular/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).ELIMINAR_FACTURACION)")
     public String anularComprobante(@PathVariable Long id,
                                    @RequestParam(defaultValue = "Anulado por usuario") String motivo,
                                    @RequestParam(required = false) Boolean regresarInventario,
@@ -273,6 +280,7 @@ public class FacturacionController {
      * @return ResponseEntity con resultado en JSON
      */
     @PostMapping("/anular-con-devolucion/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).ELIMINAR_FACTURACION)")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> anularComprobanteConDevolucion(
             @PathVariable Long id,
@@ -352,6 +360,7 @@ public class FacturacionController {
      * @return Vista de detalle del comprobante
      */
     @GetMapping("/detalle/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_FACTURACION)")
     public String verDetalle(@PathVariable Long id,
                             Model model,
                             RedirectAttributes attributes) {
@@ -388,6 +397,7 @@ public class FacturacionController {
      * @return Map con los detalles del comprobante en formato JSON
      */
     @GetMapping("/detalle/{id}/json")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_FACTURACION)")
     @ResponseBody
     public Map<String, Object> obtenerDetallesJSON(@PathVariable Long id) {
         try {
@@ -429,6 +439,7 @@ public class FacturacionController {
      * @return Vista de lista de facturación filtrada
      */
     @GetMapping("/paciente/{pacienteId}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_FACTURACION)")
     public String verComprobantesPorPaciente(@PathVariable Long pacienteId,
                                             Model model,
                                             @RequestParam(defaultValue = "0") int page) {
@@ -457,6 +468,7 @@ public class FacturacionController {
      * @return Vista de impresión del comprobante
      */
     @GetMapping("/imprimir/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_FACTURACION)")
     public String imprimirComprobante(@PathVariable Long id,
                                      Model model,
                                      RedirectAttributes attributes) {

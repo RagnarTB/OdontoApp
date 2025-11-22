@@ -8,10 +8,12 @@ import com.odontoapp.repositorio.CategoriaProcedimientoRepository;
 import com.odontoapp.repositorio.ProcedimientoRepository;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.servicio.ProcedimientoService;
+import com.odontoapp.util.Permisos;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -49,6 +51,7 @@ public class ProcedimientoController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_SERVICIOS)")
     public String listarProcedimientos(Model model,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
@@ -95,6 +98,7 @@ public class ProcedimientoController {
     }
 
     @GetMapping("/nuevo")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_SERVICIOS)")
     public String mostrarFormularioNuevo(Model model) {
         model.addAttribute("procedimientoDTO", new ProcedimientoDTO());
         cargarDatosFormulario(model);
@@ -102,6 +106,7 @@ public class ProcedimientoController {
     }
 
     @PostMapping("/guardar")
+    @PreAuthorize("hasAnyAuthority(T(com.odontoapp.util.Permisos).CREAR_SERVICIOS, T(com.odontoapp.util.Permisos).EDITAR_SERVICIOS)")
     public String guardarProcedimiento(@Valid @ModelAttribute("procedimientoDTO") ProcedimientoDTO dto,
             BindingResult result,
             Model model,
@@ -122,6 +127,7 @@ public class ProcedimientoController {
     }
 
     @GetMapping("/editar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_SERVICIOS)")
     public String mostrarFormularioEditar(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         return procedimientoService.buscarPorId(id).map(proc -> {
             ProcedimientoDTO dto = new ProcedimientoDTO();
@@ -154,6 +160,7 @@ public class ProcedimientoController {
     }
 
     @GetMapping("/eliminar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).ELIMINAR_SERVICIOS)")
     public String eliminarProcedimiento(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             procedimientoService.eliminar(id);
@@ -168,6 +175,7 @@ public class ProcedimientoController {
      * Endpoint para obtener insumos de un procedimiento (usado por el formulario)
      */
     @GetMapping("/{id}/insumos")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_SERVICIOS)")
     @ResponseBody
     public ResponseEntity<?> obtenerInsumosDeProcedimiento(@PathVariable Long id) {
         try {
