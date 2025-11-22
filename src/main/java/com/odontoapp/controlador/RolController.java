@@ -24,13 +24,13 @@ import com.odontoapp.entidad.Permiso;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.repositorio.PermisoRepository;
 import com.odontoapp.servicio.RolService;
+import com.odontoapp.util.Permisos;
 
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 @Controller
-@RequestMapping("/roles") // Añadir RequestMapping a nivel de clase
-@PreAuthorize("hasRole('ADMIN')") // ✅ Solo ADMIN puede gestionar roles
+@RequestMapping("/roles")
 public class RolController {
 
     private final RolService rolService;
@@ -47,6 +47,7 @@ public class RolController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_ROLES)")
     public String listarRoles(Model model,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
@@ -62,6 +63,7 @@ public class RolController {
     }
 
     @GetMapping("/nuevo")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_ROLES)")
     public String mostrarFormularioNuevoRol(Model model) {
         model.addAttribute("rol", new RolDTO());
         cargarPermisos(model);
@@ -69,6 +71,7 @@ public class RolController {
     }
 
     @PostMapping("/guardar")
+    @PreAuthorize("hasAnyAuthority(T(com.odontoapp.util.Permisos).CREAR_ROLES, T(com.odontoapp.util.Permisos).EDITAR_ROLES)")
     public String guardarRol(@Valid @ModelAttribute("rol") RolDTO rolDTO,
             BindingResult result,
             Model model,
@@ -104,6 +107,7 @@ public class RolController {
     }
 
     @GetMapping("/editar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_ROLES)")
     public String mostrarFormularioEditarRol(@PathVariable Long id, Model model,
             RedirectAttributes redirectAttributes) { // Añadir RedirectAttributes
         Rol rol = rolService.buscarRolPorId(id).orElse(null);
@@ -133,6 +137,7 @@ public class RolController {
     }
 
     @GetMapping("/eliminar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).ELIMINAR_ROLES)")
     public String eliminarRol(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             rolService.eliminarRol(id);
@@ -149,6 +154,7 @@ public class RolController {
     }
 
     @GetMapping("/cambiar-estado/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_ROLES)")
     public String cambiarEstadoRol(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             rolService.cambiarEstadoRol(id);

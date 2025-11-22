@@ -39,12 +39,16 @@ import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
 import com.odontoapp.repositorio.TratamientoRealizadoRepository;
 import com.odontoapp.servicio.PacienteService;
 import com.odontoapp.servicio.ReniecService;
+import com.odontoapp.util.Permisos;
 
 import java.time.format.DateTimeFormatter;
 
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
+@RequestMapping("/pacientes")
 public class PacienteController {
 
     private final PacienteService pacienteService;
@@ -74,7 +78,8 @@ public class PacienteController {
         this.comprobanteRepository = comprobanteRepository;
     }
 
-    @GetMapping("/pacientes")
+    @GetMapping
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_PACIENTES)")
     public String listarPacientes(Model model,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
@@ -86,14 +91,16 @@ public class PacienteController {
         return "modulos/pacientes/lista";
     }
 
-    @GetMapping("/pacientes/nuevo")
+    @GetMapping("/nuevo")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_PACIENTES)")
     public String mostrarFormularioNuevo(Model model) {
         model.addAttribute("pacienteDTO", new PacienteDTO());
         model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // NUEVO
         return "modulos/pacientes/formulario";
     }
 
-    @PostMapping("/pacientes/guardar")
+    @PostMapping("/guardar")
+    @PreAuthorize("hasAnyAuthority(T(com.odontoapp.util.Permisos).CREAR_PACIENTES, T(com.odontoapp.util.Permisos).EDITAR_PACIENTES)")
     public String guardarPaciente(@Valid @ModelAttribute("pacienteDTO") PacienteDTO pacienteDTO,
             BindingResult result,
             Model model,
@@ -149,7 +156,8 @@ public class PacienteController {
         }
     }
 
-    @GetMapping("/pacientes/editar/{id}")
+    @GetMapping("/editar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_PACIENTES)")
     public String mostrarFormularioEditar(@PathVariable Long id, Model model) {
         return pacienteService.buscarPorId(id).map(paciente -> {
             PacienteDTO dto = new PacienteDTO();
@@ -170,7 +178,8 @@ public class PacienteController {
         }).orElse("redirect:/pacientes");
     }
 
-    @GetMapping("/pacientes/eliminar/{id}")
+    @GetMapping("/eliminar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).ELIMINAR_PACIENTES)")
     public String eliminarPaciente(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             pacienteService.eliminarPaciente(id);
@@ -226,7 +235,8 @@ public class PacienteController {
                 Map.of("error", "DNI no encontrado o datos incompletos. Verifique el número."));
     }
 
-    @GetMapping("/pacientes/restablecer/{id}")
+    @GetMapping("/restablecer/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_PACIENTES)")
     public String restablecerPaciente(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             pacienteService.restablecerPaciente(id);
@@ -242,7 +252,8 @@ public class PacienteController {
      * Incluye: datos básicos, tratamientos, citas, odontograma, comprobantes
      * Con paginación para citas y comprobantes
      */
-    @GetMapping("/pacientes/historial/{id}")
+    @GetMapping("/historial/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_PACIENTES)")
     public String verHistorial(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int citasPageNum,
@@ -305,7 +316,8 @@ public class PacienteController {
      * API REST para obtener el detalle completo de un paciente
      * Usado por el modal "Ver Detalle" en la lista de pacientes
      */
-    @GetMapping("/pacientes/api/detalle/{id}")
+    @GetMapping("/api/detalle/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_PACIENTES)")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> obtenerDetallePaciente(@PathVariable Long id) {
         Optional<Paciente> pacienteOpt = pacienteService.buscarPorId(id);
