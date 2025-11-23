@@ -41,7 +41,8 @@ public interface ProcedimientoRepository extends JpaRepository<Procedimiento, Lo
     Optional<Procedimiento> findByIdIgnorandoSoftDelete(@Param("id") Long id);
 
     // --- MÉTODO PARA LISTAR PROCEDIMIENTOS ELIMINADOS ---
-    @Query(value = "SELECT DISTINCT p FROM Procedimiento p LEFT JOIN FETCH p.categoria WHERE p.eliminado = true",
-           countQuery = "SELECT COUNT(p) FROM Procedimiento p WHERE p.eliminado = true")
+    @Query(value = "SELECT * FROM procedimientos WHERE eliminado = true ORDER BY fecha_eliminacion DESC",
+           countQuery = "SELECT COUNT(*) FROM procedimientos WHERE eliminado = true",
+           nativeQuery = true)
     Page<Procedimiento> findEliminados(Pageable pageable);
 }
