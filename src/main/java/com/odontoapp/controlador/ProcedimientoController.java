@@ -199,6 +199,31 @@ public class ProcedimientoController {
         }
     }
 
+    @GetMapping("/eliminados")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_SERVICIOS)")
+    public String listarProcedimientosEliminados(Model model,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Procedimiento> paginaProcedimientos = procedimientoRepository.findEliminados(pageable);
+        model.addAttribute("paginaProcedimientos", paginaProcedimientos);
+        model.addAttribute("todasLasCategorias", categoriaRepository.findAll());
+        model.addAttribute("mostrarEliminados", true);
+        return "modulos/servicios/lista";
+    }
+
+    @GetMapping("/restablecer/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_SERVICIOS)")
+    public String restablecerProcedimiento(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            procedimientoService.restablecer(id);
+            redirectAttributes.addFlashAttribute("success", "Servicio restablecido con éxito.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al restablecer el servicio: " + e.getMessage());
+        }
+        return "redirect:/servicios";
+    }
+
     private void cargarDatosFormulario(Model model) {
         // Cargar solo categorías activas para formularios
         List<CategoriaProcedimiento> categorias = categoriaRepository.findAll().stream()

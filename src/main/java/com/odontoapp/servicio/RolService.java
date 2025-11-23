@@ -19,4 +19,6 @@ public interface RolService {
     void eliminarRol(Long id);
 
     void cambiarEstadoRol(Long id);
+
+    void restablecerRol(Long id);
 }

@@ -129,4 +129,21 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
 
         procedimientoRepository.deleteById(id);
     }
+
+    @Override
+    @Transactional
+    public void restablecer(Long id) {
+        Procedimiento procedimiento = procedimientoRepository.findByIdIgnorandoSoftDelete(id)
+                .orElseThrow(() -> new IllegalStateException("Procedimiento no encontrado con ID: " + id));
+
+        if (!procedimiento.isEliminado()) {
+            throw new IllegalStateException("El procedimiento '" + procedimiento.getNombre() + "' no está eliminado.");
+        }
+
+        // Restablecer el procedimiento
+        procedimiento.setEliminado(false);
+        procedimientoRepository.save(procedimiento);
+
+        System.out.println("✅ Procedimiento '" + procedimiento.getNombre() + "' restablecido exitosamente.");
+    }
 }

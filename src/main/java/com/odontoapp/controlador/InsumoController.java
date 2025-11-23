@@ -124,6 +124,31 @@ public class InsumoController {
         return "redirect:/insumos";
     }
 
+    @GetMapping("/eliminados")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_INVENTARIO)")
+    public String listarInsumosEliminados(Model model,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Insumo> paginaInsumos = insumoRepository.findEliminados(pageable);
+        model.addAttribute("paginaInsumos", paginaInsumos);
+        model.addAttribute("categorias", categoriaInsumoRepository.findAll());
+        model.addAttribute("mostrarEliminados", true);
+        return "modulos/insumos/lista";
+    }
+
+    @GetMapping("/restablecer/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_INVENTARIO)")
+    public String restablecerInsumo(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            insumoService.restablecer(id);
+            redirectAttributes.addFlashAttribute("success", "Artículo restablecido con éxito.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al restablecer el artículo: " + e.getMessage());
+        }
+        return "redirect:/insumos";
+    }
+
     private void cargarCatalogos(Model model) {
         model.addAttribute("categorias", categoriaInsumoRepository.findAll());
         model.addAttribute("unidadesMedida", unidadMedidaRepository.findAll());

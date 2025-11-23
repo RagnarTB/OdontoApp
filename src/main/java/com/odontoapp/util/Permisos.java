@@ -16,6 +16,7 @@ public final class Permisos {
     public static final String CREAR_USUARIOS = "CREAR_USUARIOS";
     public static final String EDITAR_USUARIOS = "EDITAR_USUARIOS";
     public static final String ELIMINAR_USUARIOS = "ELIMINAR_USUARIOS";
+    public static final String RESTAURAR_USUARIOS = "RESTAURAR_USUARIOS";
 
     // ============== MÓDULO: ROLES ==============
     public static final String VER_LISTA_ROLES = "VER_LISTA_ROLES";
@@ -23,6 +24,7 @@ public final class Permisos {
     public static final String CREAR_ROLES = "CREAR_ROLES";
     public static final String EDITAR_ROLES = "EDITAR_ROLES";
     public static final String ELIMINAR_ROLES = "ELIMINAR_ROLES";
+    public static final String RESTAURAR_ROLES = "RESTAURAR_ROLES";
 
     // ============== MÓDULO: PACIENTES ==============
     public static final String VER_LISTA_PACIENTES = "VER_LISTA_PACIENTES";
@@ -30,6 +32,7 @@ public final class Permisos {
     public static final String CREAR_PACIENTES = "CREAR_PACIENTES";
     public static final String EDITAR_PACIENTES = "EDITAR_PACIENTES";
     public static final String ELIMINAR_PACIENTES = "ELIMINAR_PACIENTES";
+    public static final String RESTAURAR_PACIENTES = "RESTAURAR_PACIENTES";
 
     // ============== MÓDULO: CITAS ==============
     public static final String VER_LISTA_CITAS = "VER_LISTA_CITAS";
@@ -44,6 +47,7 @@ public final class Permisos {
     public static final String CREAR_SERVICIOS = "CREAR_SERVICIOS";
     public static final String EDITAR_SERVICIOS = "EDITAR_SERVICIOS";
     public static final String ELIMINAR_SERVICIOS = "ELIMINAR_SERVICIOS";
+    public static final String RESTAURAR_SERVICIOS = "RESTAURAR_SERVICIOS";
 
     // ============== MÓDULO: FACTURACIÓN ==============
     public static final String VER_LISTA_FACTURACION = "VER_LISTA_FACTURACION";
@@ -58,6 +62,7 @@ public final class Permisos {
     public static final String CREAR_INVENTARIO = "CREAR_INVENTARIO";
     public static final String EDITAR_INVENTARIO = "EDITAR_INVENTARIO"; // Incluye registrar movimientos
     public static final String ELIMINAR_INVENTARIO = "ELIMINAR_INVENTARIO";
+    public static final String RESTAURAR_INVENTARIO = "RESTAURAR_INVENTARIO";
 
     // ============== MÓDULO: TRATAMIENTOS ==============
     public static final String VER_LISTA_TRATAMIENTOS = "VER_LISTA_TRATAMIENTOS";

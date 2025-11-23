@@ -497,7 +497,7 @@ public class DataInitializer implements CommandLineRunner {
             "ODONTOGRAMA"
         );
 
-        List<String> acciones = Arrays.asList("VER_LISTA", "VER_DETALLE", "CREAR", "EDITAR", "ELIMINAR");
+        List<String> acciones = Arrays.asList("VER_LISTA", "VER_DETALLE", "CREAR", "EDITAR", "ELIMINAR", "RESTAURAR");
 
         for (String modulo : modulos) {
             for (String accion : acciones) {

@@ -35,4 +35,13 @@ public interface ProcedimientoRepository extends JpaRepository<Procedimiento, Lo
     @Query(value = "SELECT DISTINCT p FROM Procedimiento p LEFT JOIN FETCH p.categoria c WHERE c.id = :categoriaId AND (p.nombre LIKE %:keyword% OR p.codigo LIKE %:keyword% OR p.descripcion LIKE %:keyword%)",
            countQuery = "SELECT COUNT(p) FROM Procedimiento p WHERE p.categoria.id = :categoriaId AND (p.nombre LIKE %:keyword% OR p.codigo LIKE %:keyword% OR p.descripcion LIKE %:keyword%)")
     Page<Procedimiento> findByCategoriaIdAndKeyword(@Param("categoriaId") Long categoriaId, @Param("keyword") String keyword, Pageable pageable);
+
+    // --- MÉTODO PARA RESTAURAR PROCEDIMIENTOS SOFT-DELETED ---
+    @Query("SELECT p FROM Procedimiento p WHERE p.id = :id") // Ignora @Where
+    Optional<Procedimiento> findByIdIgnorandoSoftDelete(@Param("id") Long id);
+
+    // --- MÉTODO PARA LISTAR PROCEDIMIENTOS ELIMINADOS ---
+    @Query(value = "SELECT DISTINCT p FROM Procedimiento p LEFT JOIN FETCH p.categoria WHERE p.eliminado = true",
+           countQuery = "SELECT COUNT(p) FROM Procedimiento p WHERE p.eliminado = true")
+    Page<Procedimiento> findEliminados(Pageable pageable);
 }

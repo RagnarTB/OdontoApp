@@ -235,8 +235,20 @@ public class PacienteController {
                 Map.of("error", "DNI no encontrado o datos incompletos. Verifique el número."));
     }
 
+    @GetMapping("/eliminados")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_PACIENTES)")
+    public String listarPacientesEliminados(Model model,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Paciente> paginaPacientes = pacienteRepository.findEliminados(pageable);
+        model.addAttribute("paginaPacientes", paginaPacientes);
+        model.addAttribute("mostrarEliminados", true);
+        return "modulos/pacientes/lista";
+    }
+
     @GetMapping("/restablecer/{id}")
-    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_PACIENTES)")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_PACIENTES)")
     public String restablecerPaciente(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             pacienteService.restablecerPaciente(id);

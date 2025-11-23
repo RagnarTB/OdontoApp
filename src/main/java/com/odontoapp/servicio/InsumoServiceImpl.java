@@ -146,4 +146,21 @@ public class InsumoServiceImpl implements InsumoService {
 
         insumoRepository.deleteById(id);
     }
+
+    @Override
+    @Transactional
+    public void restablecer(Long id) {
+        Insumo insumo = insumoRepository.findByIdIgnorandoSoftDelete(id)
+                .orElseThrow(() -> new IllegalStateException("Insumo no encontrado con ID: " + id));
+
+        if (!insumo.isEliminado()) {
+            throw new IllegalStateException("El insumo '" + insumo.getNombre() + "' no está eliminado.");
+        }
+
+        // Restablecer el insumo
+        insumo.setEliminado(false);
+        insumoRepository.save(insumo);
+
+        System.out.println("✅ Insumo '" + insumo.getNombre() + "' restablecido exitosamente.");
+    }
 }

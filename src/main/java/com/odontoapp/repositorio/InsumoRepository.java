@@ -76,4 +76,13 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
                      @Param("keyword") String keyword,
                      @Param("categoriaId") Long categoriaId,
                      Pageable pageable);
+
+       // --- MÉTODO PARA RESTAURAR INSUMOS SOFT-DELETED ---
+       @Query("SELECT i FROM Insumo i WHERE i.id = :id") // Ignora @Where
+       Optional<Insumo> findByIdIgnorandoSoftDelete(@Param("id") Long id);
+
+       // --- MÉTODO PARA LISTAR INSUMOS ELIMINADOS ---
+       @Query(value = "SELECT DISTINCT i FROM Insumo i LEFT JOIN FETCH i.categoria LEFT JOIN FETCH i.unidadMedida WHERE i.eliminado = true",
+              countQuery = "SELECT COUNT(i) FROM Insumo i WHERE i.eliminado = true")
+       Page<Insumo> findEliminados(Pageable pageable);
 }

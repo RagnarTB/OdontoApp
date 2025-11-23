@@ -182,4 +182,21 @@ public class RolServiceImpl implements RolService {
                 sesionesInvalidadas + " sesión(es) invalidada(s).");
     }
 
+    @Override
+    @Transactional
+    public void restablecerRol(Long id) {
+        Rol rol = rolRepository.findByIdIgnorandoSoftDelete(id)
+                .orElseThrow(() -> new IllegalStateException("Rol no encontrado con ID: " + id));
+
+        if (!rol.isEliminado()) {
+            throw new IllegalStateException("El rol con nombre '" + rol.getNombre() + "' no está eliminado.");
+        }
+
+        // Restablecer el rol
+        rol.setEliminado(false);
+        rolRepository.save(rol);
+
+        System.out.println("✅ Rol '" + rol.getNombre() + "' restablecido exitosamente.");
+    }
+
 }

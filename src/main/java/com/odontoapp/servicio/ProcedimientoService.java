@@ -12,4 +12,5 @@ public interface ProcedimientoService {
     Optional<Procedimiento> buscarPorId(Long id);
     void guardar(ProcedimientoDTO procedimientoDTO);
     void eliminar(Long id);
+    void restablecer(Long id);
 }

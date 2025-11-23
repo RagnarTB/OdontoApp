@@ -65,4 +65,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      * @return Lista de usuarios con vigencia vencida
      */
     java.util.List<Usuario> findByFechaVigenciaBeforeAndEstaActivoTrue(java.time.LocalDate fecha);
+
+    // --- MÉTODO PARA LISTAR USUARIOS ELIMINADOS ---
+    @Query("SELECT DISTINCT u FROM Usuario u LEFT JOIN FETCH u.roles WHERE u.eliminado = true")
+    Page<Usuario> findEliminados(Pageable pageable);
 }

@@ -55,4 +55,8 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
      */
     @Query("SELECT p FROM Paciente p WHERE p.usuario = :usuario")
     Optional<Paciente> findByUsuario(@Param("usuario") com.odontoapp.entidad.Usuario usuario);
+
+    // --- MÉTODO PARA LISTAR PACIENTES ELIMINADOS ---
+    @Query("SELECT p FROM Paciente p WHERE p.eliminado = true")
+    Page<Paciente> findEliminados(Pageable pageable);
 }
