@@ -371,10 +371,13 @@ public class PacienteServiceImpl implements PacienteService {
 
             if (soloEsPaciente) {
                 try {
-                    // Aplicar soft delete al usuario (activa @SQLDelete de Usuario)
-                    usuarioRepository.deleteById(usuarioId);
+                    // Aplicar soft delete al usuario (manual para preservar roles)
+                    usuarioAsociado.setEliminado(true);
+                    usuarioAsociado.setFechaEliminacion(java.time.LocalDateTime.now());
+                    usuarioAsociado.setEstaActivo(false);
+                    usuarioRepository.save(usuarioAsociado);
                     System.out.println(">>> Usuario asociado " + usuarioAsociado.getEmail()
-                            + " eliminado (soft delete) por eliminación de paciente.");
+                            + " eliminado (soft delete) por eliminación de paciente. Roles preservados.");
                 } catch (Exception e) {
                     // Si falla eliminar el usuario, detenemos la operación para evitar
                     // inconsistencias.
@@ -408,7 +411,8 @@ public class PacienteServiceImpl implements PacienteService {
 
         // 2. Ejecutar el Soft Delete del Paciente DESPUÉS del usuario (si aplica)
         try {
-            pacienteRepository.deleteById(id); // Activa @SQLDelete de Paciente
+            paciente.setEliminado(true);
+            pacienteRepository.save(paciente); // Soft delete manual
             System.out.println(">>> Paciente con ID " + id + " eliminado (soft delete) con éxito.");
         } catch (Exception e) {
             // Si llega aquí, es un error inesperado al marcar el paciente como eliminado.

@@ -145,8 +145,9 @@ public class RolServiceImpl implements RolService {
                             + " usuario(s) activo(s) asignado(s) y no puede ser eliminado.");
         }
 
-        // Llama al deleteById que activarÃ¡ @SQLDelete
-        rolRepository.deleteById(id);
+        // Soft delete manual para preservar relaciones con permisos
+        rol.setEliminado(true);
+        rolRepository.save(rol);
     }
 
     @Override

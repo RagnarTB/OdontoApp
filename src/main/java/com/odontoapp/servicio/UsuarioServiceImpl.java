@@ -366,13 +366,14 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         // Soft delete del Paciente asociado (si existe y no está eliminado)
         if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
-            Long pacienteId = usuario.getPaciente().getId();
+            Paciente paciente = usuario.getPaciente();
             try {
-                pacienteRepository.deleteById(pacienteId); // Activa @SQLDelete de Paciente
+                paciente.setEliminado(true);
+                pacienteRepository.save(paciente); // Soft delete manual
                 System.out.println(
-                        ">>> Paciente asociado " + pacienteId + " eliminado (soft delete) por cascada desde usuario.");
+                        ">>> Paciente asociado " + paciente.getId() + " eliminado (soft delete) por cascada desde usuario.");
             } catch (Exception e) {
-                System.err.println("Error Crítico: No se pudo eliminar (soft delete) el paciente asociado " + pacienteId
+                System.err.println("Error Crítico: No se pudo eliminar (soft delete) el paciente asociado " + paciente.getId()
                         + ". Cancelando eliminación del usuario. Error: " + e.getMessage());
                 throw new RuntimeException("No se pudo eliminar el paciente asociado. Operación cancelada.", e);
             }
@@ -380,10 +381,13 @@ public class UsuarioServiceImpl implements UsuarioService {
             System.out.println(">>> Paciente asociado ya estaba eliminado lógicamente.");
         }
 
-        // Soft delete del Usuario
+        // Soft delete del Usuario (manual para preservar relaciones con roles)
         try {
-            usuarioRepository.deleteById(id); // Activa @SQLDelete de Usuario
-            System.out.println(">>> Usuario " + usuario.getEmail() + " eliminado (soft delete) con éxito.");
+            usuario.setEliminado(true);
+            usuario.setFechaEliminacion(java.time.LocalDateTime.now());
+            usuario.setEstaActivo(false); // Desactivar también al eliminar
+            usuarioRepository.save(usuario); // Guardar cambios sin tocar la tabla usuarios_roles
+            System.out.println(">>> Usuario " + usuario.getEmail() + " eliminado (soft delete) con éxito. Roles preservados.");
         } catch (Exception e) {
             System.err.println(
                     "Error Crítico al intentar soft delete del usuario " + usuario.getEmail() + ": " + e.getMessage());

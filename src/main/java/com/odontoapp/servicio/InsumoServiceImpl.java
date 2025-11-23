@@ -140,9 +140,8 @@ public class InsumoServiceImpl implements InsumoService {
 
     @Override
     public void eliminar(Long id) {
-        if (!insumoRepository.existsById(id)) {
-            throw new IllegalStateException("El insumo no existe.");
-        }
+        Insumo insumo = insumoRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("El insumo no existe."));
 
         // Validar que no tenga movimientos de inventario asociados
         long conteoMovimientos = movimientoInventarioRepository.countByInsumoId(id);
@@ -160,7 +159,9 @@ public class InsumoServiceImpl implements InsumoService {
                     " procedimiento(s). Debe desvincularlo de los servicios primero.");
         }
 
-        insumoRepository.deleteById(id);
+        // Soft delete manual
+        insumo.setEliminado(true);
+        insumoRepository.save(insumo);
     }
 
     @Override
