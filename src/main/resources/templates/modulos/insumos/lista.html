@@ -53,8 +53,24 @@
                 <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert"
                     th:text="${error}"></div>
 
+                <!-- Tabs para Activos/Eliminados -->
+                <ul class="nav nav-tabs mb-3" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${!mostrarEliminados} ? 'active' : ''"
+                           th:href="@{/insumos}">
+                            <i class="fas fa-boxes"></i> Insumos Activos
+                        </a>
+                    </li>
+                    <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_INVENTARIO')">
+                        <a class="nav-link" th:classappend="${mostrarEliminados} ? 'active' : ''"
+                           th:href="@{/insumos/eliminados}">
+                            <i class="fas fa-trash-restore"></i> Insumos Eliminados
+                        </a>
+                    </li>
+                </ul>
+
                 <div class="card card-warning card-outline shadow-sm"
-                    th:if="${alertasStockBajo != null && !alertasStockBajo.isEmpty()}">
+                    th:if="${alertasStockBajo != null && !alertasStockBajo.isEmpty() && !mostrarEliminados}">
                     <div class="card-header">
                         <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-2"></i> Alertas de Stock Bajo
                         </h3>
@@ -75,7 +91,7 @@
                 </div>
 
                 <div class="card card-primary card-outline card-outline-tabs shadow-sm">
-                    <div class="card-header p-0 border-bottom-0">
+                    <div class="card-header p-0 border-bottom-0" th:if="${!mostrarEliminados}">
                         <ul class="nav nav-tabs" role="tablist">
                             <li class="nav-item"><a class="nav-link active" data-toggle="pill" href="#tab-inventario"
                                     role="tab">Inventario (<span th:text="${paginaInsumos.totalElements}"></span>)</a></li>
@@ -83,7 +99,10 @@
                                     role="tab">Movimientos</a></li>
                         </ul>
                     </div>
-                    <div class="card-header bg-white">
+                    <div class="card-header bg-white" th:if="${mostrarEliminados}">
+                        <h3 class="card-title">Insumos Eliminados (<span th:text="${paginaInsumos.totalElements}"></span>)</h3>
+                    </div>
+                    <div class="card-header bg-white" th:if="${!mostrarEliminados}">
                         <div class="card-tools">
                             <form th:action="@{/insumos}" method="get" class="form-inline">
                                 <input type="text" name="keyword" class="form-control"
@@ -149,27 +168,39 @@
                                                     th:unless="${insumo.fechaVencimiento}" class="text-muted">N/A</span>
                                             </td>
                                             <td>
-                                                <button type="button" class="btn btn-sm btn-primary" data-toggle="modal"
-                                                    data-target="#modal-nuevo-movimiento"
-                                                    th:attr="data-insumo-id=${insumo.id}, data-insumo-nombre=${insumo.nombre}"
-                                                    data-permiso="EDITAR_INVENTARIO"
-                                                    data-accion-descripcion="registrar movimientos de inventario"
-                                                    title="Registrar Movimiento"><i
-                                                        class="fas fa-plus-circle"></i></button>
-                                                <button type="button" class="btn btn-sm btn-info btn-historial"
-                                                    th:attr="data-insumo-id=${insumo.id}, data-insumo-nombre=${insumo.nombre}"
-                                                    title="Ver Historial"><i class="fas fa-history"></i></button>
-                                                <a th:href="@{/insumos/editar/{id}(id=${insumo.id})}"
-                                                    class="btn btn-sm btn-warning" title="Editar"
-                                                    data-permiso="EDITAR_INVENTARIO"
-                                                    data-accion-descripcion="editar insumos"><i
-                                                        class="fas fa-edit"></i></a>
-                                                <a th:href="@{/insumos/eliminar/{id}(id=${insumo.id})}"
-                                                    class="btn btn-sm btn-danger" title="Eliminar"
-                                                    data-permiso="ELIMINAR_INVENTARIO"
-                                                    data-accion-descripcion="eliminar insumos"
-                                                    onclick="return confirm('¿Está seguro?');"><i
-                                                        class="fas fa-trash"></i></a>
+                                                <!-- Vista de ELIMINADOS: Solo botón restaurar -->
+                                                <div th:if="${mostrarEliminados}">
+                                                    <a th:href="@{/insumos/restablecer/{id}(id=${insumo.id})}"
+                                                        class="btn btn-sm btn-success" title="Restaurar Insumo"
+                                                        sec:authorize="hasAuthority('RESTAURAR_INVENTARIO')">
+                                                        <i class="fas fa-trash-restore"></i> Restaurar
+                                                    </a>
+                                                </div>
+
+                                                <!-- Vista NORMAL: Acciones estándar -->
+                                                <div th:if="${!mostrarEliminados}">
+                                                    <button type="button" class="btn btn-sm btn-primary" data-toggle="modal"
+                                                        data-target="#modal-nuevo-movimiento"
+                                                        th:attr="data-insumo-id=${insumo.id}, data-insumo-nombre=${insumo.nombre}"
+                                                        data-permiso="EDITAR_INVENTARIO"
+                                                        data-accion-descripcion="registrar movimientos de inventario"
+                                                        title="Registrar Movimiento"><i
+                                                            class="fas fa-plus-circle"></i></button>
+                                                    <button type="button" class="btn btn-sm btn-info btn-historial"
+                                                        th:attr="data-insumo-id=${insumo.id}, data-insumo-nombre=${insumo.nombre}"
+                                                        title="Ver Historial"><i class="fas fa-history"></i></button>
+                                                    <a th:href="@{/insumos/editar/{id}(id=${insumo.id})}"
+                                                        class="btn btn-sm btn-warning" title="Editar"
+                                                        data-permiso="EDITAR_INVENTARIO"
+                                                        data-accion-descripcion="editar insumos"><i
+                                                            class="fas fa-edit"></i></a>
+                                                    <a th:href="@{/insumos/eliminar/{id}(id=${insumo.id})}"
+                                                        class="btn btn-sm btn-danger" title="Eliminar"
+                                                        data-permiso="ELIMINAR_INVENTARIO"
+                                                        data-accion-descripcion="eliminar insumos"
+                                                        onclick="return confirm('¿Está seguro?');"><i
+                                                            class="fas fa-trash"></i></a>
+                                                </div>
                                             </td>
                                         </tr>
                                         <tr th:if="${paginaInsumos.empty}">

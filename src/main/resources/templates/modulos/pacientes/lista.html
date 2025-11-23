@@ -35,10 +35,30 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
+
+                <!-- Tabs para Activos/Eliminados -->
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${!mostrarEliminados} ? 'active' : ''"
+                           th:href="@{/pacientes}">
+                            <i class="fas fa-user-injured"></i> Pacientes Activos
+                        </a>
+                    </li>
+                    <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_PACIENTES')">
+                        <a class="nav-link" th:classappend="${mostrarEliminados} ? 'active' : ''"
+                           th:href="@{/pacientes/eliminados}">
+                            <i class="fas fa-trash-restore"></i> Pacientes Eliminados
+                        </a>
+                    </li>
+                </ul>
+
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Listado de Pacientes</h3>
-                        <div class="card-tools">
+                        <h3 class="card-title">
+                            <span th:if="${!mostrarEliminados}">Listado de Pacientes</span>
+                            <span th:if="${mostrarEliminados}">Pacientes Eliminados</span>
+                        </h3>
+                        <div class="card-tools" th:if="${!mostrarEliminados}">
                             <form th:action="@{/pacientes}" method="get" class="form-inline" id="formBuscarPaciente">
                                 <input type="text" name="keyword" id="buscarPacienteInput" class="form-control form-control-sm"
                                     placeholder="Buscar Doc., Nombre o Email..." th:value="${keyword}"
@@ -70,22 +90,34 @@
                                     <td th:text="${paciente.email}"></td>
                                     <td th:text="${paciente.telefono}"></td>
                                     <td>
-                                        <a th:href="@{/pacientes/historial/{id}(id=${paciente.id})}"
-                                            class="btn btn-sm btn-info" title="Ver Detalle Completo del Paciente"
-                                            sec:authorize="hasAnyAuthority('VER_DETALLE_PACIENTES', 'ADMIN')">
-                                            <i class="fas fa-file-medical"></i>
-                                        </a>
-                                        <a th:href="@{/pacientes/editar/{id}(id=${paciente.id})}"
-                                            class="btn btn-sm btn-warning" title="Editar Datos del Paciente"
-                                            sec:authorize="hasAnyAuthority('EDITAR_PACIENTES', 'ADMIN')">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a th:href="@{/pacientes/eliminar/{id}(id=${paciente.id})}"
-                                            class="btn btn-sm btn-danger btn-eliminar-paciente" title="Eliminar Paciente (Lógico)"
-                                            th:data-nombre="${paciente.nombreCompleto}"
-                                            sec:authorize="hasAnyAuthority('ELIMINAR_PACIENTES', 'ADMIN')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                        <!-- Vista de ELIMINADOS: Solo botón restaurar -->
+                                        <div th:if="${mostrarEliminados}">
+                                            <a th:href="@{/pacientes/restablecer/{id}(id=${paciente.id})}"
+                                                class="btn btn-sm btn-success" title="Restaurar Paciente"
+                                                sec:authorize="hasAuthority('RESTAURAR_PACIENTES')">
+                                                <i class="fas fa-trash-restore"></i> Restaurar
+                                            </a>
+                                        </div>
+
+                                        <!-- Vista NORMAL: Acciones estándar -->
+                                        <div th:if="${!mostrarEliminados}">
+                                            <a th:href="@{/pacientes/historial/{id}(id=${paciente.id})}"
+                                                class="btn btn-sm btn-info" title="Ver Detalle Completo del Paciente"
+                                                sec:authorize="hasAnyAuthority('VER_DETALLE_PACIENTES', 'ADMIN')">
+                                                <i class="fas fa-file-medical"></i>
+                                            </a>
+                                            <a th:href="@{/pacientes/editar/{id}(id=${paciente.id})}"
+                                                class="btn btn-sm btn-warning" title="Editar Datos del Paciente"
+                                                sec:authorize="hasAnyAuthority('EDITAR_PACIENTES', 'ADMIN')">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a th:href="@{/pacientes/eliminar/{id}(id=${paciente.id})}"
+                                                class="btn btn-sm btn-danger btn-eliminar-paciente" title="Eliminar Paciente (Lógico)"
+                                                th:data-nombre="${paciente.nombreCompleto}"
+                                                sec:authorize="hasAnyAuthority('ELIMINAR_PACIENTES', 'ADMIN')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr th:if="${paginaPacientes.empty}">
