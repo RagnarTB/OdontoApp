@@ -18,6 +18,7 @@ import com.odontoapp.entidad.Paciente;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.entidad.TipoDocumento;
 import com.odontoapp.entidad.Usuario;
+import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.TipoDocumentoRepository;
@@ -27,7 +28,7 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class PacienteServiceImpl implements PacienteService {
-
+    private final CitaRepository citaRepository;
     private final PacienteRepository pacienteRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
@@ -40,7 +41,7 @@ public class PacienteServiceImpl implements PacienteService {
     public PacienteServiceImpl(PacienteRepository pacienteRepository, RolRepository rolRepository,
             PasswordEncoder passwordEncoder, EmailService emailService,
             UsuarioService usuarioService, UsuarioRepository usuarioRepository,
-            TipoDocumentoRepository tipoDocumentoRepository) {
+            TipoDocumentoRepository tipoDocumentoRepository, CitaRepository citaRepository) {
         this.pacienteRepository = pacienteRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
@@ -48,6 +49,7 @@ public class PacienteServiceImpl implements PacienteService {
         this.usuarioService = usuarioService;
         this.usuarioRepository = usuarioRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
+        this.citaRepository = citaRepository;
     }
 
     // Método modificado para validar DNI también en Usuarios
@@ -351,8 +353,8 @@ public class PacienteServiceImpl implements PacienteService {
             long citasActivas = citaRepository.countCitasActivas(paciente.getUsuario().getId());
             if (citasActivas > 0) {
                 throw new IllegalStateException(
-                    "No se puede eliminar el paciente porque tiene " + citasActivas +
-                    " cita(s) activa(s). Debe cancelar o completar todas las citas antes de eliminar el paciente.");
+                        "No se puede eliminar el paciente porque tiene " + citasActivas +
+                                " cita(s) activa(s). Debe cancelar o completar todas las citas antes de eliminar el paciente.");
             }
         }
 
