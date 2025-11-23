@@ -14,6 +14,7 @@ import com.odontoapp.entidad.Permiso;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.repositorio.PermisoRepository;
 import com.odontoapp.repositorio.RolRepository; // Importar Usuario
+import com.odontoapp.repositorio.UsuarioRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -23,6 +24,7 @@ public class RolServiceImpl implements RolService {
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
     private final SessionInvalidationService sessionInvalidationService;
+    private final UsuarioRepository usuarioRepository;
 
     // Nombres de roles protegidos (constantes para evitar errores tipográficos)
     private static final String ROL_ADMIN = "ADMIN";
@@ -30,10 +32,12 @@ public class RolServiceImpl implements RolService {
     private static final String ROL_ODONTOLOGO = "ODONTOLOGO"; // Añadido para protección
 
     public RolServiceImpl(RolRepository rolRepository, PermisoRepository permisoRepository,
-                          SessionInvalidationService sessionInvalidationService) {
+                          SessionInvalidationService sessionInvalidationService,
+                          UsuarioRepository usuarioRepository) {
         this.rolRepository = rolRepository;
         this.permisoRepository = permisoRepository;
         this.sessionInvalidationService = sessionInvalidationService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Override
@@ -134,7 +138,7 @@ public class RolServiceImpl implements RolService {
         }
 
         // Validar si tiene usuarios asociados usando query optimizada
-        long usuariosActivos = rolRepository.countUsuariosActivosByRolId(id);
+        long usuariosActivos = usuarioRepository.countUsuariosActivosByRolId(id);
         if (usuariosActivos > 0) {
             throw new DataIntegrityViolationException(
                     "El rol tiene " + usuariosActivos

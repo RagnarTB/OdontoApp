@@ -7,6 +7,7 @@ import com.odontoapp.entidad.UnidadMedida;
 import com.odontoapp.repositorio.CategoriaInsumoRepository;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.MovimientoInventarioRepository;
+import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
 import com.odontoapp.repositorio.UnidadMedidaRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -23,14 +24,16 @@ public class InsumoServiceImpl implements InsumoService {
     private final CategoriaInsumoRepository categoriaInsumoRepository;
     private final UnidadMedidaRepository unidadMedidaRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
 
     public InsumoServiceImpl(InsumoRepository insumoRepository, CategoriaInsumoRepository categoriaInsumoRepository,
-            UnidadMedidaRepository unidadMedidaRepository,
-            MovimientoInventarioRepository movimientoInventarioRepository) {
+            UnidadMedidaRepository unidadMedidaRepository, MovimientoInventarioRepository movimientoInventarioRepository,
+            ProcedimientoInsumoRepository procedimientoInsumoRepository) {
         this.insumoRepository = insumoRepository;
         this.categoriaInsumoRepository = categoriaInsumoRepository;
         this.unidadMedidaRepository = unidadMedidaRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
+        this.procedimientoInsumoRepository = procedimientoInsumoRepository;
     }
 
     @Override
@@ -147,6 +150,14 @@ public class InsumoServiceImpl implements InsumoService {
             throw new DataIntegrityViolationException(
                     "No se puede eliminar el insumo porque tiene " + conteoMovimientos +
                             " movimiento(s) de inventario asociado(s). Considere desactivarlo en lugar de eliminarlo.");
+        }
+
+        // Validar que no esté ligado a procedimientos
+        long conteoProcedimientos = procedimientoInsumoRepository.countByInsumoId(id);
+        if (conteoProcedimientos > 0) {
+            throw new DataIntegrityViolationException(
+                    "No se puede eliminar el insumo porque está ligado a " + conteoProcedimientos +
+                    " procedimiento(s). Debe desvincularlo de los servicios primero.");
         }
 
         insumoRepository.deleteById(id);

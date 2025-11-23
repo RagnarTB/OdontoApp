@@ -161,4 +161,16 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
            "AND c.estadoCita.nombre != 'REPROGRAMADA' " +
            "AND c.estadoCita.nombre != 'NO_ASISTIO'")
     long countCitasActivas(@Param("pacienteId") Long pacienteId);
+
+    /**
+     * Cuenta las citas activas (no canceladas ni reprogramadas) de un odontólogo.
+     * Útil para validar si un odontólogo puede ser eliminado o desactivado.
+     * @param odontologoId ID del usuario odontólogo
+     * @return Número de citas activas del odontólogo
+     */
+    @Query("SELECT COUNT(c) FROM Cita c WHERE c.odontologo.id = :odontologoId " +
+           "AND c.estadoCita.nombre NOT LIKE 'CANCELADA%' " +
+           "AND c.estadoCita.nombre != 'REPROGRAMADA' " +
+           "AND c.estadoCita.nombre != 'NO_ASISTIO'")
+    long countCitasActivasByOdontologo(@Param("odontologoId") Long odontologoId);
 }

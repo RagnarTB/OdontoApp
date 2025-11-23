@@ -18,6 +18,7 @@ import com.odontoapp.entidad.HorarioExcepcion; // NUEVO import
 import com.odontoapp.entidad.Rol; // NUEVO import
 import com.odontoapp.entidad.TipoDocumento;
 import com.odontoapp.entidad.Usuario; // NUEVO import
+import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.TipoDocumentoRepository;
@@ -36,17 +37,20 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final EmailService emailService;
     private final PacienteRepository pacienteRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
+    private final CitaRepository citaRepository;
 
     // Inyecta las dependencias necesarias
     public UsuarioServiceImpl(EmailService emailService, PacienteRepository pacienteRepository,
             PasswordEncoder passwordEncoder, RolRepository rolRepository,
-            TipoDocumentoRepository tipoDocumentoRepository, UsuarioRepository usuarioRepository) {
+            TipoDocumentoRepository tipoDocumentoRepository, UsuarioRepository usuarioRepository,
+            CitaRepository citaRepository) {
         this.emailService = emailService;
         this.pacienteRepository = pacienteRepository;
         this.passwordEncoder = passwordEncoder;
         this.rolRepository = rolRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.citaRepository = citaRepository;
     }
 
     @Override
@@ -335,6 +339,29 @@ public class UsuarioServiceImpl implements UsuarioService {
         // Proteger al super-administrador
         if (usuario.isEsSuperAdmin()) {
             throw new UnsupportedOperationException("No se puede eliminar al super-administrador del sistema.");
+        }
+
+        // Validar que el usuario odontólogo no tenga citas activas
+        boolean esOdontologo = usuario.getRoles().stream()
+                .anyMatch(rol -> "ODONTOLOGO".equals(rol.getNombre()));
+
+        if (esOdontologo) {
+            long citasActivas = citaRepository.countCitasActivasByOdontologo(id);
+            if (citasActivas > 0) {
+                throw new IllegalStateException(
+                    "No se puede eliminar el odontólogo porque tiene " + citasActivas +
+                    " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+            }
+        }
+
+        // Validar que el paciente asociado no tenga citas activas
+        if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
+            long citasActivas = citaRepository.countCitasActivas(usuario.getPaciente().getId());
+            if (citasActivas > 0) {
+                throw new IllegalStateException(
+                    "No se puede eliminar el usuario porque su perfil de paciente tiene " + citasActivas +
+                    " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+            }
         }
 
         // Soft delete del Paciente asociado (si existe y no está eliminado)

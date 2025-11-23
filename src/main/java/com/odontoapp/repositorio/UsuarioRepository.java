@@ -69,4 +69,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // --- MÉTODO PARA LISTAR USUARIOS ELIMINADOS ---
     @Query("SELECT DISTINCT u FROM Usuario u LEFT JOIN FETCH u.roles WHERE u.eliminado = true")
     Page<Usuario> findEliminados(Pageable pageable);
+
+    /**
+     * Cuenta cuántos usuarios activos tienen un rol específico.
+     * Útil para validar si un rol puede ser eliminado.
+     * @param rolId El ID del rol
+     * @return El número de usuarios activos con ese rol
+     */
+    @Query("SELECT COUNT(DISTINCT u) FROM Usuario u JOIN u.roles r WHERE r.id = :rolId AND u.estaActivo = true")
+    long countUsuariosActivosByRolId(@Param("rolId") Long rolId);
 }
