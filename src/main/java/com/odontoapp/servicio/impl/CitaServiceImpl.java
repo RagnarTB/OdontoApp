@@ -57,7 +57,7 @@ public class CitaServiceImpl implements CitaService {
     private static final String ESTADO_REPROGRAMADA = "REPROGRAMADA";
 
     private static final String NO_LABORABLE = "NO_LABORABLE";
-    private static final int INTERVALO_MINUTOS = 30; // Intervalos de 30 minutos
+    private static final int INTERVALO_MINUTOS = 15; // Intervalos de 15 minutos (para permitir slots a las 8:00, 8:15, 8:30, 8:45, etc.)
     private static final int BUFFER_MINUTOS = 15; // Buffer de 15 minutos después de cada cita
 
     // --- Dependencias ---
@@ -367,6 +367,30 @@ public class CitaServiceImpl implements CitaService {
                 "El odontólogo no está disponible en ese horario. " +
                 "Recuerde que se requiere un tiempo de buffer de " + BUFFER_MINUTOS +
                 " minutos después de cada cita.");
+        }
+
+        // Verificar que el PACIENTE no tenga otra cita en el mismo horario (con cualquier odontólogo)
+        List<Cita> citasPaciente = citaRepository.findConflictingCitas(
+                pacienteId, fechaHoraInicio, fechaHoraFin);
+
+        List<Cita> citasActivasPaciente = citasPaciente.stream()
+                .filter(c -> {
+                    String estado = c.getEstadoCita().getNombre();
+                    return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+                })
+                .collect(Collectors.toList());
+
+        if (!citasActivasPaciente.isEmpty()) {
+            throw new IllegalStateException(
+                "El paciente ya tiene una cita agendada en este horario con otro odontólogo. " +
+                "Por favor seleccione otro horario.");
+        }
+
+        // Verificar que el paciente esté activo
+        if (!paciente.isEstaActivo()) {
+            throw new IllegalStateException(
+                "No se puede agendar una cita para un paciente inactivo. " +
+                "Por favor active el paciente primero.");
         }
 
         // Verificar que el horario esté dentro del horario laboral del odontólogo

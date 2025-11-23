@@ -87,8 +87,10 @@ public class FacturacionController {
     @GetMapping("/pos")
     @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_FACTURACION)")
     public String verPOS(Model model) {
-        // Buscar todos los pacientes
-        var listaPacientes = pacienteRepository.findAll();
+        // Buscar solo pacientes activos
+        var listaPacientes = pacienteRepository.findAll().stream()
+                .filter(p -> p.getUsuario() != null && p.getUsuario().isEstaActivo())
+                .collect(java.util.stream.Collectors.toList());
 
         // Buscar todos los procedimientos
         var listaProcedimientos = procedimientoRepository.findAll();

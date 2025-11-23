@@ -2,6 +2,7 @@ package com.odontoapp.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,8 +30,10 @@ public class TratamientoRealizadoDTO {
     @NotNull(message = "El ID del odontólogo es obligatorio")
     private Long odontologoUsuarioId;
 
+    @Size(max = 50, message = "La pieza dental no puede exceder 50 caracteres")
     private String piezaDental;
 
+    @Size(max = 2000, message = "La descripción del trabajo no puede exceder 2000 caracteres")
     private String descripcionTrabajo;
 
     @NotNull(message = "La fecha de realización es obligatoria")

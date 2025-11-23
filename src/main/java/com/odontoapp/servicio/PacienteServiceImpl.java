@@ -346,6 +346,16 @@ public class PacienteServiceImpl implements PacienteService {
             return;
         }
 
+        // ⚠️ VALIDAR: No permitir eliminación si tiene citas activas
+        if (paciente.getUsuario() != null) {
+            long citasActivas = citaRepository.countCitasActivas(paciente.getUsuario().getId());
+            if (citasActivas > 0) {
+                throw new IllegalStateException(
+                    "No se puede eliminar el paciente porque tiene " + citasActivas +
+                    " cita(s) activa(s). Debe cancelar o completar todas las citas antes de eliminar el paciente.");
+            }
+        }
+
         Usuario usuarioAsociado = paciente.getUsuario();
         Long usuarioId = (usuarioAsociado != null) ? usuarioAsociado.getId() : null;
 
