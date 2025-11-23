@@ -82,7 +82,7 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
        Optional<Insumo> findByIdIgnorandoSoftDelete(@Param("id") Long id);
 
        // --- MÉTODO PARA LISTAR INSUMOS ELIMINADOS ---
-       @Query(value = "SELECT * FROM insumos WHERE eliminado = true ORDER BY fecha_eliminacion DESC",
+       @Query(value = "SELECT * FROM insumos WHERE eliminado = true ORDER BY fecha_modificacion DESC",
               countQuery = "SELECT COUNT(*) FROM insumos WHERE eliminado = true",
               nativeQuery = true)
        Page<Insumo> findEliminados(Pageable pageable);

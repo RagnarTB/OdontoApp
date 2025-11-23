@@ -27,7 +27,7 @@ public interface RolRepository extends JpaRepository<Rol, Long> {
     Optional<Rol> findByIdIgnorandoSoftDelete(@Param("id") Long id);
 
     // --- MÉTODO PARA LISTAR ROLES ELIMINADOS ---
-    @Query(value = "SELECT * FROM roles WHERE eliminado = true ORDER BY fecha_eliminacion DESC",
+    @Query(value = "SELECT * FROM roles WHERE eliminado = true ORDER BY fecha_modificacion DESC",
            countQuery = "SELECT COUNT(*) FROM roles WHERE eliminado = true",
            nativeQuery = true)
     Page<Rol> findEliminados(Pageable pageable);

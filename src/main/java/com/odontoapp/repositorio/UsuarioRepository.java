@@ -67,7 +67,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     java.util.List<Usuario> findByFechaVigenciaBeforeAndEstaActivoTrue(java.time.LocalDate fecha);
 
     // --- MÉTODO PARA LISTAR USUARIOS ELIMINADOS ---
-    @Query(value = "SELECT * FROM usuarios WHERE eliminado = true ORDER BY fecha_eliminacion DESC",
+    @Query(value = "SELECT * FROM usuarios WHERE eliminado = true ORDER BY fecha_modificacion DESC",
            countQuery = "SELECT COUNT(*) FROM usuarios WHERE eliminado = true",
            nativeQuery = true)
     Page<Usuario> findEliminados(Pageable pageable);

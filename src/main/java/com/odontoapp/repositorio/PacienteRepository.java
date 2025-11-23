@@ -57,7 +57,7 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
     Optional<Paciente> findByUsuario(@Param("usuario") com.odontoapp.entidad.Usuario usuario);
 
     // --- MÉTODO PARA LISTAR PACIENTES ELIMINADOS ---
-    @Query(value = "SELECT * FROM pacientes WHERE eliminado = true ORDER BY fecha_eliminacion DESC",
+    @Query(value = "SELECT * FROM pacientes WHERE eliminado = true ORDER BY fecha_modificacion DESC",
            countQuery = "SELECT COUNT(*) FROM pacientes WHERE eliminado = true",
            nativeQuery = true)
     Page<Paciente> findEliminados(Pageable pageable);
