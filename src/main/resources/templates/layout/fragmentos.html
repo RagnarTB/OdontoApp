@@ -140,6 +140,13 @@
                         </a>
                     </li>
 
+                    <li class="nav-item" sec:authorize="hasAnyAuthority('RESTAURAR_USUARIOS', 'RESTAURAR_PACIENTES', 'RESTAURAR_ROLES', 'RESTAURAR_SERVICIOS', 'RESTAURAR_INVENTARIO')">
+                        <a th:href="@{/administracion/eliminados}" class="nav-link">
+                            <i class="nav-icon fas fa-trash-restore text-warning"></i>
+                            <p>Registros Eliminados</p>
+                        </a>
+                    </li>
+
                     <!-- GESTIÓN CLÍNICA - ADMIN, ODONTOLOGO, RECEPCIONISTA -->
                     <li class="nav-header" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
                         GESTIÓN CLÍNICA

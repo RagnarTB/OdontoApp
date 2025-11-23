@@ -511,6 +511,15 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
+        // === PERMISOS ESPECIALES DE ADMINISTRACIÓN ===
+        permisoRepository.findByModuloAndAccion("ADMINISTRACION", "VER_REGISTROS_ELIMINADOS").orElseGet(() -> {
+            Permiso permiso = new Permiso();
+            permiso.setModulo("ADMINISTRACION");
+            permiso.setAccion("VER_REGISTROS_ELIMINADOS");
+            System.out.println("  -> Creando permiso: VER_REGISTROS_ELIMINADOS");
+            return permisoRepository.save(permiso);
+        });
+
         // ... (Creación de Roles y Usuario Admin - sin cambios) ...
         // PACIENTE: Solo puede ver su perfil y sus citas
         Set<Permiso> permisosPaciente = new HashSet<>();

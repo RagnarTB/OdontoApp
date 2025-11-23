@@ -39,30 +39,10 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-
-                <!-- Tabs para Activos/Eliminados -->
-                <ul class="nav nav-tabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link" th:classappend="${mostrarEliminados != true} ? 'active' : ''"
-                           th:href="@{/roles}">
-                            <i class="fas fa-user-tag"></i> Roles Activos
-                        </a>
-                    </li>
-                    <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_ROLES')">
-                        <a class="nav-link" th:classappend="${mostrarEliminados == true} ? 'active' : ''"
-                           th:href="@{/roles/eliminados}">
-                            <i class="fas fa-trash-restore"></i> Roles Eliminados
-                        </a>
-                    </li>
-                </ul>
-
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">
-                            <span th:if="${mostrarEliminados != true}">Listado de Roles</span>
-                            <span th:if="${mostrarEliminados == true}">Roles Eliminados</span>
-                        </h3>
-                        <div class="card-tools" th:if="${mostrarEliminados != true}">
+                        <h3 class="card-title">Listado de Roles</h3>
+                        <div class="card-tools">
                             <form th:action="@{/roles}" method="get" class="form-inline">
                                 <input type="text" name="keyword" class="form-control form-control-sm"
                                     placeholder="Buscar por nombre..." th:value="${keyword}">
@@ -93,43 +73,31 @@
                                             class="badge badge-secondary">Inactivo</span>
                                     </td>
                                     <td>
-                                        <!-- Vista de ELIMINADOS: Solo botón restaurar -->
-                                        <div th:if="${mostrarEliminados == true}">
-                                            <a th:href="@{/roles/restablecer/{id}(id=${rol.id})}"
-                                                class="btn btn-sm btn-success" title="Restaurar Rol"
-                                                sec:authorize="hasAuthority('RESTAURAR_ROLES')">
-                                                <i class="fas fa-trash-restore"></i> Restaurar
+                                        <!-- Roles protegidos: ADMIN, ODONTOLOGO, PACIENTE -->
+                                        <span th:if="${rol.nombre == 'ADMIN' or rol.nombre == 'ODONTOLOGO' or rol.nombre == 'PACIENTE'}"
+                                              class="badge badge-warning">
+                                            <i class="fas fa-lock"></i> Rol Protegido del Sistema
+                                        </span>
+
+                                        <!-- Acciones solo para roles NO protegidos -->
+                                        <div th:if="${rol.nombre != 'ADMIN' and rol.nombre != 'ODONTOLOGO' and rol.nombre != 'PACIENTE'}">
+                                            <a th:href="@{/roles/editar/{id}(id=${rol.id})}" class="btn btn-sm btn-warning"
+                                                title="Editar Rol y Permisos" sec:authorize="hasAuthority('EDITAR_ROLES')">
+                                                <i class="fas fa-edit"></i>
                                             </a>
-                                        </div>
-
-                                        <!-- Vista NORMAL: Acciones estándar -->
-                                        <div th:if="${mostrarEliminados != true}">
-                                            <!-- Roles protegidos: ADMIN, ODONTOLOGO, PACIENTE -->
-                                            <span th:if="${rol.nombre == 'ADMIN' or rol.nombre == 'ODONTOLOGO' or rol.nombre == 'PACIENTE'}"
-                                                  class="badge badge-warning">
-                                                <i class="fas fa-lock"></i> Rol Protegido del Sistema
-                                            </span>
-
-                                            <!-- Acciones solo para roles NO protegidos -->
-                                            <div th:if="${rol.nombre != 'ADMIN' and rol.nombre != 'ODONTOLOGO' and rol.nombre != 'PACIENTE'}">
-                                                <a th:href="@{/roles/editar/{id}(id=${rol.id})}" class="btn btn-sm btn-warning"
-                                                    title="Editar Rol y Permisos" sec:authorize="hasAuthority('EDITAR_ROLES')">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <a th:href="@{/roles/cambiar-estado/{id}(id=${rol.id})}" class="btn btn-sm"
-                                                    th:classappend="${rol.estaActivo ? 'btn-secondary' : 'btn-success'}"
-                                                    th:title="${rol.estaActivo ? 'Desactivar Rol' : 'Activar Rol'}"
-                                                    sec:authorize="hasAuthority('EDITAR_ROLES')">
-                                                    <i th:class="${rol.estaActivo ? 'fas fa-toggle-off' : 'fas fa-toggle-on'}"></i>
-                                                </a>
-                                                <a th:href="@{/roles/eliminar/{id}(id=${rol.id})}"
-                                                    class="btn btn-sm btn-danger"
-                                                    onclick="return confirm('¿Está seguro de que desea eliminar lógicamente este rol? Solo es posible si no tiene usuarios asignados.');"
-                                                    title="Eliminar Rol (Lógico)"
-                                                    sec:authorize="hasAuthority('ELIMINAR_ROLES')">
-                                                    <i class="fas fa-trash"></i>
-                                                </a>
-                                            </div>
+                                            <a th:href="@{/roles/cambiar-estado/{id}(id=${rol.id})}" class="btn btn-sm"
+                                                th:classappend="${rol.estaActivo ? 'btn-secondary' : 'btn-success'}"
+                                                th:title="${rol.estaActivo ? 'Desactivar Rol' : 'Activar Rol'}"
+                                                sec:authorize="hasAuthority('EDITAR_ROLES')">
+                                                <i th:class="${rol.estaActivo ? 'fas fa-toggle-off' : 'fas fa-toggle-on'}"></i>
+                                            </a>
+                                            <a th:href="@{/roles/eliminar/{id}(id=${rol.id})}"
+                                                class="btn btn-sm btn-danger"
+                                                onclick="return confirm('¿Está seguro de que desea eliminar lógicamente este rol? Solo es posible si no tiene usuarios asignados.');"
+                                                title="Eliminar Rol (Lógico)"
+                                                sec:authorize="hasAuthority('ELIMINAR_ROLES')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

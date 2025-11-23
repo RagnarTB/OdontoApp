@@ -33,23 +33,7 @@
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
 
-            <!-- Tabs para Activos/Eliminados -->
-            <ul class="nav nav-tabs" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link" th:classappend="${mostrarEliminados != true} ? 'active' : ''"
-                       th:href="@{/usuarios}">
-                        <i class="fas fa-users"></i> Usuarios Activos
-                    </a>
-                </li>
-                <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_USUARIOS')">
-                    <a class="nav-link" th:classappend="${mostrarEliminados == true} ? 'active' : ''"
-                       th:href="@{/usuarios/eliminados}">
-                        <i class="fas fa-trash-restore"></i> Usuarios Eliminados
-                    </a>
-                </li>
-            </ul>
-
-            <div class="card" th:if="${mostrarEliminados != true}">
+            <div class="card">
                 <div class="card-body d-flex justify-content-between">
                     <form th:action="@{/usuarios}" method="get" class="form-inline w-100">
                         <div class="input-group w-100">
@@ -65,11 +49,7 @@
 
             <div class="card user-list-container">
                 <div class="card-header">
-                    <h3 class="card-title">
-                        <span th:if="${mostrarEliminados != true}">Usuarios del Sistema</span>
-                        <span th:if="${mostrarEliminados == true}">Usuarios Eliminados</span>
-                        <span class="badge badge-secondary ml-1" th:text="${paginaUsuarios.totalElements}"></span>
-                    </h3>
+                    <h3 class="card-title">Usuarios del Sistema <span class="badge badge-secondary ml-1" th:text="${paginaUsuarios.totalElements}"></span></h3>
                 </div>
                 <div class="card-body">
 
@@ -133,56 +113,44 @@
                             </div>
 
                             <div class="user-actions">
-                                <!-- Vista de ELIMINADOS: Solo botón restaurar -->
-                                <div th:if="${mostrarEliminados == true}">
-                                    <a th:href="@{/usuarios/restablecer/{id}(id=${usuario.id})}"
-                                       class="btn btn-sm btn-outline-success" title="Restaurar Usuario"
-                                       sec:authorize="hasAuthority('RESTAURAR_USUARIOS')">
-                                        <i class="fas fa-trash-restore"></i> Restaurar
-                                    </a>
-                                </div>
+                                <!-- Mostrar badge para super-admin (NO editable) -->
+                                <span th:if="${usuario.esSuperAdmin}" class="badge badge-primary">
+                                    <i class="fas fa-shield-alt"></i> Super Admin
+                                </span>
 
-                                <!-- Vista NORMAL: Acciones estándar -->
-                                <div th:if="${mostrarEliminados != true}">
-                                    <!-- Mostrar badge para super-admin (NO editable) -->
-                                    <span th:if="${usuario.esSuperAdmin}" class="badge badge-primary">
-                                        <i class="fas fa-shield-alt"></i> Super Admin
-                                    </span>
-
-                                    <!-- Mostrar acciones para TODOS los usuarios excepto super-admin -->
-                                    <div th:if="${!usuario.esSuperAdmin}">
-                                        <label class="switch" title="Cambiar Estado"
-                                               data-permiso="EDITAR_USUARIOS"
-                                               data-accion-descripcion="cambiar el estado de usuarios">
-                                            <input type="checkbox" th:checked="${usuario.estaActivo}"
-                                                   th:attr="onchange=|location.href='@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}'|">
-                                            <span class="slider"></span>
-                                        </label>
-                                        <!-- Botón de editar solo para usuarios que NO son solo pacientes -->
-                                        <a th:if="${!usuario.getRoles().![nombre].contains('PACIENTE') || usuario.getRoles().size() > 1}"
-                                           th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
-                                           class="btn btn-sm btn-outline-secondary" title="Editar"
+                                <!-- Mostrar acciones para TODOS los usuarios excepto super-admin -->
+                                <div th:if="${!usuario.esSuperAdmin}">
+                                    <label class="switch" title="Cambiar Estado"
                                            data-permiso="EDITAR_USUARIOS"
-                                           data-accion-descripcion="editar usuarios">
-                                            <i class="fas fa-pencil-alt"></i>
-                                        </a>
-                                        <!-- Botón de excepciones solo para Odontólogos -->
-                                        <button th:if="${usuario.getRoles().![nombre].contains('ODONTOLOGO')}"
-                                                type="button" class="btn btn-sm btn-outline-info btn-gestionar-excepciones"
-                                                title="Gestionar Excepciones de Horario"
-                                                th:attr="data-usuario-id=${usuario.id},data-usuario-nombre=${usuario.nombreCompleto}"
-                                                data-permiso="EDITAR_USUARIOS"
-                                                data-accion-descripcion="gestionar excepciones de horario">
-                                            <i class="fas fa-calendar-times"></i>
-                                        </button>
-                                        <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
-                                           class="btn btn-sm btn-outline-danger btn-eliminar-usuario" title="Eliminar"
-                                           th:data-nombre="${usuario.nombreCompleto}"
-                                           data-permiso="ELIMINAR_USUARIOS"
-                                           data-accion-descripcion="eliminar usuarios">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </a>
-                                    </div>
+                                           data-accion-descripcion="cambiar el estado de usuarios">
+                                        <input type="checkbox" th:checked="${usuario.estaActivo}"
+                                               th:attr="onchange=|location.href='@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}'|">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <!-- Botón de editar solo para usuarios que NO son solo pacientes -->
+                                    <a th:if="${!usuario.getRoles().![nombre].contains('PACIENTE') || usuario.getRoles().size() > 1}"
+                                       th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
+                                       class="btn btn-sm btn-outline-secondary" title="Editar"
+                                       data-permiso="EDITAR_USUARIOS"
+                                       data-accion-descripcion="editar usuarios">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+                                    <!-- Botón de excepciones solo para Odontólogos -->
+                                    <button th:if="${usuario.getRoles().![nombre].contains('ODONTOLOGO')}"
+                                            type="button" class="btn btn-sm btn-outline-info btn-gestionar-excepciones"
+                                            title="Gestionar Excepciones de Horario"
+                                            th:attr="data-usuario-id=${usuario.id},data-usuario-nombre=${usuario.nombreCompleto}"
+                                            data-permiso="EDITAR_USUARIOS"
+                                            data-accion-descripcion="gestionar excepciones de horario">
+                                        <i class="fas fa-calendar-times"></i>
+                                    </button>
+                                    <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
+                                       class="btn btn-sm btn-outline-danger btn-eliminar-usuario" title="Eliminar"
+                                       th:data-nombre="${usuario.nombreCompleto}"
+                                       data-permiso="ELIMINAR_USUARIOS"
+                                       data-accion-descripcion="eliminar usuarios">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
                                 </div>
                             </div>
                         </div>

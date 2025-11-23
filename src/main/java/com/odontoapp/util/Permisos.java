@@ -77,4 +77,7 @@ public final class Permisos {
     public static final String CREAR_ODONTOGRAMA = "CREAR_ODONTOGRAMA";
     public static final String EDITAR_ODONTOGRAMA = "EDITAR_ODONTOGRAMA";
     public static final String ELIMINAR_ODONTOGRAMA = "ELIMINAR_ODONTOGRAMA";
+
+    // ============== MÓDULO: ADMINISTRACIÓN ==============
+    public static final String VER_REGISTROS_ELIMINADOS = "VER_REGISTROS_ELIMINADOS";
 }

@@ -200,19 +200,6 @@ public class ProcedimientoController {
         }
     }
 
-    @GetMapping("/eliminados")
-    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_SERVICIOS)")
-    public String listarProcedimientosEliminados(Model model,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "15") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Procedimiento> paginaProcedimientos = procedimientoRepository.findEliminados(pageable);
-        model.addAttribute("paginaProcedimientos", paginaProcedimientos);
-        model.addAttribute("todasLasCategorias", categoriaRepository.findAll());
-        model.addAttribute("mostrarEliminados", true);
-        return "modulos/servicios/lista";
-    }
-
     @GetMapping("/restablecer/{id}")
     @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_SERVICIOS)")
     public String restablecerProcedimiento(@PathVariable Long id, RedirectAttributes redirectAttributes) {

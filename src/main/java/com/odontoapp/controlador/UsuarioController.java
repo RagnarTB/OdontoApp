@@ -317,18 +317,6 @@ public class UsuarioController {
         return "redirect:/usuarios";
     }
 
-    @GetMapping("/eliminados")
-    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_USUARIOS)")
-    public String listarUsuariosEliminados(Model model,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "15") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Usuario> paginaUsuarios = usuarioRepository.findEliminados(pageable);
-        model.addAttribute("paginaUsuarios", paginaUsuarios);
-        model.addAttribute("mostrarEliminados", true);
-        return "modulos/usuarios/lista";
-    }
-
     @GetMapping("/restablecer/{id}")
     @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_USUARIOS)")
     public String restablecerUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {

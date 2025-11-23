@@ -125,19 +125,6 @@ public class InsumoController {
         return "redirect:/insumos";
     }
 
-    @GetMapping("/eliminados")
-    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_INVENTARIO)")
-    public String listarInsumosEliminados(Model model,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "15") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Insumo> paginaInsumos = insumoRepository.findEliminados(pageable);
-        model.addAttribute("paginaInsumos", paginaInsumos);
-        model.addAttribute("categorias", categoriaInsumoRepository.findAll());
-        model.addAttribute("mostrarEliminados", true);
-        return "modulos/insumos/lista";
-    }
-
     @GetMapping("/restablecer/{id}")
     @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_INVENTARIO)")
     public String restablecerInsumo(@PathVariable Long id, RedirectAttributes redirectAttributes) {

@@ -175,18 +175,6 @@ public class RolController {
         return "redirect:/roles";
     }
 
-    @GetMapping("/eliminados")
-    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_ROLES)")
-    public String listarRolesEliminados(Model model,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "15") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Rol> paginaRoles = rolRepository.findEliminados(pageable);
-        model.addAttribute("paginaRoles", paginaRoles);
-        model.addAttribute("mostrarEliminados", true);
-        return "modulos/roles/lista";
-    }
-
     @GetMapping("/restablecer/{id}")
     @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_ROLES)")
     public String restablecerRol(@PathVariable Long id, RedirectAttributes redirectAttributes) {
