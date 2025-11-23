@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.odontoapp.dto.PacienteDTO;
-import com.odontoapp.dto.ReniecResponseDTO;
 import com.odontoapp.entidad.Cita;
 import com.odontoapp.entidad.Comprobante;
 import com.odontoapp.entidad.OdontogramaDiente;
@@ -38,7 +37,6 @@ import com.odontoapp.repositorio.TipoDocumentoRepository;
 import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
 import com.odontoapp.repositorio.TratamientoRealizadoRepository;
 import com.odontoapp.servicio.PacienteService;
-import com.odontoapp.servicio.ReniecService;
 import com.odontoapp.util.Permisos;
 
 import java.time.format.DateTimeFormatter;
@@ -52,7 +50,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class PacienteController {
 
     private final PacienteService pacienteService;
-    private final ReniecService reniecService;
     private final PacienteRepository pacienteRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final CitaRepository citaRepository;
@@ -61,14 +58,13 @@ public class PacienteController {
     private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
     private final ComprobanteRepository comprobanteRepository;
 
-    public PacienteController(PacienteService pacienteService, ReniecService reniecService,
+    public PacienteController(PacienteService pacienteService,
             PacienteRepository pacienteRepository, TipoDocumentoRepository tipoDocumentoRepository,
             CitaRepository citaRepository, OdontogramaDienteRepository odontogramaDienteRepository,
             TratamientoRealizadoRepository tratamientoRealizadoRepository,
             TratamientoPlanificadoRepository tratamientoPlanificadoRepository,
             ComprobanteRepository comprobanteRepository) {
         this.pacienteService = pacienteService;
-        this.reniecService = reniecService;
         this.pacienteRepository = pacienteRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.citaRepository = citaRepository;
@@ -189,51 +185,6 @@ public class PacienteController {
             redirectAttributes.addFlashAttribute("error", "Error al eliminar el paciente: " + e.getMessage());
         }
         return "redirect:/pacientes";
-    }
-
-    // 🔥 MODIFICADO: Ahora recibe número y tipo de documento ID
-    @GetMapping("/api/reniec")
-    @ResponseBody
-    public ResponseEntity<?> consultarReniec(@RequestParam("numDoc") String numDoc,
-            @RequestParam("tipoDocId") Long tipoDocId) {
-
-        // 1. Validar que el tipo de documento sea DNI (código 1 o el que definas)
-        TipoDocumento tipoDocumento = tipoDocumentoRepository.findById(tipoDocId).orElse(null);
-        if (tipoDocumento == null || !"DNI".equals(tipoDocumento.getCodigo())) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "La consulta Reniec solo está disponible para DNI."));
-        }
-
-        // 2. Buscar si ya existe (ignorando soft delete)
-        Optional<Paciente> pacienteExistente = pacienteRepository.findByNumeroTipoDocumentoIgnorandoSoftDelete(numDoc,
-                tipoDocId);
-
-        if (pacienteExistente.isPresent()) {
-            Paciente paciente = pacienteExistente.get();
-            // 🔥 REGLA CLAVE: Si está eliminado, alertar al frontend para ofrecer
-            // restauración
-            if (paciente.isEliminado()) {
-                return ResponseEntity.status(409).body(
-                        Map.of("error", "El paciente existe, pero está eliminado lógicamente.",
-                                "restaurar", true,
-                                "pacienteId", paciente.getId())); // Devolver ID para restablecer
-            } else {
-                // Si existe y NO está eliminado, es un duplicado activo
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "El documento ya se encuentra registrado y está activo."));
-            }
-        }
-
-        // 3. Consultar Reniec (si no hay duplicado)
-        ReniecResponseDTO response = reniecService.consultarDni(numDoc);
-        if (response != null && response.getNombreCompleto() != null) {
-            String nombreCalculado = response.getNombreCompleto();
-            Map<String, String> resultadoJson = Map.of("nombreCompleto", nombreCalculado);
-            return ResponseEntity.ok(resultadoJson);
-        }
-
-        return ResponseEntity.status(404).body(
-                Map.of("error", "DNI no encontrado o datos incompletos. Verifique el número."));
     }
 
     @GetMapping("/restablecer/{id}")
