@@ -411,21 +411,32 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new UnsupportedOperationException("No se puede desactivar al super-administrador del sistema.");
         }
 
-        // --- NUEVA VALIDACIÓN: No desactivar si es el único rol activo de algún
-        // usuario ---
-        if (!activar && usuario.getRoles() != null) {
-            boolean esRolUnicoParaAlguien = usuario.getRoles().stream()
-                    .anyMatch(rol -> rol.getUsuarios() != null && rol.getUsuarios().stream()
-                            .anyMatch(u -> u.getRoles().stream().filter(Rol::isEstaActivo).count() == 1
-                                    && u.getRoles().contains(rol)));
-            if (esRolUnicoParaAlguien) {
-                // Esta lógica es más para cambiar estado de ROL, pero la dejamos comentada como
-                // referencia
-                // throw new DataIntegrityViolationException("No se puede desactivar este rol
-                // porque dejaría a uno o más usuarios sin roles activos.");
+        // --- VALIDACIÓN: No desactivar usuarios con citas activas ---
+        if (!activar) {
+            // Validar si es odontólogo con citas activas
+            boolean esOdontologo = usuario.getRoles().stream()
+                    .anyMatch(rol -> "ODONTOLOGO".equals(rol.getNombre()));
+
+            if (esOdontologo) {
+                long citasActivas = citaRepository.countCitasActivasByOdontologo(id);
+                if (citasActivas > 0) {
+                    throw new IllegalStateException(
+                        "No se puede desactivar al odontólogo porque tiene " + citasActivas +
+                        " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+                }
+            }
+
+            // Validar si tiene paciente asociado con citas activas
+            if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
+                long citasActivas = citaRepository.countCitasActivas(usuario.getPaciente().getId());
+                if (citasActivas > 0) {
+                    throw new IllegalStateException(
+                        "No se puede desactivar el usuario porque su perfil de paciente tiene " + citasActivas +
+                        " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+                }
             }
         }
-        // --- FIN NUEVA VALIDACIÓN ---
+        // --- FIN VALIDACIÓN ---
 
         usuario.setEstaActivo(activar);
         usuarioRepository.save(usuario);
