@@ -88,6 +88,7 @@ public class PacienteController {
         Page<Paciente> paginaPacientes = pacienteService.listarTodosLosPacientes(keyword, pageable);
         model.addAttribute("paginaPacientes", paginaPacientes);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("mostrarEliminados", false);
         return "modulos/pacientes/lista";
     }
 

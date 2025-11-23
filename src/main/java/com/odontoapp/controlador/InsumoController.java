@@ -51,6 +51,7 @@ public class InsumoController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("categoriaId", categoriaId);
         model.addAttribute("filtroVencimiento", filtroVencimiento);
+        model.addAttribute("mostrarEliminados", false);
 
         // Carga las categorías para el filtro (esto también lo tenías)
         model.addAttribute("todasLasCategorias", categoriaInsumoRepository.findAll());

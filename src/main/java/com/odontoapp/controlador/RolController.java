@@ -59,6 +59,7 @@ public class RolController {
 
         model.addAttribute("paginaRoles", paginaRoles);
         model.addAttribute("keyword", keyword); // Mantener keyword original para mostrar en input de búsqueda
+        model.addAttribute("mostrarEliminados", false);
         return "modulos/roles/lista";
     }
 

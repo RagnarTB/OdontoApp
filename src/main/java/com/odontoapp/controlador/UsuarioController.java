@@ -81,6 +81,7 @@ public class UsuarioController {
         Page<Usuario> paginaUsuarios = usuarioService.listarTodosLosUsuarios(keyword, pageable);
         model.addAttribute("paginaUsuarios", paginaUsuarios);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("mostrarEliminados", false);
         return "modulos/usuarios/lista";
     }
 

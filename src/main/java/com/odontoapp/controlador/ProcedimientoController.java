@@ -90,6 +90,7 @@ public class ProcedimientoController {
         model.addAttribute("paginaProcedimientos", paginaProcedimientos);
         model.addAttribute("keyword", keyword);
         model.addAttribute("categoriaId", categoriaId);
+        model.addAttribute("mostrarEliminados", false);
 
         // Cargar todas las categorías para el filtro dropdown
         model.addAttribute("todasLasCategorias", categoriaRepository.findAll());
