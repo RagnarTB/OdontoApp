@@ -23,7 +23,7 @@ public interface RolRepository extends JpaRepository<Rol, Long> {
     long countUsuariosSinOtrosRolesActivosByRolId(@Param("rolId") Long rolId);
 
     // --- MÉTODO PARA RESTAURAR ROLES SOFT-DELETED ---
-    @Query("SELECT r FROM Rol r WHERE r.id = :id") // Ignora @Where
+    @Query(value = "SELECT * FROM roles WHERE id = :id", nativeQuery = true)
     Optional<Rol> findByIdIgnorandoSoftDelete(@Param("id") Long id);
 
     // --- MÉTODO PARA LISTAR ROLES ELIMINADOS ---

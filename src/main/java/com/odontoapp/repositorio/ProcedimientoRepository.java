@@ -37,7 +37,7 @@ public interface ProcedimientoRepository extends JpaRepository<Procedimiento, Lo
     Page<Procedimiento> findByCategoriaIdAndKeyword(@Param("categoriaId") Long categoriaId, @Param("keyword") String keyword, Pageable pageable);
 
     // --- MÉTODO PARA RESTAURAR PROCEDIMIENTOS SOFT-DELETED ---
-    @Query("SELECT p FROM Procedimiento p WHERE p.id = :id") // Ignora @Where
+    @Query(value = "SELECT * FROM procedimientos WHERE id = :id", nativeQuery = true)
     Optional<Procedimiento> findByIdIgnorandoSoftDelete(@Param("id") Long id);
 
     // --- MÉTODO PARA LISTAR PROCEDIMIENTOS ELIMINADOS ---

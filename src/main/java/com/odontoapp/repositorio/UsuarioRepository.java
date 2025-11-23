@@ -35,7 +35,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByEmailIgnorandoSoftDelete(@Param("email") String email);
 
     // --- NUEVO MÉTODO ---
-    @Query("SELECT u FROM Usuario u WHERE u.id = :id") // Ignora @Where
+    @Query(value = "SELECT * FROM usuarios WHERE id = :id", nativeQuery = true)
     Optional<Usuario> findByIdIgnorandoSoftDelete(@Param("id") Long id);
 
     @Query("SELECT u FROM Usuario u WHERE u.numeroDocumento = :numDoc AND u.tipoDocumento.id = :tipoDocId")

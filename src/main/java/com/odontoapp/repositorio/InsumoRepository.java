@@ -78,7 +78,7 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
                      Pageable pageable);
 
        // --- MÉTODO PARA RESTAURAR INSUMOS SOFT-DELETED ---
-       @Query("SELECT i FROM Insumo i WHERE i.id = :id") // Ignora @Where
+       @Query(value = "SELECT * FROM insumos WHERE id = :id", nativeQuery = true)
        Optional<Insumo> findByIdIgnorandoSoftDelete(@Param("id") Long id);
 
        // --- MÉTODO PARA LISTAR INSUMOS ELIMINADOS ---

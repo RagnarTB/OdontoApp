@@ -31,7 +31,7 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
     @Query("SELECT p FROM Paciente p WHERE p.email = :email")
     Optional<Paciente> findByEmailIgnorandoSoftDelete(@Param("email") String email);
 
-    @Query("SELECT p FROM Paciente p WHERE p.id = :id")
+    @Query(value = "SELECT * FROM pacientes WHERE id = :id", nativeQuery = true)
     Optional<Paciente> findByIdIgnorandoSoftDelete(@Param("id") Long id);
 
     /**
