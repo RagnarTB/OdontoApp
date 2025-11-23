@@ -88,13 +88,13 @@
                 <!-- Tabs para Activos/Eliminados -->
                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link" th:classappend="${!mostrarEliminados} ? 'active' : ''"
+                        <a class="nav-link" th:classappend="${mostrarEliminados != true} ? 'active' : ''"
                            th:href="@{/servicios}">
                             <i class="fas fa-procedures"></i> Servicios Activos
                         </a>
                     </li>
                     <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_SERVICIOS')">
-                        <a class="nav-link" th:classappend="${mostrarEliminados} ? 'active' : ''"
+                        <a class="nav-link" th:classappend="${mostrarEliminados == true} ? 'active' : ''"
                            th:href="@{/servicios/eliminados}">
                             <i class="fas fa-trash-restore"></i> Servicios Eliminados
                         </a>
@@ -105,11 +105,11 @@
                     <div class="card-header bg-white">
                         <div class="d-flex justify-content-between align-items-center">
                             <h3 class="card-title font-weight-bold">
-                                <span th:if="${!mostrarEliminados}">Lista de Servicios</span>
-                                <span th:if="${mostrarEliminados}">Servicios Eliminados</span>
+                                <span th:if="${mostrarEliminados != true}">Lista de Servicios</span>
+                                <span th:if="${mostrarEliminados == true}">Servicios Eliminados</span>
                                 (<span th:text="${paginaProcedimientos.totalElements}"></span>)
                             </h3>
-                            <div class="card-tools" th:if="${!mostrarEliminados}">
+                            <div class="card-tools" th:if="${mostrarEliminados != true}">
                                 <form th:action="@{/servicios}" method="get" class="form-inline">
                                     <input type="text" name="keyword" class="form-control"
                                         placeholder="Buscar por nombre, código o descripción..." th:value="${keyword}"
@@ -159,7 +159,7 @@
                                     </td>
                                     <td>
                                         <!-- Vista de ELIMINADOS: Solo botón restaurar -->
-                                        <div th:if="${mostrarEliminados}">
+                                        <div th:if="${mostrarEliminados == true}">
                                             <a th:href="@{/servicios/restablecer/{id}(id=${proc.id})}"
                                                 class="btn btn-sm btn-success" title="Restaurar Servicio"
                                                 sec:authorize="hasAuthority('RESTAURAR_SERVICIOS')">
@@ -168,7 +168,7 @@
                                         </div>
 
                                         <!-- Vista NORMAL: Acciones estándar -->
-                                        <div th:if="${!mostrarEliminados}">
+                                        <div th:if="${mostrarEliminados != true}">
                                             <a th:href="@{/servicios/editar/{id}(id=${proc.id})}"
                                                 class="btn btn-sm btn-warning" title="Editar"
                                                 data-permiso="EDITAR_SERVICIOS"

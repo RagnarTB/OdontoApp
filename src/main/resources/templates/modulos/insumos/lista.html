@@ -56,13 +56,13 @@
                 <!-- Tabs para Activos/Eliminados -->
                 <ul class="nav nav-tabs mb-3" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link" th:classappend="${!mostrarEliminados} ? 'active' : ''"
+                        <a class="nav-link" th:classappend="${mostrarEliminados != true} ? 'active' : ''"
                            th:href="@{/insumos}">
                             <i class="fas fa-boxes"></i> Insumos Activos
                         </a>
                     </li>
                     <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_INVENTARIO')">
-                        <a class="nav-link" th:classappend="${mostrarEliminados} ? 'active' : ''"
+                        <a class="nav-link" th:classappend="${mostrarEliminados == true} ? 'active' : ''"
                            th:href="@{/insumos/eliminados}">
                             <i class="fas fa-trash-restore"></i> Insumos Eliminados
                         </a>
@@ -70,7 +70,7 @@
                 </ul>
 
                 <div class="card card-warning card-outline shadow-sm"
-                    th:if="${alertasStockBajo != null && !alertasStockBajo.isEmpty() && !mostrarEliminados}">
+                    th:if="${alertasStockBajo != null && !alertasStockBajo.isEmpty() && mostrarEliminados != true}">
                     <div class="card-header">
                         <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-2"></i> Alertas de Stock Bajo
                         </h3>
@@ -91,7 +91,7 @@
                 </div>
 
                 <div class="card card-primary card-outline card-outline-tabs shadow-sm">
-                    <div class="card-header p-0 border-bottom-0" th:if="${!mostrarEliminados}">
+                    <div class="card-header p-0 border-bottom-0" th:if="${mostrarEliminados != true}">
                         <ul class="nav nav-tabs" role="tablist">
                             <li class="nav-item"><a class="nav-link active" data-toggle="pill" href="#tab-inventario"
                                     role="tab">Inventario (<span th:text="${paginaInsumos.totalElements}"></span>)</a></li>
@@ -99,10 +99,10 @@
                                     role="tab">Movimientos</a></li>
                         </ul>
                     </div>
-                    <div class="card-header bg-white" th:if="${mostrarEliminados}">
+                    <div class="card-header bg-white" th:if="${mostrarEliminados == true}">
                         <h3 class="card-title">Insumos Eliminados (<span th:text="${paginaInsumos.totalElements}"></span>)</h3>
                     </div>
-                    <div class="card-header bg-white" th:if="${!mostrarEliminados}">
+                    <div class="card-header bg-white" th:if="${mostrarEliminados != true}">
                         <div class="card-tools">
                             <form th:action="@{/insumos}" method="get" class="form-inline">
                                 <input type="text" name="keyword" class="form-control"
@@ -169,7 +169,7 @@
                                             </td>
                                             <td>
                                                 <!-- Vista de ELIMINADOS: Solo botón restaurar -->
-                                                <div th:if="${mostrarEliminados}">
+                                                <div th:if="${mostrarEliminados == true}">
                                                     <a th:href="@{/insumos/restablecer/{id}(id=${insumo.id})}"
                                                         class="btn btn-sm btn-success" title="Restaurar Insumo"
                                                         sec:authorize="hasAuthority('RESTAURAR_INVENTARIO')">
@@ -178,7 +178,7 @@
                                                 </div>
 
                                                 <!-- Vista NORMAL: Acciones estándar -->
-                                                <div th:if="${!mostrarEliminados}">
+                                                <div th:if="${mostrarEliminados != true}">
                                                     <button type="button" class="btn btn-sm btn-primary" data-toggle="modal"
                                                         data-target="#modal-nuevo-movimiento"
                                                         th:attr="data-insumo-id=${insumo.id}, data-insumo-nombre=${insumo.nombre}"

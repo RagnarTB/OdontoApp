@@ -39,13 +39,13 @@
                 <!-- Tabs para Activos/Eliminados -->
                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link" th:classappend="${!mostrarEliminados} ? 'active' : ''"
+                        <a class="nav-link" th:classappend="${mostrarEliminados != true} ? 'active' : ''"
                            th:href="@{/pacientes}">
                             <i class="fas fa-user-injured"></i> Pacientes Activos
                         </a>
                     </li>
                     <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_PACIENTES')">
-                        <a class="nav-link" th:classappend="${mostrarEliminados} ? 'active' : ''"
+                        <a class="nav-link" th:classappend="${mostrarEliminados == true} ? 'active' : ''"
                            th:href="@{/pacientes/eliminados}">
                             <i class="fas fa-trash-restore"></i> Pacientes Eliminados
                         </a>
@@ -55,10 +55,10 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <span th:if="${!mostrarEliminados}">Listado de Pacientes</span>
-                            <span th:if="${mostrarEliminados}">Pacientes Eliminados</span>
+                            <span th:if="${mostrarEliminados != true}">Listado de Pacientes</span>
+                            <span th:if="${mostrarEliminados == true}">Pacientes Eliminados</span>
                         </h3>
-                        <div class="card-tools" th:if="${!mostrarEliminados}">
+                        <div class="card-tools" th:if="${mostrarEliminados != true}">
                             <form th:action="@{/pacientes}" method="get" class="form-inline" id="formBuscarPaciente">
                                 <input type="text" name="keyword" id="buscarPacienteInput" class="form-control form-control-sm"
                                     placeholder="Buscar Doc., Nombre o Email..." th:value="${keyword}"
@@ -91,7 +91,7 @@
                                     <td th:text="${paciente.telefono}"></td>
                                     <td>
                                         <!-- Vista de ELIMINADOS: Solo botón restaurar -->
-                                        <div th:if="${mostrarEliminados}">
+                                        <div th:if="${mostrarEliminados == true}">
                                             <a th:href="@{/pacientes/restablecer/{id}(id=${paciente.id})}"
                                                 class="btn btn-sm btn-success" title="Restaurar Paciente"
                                                 sec:authorize="hasAuthority('RESTAURAR_PACIENTES')">
@@ -100,7 +100,7 @@
                                         </div>
 
                                         <!-- Vista NORMAL: Acciones estándar -->
-                                        <div th:if="${!mostrarEliminados}">
+                                        <div th:if="${mostrarEliminados != true}">
                                             <a th:href="@{/pacientes/historial/{id}(id=${paciente.id})}"
                                                 class="btn btn-sm btn-info" title="Ver Detalle Completo del Paciente"
                                                 sec:authorize="hasAnyAuthority('VER_DETALLE_PACIENTES', 'ADMIN')">
