@@ -196,8 +196,9 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="fechaNacimiento">Fecha de Nacimiento <span class="text-danger">*</span></label>
-                                        <!-- Hidden field para enviar el valor en modo edición -->
-                                        <input th:if="${usuario.id != null}" type="hidden" th:field="*{fechaNacimiento}" />
+                                        <!-- Hidden field para enviar el valor en modo edición con formato ISO -->
+                                        <input th:if="${usuario.id != null}" type="hidden" name="fechaNacimiento"
+                                            th:value="${usuario.fechaNacimiento != null ? usuario.fechaNacimiento : ''}" />
                                         <!-- Input visible en modo edición (texto plano) -->
                                         <input th:if="${usuario.id != null}" type="text" class="form-control bg-light"
                                             th:value="${usuario.fechaNacimiento != null ? #temporals.format(usuario.fechaNacimiento, 'dd/MM/yyyy') : ''}" readonly />
@@ -223,8 +224,9 @@
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="fechaContratacion">Fecha Contrataci&oacute;n <span class="text-danger">*</span></label>
-                                        <!-- Hidden field para enviar el valor en modo edición -->
-                                        <input th:if="${usuario.id != null}" type="hidden" th:field="*{fechaContratacion}" />
+                                        <!-- Hidden field para enviar el valor en modo edición con formato ISO -->
+                                        <input th:if="${usuario.id != null}" type="hidden" name="fechaContratacion"
+                                            th:value="${usuario.fechaContratacion != null ? usuario.fechaContratacion : ''}" />
                                         <!-- Input visible en modo edición (texto plano) -->
                                         <input th:if="${usuario.id != null}" type="text" class="form-control bg-light"
                                             th:value="${usuario.fechaContratacion != null ? #temporals.format(usuario.fechaContratacion, 'dd/MM/yyyy') : ''}" readonly />

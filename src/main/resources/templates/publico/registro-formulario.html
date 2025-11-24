@@ -336,23 +336,41 @@
             $fechaNac.attr('max', hoy);
 
             $fechaNac.on('change', function() {
-                const fechaSeleccionada = new Date($(this).val());
-                const fechaHoy = new Date();
+                const fechaInput = $(this).val(); // Formato YYYY-MM-DD
                 const $error = $('#fecha-error');
 
+                if (!fechaInput) {
+                    $error.text('');
+                    return;
+                }
+
+                // Parsear la fecha manualmente para evitar problemas de timezone
+                const partes = fechaInput.split('-');
+                const anio = parseInt(partes[0]);
+                const mes = parseInt(partes[1]) - 1; // mes en JS es 0-11
+                const dia = parseInt(partes[2]);
+
+                const fechaSeleccionada = new Date(anio, mes, dia);
+                const fechaHoy = new Date();
+                fechaHoy.setHours(0, 0, 0, 0); // Normalizar a medianoche
+
+                // Validar que no sea futura
                 if (fechaSeleccionada > fechaHoy) {
                     $error.text('La fecha de nacimiento no puede ser futura');
                     $(this).val('');
-                } else {
-                    $error.text('');
+                    return;
                 }
 
-                // Validar que sea mayor de edad (opcional)
+                // Validar edad mínima (al menos 1 año)
                 const edad = calcularEdad(fechaSeleccionada);
                 if (edad < 1) {
                     $error.text('La fecha de nacimiento es inválida');
                     $(this).val('');
+                    return;
                 }
+
+                // Si pasa todas las validaciones, limpiar error
+                $error.text('');
             });
 
             function calcularEdad(fechaNacimiento) {
@@ -447,11 +465,18 @@
 
                 // Validar fecha de nacimiento
                 const fechaNac = $fechaNac.val();
-                if (fechaNac && new Date(fechaNac) > new Date()) {
-                    event.preventDefault();
-                    $('#fecha-error').text('La fecha de nacimiento no puede ser futura');
-                    $fechaNac.focus();
-                    return false;
+                if (fechaNac) {
+                    const partes = fechaNac.split('-');
+                    const fechaSeleccionada = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+                    const fechaHoy = new Date();
+                    fechaHoy.setHours(0, 0, 0, 0);
+
+                    if (fechaSeleccionada > fechaHoy) {
+                        event.preventDefault();
+                        $('#fecha-error').text('La fecha de nacimiento no puede ser futura');
+                        $fechaNac.focus();
+                        return false;
+                    }
                 }
 
                 // Validar contraseña
