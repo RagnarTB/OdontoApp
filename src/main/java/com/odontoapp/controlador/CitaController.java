@@ -86,11 +86,8 @@ public class CitaController {
     @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_CITAS)")
     public String verCalendario(Model model) {
         try {
-            // Buscar usuarios con rol ODONTOLOGO
-            var rolOdontologo = rolRepository.findByNombre("ODONTOLOGO");
-            var listaOdontologos = rolOdontologo.isPresent()
-                    ? usuarioRepository.findByRolesNombre("ODONTOLOGO")
-                    : List.of();
+            // Buscar usuarios ACTIVOS con rol ODONTOLOGO
+            var listaOdontologos = usuarioRepository.findActiveByRolesNombre("ODONTOLOGO");
 
             // Buscar solo pacientes activos (usuarios con rol PACIENTE que estén activos)
             var listaPacientes = pacienteRepository.findAll().stream()
@@ -163,10 +160,7 @@ public class CitaController {
 
         // Cargar listas para los filtros
         var listaEstados = estadoCitaRepository.findAll();
-        var rolOdontologo = rolRepository.findByNombre("ODONTOLOGO");
-        var listaOdontologos = rolOdontologo.isPresent()
-                ? usuarioRepository.findByRolesNombre("ODONTOLOGO")
-                : List.of();
+        var listaOdontologos = usuarioRepository.findActiveByRolesNombre("ODONTOLOGO");
 
         // Añadir al modelo
         model.addAttribute("paginaCitas", paginaCitas);

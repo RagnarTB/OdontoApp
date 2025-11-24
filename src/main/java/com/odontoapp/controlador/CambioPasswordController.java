@@ -93,6 +93,25 @@ public class CambioPasswordController {
         redirectAttributes.addFlashAttribute("success",
                 "¡Contraseña actualizada correctamente! Ya puedes usar el sistema.");
 
+        // Determinar redirección según roles del usuario
+        var rolesActivos = usuario.getRoles().stream()
+                .filter(rol -> rol.isEstaActivo())
+                .toList();
+
+        // Si tiene múltiples roles activos, redirigir al selector de rol
+        if (rolesActivos.size() > 1) {
+            return "redirect:/seleccionar-rol";
+        }
+
+        // Si solo tiene rol PACIENTE, redirigir a su dashboard
+        boolean soloEsPaciente = rolesActivos.size() == 1 &&
+                rolesActivos.get(0).getNombre().equals("PACIENTE");
+
+        if (soloEsPaciente) {
+            return "redirect:/paciente/dashboard";
+        }
+
+        // Para otros casos (ADMIN, ODONTOLOGO, etc.), redirigir al dashboard general
         return "redirect:/dashboard";
     }
 }

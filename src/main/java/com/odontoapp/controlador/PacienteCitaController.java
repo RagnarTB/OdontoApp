@@ -60,11 +60,8 @@ public class PacienteCitaController {
     @GetMapping
     public String verCalendario(Model model) {
         try {
-            // Buscar usuarios con rol ODONTOLOGO
-            var rolOdontologo = rolRepository.findByNombre("ODONTOLOGO");
-            var listaOdontologos = rolOdontologo.isPresent()
-                    ? usuarioRepository.findByRolesNombre("ODONTOLOGO")
-                    : List.of();
+            // Buscar usuarios ACTIVOS con rol ODONTOLOGO
+            var listaOdontologos = usuarioRepository.findActiveByRolesNombre("ODONTOLOGO");
 
             // Buscar procedimientos con relaciones cargadas
             var listaProcedimientos = procedimientoRepository.findAllWithRelations();

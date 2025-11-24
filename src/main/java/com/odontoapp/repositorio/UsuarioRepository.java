@@ -57,6 +57,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @Query("SELECT u FROM Usuario u JOIN u.roles r WHERE r.nombre = :rolNombre")
     java.util.List<Usuario> findByRolesNombre(@Param("rolNombre") String rolNombre);
 
+    // Buscar usuarios ACTIVOS por nombre de rol (solo usuarios activos y no eliminados)
+    @Query("SELECT u FROM Usuario u JOIN u.roles r WHERE r.nombre = :rolNombre AND u.estaActivo = true AND r.estaActivo = true")
+    java.util.List<Usuario> findActiveByRolesNombre(@Param("rolNombre") String rolNombre);
+
     /**
      * Busca usuarios activos cuya fecha de vigencia ha vencido.
      * Usado por el scheduler para desactivar usuarios automáticamente.
