@@ -25,5 +25,5 @@ public interface PacienteService {
 
     Optional<Paciente> buscarPorDocumento(String numeroDocumento, Long tipoDocumentoId); // Modificado
 
-    void restablecerPaciente(Long id);
+    String restablecerPaciente(Long id);
 }

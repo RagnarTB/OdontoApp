@@ -33,10 +33,10 @@ public class AdministracionController {
     private final InsumoRepository insumoRepository;
 
     public AdministracionController(UsuarioRepository usuarioRepository,
-                                    PacienteRepository pacienteRepository,
-                                    RolRepository rolRepository,
-                                    ProcedimientoRepository procedimientoRepository,
-                                    InsumoRepository insumoRepository) {
+            PacienteRepository pacienteRepository,
+            RolRepository rolRepository,
+            ProcedimientoRepository procedimientoRepository,
+            InsumoRepository insumoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.pacienteRepository = pacienteRepository;
         this.rolRepository = rolRepository;
@@ -66,7 +66,7 @@ public class AdministracionController {
         // Cargar los registros eliminados según el tipo seleccionado
         switch (tipo) {
             case "usuarios":
-                Page<Usuario> usuarios = usuarioRepository.findEliminados(pageable);
+                Page<Usuario> usuarios = usuarioRepository.findEliminadosExcluyendoSoloPacientes(pageable);
                 model.addAttribute("usuarios", usuarios);
                 model.addAttribute("totalUsuarios", usuarios.getTotalElements());
                 break;
@@ -104,11 +104,15 @@ public class AdministracionController {
         }
 
         // Cargar contadores de todos los tipos (para mostrar en los tabs)
-        model.addAttribute("totalUsuariosGlobal", usuarioRepository.findEliminados(PageRequest.of(0, 1)).getTotalElements());
-        model.addAttribute("totalPacientesGlobal", pacienteRepository.findEliminados(PageRequest.of(0, 1)).getTotalElements());
+        model.addAttribute("totalUsuariosGlobal",
+                usuarioRepository.findEliminadosExcluyendoSoloPacientes(PageRequest.of(0, 1)).getTotalElements());
+        model.addAttribute("totalPacientesGlobal",
+                pacienteRepository.findEliminados(PageRequest.of(0, 1)).getTotalElements());
         model.addAttribute("totalRolesGlobal", rolRepository.findEliminados(PageRequest.of(0, 1)).getTotalElements());
-        model.addAttribute("totalServiciosGlobal", procedimientoRepository.findEliminados(PageRequest.of(0, 1)).getTotalElements());
-        model.addAttribute("totalInsumosGlobal", insumoRepository.findEliminados(PageRequest.of(0, 1)).getTotalElements());
+        model.addAttribute("totalServiciosGlobal",
+                procedimientoRepository.findEliminados(PageRequest.of(0, 1)).getTotalElements());
+        model.addAttribute("totalInsumosGlobal",
+                insumoRepository.findEliminados(PageRequest.of(0, 1)).getTotalElements());
 
         model.addAttribute("tipoActivo", tipo);
 

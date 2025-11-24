@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 
 import com.odontoapp.dto.UsuarioDTO;
 import com.odontoapp.entidad.HorarioExcepcion; // NUEVO import
+import com.odontoapp.entidad.Paciente;
 import com.odontoapp.entidad.Rol; // NUEVO import
 import com.odontoapp.entidad.TipoDocumento;
 import com.odontoapp.entidad.Usuario; // NUEVO import
@@ -172,7 +173,8 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         // Validar edad mínima (18 años) para empleados
         if (usuarioDTO.getFechaNacimiento() != null) {
-            java.time.Period edad = java.time.Period.between(usuarioDTO.getFechaNacimiento(), java.time.LocalDate.now());
+            java.time.Period edad = java.time.Period.between(usuarioDTO.getFechaNacimiento(),
+                    java.time.LocalDate.now());
             if (edad.getYears() < 18) {
                 throw new IllegalArgumentException("El trabajador debe ser mayor de 18 años.");
             }
@@ -208,7 +210,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         boolean tieneRolAdmin = rolesSeleccionados.stream().anyMatch(r -> "ADMIN".equals(r.getNombre()));
 
         if (tieneRolAdmin) {
-            // Si tiene rol ADMIN, la fecha de vigencia no es requerida (puede ser null o infinita)
+            // Si tiene rol ADMIN, la fecha de vigencia no es requerida (puede ser null o
+            // infinita)
             usuario.setFechaVigencia(usuarioDTO.getFechaVigencia()); // Puede ser null
         } else {
             // Para cualquier otro rol, fecha de vigencia ES OBLIGATORIA
@@ -349,8 +352,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             long citasActivas = citaRepository.countCitasActivasByOdontologo(id);
             if (citasActivas > 0) {
                 throw new IllegalStateException(
-                    "No se puede eliminar el odontólogo porque tiene " + citasActivas +
-                    " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+                        "No se puede eliminar el odontólogo porque tiene " + citasActivas +
+                                " cita(s) activa(s). Debe cancelar o completar las citas primero.");
             }
         }
 
@@ -359,8 +362,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             long citasActivas = citaRepository.countCitasActivas(usuario.getPaciente().getId());
             if (citasActivas > 0) {
                 throw new IllegalStateException(
-                    "No se puede eliminar el usuario porque su perfil de paciente tiene " + citasActivas +
-                    " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+                        "No se puede eliminar el usuario porque su perfil de paciente tiene " + citasActivas +
+                                " cita(s) activa(s). Debe cancelar o completar las citas primero.");
             }
         }
 
@@ -371,10 +374,12 @@ public class UsuarioServiceImpl implements UsuarioService {
                 paciente.setEliminado(true);
                 pacienteRepository.save(paciente); // Soft delete manual
                 System.out.println(
-                        ">>> Paciente asociado " + paciente.getId() + " eliminado (soft delete) por cascada desde usuario.");
+                        ">>> Paciente asociado " + paciente.getId()
+                                + " eliminado (soft delete) por cascada desde usuario.");
             } catch (Exception e) {
-                System.err.println("Error Crítico: No se pudo eliminar (soft delete) el paciente asociado " + paciente.getId()
-                        + ". Cancelando eliminación del usuario. Error: " + e.getMessage());
+                System.err.println(
+                        "Error Crítico: No se pudo eliminar (soft delete) el paciente asociado " + paciente.getId()
+                                + ". Cancelando eliminación del usuario. Error: " + e.getMessage());
                 throw new RuntimeException("No se pudo eliminar el paciente asociado. Operación cancelada.", e);
             }
         } else if (usuario.getPaciente() != null && usuario.getPaciente().isEliminado()) {
@@ -387,7 +392,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setFechaEliminacion(java.time.LocalDateTime.now());
             usuario.setEstaActivo(false); // Desactivar también al eliminar
             usuarioRepository.save(usuario); // Guardar cambios sin tocar la tabla usuarios_roles
-            System.out.println(">>> Usuario " + usuario.getEmail() + " eliminado (soft delete) con éxito. Roles preservados.");
+            System.out.println(
+                    ">>> Usuario " + usuario.getEmail() + " eliminado (soft delete) con éxito. Roles preservados.");
         } catch (Exception e) {
             System.err.println(
                     "Error Crítico al intentar soft delete del usuario " + usuario.getEmail() + ": " + e.getMessage());
@@ -425,8 +431,8 @@ public class UsuarioServiceImpl implements UsuarioService {
                 long citasActivas = citaRepository.countCitasActivasByOdontologo(id);
                 if (citasActivas > 0) {
                     throw new IllegalStateException(
-                        "No se puede desactivar al odontólogo porque tiene " + citasActivas +
-                        " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+                            "No se puede desactivar al odontólogo porque tiene " + citasActivas +
+                                    " cita(s) activa(s). Debe cancelar o completar las citas primero.");
                 }
             }
 
@@ -435,8 +441,8 @@ public class UsuarioServiceImpl implements UsuarioService {
                 long citasActivas = citaRepository.countCitasActivas(usuario.getPaciente().getId());
                 if (citasActivas > 0) {
                     throw new IllegalStateException(
-                        "No se puede desactivar el usuario porque su perfil de paciente tiene " + citasActivas +
-                        " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+                            "No se puede desactivar el usuario porque su perfil de paciente tiene " + citasActivas +
+                                    " cita(s) activa(s). Debe cancelar o completar las citas primero.");
                 }
             }
         }
