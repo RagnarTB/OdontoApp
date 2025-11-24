@@ -18,6 +18,7 @@ import com.odontoapp.entidad.Paciente;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.entidad.TipoDocumento;
 import com.odontoapp.entidad.Usuario;
+import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.TipoDocumentoRepository;
@@ -27,7 +28,7 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class PacienteServiceImpl implements PacienteService {
-
+    private final CitaRepository citaRepository;
     private final PacienteRepository pacienteRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
@@ -40,7 +41,7 @@ public class PacienteServiceImpl implements PacienteService {
     public PacienteServiceImpl(PacienteRepository pacienteRepository, RolRepository rolRepository,
             PasswordEncoder passwordEncoder, EmailService emailService,
             UsuarioService usuarioService, UsuarioRepository usuarioRepository,
-            TipoDocumentoRepository tipoDocumentoRepository) {
+            TipoDocumentoRepository tipoDocumentoRepository, CitaRepository citaRepository) {
         this.pacienteRepository = pacienteRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
@@ -48,6 +49,7 @@ public class PacienteServiceImpl implements PacienteService {
         this.usuarioService = usuarioService;
         this.usuarioRepository = usuarioRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
+        this.citaRepository = citaRepository;
     }
 
     // Método modificado para validar DNI también en Usuarios
@@ -346,6 +348,16 @@ public class PacienteServiceImpl implements PacienteService {
             return;
         }
 
+        // ⚠️ VALIDAR: No permitir eliminación si tiene citas activas
+        if (paciente.getUsuario() != null) {
+            long citasActivas = citaRepository.countCitasActivas(paciente.getUsuario().getId());
+            if (citasActivas > 0) {
+                throw new IllegalStateException(
+                        "No se puede eliminar el paciente porque tiene " + citasActivas +
+                                " cita(s) activa(s). Debe cancelar o completar todas las citas antes de eliminar el paciente.");
+            }
+        }
+
         Usuario usuarioAsociado = paciente.getUsuario();
         Long usuarioId = (usuarioAsociado != null) ? usuarioAsociado.getId() : null;
 
@@ -359,10 +371,13 @@ public class PacienteServiceImpl implements PacienteService {
 
             if (soloEsPaciente) {
                 try {
-                    // Aplicar soft delete al usuario (activa @SQLDelete de Usuario)
-                    usuarioRepository.deleteById(usuarioId);
+                    // Aplicar soft delete al usuario (manual para preservar roles)
+                    usuarioAsociado.setEliminado(true);
+                    usuarioAsociado.setFechaEliminacion(java.time.LocalDateTime.now());
+                    usuarioAsociado.setEstaActivo(false);
+                    usuarioRepository.save(usuarioAsociado);
                     System.out.println(">>> Usuario asociado " + usuarioAsociado.getEmail()
-                            + " eliminado (soft delete) por eliminación de paciente.");
+                            + " eliminado (soft delete) por eliminación de paciente. Roles preservados.");
                 } catch (Exception e) {
                     // Si falla eliminar el usuario, detenemos la operación para evitar
                     // inconsistencias.
@@ -396,7 +411,8 @@ public class PacienteServiceImpl implements PacienteService {
 
         // 2. Ejecutar el Soft Delete del Paciente DESPUÉS del usuario (si aplica)
         try {
-            pacienteRepository.deleteById(id); // Activa @SQLDelete de Paciente
+            paciente.setEliminado(true);
+            pacienteRepository.save(paciente); // Soft delete manual
             System.out.println(">>> Paciente con ID " + id + " eliminado (soft delete) con éxito.");
         } catch (Exception e) {
             // Si llega aquí, es un error inesperado al marcar el paciente como eliminado.

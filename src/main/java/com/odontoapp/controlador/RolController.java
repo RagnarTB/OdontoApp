@@ -24,13 +24,13 @@ import com.odontoapp.entidad.Permiso;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.repositorio.PermisoRepository;
 import com.odontoapp.servicio.RolService;
+import com.odontoapp.util.Permisos;
 
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 @Controller
-@RequestMapping("/roles") // Añadir RequestMapping a nivel de clase
-@PreAuthorize("hasRole('ADMIN')") // ✅ Solo ADMIN puede gestionar roles
+@RequestMapping("/roles")
 public class RolController {
 
     private final RolService rolService;
@@ -47,6 +47,7 @@ public class RolController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_ROLES)")
     public String listarRoles(Model model,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
@@ -58,10 +59,12 @@ public class RolController {
 
         model.addAttribute("paginaRoles", paginaRoles);
         model.addAttribute("keyword", keyword); // Mantener keyword original para mostrar en input de búsqueda
+        model.addAttribute("mostrarEliminados", false);
         return "modulos/roles/lista";
     }
 
     @GetMapping("/nuevo")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_ROLES)")
     public String mostrarFormularioNuevoRol(Model model) {
         model.addAttribute("rol", new RolDTO());
         cargarPermisos(model);
@@ -69,6 +72,7 @@ public class RolController {
     }
 
     @PostMapping("/guardar")
+    @PreAuthorize("hasAnyAuthority(T(com.odontoapp.util.Permisos).CREAR_ROLES, T(com.odontoapp.util.Permisos).EDITAR_ROLES)")
     public String guardarRol(@Valid @ModelAttribute("rol") RolDTO rolDTO,
             BindingResult result,
             Model model,
@@ -104,19 +108,11 @@ public class RolController {
     }
 
     @GetMapping("/editar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_ROLES)")
     public String mostrarFormularioEditarRol(@PathVariable Long id, Model model,
             RedirectAttributes redirectAttributes) { // Añadir RedirectAttributes
         Rol rol = rolService.buscarRolPorId(id).orElse(null);
         if (rol != null) {
-
-            // --- PROTECCIÓN EN CONTROLADOR ---
-            if (ROL_ADMIN.equals(rol.getNombre()) || ROL_PACIENTE.equals(rol.getNombre())) {
-                redirectAttributes.addFlashAttribute("error", "El rol '" + rol.getNombre() + "' no puede ser editado.");
-                return "redirect:/roles";
-            }
-            // Opcional: Proteger ODONTOLOGO también si no quieres que se edite nada
-            // if (ROL_ODONTOLOGO.equals(rol.getNombre())) { ... }
-
             RolDTO rolDTO = new RolDTO();
             rolDTO.setId(rol.getId());
             rolDTO.setNombre(rol.getNombre());
@@ -125,6 +121,7 @@ public class RolController {
             }
 
             model.addAttribute("rol", rolDTO);
+            model.addAttribute("esRolSistema", rol.isEsRolSistema()); // Pasar info al formulario
             cargarPermisos(model);
             return "modulos/roles/formulario";
         }
@@ -133,6 +130,7 @@ public class RolController {
     }
 
     @GetMapping("/eliminar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).ELIMINAR_ROLES)")
     public String eliminarRol(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             rolService.eliminarRol(id);
@@ -149,6 +147,7 @@ public class RolController {
     }
 
     @GetMapping("/cambiar-estado/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_ROLES)")
     public String cambiarEstadoRol(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             rolService.cambiarEstadoRol(id);
@@ -164,6 +163,18 @@ public class RolController {
             redirectAttributes.addFlashAttribute("error", "Error inesperado al cambiar estado del rol.");
             System.err.println("Error al cambiar estado rol: " + e.getMessage());
             e.printStackTrace();
+        }
+        return "redirect:/roles";
+    }
+
+    @GetMapping("/restablecer/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_ROLES)")
+    public String restablecerRol(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            rolService.restablecerRol(id);
+            redirectAttributes.addFlashAttribute("success", "Rol restablecido con éxito.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al restablecer el rol: " + e.getMessage());
         }
         return "redirect:/roles";
     }

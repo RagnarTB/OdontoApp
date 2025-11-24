@@ -2,6 +2,7 @@ package com.odontoapp.dto;
 
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,8 +33,10 @@ public class CitaDTO {
     @FutureOrPresent(message = "La fecha de la cita debe ser presente o futura")
     private LocalDateTime fechaHoraInicio;
 
+    @Size(max = 500, message = "El motivo de consulta no puede exceder 500 caracteres")
     private String motivoConsulta;
 
+    @Size(max = 1000, message = "Las notas internas no pueden exceder 1000 caracteres")
     private String notasInternas;
 
     private String estadoCitaNombre;

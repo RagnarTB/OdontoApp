@@ -55,4 +55,13 @@ public interface ProcedimientoInsumoRepository extends JpaRepository<Procedimien
      */
     @Query("SELECT pi FROM ProcedimientoInsumo pi WHERE pi.procedimiento.id = :procedimientoId AND pi.insumo.id = :insumoId")
     Optional<ProcedimientoInsumo> findByProcedimientoIdAndInsumoId(@Param("procedimientoId") Long procedimientoId, @Param("insumoId") Long insumoId);
+
+    /**
+     * Cuenta cuántos procedimientos usan un insumo específico.
+     * Útil para validar si un insumo puede ser eliminado.
+     * @param insumoId ID del insumo
+     * @return Número de procedimientos que usan el insumo
+     */
+    @Query("SELECT COUNT(pi) FROM ProcedimientoInsumo pi WHERE pi.insumo.id = :insumoId")
+    long countByInsumoId(@Param("insumoId") Long insumoId);
 }

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+    th:replace="~{layout/base :: layout(titulo='Registros Eliminados', contenido=~{::#contenido-principal})}">
+
+<body>
+    <div id="contenido-principal">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-12">
+                        <h1><i class="fas fa-trash-restore mr-2"></i> Gestión de Registros Eliminados</h1>
+                        <p class="text-muted">Administra y restaura registros eliminados del sistema</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+
+                <!-- Mensajes de éxito/error -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle mr-2"></i><span th:text="${success}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle mr-2"></i><span th:text="${error}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <!-- Tabs de navegación -->
+                <div class="card">
+                    <div class="card-header p-0">
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_USUARIOS')">
+                                <a class="nav-link" th:classappend="${tipoActivo == 'usuarios'} ? 'active' : ''"
+                                   th:href="@{/administracion/eliminados(tipo='usuarios')}">
+                                    <i class="fas fa-users mr-1"></i> Usuarios
+                                    <span class="badge badge-danger ml-1" th:text="${totalUsuariosGlobal}">0</span>
+                                </a>
+                            </li>
+                            <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_PACIENTES')">
+                                <a class="nav-link" th:classappend="${tipoActivo == 'pacientes'} ? 'active' : ''"
+                                   th:href="@{/administracion/eliminados(tipo='pacientes')}">
+                                    <i class="fas fa-user-injured mr-1"></i> Pacientes
+                                    <span class="badge badge-danger ml-1" th:text="${totalPacientesGlobal}">0</span>
+                                </a>
+                            </li>
+                            <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_ROLES')">
+                                <a class="nav-link" th:classappend="${tipoActivo == 'roles'} ? 'active' : ''"
+                                   th:href="@{/administracion/eliminados(tipo='roles')}">
+                                    <i class="fas fa-user-tag mr-1"></i> Roles
+                                    <span class="badge badge-danger ml-1" th:text="${totalRolesGlobal}">0</span>
+                                </a>
+                            </li>
+                            <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_SERVICIOS')">
+                                <a class="nav-link" th:classappend="${tipoActivo == 'servicios'} ? 'active' : ''"
+                                   th:href="@{/administracion/eliminados(tipo='servicios')}">
+                                    <i class="fas fa-procedures mr-1"></i> Servicios
+                                    <span class="badge badge-danger ml-1" th:text="${totalServiciosGlobal}">0</span>
+                                </a>
+                            </li>
+                            <li class="nav-item" sec:authorize="hasAuthority('RESTAURAR_INVENTARIO')">
+                                <a class="nav-link" th:classappend="${tipoActivo == 'insumos'} ? 'active' : ''"
+                                   th:href="@{/administracion/eliminados(tipo='insumos')}">
+                                    <i class="fas fa-boxes mr-1"></i> Insumos
+                                    <span class="badge badge-danger ml-1" th:text="${totalInsumosGlobal}">0</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="tab-content">
+
+                            <!-- TAB: USUARIOS -->
+                            <div th:if="${tipoActivo == 'usuarios'}" class="tab-pane fade show active">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-users mr-2"></i>Usuarios Eliminados
+                                    <span class="badge badge-secondary ml-2" th:text="${totalUsuarios}">0</span>
+                                </h5>
+
+                                <div th:if="${usuarios != null && !usuarios.empty}">
+                                    <table class="table table-bordered table-hover table-striped">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>Nombre</th>
+                                                <th>Email</th>
+                                                <th>Roles</th>
+                                                <th>Teléfono</th>
+                                                <th style="width: 120px;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="usuario : ${usuarios.content}">
+                                                <td th:text="${usuario.nombreCompleto}"></td>
+                                                <td th:text="${usuario.email}"></td>
+                                                <td>
+                                                    <span th:each="rol, iterStat : ${usuario.getRoles()}"
+                                                          class="badge badge-secondary"
+                                                          th:text="${rol.getNombre()}"
+                                                          style="margin-right: 4px;"></span>
+                                                </td>
+                                                <td th:text="${usuario.telefono ?: '-'}"></td>
+                                                <td>
+                                                    <a th:href="@{/usuarios/restablecer/{id}(id=${usuario.id})}"
+                                                       class="btn btn-sm btn-success btn-restaurar"
+                                                       th:attr="data-nombre=${usuario.nombreCompleto}"
+                                                       sec:authorize="hasAuthority('RESTAURAR_USUARIOS')">
+                                                        <i class="fas fa-trash-restore"></i> Restaurar
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <!-- Paginación -->
+                                    <nav th:if="${usuarios.totalPages > 1}">
+                                        <ul class="pagination pagination-sm justify-content-end">
+                                            <li class="page-item" th:classappend="${usuarios.first} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='usuarios', page=0)}">Primera</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!usuarios.hasPrevious()} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='usuarios', page=${usuarios.number - 1})}">Anterior</a>
+                                            </li>
+                                            <li class="page-item" th:each="i : ${#numbers.sequence(0, usuarios.totalPages - 1)}"
+                                                th:if="${i >= usuarios.number - 2 && i <= usuarios.number + 2}"
+                                                th:classappend="${i == usuarios.number} ? 'active'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='usuarios', page=${i})}" th:text="${i + 1}">1</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!usuarios.hasNext()} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='usuarios', page=${usuarios.number + 1})}">Siguiente</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${usuarios.last} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='usuarios', page=${usuarios.totalPages - 1})}">Última</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+
+                                <div th:if="${usuarios == null || usuarios.empty}" class="alert alert-info">
+                                    <i class="fas fa-info-circle mr-2"></i>No hay usuarios eliminados.
+                                </div>
+                            </div>
+
+                            <!-- TAB: PACIENTES -->
+                            <div th:if="${tipoActivo == 'pacientes'}" class="tab-pane fade show active">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-user-injured mr-2"></i>Pacientes Eliminados
+                                    <span class="badge badge-secondary ml-2" th:text="${totalPacientes}">0</span>
+                                </h5>
+
+                                <div th:if="${pacientes != null && !pacientes.empty}">
+                                    <table class="table table-bordered table-hover table-striped">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>Documento</th>
+                                                <th>Nombre Completo</th>
+                                                <th>Email</th>
+                                                <th>Teléfono</th>
+                                                <th style="width: 120px;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="paciente : ${pacientes.content}">
+                                                <td>
+                                                    <b th:text="${paciente.numeroDocumento}"></b><br>
+                                                    <small class="text-muted" th:text="${'(' + paciente.tipoDocumento.codigo + ')'}"></small>
+                                                </td>
+                                                <td th:text="${paciente.nombreCompleto}"></td>
+                                                <td th:text="${paciente.email}"></td>
+                                                <td th:text="${paciente.telefono}"></td>
+                                                <td>
+                                                    <a th:href="@{/pacientes/restablecer/{id}(id=${paciente.id})}"
+                                                       class="btn btn-sm btn-success btn-restaurar"
+                                                       th:attr="data-nombre=${paciente.nombreCompleto}"
+                                                       sec:authorize="hasAuthority('RESTAURAR_PACIENTES')">
+                                                        <i class="fas fa-trash-restore"></i> Restaurar
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <!-- Paginación -->
+                                    <nav th:if="${pacientes.totalPages > 1}">
+                                        <ul class="pagination pagination-sm justify-content-end">
+                                            <li class="page-item" th:classappend="${pacientes.first} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='pacientes', page=0)}">Primera</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!pacientes.hasPrevious()} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='pacientes', page=${pacientes.number - 1})}">Anterior</a>
+                                            </li>
+                                            <li class="page-item" th:each="i : ${#numbers.sequence(0, pacientes.totalPages - 1)}"
+                                                th:if="${i >= pacientes.number - 2 && i <= pacientes.number + 2}"
+                                                th:classappend="${i == pacientes.number} ? 'active'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='pacientes', page=${i})}" th:text="${i + 1}">1</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!pacientes.hasNext()} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='pacientes', page=${pacientes.number + 1})}">Siguiente</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${pacientes.last} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='pacientes', page=${pacientes.totalPages - 1})}">Última</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+
+                                <div th:if="${pacientes == null || pacientes.empty}" class="alert alert-info">
+                                    <i class="fas fa-info-circle mr-2"></i>No hay pacientes eliminados.
+                                </div>
+                            </div>
+
+                            <!-- TAB: ROLES -->
+                            <div th:if="${tipoActivo == 'roles'}" class="tab-pane fade show active">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-user-tag mr-2"></i>Roles Eliminados
+                                    <span class="badge badge-secondary ml-2" th:text="${totalRoles}">0</span>
+                                </h5>
+
+                                <div th:if="${roles != null && !roles.empty}">
+                                    <table class="table table-bordered table-hover table-striped">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Nombre</th>
+                                                <th>Estado</th>
+                                                <th style="width: 120px;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="rol : ${roles.content}">
+                                                <td th:text="${rol.id}"></td>
+                                                <td th:text="${rol.nombre}"></td>
+                                                <td>
+                                                    <span th:if="${rol.estaActivo}" class="badge badge-success">Activo</span>
+                                                    <span th:unless="${rol.estaActivo}" class="badge badge-secondary">Inactivo</span>
+                                                </td>
+                                                <td>
+                                                    <a th:href="@{/roles/restablecer/{id}(id=${rol.id})}"
+                                                       class="btn btn-sm btn-success btn-restaurar"
+                                                       th:attr="data-nombre=${rol.nombre}"
+                                                       sec:authorize="hasAuthority('RESTAURAR_ROLES')">
+                                                        <i class="fas fa-trash-restore"></i> Restaurar
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <!-- Paginación -->
+                                    <nav th:if="${roles.totalPages > 1}">
+                                        <ul class="pagination pagination-sm justify-content-end">
+                                            <li class="page-item" th:classappend="${roles.first} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='roles', page=0)}">Primera</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!roles.hasPrevious()} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='roles', page=${roles.number - 1})}">Anterior</a>
+                                            </li>
+                                            <li class="page-item" th:each="i : ${#numbers.sequence(0, roles.totalPages - 1)}"
+                                                th:if="${i >= roles.number - 2 && i <= roles.number + 2}"
+                                                th:classappend="${i == roles.number} ? 'active'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='roles', page=${i})}" th:text="${i + 1}">1</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!roles.hasNext()} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='roles', page=${roles.number + 1})}">Siguiente</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${roles.last} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='roles', page=${roles.totalPages - 1})}">Última</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+
+                                <div th:if="${roles == null || roles.empty}" class="alert alert-info">
+                                    <i class="fas fa-info-circle mr-2"></i>No hay roles eliminados.
+                                </div>
+                            </div>
+
+                            <!-- TAB: SERVICIOS -->
+                            <div th:if="${tipoActivo == 'servicios'}" class="tab-pane fade show active">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-procedures mr-2"></i>Servicios Eliminados
+                                    <span class="badge badge-secondary ml-2" th:text="${totalServicios}">0</span>
+                                </h5>
+
+                                <div th:if="${servicios != null && !servicios.empty}">
+                                    <table class="table table-bordered table-hover table-striped">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>Código</th>
+                                                <th>Nombre</th>
+                                                <th>Categoría</th>
+                                                <th>Precio</th>
+                                                <th style="width: 120px;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="servicio : ${servicios.content}">
+                                                <td th:text="${servicio.codigo}"></td>
+                                                <td th:text="${servicio.nombre}"></td>
+                                                <td th:text="${servicio.categoria.nombre}"></td>
+                                                <td th:text="'S/. ' + ${#numbers.formatDecimal(servicio.precioBase, 1, 'COMMA', 2, 'POINT')}"></td>
+                                                <td>
+                                                    <a th:href="@{/servicios/restablecer/{id}(id=${servicio.id})}"
+                                                       class="btn btn-sm btn-success btn-restaurar"
+                                                       th:attr="data-nombre=${servicio.nombre}"
+                                                       sec:authorize="hasAuthority('RESTAURAR_SERVICIOS')">
+                                                        <i class="fas fa-trash-restore"></i> Restaurar
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <!-- Paginación -->
+                                    <nav th:if="${servicios.totalPages > 1}">
+                                        <ul class="pagination pagination-sm justify-content-end">
+                                            <li class="page-item" th:classappend="${servicios.first} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='servicios', page=0)}">Primera</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!servicios.hasPrevious()} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='servicios', page=${servicios.number - 1})}">Anterior</a>
+                                            </li>
+                                            <li class="page-item" th:each="i : ${#numbers.sequence(0, servicios.totalPages - 1)}"
+                                                th:if="${i >= servicios.number - 2 && i <= servicios.number + 2}"
+                                                th:classappend="${i == servicios.number} ? 'active'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='servicios', page=${i})}" th:text="${i + 1}">1</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!servicios.hasNext()} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='servicios', page=${servicios.number + 1})}">Siguiente</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${servicios.last} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='servicios', page=${servicios.totalPages - 1})}">Última</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+
+                                <div th:if="${servicios == null || servicios.empty}" class="alert alert-info">
+                                    <i class="fas fa-info-circle mr-2"></i>No hay servicios eliminados.
+                                </div>
+                            </div>
+
+                            <!-- TAB: INSUMOS -->
+                            <div th:if="${tipoActivo == 'insumos'}" class="tab-pane fade show active">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-boxes mr-2"></i>Insumos Eliminados
+                                    <span class="badge badge-secondary ml-2" th:text="${totalInsumos}">0</span>
+                                </h5>
+
+                                <div th:if="${insumos != null && !insumos.empty}">
+                                    <table class="table table-bordered table-hover table-striped">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>Nombre</th>
+                                                <th>Marca</th>
+                                                <th>Categoría</th>
+                                                <th>Stock</th>
+                                                <th style="width: 120px;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="insumo : ${insumos.content}">
+                                                <td th:text="${insumo.nombre}"></td>
+                                                <td th:text="${insumo.marca}"></td>
+                                                <td th:text="${insumo.categoria.nombre}"></td>
+                                                <td th:text="${insumo.stockActual.toPlainString()} + ' ' + ${insumo.unidadMedida.abreviatura}"></td>
+                                                <td>
+                                                    <a th:href="@{/insumos/restablecer/{id}(id=${insumo.id})}"
+                                                       class="btn btn-sm btn-success btn-restaurar"
+                                                       th:attr="data-nombre=${insumo.nombre}"
+                                                       sec:authorize="hasAuthority('RESTAURAR_INVENTARIO')">
+                                                        <i class="fas fa-trash-restore"></i> Restaurar
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <!-- Paginación -->
+                                    <nav th:if="${insumos.totalPages > 1}">
+                                        <ul class="pagination pagination-sm justify-content-end">
+                                            <li class="page-item" th:classappend="${insumos.first} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='insumos', page=0)}">Primera</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!insumos.hasPrevious()} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='insumos', page=${insumos.number - 1})}">Anterior</a>
+                                            </li>
+                                            <li class="page-item" th:each="i : ${#numbers.sequence(0, insumos.totalPages - 1)}"
+                                                th:if="${i >= insumos.number - 2 && i <= insumos.number + 2}"
+                                                th:classappend="${i == insumos.number} ? 'active'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='insumos', page=${i})}" th:text="${i + 1}">1</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${!insumos.hasNext()} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='insumos', page=${insumos.number + 1})}">Siguiente</a>
+                                            </li>
+                                            <li class="page-item" th:classappend="${insumos.last} ? 'disabled'">
+                                                <a class="page-link" th:href="@{/administracion/eliminados(tipo='insumos', page=${insumos.totalPages - 1})}">Última</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+
+                                <div th:if="${insumos == null || insumos.empty}" class="alert alert-info">
+                                    <i class="fas fa-info-circle mr-2"></i>No hay insumos eliminados.
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Confirmación antes de restaurar
+        $(document).on('click', '.btn-restaurar', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            const nombre = $(this).data('nombre');
+
+            Swal.fire({
+                title: '¿Restaurar registro?',
+                html: `¿Está seguro de que desea restaurar<br><strong>${nombre}</strong>?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-trash-restore"></i> Sí, restaurar',
+                cancelButtonText: '<i class="fas fa-times"></i> Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

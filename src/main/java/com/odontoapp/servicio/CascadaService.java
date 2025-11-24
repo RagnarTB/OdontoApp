@@ -59,7 +59,8 @@ public class CascadaService {
         // delete
         if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
             try {
-                pacienteRepository.deleteById(usuario.getPaciente().getId()); // Activa @SQLDelete de Paciente
+                usuario.getPaciente().setEliminado(true);
+                pacienteRepository.save(usuario.getPaciente()); // Soft delete manual
                 System.out.println(">>> Paciente asociado " + usuario.getPaciente().getId()
                         + " eliminado (soft delete) por cascada.");
             } catch (Exception e) {
@@ -81,7 +82,8 @@ public class CascadaService {
         // 1. Soft delete del Paciente (si existe y no está eliminado)
         if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
             try {
-                pacienteRepository.deleteById(usuario.getPaciente().getId());
+                usuario.getPaciente().setEliminado(true);
+                pacienteRepository.save(usuario.getPaciente()); // Soft delete manual
                 System.out.println(">>> Paciente asociado " + usuario.getPaciente().getId()
                         + " eliminado (soft delete) por cascada.");
             } catch (Exception e) {
@@ -91,12 +93,13 @@ public class CascadaService {
             }
         }
 
-        // 2. Soft delete del Usuario (después del paciente)
+        // 2. Soft delete del Usuario (después del paciente) - Manual para preservar roles
         try {
-            // Validaciones de eliminarUsuario (como no ser admin) ya están en el
-            // service/repo
-            usuarioRepository.deleteById(usuarioId); // Activa @SQLDelete de Usuario
-            System.out.println(">>> Usuario " + usuario.getEmail() + " eliminado (soft delete) por cascada.");
+            usuario.setEliminado(true);
+            usuario.setFechaEliminacion(java.time.LocalDateTime.now());
+            usuario.setEstaActivo(false);
+            usuarioRepository.save(usuario); // Guardar cambios sin tocar usuarios_roles
+            System.out.println(">>> Usuario " + usuario.getEmail() + " eliminado (soft delete) por cascada. Roles preservados.");
         } catch (UnsupportedOperationException | DataIntegrityViolationException e) {
             System.err.println("Advertencia: No se pudo eliminar (soft delete) usuario en cascada: " + e.getMessage());
             // Decidir si relanzar la excepción

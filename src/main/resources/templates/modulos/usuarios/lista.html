@@ -118,18 +118,29 @@
                                     <i class="fas fa-shield-alt"></i> Super Admin
                                 </span>
 
+                                <!-- Badge para pacientes pendientes de completar registro -->
+                                <span th:if="${!usuario.esSuperAdmin && usuario.nombreCompleto == 'Paciente Pendiente'}"
+                                      class="badge badge-warning">
+                                    <i class="fas fa-clock"></i> Registro Pendiente
+                                </span>
+
                                 <!-- Mostrar acciones para TODOS los usuarios excepto super-admin -->
                                 <div th:if="${!usuario.esSuperAdmin}">
-                                    <label class="switch" title="Cambiar Estado">
+                                    <!-- Ocultar toggle de activar/desactivar para pacientes pendientes -->
+                                    <label th:if="${usuario.nombreCompleto != 'Paciente Pendiente'}"
+                                           class="switch" title="Cambiar Estado"
+                                           data-permiso="EDITAR_USUARIOS"
+                                           data-accion-descripcion="cambiar el estado de usuarios">
                                         <input type="checkbox" th:checked="${usuario.estaActivo}"
                                                th:attr="onchange=|location.href='@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}'|">
                                         <span class="slider"></span>
                                     </label>
-                                    <!-- Botón de editar solo para usuarios que NO son solo pacientes -->
-                                    <a th:if="${!usuario.getRoles().![nombre].contains('PACIENTE') || usuario.getRoles().size() > 1}"
+                                    <!-- Botón de editar solo para usuarios que NO son solo pacientes y NO son pacientes pendientes -->
+                                    <a th:if="${usuario.nombreCompleto != 'Paciente Pendiente' && (!usuario.getRoles().![nombre].contains('PACIENTE') || usuario.getRoles().size() > 1)}"
                                        th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
                                        class="btn btn-sm btn-outline-secondary" title="Editar"
-                                       sec:authorize="hasAuthority('EDITAR_USUARIOS')">
+                                       data-permiso="EDITAR_USUARIOS"
+                                       data-accion-descripcion="editar usuarios">
                                         <i class="fas fa-pencil-alt"></i>
                                     </a>
                                     <!-- Botón de excepciones solo para Odontólogos -->
@@ -137,13 +148,17 @@
                                             type="button" class="btn btn-sm btn-outline-info btn-gestionar-excepciones"
                                             title="Gestionar Excepciones de Horario"
                                             th:attr="data-usuario-id=${usuario.id},data-usuario-nombre=${usuario.nombreCompleto}"
-                                            sec:authorize="hasAuthority('EDITAR_USUARIOS')">
+                                            data-permiso="EDITAR_USUARIOS"
+                                            data-accion-descripcion="gestionar excepciones de horario">
                                         <i class="fas fa-calendar-times"></i>
                                     </button>
-                                    <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
+                                    <!-- Ocultar botón de eliminar para pacientes pendientes -->
+                                    <a th:if="${usuario.nombreCompleto != 'Paciente Pendiente'}"
+                                       th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
                                        class="btn btn-sm btn-outline-danger btn-eliminar-usuario" title="Eliminar"
                                        th:data-nombre="${usuario.nombreCompleto}"
-                                       sec:authorize="hasAuthority('ELIMINAR_USUARIOS')">
+                                       data-permiso="ELIMINAR_USUARIOS"
+                                       data-accion-descripcion="eliminar usuarios">
                                         <i class="fas fa-trash-alt"></i>
                                     </a>
                                 </div>

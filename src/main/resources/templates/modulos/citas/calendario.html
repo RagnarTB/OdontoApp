@@ -38,7 +38,7 @@
                 </div>
                 <div class="col-sm-6">
                     <button type="button" class="btn btn-primary float-sm-right" data-toggle="modal" data-target="#modalAgendarCita"
-                            sec:authorize="hasAnyAuthority('CREAR_CITAS', 'ADMIN')">
+                            sec:authorize="hasAuthority('CREAR_CITAS')">
                         <i class="fas fa-plus"></i> Nueva Cita
                     </button>
                 </div>
@@ -720,10 +720,12 @@
                 const estadosNoModificables = ['ASISTIO', 'NO_ASISTIO', 'CANCELADA_PACIENTE', 'CANCELADA_CLINICA', 'REPROGRAMADA'];
                 if (!estadosNoModificables.includes(cita.estadoNombre)) {
                     botonesAccion += `
-                        <button class="btn btn-sm btn-warning btn-reprogramar-cita" data-cita='${citaData}' title="Reprogramar">
+                        <button class="btn btn-sm btn-warning btn-reprogramar-cita" data-cita='${citaData}'
+                                data-permiso="EDITAR_CITAS" data-accion-descripcion="reprogramar citas" title="Reprogramar">
                             <i class="fas fa-calendar"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger btn-cancelar-cita" data-cita='${citaData}' title="Cancelar">
+                        <button class="btn btn-sm btn-danger btn-cancelar-cita" data-cita='${citaData}'
+                                data-permiso="EDITAR_CITAS" data-accion-descripcion="cancelar citas" title="Cancelar">
                             <i class="fas fa-ban"></i>
                         </button>
                     `;

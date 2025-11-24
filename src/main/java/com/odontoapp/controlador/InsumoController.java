@@ -5,10 +5,12 @@ import com.odontoapp.entidad.Insumo;
 import com.odontoapp.repositorio.CategoriaInsumoRepository;
 import com.odontoapp.repositorio.UnidadMedidaRepository;
 import com.odontoapp.servicio.InsumoService;
+import com.odontoapp.util.Permisos;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -31,6 +33,7 @@ public class InsumoController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_INVENTARIO)")
     public String listarInsumos(Model model,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
@@ -48,6 +51,7 @@ public class InsumoController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("categoriaId", categoriaId);
         model.addAttribute("filtroVencimiento", filtroVencimiento);
+        model.addAttribute("mostrarEliminados", false);
 
         // Carga las categorías para el filtro (esto también lo tenías)
         model.addAttribute("todasLasCategorias", categoriaInsumoRepository.findAll());
@@ -56,6 +60,7 @@ public class InsumoController {
     }
 
     @GetMapping("/nuevo")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_INVENTARIO)")
     public String mostrarFormularioNuevo(Model model) {
         model.addAttribute("insumoDTO", new InsumoDTO());
         cargarCatalogos(model);
@@ -63,6 +68,7 @@ public class InsumoController {
     }
 
     @PostMapping("/guardar")
+    @PreAuthorize("hasAnyAuthority(T(com.odontoapp.util.Permisos).CREAR_INVENTARIO, T(com.odontoapp.util.Permisos).EDITAR_INVENTARIO)")
     public String guardarInsumo(@Valid @ModelAttribute("insumoDTO") InsumoDTO dto,
             BindingResult result, Model model, RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
@@ -81,6 +87,7 @@ public class InsumoController {
     }
 
     @GetMapping("/editar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_INVENTARIO)")
     public String mostrarFormularioEditar(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         return insumoService.buscarPorId(id).map(insumo -> {
             InsumoDTO dto = new InsumoDTO();
@@ -107,12 +114,25 @@ public class InsumoController {
     }
 
     @GetMapping("/eliminar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).ELIMINAR_INVENTARIO)")
     public String eliminarInsumo(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             insumoService.eliminar(id);
             redirectAttributes.addFlashAttribute("success", "Artículo eliminado con éxito.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error al eliminar el artículo: " + e.getMessage());
+        }
+        return "redirect:/insumos";
+    }
+
+    @GetMapping("/restablecer/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_INVENTARIO)")
+    public String restablecerInsumo(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            insumoService.restablecer(id);
+            redirectAttributes.addFlashAttribute("success", "Artículo restablecido con éxito.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al restablecer el artículo: " + e.getMessage());
         }
         return "redirect:/insumos";
     }

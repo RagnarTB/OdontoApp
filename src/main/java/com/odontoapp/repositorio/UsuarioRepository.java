@@ -35,7 +35,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByEmailIgnorandoSoftDelete(@Param("email") String email);
 
     // --- NUEVO MÉTODO ---
-    @Query("SELECT u FROM Usuario u WHERE u.id = :id") // Ignora @Where
+    @Query(value = "SELECT * FROM usuarios WHERE id = :id", nativeQuery = true)
     Optional<Usuario> findByIdIgnorandoSoftDelete(@Param("id") Long id);
 
     @Query("SELECT u FROM Usuario u WHERE u.numeroDocumento = :numDoc AND u.tipoDocumento.id = :tipoDocId")
@@ -57,6 +57,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @Query("SELECT u FROM Usuario u JOIN u.roles r WHERE r.nombre = :rolNombre")
     java.util.List<Usuario> findByRolesNombre(@Param("rolNombre") String rolNombre);
 
+    // Buscar usuarios ACTIVOS por nombre de rol (solo usuarios activos y no eliminados)
+    @Query("SELECT u FROM Usuario u JOIN u.roles r WHERE r.nombre = :rolNombre AND u.estaActivo = true AND r.estaActivo = true")
+    java.util.List<Usuario> findActiveByRolesNombre(@Param("rolNombre") String rolNombre);
+
     /**
      * Busca usuarios activos cuya fecha de vigencia ha vencido.
      * Usado por el scheduler para desactivar usuarios automáticamente.
@@ -65,4 +69,19 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      * @return Lista de usuarios con vigencia vencida
      */
     java.util.List<Usuario> findByFechaVigenciaBeforeAndEstaActivoTrue(java.time.LocalDate fecha);
+
+    // --- MÉTODO PARA LISTAR USUARIOS ELIMINADOS ---
+    @Query(value = "SELECT * FROM usuarios WHERE eliminado = true ORDER BY fecha_modificacion DESC",
+           countQuery = "SELECT COUNT(*) FROM usuarios WHERE eliminado = true",
+           nativeQuery = true)
+    Page<Usuario> findEliminados(Pageable pageable);
+
+    /**
+     * Cuenta cuántos usuarios activos tienen un rol específico.
+     * Útil para validar si un rol puede ser eliminado.
+     * @param rolId El ID del rol
+     * @return El número de usuarios activos con ese rol
+     */
+    @Query("SELECT COUNT(DISTINCT u) FROM Usuario u JOIN u.roles r WHERE r.id = :rolId AND u.estaActivo = true")
+    long countUsuariosActivosByRolId(@Param("rolId") Long rolId);
 }

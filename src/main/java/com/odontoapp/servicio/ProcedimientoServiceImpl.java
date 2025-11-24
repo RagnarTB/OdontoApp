@@ -115,9 +115,8 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
 
     @Override
     public void eliminar(Long id) {
-        if (!procedimientoRepository.existsById(id)) {
-            throw new IllegalStateException("El procedimiento no existe.");
-        }
+        Procedimiento procedimiento = procedimientoRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("El procedimiento no existe."));
 
         // Validar que no tenga citas asociadas
         long conteoCitas = citaRepository.countByProcedimientoId(id);
@@ -127,6 +126,25 @@ public class ProcedimientoServiceImpl implements ProcedimientoService {
                     " cita(s) asociada(s).");
         }
 
-        procedimientoRepository.deleteById(id);
+        // Soft delete manual
+        procedimiento.setEliminado(true);
+        procedimientoRepository.save(procedimiento);
+    }
+
+    @Override
+    @Transactional
+    public void restablecer(Long id) {
+        Procedimiento procedimiento = procedimientoRepository.findByIdIgnorandoSoftDelete(id)
+                .orElseThrow(() -> new IllegalStateException("Procedimiento no encontrado con ID: " + id));
+
+        if (!procedimiento.isEliminado()) {
+            throw new IllegalStateException("El procedimiento '" + procedimiento.getNombre() + "' no está eliminado.");
+        }
+
+        // Restablecer el procedimiento
+        procedimiento.setEliminado(false);
+        procedimientoRepository.save(procedimiento);
+
+        System.out.println("✅ Procedimiento '" + procedimiento.getNombre() + "' restablecido exitosamente.");
     }
 }

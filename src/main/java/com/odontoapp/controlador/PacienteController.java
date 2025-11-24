@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.odontoapp.dto.PacienteDTO;
-import com.odontoapp.dto.ReniecResponseDTO;
 import com.odontoapp.entidad.Cita;
 import com.odontoapp.entidad.Comprobante;
 import com.odontoapp.entidad.OdontogramaDiente;
@@ -38,17 +37,19 @@ import com.odontoapp.repositorio.TipoDocumentoRepository;
 import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
 import com.odontoapp.repositorio.TratamientoRealizadoRepository;
 import com.odontoapp.servicio.PacienteService;
-import com.odontoapp.servicio.ReniecService;
+import com.odontoapp.util.Permisos;
 
 import java.time.format.DateTimeFormatter;
 
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
+@RequestMapping("/pacientes")
 public class PacienteController {
 
     private final PacienteService pacienteService;
-    private final ReniecService reniecService;
     private final PacienteRepository pacienteRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final CitaRepository citaRepository;
@@ -57,14 +58,13 @@ public class PacienteController {
     private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
     private final ComprobanteRepository comprobanteRepository;
 
-    public PacienteController(PacienteService pacienteService, ReniecService reniecService,
+    public PacienteController(PacienteService pacienteService,
             PacienteRepository pacienteRepository, TipoDocumentoRepository tipoDocumentoRepository,
             CitaRepository citaRepository, OdontogramaDienteRepository odontogramaDienteRepository,
             TratamientoRealizadoRepository tratamientoRealizadoRepository,
             TratamientoPlanificadoRepository tratamientoPlanificadoRepository,
             ComprobanteRepository comprobanteRepository) {
         this.pacienteService = pacienteService;
-        this.reniecService = reniecService;
         this.pacienteRepository = pacienteRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.citaRepository = citaRepository;
@@ -74,7 +74,8 @@ public class PacienteController {
         this.comprobanteRepository = comprobanteRepository;
     }
 
-    @GetMapping("/pacientes")
+    @GetMapping
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_PACIENTES)")
     public String listarPacientes(Model model,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
@@ -83,17 +84,20 @@ public class PacienteController {
         Page<Paciente> paginaPacientes = pacienteService.listarTodosLosPacientes(keyword, pageable);
         model.addAttribute("paginaPacientes", paginaPacientes);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("mostrarEliminados", false);
         return "modulos/pacientes/lista";
     }
 
-    @GetMapping("/pacientes/nuevo")
+    @GetMapping("/nuevo")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_PACIENTES)")
     public String mostrarFormularioNuevo(Model model) {
         model.addAttribute("pacienteDTO", new PacienteDTO());
         model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll()); // NUEVO
         return "modulos/pacientes/formulario";
     }
 
-    @PostMapping("/pacientes/guardar")
+    @PostMapping("/guardar")
+    @PreAuthorize("hasAnyAuthority(T(com.odontoapp.util.Permisos).CREAR_PACIENTES, T(com.odontoapp.util.Permisos).EDITAR_PACIENTES)")
     public String guardarPaciente(@Valid @ModelAttribute("pacienteDTO") PacienteDTO pacienteDTO,
             BindingResult result,
             Model model,
@@ -149,7 +153,8 @@ public class PacienteController {
         }
     }
 
-    @GetMapping("/pacientes/editar/{id}")
+    @GetMapping("/editar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_PACIENTES)")
     public String mostrarFormularioEditar(@PathVariable Long id, Model model) {
         return pacienteService.buscarPorId(id).map(paciente -> {
             PacienteDTO dto = new PacienteDTO();
@@ -170,7 +175,8 @@ public class PacienteController {
         }).orElse("redirect:/pacientes");
     }
 
-    @GetMapping("/pacientes/eliminar/{id}")
+    @GetMapping("/eliminar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).ELIMINAR_PACIENTES)")
     public String eliminarPaciente(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             pacienteService.eliminarPaciente(id);
@@ -181,52 +187,8 @@ public class PacienteController {
         return "redirect:/pacientes";
     }
 
-    // 🔥 MODIFICADO: Ahora recibe número y tipo de documento ID
-    @GetMapping("/api/reniec")
-    @ResponseBody
-    public ResponseEntity<?> consultarReniec(@RequestParam("numDoc") String numDoc,
-            @RequestParam("tipoDocId") Long tipoDocId) {
-
-        // 1. Validar que el tipo de documento sea DNI (código 1 o el que definas)
-        TipoDocumento tipoDocumento = tipoDocumentoRepository.findById(tipoDocId).orElse(null);
-        if (tipoDocumento == null || !"DNI".equals(tipoDocumento.getCodigo())) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "La consulta Reniec solo está disponible para DNI."));
-        }
-
-        // 2. Buscar si ya existe (ignorando soft delete)
-        Optional<Paciente> pacienteExistente = pacienteRepository.findByNumeroTipoDocumentoIgnorandoSoftDelete(numDoc,
-                tipoDocId);
-
-        if (pacienteExistente.isPresent()) {
-            Paciente paciente = pacienteExistente.get();
-            // 🔥 REGLA CLAVE: Si está eliminado, alertar al frontend para ofrecer
-            // restauración
-            if (paciente.isEliminado()) {
-                return ResponseEntity.status(409).body(
-                        Map.of("error", "El paciente existe, pero está eliminado lógicamente.",
-                                "restaurar", true,
-                                "pacienteId", paciente.getId())); // Devolver ID para restablecer
-            } else {
-                // Si existe y NO está eliminado, es un duplicado activo
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "El documento ya se encuentra registrado y está activo."));
-            }
-        }
-
-        // 3. Consultar Reniec (si no hay duplicado)
-        ReniecResponseDTO response = reniecService.consultarDni(numDoc);
-        if (response != null && response.getNombreCompleto() != null) {
-            String nombreCalculado = response.getNombreCompleto();
-            Map<String, String> resultadoJson = Map.of("nombreCompleto", nombreCalculado);
-            return ResponseEntity.ok(resultadoJson);
-        }
-
-        return ResponseEntity.status(404).body(
-                Map.of("error", "DNI no encontrado o datos incompletos. Verifique el número."));
-    }
-
-    @GetMapping("/pacientes/restablecer/{id}")
+    @GetMapping("/restablecer/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_PACIENTES)")
     public String restablecerPaciente(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             pacienteService.restablecerPaciente(id);
@@ -242,7 +204,8 @@ public class PacienteController {
      * Incluye: datos básicos, tratamientos, citas, odontograma, comprobantes
      * Con paginación para citas y comprobantes
      */
-    @GetMapping("/pacientes/historial/{id}")
+    @GetMapping("/historial/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_PACIENTES)")
     public String verHistorial(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int citasPageNum,
@@ -305,7 +268,8 @@ public class PacienteController {
      * API REST para obtener el detalle completo de un paciente
      * Usado por el modal "Ver Detalle" en la lista de pacientes
      */
-    @GetMapping("/pacientes/api/detalle/{id}")
+    @GetMapping("/api/detalle/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_PACIENTES)")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> obtenerDetallePaciente(@PathVariable Long id) {
         Optional<Paciente> pacienteOpt = pacienteService.buscarPorId(id);

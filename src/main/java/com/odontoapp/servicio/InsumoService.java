@@ -13,4 +13,5 @@ public interface InsumoService {
     Insumo guardar(InsumoDTO insumoDTO);
     void eliminar(Long id);
     List<Insumo> listarConStockBajo(); // <-- Nuevo método para las alertas
+    void restablecer(Long id);
 }

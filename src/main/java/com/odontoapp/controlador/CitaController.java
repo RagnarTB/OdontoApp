@@ -15,12 +15,14 @@ import com.odontoapp.repositorio.TratamientoPlanificadoRepository;
 import com.odontoapp.entidad.TratamientoPlanificado;
 import com.odontoapp.servicio.CitaService;
 import com.odontoapp.servicio.FacturacionService;
+import com.odontoapp.util.Permisos;
 import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -81,16 +83,16 @@ public class CitaController {
      * @return Vista del calendario
      */
     @GetMapping
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_CITAS)")
     public String verCalendario(Model model) {
         try {
-            // Buscar usuarios con rol ODONTOLOGO
-            var rolOdontologo = rolRepository.findByNombre("ODONTOLOGO");
-            var listaOdontologos = rolOdontologo.isPresent()
-                    ? usuarioRepository.findByRolesNombre("ODONTOLOGO")
-                    : List.of();
+            // Buscar usuarios ACTIVOS con rol ODONTOLOGO
+            var listaOdontologos = usuarioRepository.findActiveByRolesNombre("ODONTOLOGO");
 
-            // Buscar todos los pacientes
-            var listaPacientes = pacienteRepository.findAll();
+            // Buscar solo pacientes activos (usuarios con rol PACIENTE que estén activos)
+            var listaPacientes = pacienteRepository.findAll().stream()
+                    .filter(p -> p.getUsuario() != null && p.getUsuario().isEstaActivo())
+                    .collect(java.util.stream.Collectors.toList());
 
             // Buscar todos los procedimientos con sus relaciones cargadas
             var listaProcedimientos = procedimientoRepository.findAllWithRelations();
@@ -140,6 +142,7 @@ public class CitaController {
      * @return Vista de lista de citas
      */
     @GetMapping("/lista")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_CITAS)")
     public String verListaCitas(Model model,
                                @RequestParam(defaultValue = "0") int page,
                                @RequestParam(defaultValue = "20") int size,
@@ -157,10 +160,7 @@ public class CitaController {
 
         // Cargar listas para los filtros
         var listaEstados = estadoCitaRepository.findAll();
-        var rolOdontologo = rolRepository.findByNombre("ODONTOLOGO");
-        var listaOdontologos = rolOdontologo.isPresent()
-                ? usuarioRepository.findByRolesNombre("ODONTOLOGO")
-                : List.of();
+        var listaOdontologos = usuarioRepository.findActiveByRolesNombre("ODONTOLOGO");
 
         // Añadir al modelo
         model.addAttribute("paginaCitas", paginaCitas);
@@ -184,6 +184,7 @@ public class CitaController {
      * @return Lista de eventos en formato FullCalendar
      */
     @GetMapping("/api/eventos")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_CITAS)")
     @ResponseBody
     public List<FullCalendarEventDTO> getEventos(
             @RequestParam String start,
@@ -211,6 +212,7 @@ public class CitaController {
      * @return Mapa con horarios disponibles y ocupados
      */
     @GetMapping("/api/disponibilidad")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_CITAS)")
     @ResponseBody
     public Map<String, Object> getDisponibilidad(
             @RequestParam Long odontologoId,
@@ -227,6 +229,7 @@ public class CitaController {
      * @return Redirección al calendario
      */
     @PostMapping("/agendar")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_CITAS)")
     public String agendarCita(@ModelAttribute CitaDTO dto, RedirectAttributes attributes) {
         try {
             citaService.agendarCita(
@@ -258,6 +261,7 @@ public class CitaController {
      * @return Redirección al calendario
      */
     @PostMapping("/reprogramar")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_CITAS)")
     public String reprogramarCita(
             @RequestParam Long citaId,
             @RequestParam(required = false) Long odontologoUsuarioId,
@@ -297,6 +301,7 @@ public class CitaController {
      * @return Redirección al calendario
      */
     @PostMapping("/cancelar")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_CITAS)")
     public String cancelarCita(
             @RequestParam Long citaId,
             @RequestParam String motivo,
@@ -322,6 +327,7 @@ public class CitaController {
      * @return Redirección al calendario
      */
     @PostMapping("/confirmar")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_CITAS)")
     public String confirmarCita(@RequestParam Long citaId, RedirectAttributes attributes) {
         try {
             citaService.confirmarCita(citaId);
@@ -345,6 +351,7 @@ public class CitaController {
      * @return Redirección al calendario
      */
     @PostMapping("/marcar-asistencia")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_CITAS)")
     public String marcarAsistencia(
             @RequestParam Long citaId,
             @RequestParam boolean asistio,
@@ -416,6 +423,7 @@ public class CitaController {
      * @return JSON con horarios disponibles
      */
     @GetMapping("/api/horarios-disponibles")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_CITAS)")
     @ResponseBody
     public Map<String, Object> obtenerHorariosDisponibles(
             @RequestParam Long odontologoId,
@@ -498,6 +506,7 @@ public class CitaController {
      * @return JSON con citas paginadas
      */
     @GetMapping("/api/lista")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_CITAS)")
     @ResponseBody
     public Map<String, Object> obtenerListaCitas(
             @RequestParam(defaultValue = "0") int page,
@@ -563,6 +572,7 @@ public class CitaController {
      * @return ResponseEntity con los datos del tratamiento planificado o vacío
      */
     @GetMapping("/api/tratamiento-planificado/{citaId}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_CITAS)")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> obtenerTratamientoPlanificado(@PathVariable Long citaId) {
         try {
@@ -599,6 +609,7 @@ public class CitaController {
      * @return ResponseEntity con estado de si puede registrar y datos de cita generada si existe
      */
     @GetMapping("/api/cita/{citaId}/puede-registrar-tratamiento")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_CITAS)")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> puedeRegistrarTratamiento(@PathVariable Long citaId) {
         Map<String, Object> response = new HashMap<>();

@@ -7,7 +7,9 @@ import com.odontoapp.entidad.UnidadMedida;
 import com.odontoapp.repositorio.CategoriaInsumoRepository;
 import com.odontoapp.repositorio.InsumoRepository;
 import com.odontoapp.repositorio.MovimientoInventarioRepository;
+import com.odontoapp.repositorio.ProcedimientoInsumoRepository;
 import com.odontoapp.repositorio.UnidadMedidaRepository;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,13 +24,16 @@ public class InsumoServiceImpl implements InsumoService {
     private final CategoriaInsumoRepository categoriaInsumoRepository;
     private final UnidadMedidaRepository unidadMedidaRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final ProcedimientoInsumoRepository procedimientoInsumoRepository;
 
     public InsumoServiceImpl(InsumoRepository insumoRepository, CategoriaInsumoRepository categoriaInsumoRepository,
-            UnidadMedidaRepository unidadMedidaRepository, MovimientoInventarioRepository movimientoInventarioRepository) {
+            UnidadMedidaRepository unidadMedidaRepository, MovimientoInventarioRepository movimientoInventarioRepository,
+            ProcedimientoInsumoRepository procedimientoInsumoRepository) {
         this.insumoRepository = insumoRepository;
         this.categoriaInsumoRepository = categoriaInsumoRepository;
         this.unidadMedidaRepository = unidadMedidaRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
+        this.procedimientoInsumoRepository = procedimientoInsumoRepository;
     }
 
     @Override
@@ -66,18 +71,21 @@ public class InsumoServiceImpl implements InsumoService {
                 return insumoRepository.findByFechaVencimientoBeforeWithFilters(hoy, keyword, categoriaId, pageable);
             case "POR_VENCER_1MES":
                 fechaLimite = hoy.plusMonths(1);
-                return insumoRepository.findByFechaVencimientoBetweenWithFilters(hoy, fechaLimite, keyword, categoriaId, pageable);
+                return insumoRepository.findByFechaVencimientoBetweenWithFilters(hoy, fechaLimite, keyword, categoriaId,
+                        pageable);
             case "POR_VENCER_3MESES":
                 fechaLimite = hoy.plusMonths(3);
-                return insumoRepository.findByFechaVencimientoBetweenWithFilters(hoy, fechaLimite, keyword, categoriaId, pageable);
+                return insumoRepository.findByFechaVencimientoBetweenWithFilters(hoy, fechaLimite, keyword, categoriaId,
+                        pageable);
             case "POR_VENCER_6MESES":
                 fechaLimite = hoy.plusMonths(6);
-                return insumoRepository.findByFechaVencimientoBetweenWithFilters(hoy, fechaLimite, keyword, categoriaId, pageable);
+                return insumoRepository.findByFechaVencimientoBetweenWithFilters(hoy, fechaLimite, keyword, categoriaId,
+                        pageable);
             default:
                 return listarTodos(keyword, categoriaId, null, pageable);
         }
     }
-    
+
     @Override
     public List<Insumo> listarConStockBajo() {
         return insumoRepository.findInsumosConStockBajo(); // <-- Llamada al nuevo método del repositorio
@@ -132,18 +140,44 @@ public class InsumoServiceImpl implements InsumoService {
 
     @Override
     public void eliminar(Long id) {
-        if (!insumoRepository.existsById(id)) {
-            throw new IllegalStateException("El insumo no existe.");
-        }
+        Insumo insumo = insumoRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("El insumo no existe."));
 
         // Validar que no tenga movimientos de inventario asociados
         long conteoMovimientos = movimientoInventarioRepository.countByInsumoId(id);
         if (conteoMovimientos > 0) {
             throw new DataIntegrityViolationException(
                     "No se puede eliminar el insumo porque tiene " + conteoMovimientos +
-                    " movimiento(s) de inventario asociado(s). Considere desactivarlo en lugar de eliminarlo.");
+                            " movimiento(s) de inventario asociado(s). Considere desactivarlo en lugar de eliminarlo.");
         }
 
-        insumoRepository.deleteById(id);
+        // Validar que no esté ligado a procedimientos
+        long conteoProcedimientos = procedimientoInsumoRepository.countByInsumoId(id);
+        if (conteoProcedimientos > 0) {
+            throw new DataIntegrityViolationException(
+                    "No se puede eliminar el insumo porque está ligado a " + conteoProcedimientos +
+                    " procedimiento(s). Debe desvincularlo de los servicios primero.");
+        }
+
+        // Soft delete manual
+        insumo.setEliminado(true);
+        insumoRepository.save(insumo);
+    }
+
+    @Override
+    @Transactional
+    public void restablecer(Long id) {
+        Insumo insumo = insumoRepository.findByIdIgnorandoSoftDelete(id)
+                .orElseThrow(() -> new IllegalStateException("Insumo no encontrado con ID: " + id));
+
+        if (!insumo.isEliminado()) {
+            throw new IllegalStateException("El insumo '" + insumo.getNombre() + "' no está eliminado.");
+        }
+
+        // Restablecer el insumo
+        insumo.setEliminado(false);
+        insumoRepository.save(insumo);
+
+        System.out.println("✅ Insumo '" + insumo.getNombre() + "' restablecido exitosamente.");
     }
 }

@@ -497,7 +497,7 @@ public class DataInitializer implements CommandLineRunner {
             "ODONTOGRAMA"
         );
 
-        List<String> acciones = Arrays.asList("VER_LISTA", "VER_DETALLE", "CREAR", "EDITAR", "ELIMINAR");
+        List<String> acciones = Arrays.asList("VER_LISTA", "VER_DETALLE", "CREAR", "EDITAR", "ELIMINAR", "RESTAURAR");
 
         for (String modulo : modulos) {
             for (String accion : acciones) {
@@ -510,6 +510,15 @@ public class DataInitializer implements CommandLineRunner {
                 });
             }
         }
+
+        // === PERMISOS ESPECIALES DE ADMINISTRACIÓN ===
+        permisoRepository.findByModuloAndAccion("ADMINISTRACION", "VER_REGISTROS_ELIMINADOS").orElseGet(() -> {
+            Permiso permiso = new Permiso();
+            permiso.setModulo("ADMINISTRACION");
+            permiso.setAccion("VER_REGISTROS_ELIMINADOS");
+            System.out.println("  -> Creando permiso: VER_REGISTROS_ELIMINADOS");
+            return permisoRepository.save(permiso);
+        });
 
         // ... (Creación de Roles y Usuario Admin - sin cambios) ...
         // PACIENTE: Solo puede ver su perfil y sus citas

@@ -38,6 +38,7 @@ import com.odontoapp.repositorio.TipoDocumentoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.servicio.ReniecService;
 import com.odontoapp.servicio.UsuarioService;
+import com.odontoapp.util.Permisos;
 import com.odontoapp.dto.ReniecResponseDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -47,7 +48,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 @Controller
 @RequestMapping("/usuarios")
-@PreAuthorize("hasRole('ADMIN')") // ✅ Solo ADMIN puede gestionar usuarios
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
@@ -72,6 +72,7 @@ public class UsuarioController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_USUARIOS)")
     public String listarUsuarios(Model model,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
@@ -80,10 +81,12 @@ public class UsuarioController {
         Page<Usuario> paginaUsuarios = usuarioService.listarTodosLosUsuarios(keyword, pageable);
         model.addAttribute("paginaUsuarios", paginaUsuarios);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("mostrarEliminados", false);
         return "modulos/usuarios/lista";
     }
 
     @GetMapping("/nuevo")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_USUARIOS)")
     public String mostrarFormularioNuevoUsuario(Model model) {
         UsuarioDTO usuario = new UsuarioDTO();
         usuario.setHorarioRegular(new EnumMap<>(DayOfWeek.class));
@@ -101,6 +104,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/guardar")
+    @PreAuthorize("hasAnyAuthority(T(com.odontoapp.util.Permisos).CREAR_USUARIOS, T(com.odontoapp.util.Permisos).EDITAR_USUARIOS)")
     public String guardarUsuario(@Valid @ModelAttribute("usuario") UsuarioDTO usuarioDTO,
             BindingResult result,
             Model model,
@@ -180,6 +184,7 @@ public class UsuarioController {
     }
 
     @GetMapping("/editar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_USUARIOS)")
     public String mostrarFormularioEditarUsuario(@PathVariable Long id, Model model,
             RedirectAttributes redirectAttributes) {
         Optional<Usuario> usuarioOpt = usuarioService.buscarPorId(id);
@@ -244,9 +249,8 @@ public class UsuarioController {
         return "redirect:/usuarios";
     }
 
-    // --- Otros métodos (eliminar, cambiarEstado, desbloquear, restablecer) sin
-    // cambios relevantes ---
     @GetMapping("/eliminar/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).ELIMINAR_USUARIOS)")
     public String eliminarUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String emailUsuarioActual = authentication.getName();
@@ -275,6 +279,7 @@ public class UsuarioController {
     }
 
     @GetMapping("/cambiar-estado/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_USUARIOS)")
     public String cambiarEstadoUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -300,6 +305,7 @@ public class UsuarioController {
     }
 
     @GetMapping("/desbloquear/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_USUARIOS)")
     public String desbloquearUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         Optional<Usuario> usuarioOpt = usuarioService.buscarPorId(id);
         if (usuarioOpt.isPresent()) {
@@ -312,6 +318,7 @@ public class UsuarioController {
     }
 
     @GetMapping("/restablecer/{id}")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_USUARIOS)")
     public String restablecerUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             usuarioService.restablecerUsuario(id);

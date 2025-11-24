@@ -18,6 +18,7 @@ import com.odontoapp.entidad.HorarioExcepcion; // NUEVO import
 import com.odontoapp.entidad.Rol; // NUEVO import
 import com.odontoapp.entidad.TipoDocumento;
 import com.odontoapp.entidad.Usuario; // NUEVO import
+import com.odontoapp.repositorio.CitaRepository;
 import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.TipoDocumentoRepository;
@@ -36,17 +37,20 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final EmailService emailService;
     private final PacienteRepository pacienteRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
+    private final CitaRepository citaRepository;
 
     // Inyecta las dependencias necesarias
     public UsuarioServiceImpl(EmailService emailService, PacienteRepository pacienteRepository,
             PasswordEncoder passwordEncoder, RolRepository rolRepository,
-            TipoDocumentoRepository tipoDocumentoRepository, UsuarioRepository usuarioRepository) {
+            TipoDocumentoRepository tipoDocumentoRepository, UsuarioRepository usuarioRepository,
+            CitaRepository citaRepository) {
         this.emailService = emailService;
         this.pacienteRepository = pacienteRepository;
         this.passwordEncoder = passwordEncoder;
         this.rolRepository = rolRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.citaRepository = citaRepository;
     }
 
     @Override
@@ -337,15 +341,39 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new UnsupportedOperationException("No se puede eliminar al super-administrador del sistema.");
         }
 
+        // Validar que el usuario odontólogo no tenga citas activas
+        boolean esOdontologo = usuario.getRoles().stream()
+                .anyMatch(rol -> "ODONTOLOGO".equals(rol.getNombre()));
+
+        if (esOdontologo) {
+            long citasActivas = citaRepository.countCitasActivasByOdontologo(id);
+            if (citasActivas > 0) {
+                throw new IllegalStateException(
+                    "No se puede eliminar el odontólogo porque tiene " + citasActivas +
+                    " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+            }
+        }
+
+        // Validar que el paciente asociado no tenga citas activas
+        if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
+            long citasActivas = citaRepository.countCitasActivas(usuario.getPaciente().getId());
+            if (citasActivas > 0) {
+                throw new IllegalStateException(
+                    "No se puede eliminar el usuario porque su perfil de paciente tiene " + citasActivas +
+                    " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+            }
+        }
+
         // Soft delete del Paciente asociado (si existe y no está eliminado)
         if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
-            Long pacienteId = usuario.getPaciente().getId();
+            Paciente paciente = usuario.getPaciente();
             try {
-                pacienteRepository.deleteById(pacienteId); // Activa @SQLDelete de Paciente
+                paciente.setEliminado(true);
+                pacienteRepository.save(paciente); // Soft delete manual
                 System.out.println(
-                        ">>> Paciente asociado " + pacienteId + " eliminado (soft delete) por cascada desde usuario.");
+                        ">>> Paciente asociado " + paciente.getId() + " eliminado (soft delete) por cascada desde usuario.");
             } catch (Exception e) {
-                System.err.println("Error Crítico: No se pudo eliminar (soft delete) el paciente asociado " + pacienteId
+                System.err.println("Error Crítico: No se pudo eliminar (soft delete) el paciente asociado " + paciente.getId()
                         + ". Cancelando eliminación del usuario. Error: " + e.getMessage());
                 throw new RuntimeException("No se pudo eliminar el paciente asociado. Operación cancelada.", e);
             }
@@ -353,10 +381,13 @@ public class UsuarioServiceImpl implements UsuarioService {
             System.out.println(">>> Paciente asociado ya estaba eliminado lógicamente.");
         }
 
-        // Soft delete del Usuario
+        // Soft delete del Usuario (manual para preservar relaciones con roles)
         try {
-            usuarioRepository.deleteById(id); // Activa @SQLDelete de Usuario
-            System.out.println(">>> Usuario " + usuario.getEmail() + " eliminado (soft delete) con éxito.");
+            usuario.setEliminado(true);
+            usuario.setFechaEliminacion(java.time.LocalDateTime.now());
+            usuario.setEstaActivo(false); // Desactivar también al eliminar
+            usuarioRepository.save(usuario); // Guardar cambios sin tocar la tabla usuarios_roles
+            System.out.println(">>> Usuario " + usuario.getEmail() + " eliminado (soft delete) con éxito. Roles preservados.");
         } catch (Exception e) {
             System.err.println(
                     "Error Crítico al intentar soft delete del usuario " + usuario.getEmail() + ": " + e.getMessage());
@@ -384,21 +415,32 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new UnsupportedOperationException("No se puede desactivar al super-administrador del sistema.");
         }
 
-        // --- NUEVA VALIDACIÓN: No desactivar si es el único rol activo de algún
-        // usuario ---
-        if (!activar && usuario.getRoles() != null) {
-            boolean esRolUnicoParaAlguien = usuario.getRoles().stream()
-                    .anyMatch(rol -> rol.getUsuarios() != null && rol.getUsuarios().stream()
-                            .anyMatch(u -> u.getRoles().stream().filter(Rol::isEstaActivo).count() == 1
-                                    && u.getRoles().contains(rol)));
-            if (esRolUnicoParaAlguien) {
-                // Esta lógica es más para cambiar estado de ROL, pero la dejamos comentada como
-                // referencia
-                // throw new DataIntegrityViolationException("No se puede desactivar este rol
-                // porque dejaría a uno o más usuarios sin roles activos.");
+        // --- VALIDACIÓN: No desactivar usuarios con citas activas ---
+        if (!activar) {
+            // Validar si es odontólogo con citas activas
+            boolean esOdontologo = usuario.getRoles().stream()
+                    .anyMatch(rol -> "ODONTOLOGO".equals(rol.getNombre()));
+
+            if (esOdontologo) {
+                long citasActivas = citaRepository.countCitasActivasByOdontologo(id);
+                if (citasActivas > 0) {
+                    throw new IllegalStateException(
+                        "No se puede desactivar al odontólogo porque tiene " + citasActivas +
+                        " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+                }
+            }
+
+            // Validar si tiene paciente asociado con citas activas
+            if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
+                long citasActivas = citaRepository.countCitasActivas(usuario.getPaciente().getId());
+                if (citasActivas > 0) {
+                    throw new IllegalStateException(
+                        "No se puede desactivar el usuario porque su perfil de paciente tiene " + citasActivas +
+                        " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+                }
             }
         }
-        // --- FIN NUEVA VALIDACIÓN ---
+        // --- FIN VALIDACIÓN ---
 
         usuario.setEstaActivo(activar);
         usuarioRepository.save(usuario);

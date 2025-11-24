@@ -31,7 +31,7 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
     @Query("SELECT p FROM Paciente p WHERE p.email = :email")
     Optional<Paciente> findByEmailIgnorandoSoftDelete(@Param("email") String email);
 
-    @Query("SELECT p FROM Paciente p WHERE p.id = :id")
+    @Query(value = "SELECT * FROM pacientes WHERE id = :id", nativeQuery = true)
     Optional<Paciente> findByIdIgnorandoSoftDelete(@Param("id") Long id);
 
     /**
@@ -55,4 +55,10 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
      */
     @Query("SELECT p FROM Paciente p WHERE p.usuario = :usuario")
     Optional<Paciente> findByUsuario(@Param("usuario") com.odontoapp.entidad.Usuario usuario);
+
+    // --- MÉTODO PARA LISTAR PACIENTES ELIMINADOS ---
+    @Query(value = "SELECT * FROM pacientes WHERE eliminado = true ORDER BY fecha_modificacion DESC",
+           countQuery = "SELECT COUNT(*) FROM pacientes WHERE eliminado = true",
+           nativeQuery = true)
+    Page<Paciente> findEliminados(Pageable pageable);
 }

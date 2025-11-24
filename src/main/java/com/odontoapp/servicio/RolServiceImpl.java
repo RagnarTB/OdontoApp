@@ -14,6 +14,7 @@ import com.odontoapp.entidad.Permiso;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.repositorio.PermisoRepository;
 import com.odontoapp.repositorio.RolRepository; // Importar Usuario
+import com.odontoapp.repositorio.UsuarioRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -22,15 +23,21 @@ public class RolServiceImpl implements RolService {
 
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
+    private final SessionInvalidationService sessionInvalidationService;
+    private final UsuarioRepository usuarioRepository;
 
     // Nombres de roles protegidos (constantes para evitar errores tipográficos)
     private static final String ROL_ADMIN = "ADMIN";
     private static final String ROL_PACIENTE = "PACIENTE";
     private static final String ROL_ODONTOLOGO = "ODONTOLOGO"; // Añadido para protección
 
-    public RolServiceImpl(RolRepository rolRepository, PermisoRepository permisoRepository) {
+    public RolServiceImpl(RolRepository rolRepository, PermisoRepository permisoRepository,
+                          SessionInvalidationService sessionInvalidationService,
+                          UsuarioRepository usuarioRepository) {
         this.rolRepository = rolRepository;
         this.permisoRepository = permisoRepository;
+        this.sessionInvalidationService = sessionInvalidationService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Override
@@ -93,6 +100,14 @@ public class RolServiceImpl implements RolService {
         }
 
         rolRepository.save(rol);
+
+        // ⚠️ INVALIDAR SESIONES: Si se modificaron los permisos de un rol existente,
+        // forzar logout a todos los usuarios con ese rol para que obtengan los nuevos permisos
+        if (rolDTO.getId() != null) {
+            int sesionesInvalidadas = sessionInvalidationService.invalidarSesionesPorRol(rol);
+            System.out.println("✅ Permisos del rol '" + rol.getNombre() + "' actualizados. " +
+                    sesionesInvalidadas + " sesión(es) invalidada(s).");
+        }
     }
 
     @Override
@@ -123,15 +138,16 @@ public class RolServiceImpl implements RolService {
         }
 
         // Validar si tiene usuarios asociados usando query optimizada
-        long usuariosActivos = rolRepository.countUsuariosActivosByRolId(id);
+        long usuariosActivos = usuarioRepository.countUsuariosActivosByRolId(id);
         if (usuariosActivos > 0) {
             throw new DataIntegrityViolationException(
                     "El rol tiene " + usuariosActivos
                             + " usuario(s) activo(s) asignado(s) y no puede ser eliminado.");
         }
 
-        // Llama al deleteById que activarÃ¡ @SQLDelete
-        rolRepository.deleteById(id);
+        // Soft delete manual para preservar relaciones con permisos
+        rol.setEliminado(true);
+        rolRepository.save(rol);
     }
 
     @Override
@@ -159,8 +175,33 @@ public class RolServiceImpl implements RolService {
         }
 
         // --- CAMBIO DE ESTADO ---
-        rol.setEstaActivo(!rol.isEstaActivo());
+        boolean nuevoEstado = !rol.isEstaActivo();
+        rol.setEstaActivo(nuevoEstado);
         rolRepository.save(rol);
+
+        // ⚠️ INVALIDAR SESIONES: Forzar logout a usuarios con este rol
+        // para que reflejen el cambio de estado
+        int sesionesInvalidadas = sessionInvalidationService.invalidarSesionesPorRol(rol);
+        System.out.println("✅ Estado del rol '" + rol.getNombre() + "' cambiado a " +
+                (nuevoEstado ? "ACTIVO" : "INACTIVO") + ". " +
+                sesionesInvalidadas + " sesión(es) invalidada(s).");
+    }
+
+    @Override
+    @Transactional
+    public void restablecerRol(Long id) {
+        Rol rol = rolRepository.findByIdIgnorandoSoftDelete(id)
+                .orElseThrow(() -> new IllegalStateException("Rol no encontrado con ID: " + id));
+
+        if (!rol.isEliminado()) {
+            throw new IllegalStateException("El rol con nombre '" + rol.getNombre() + "' no está eliminado.");
+        }
+
+        // Restablecer el rol
+        rol.setEliminado(false);
+        rolRepository.save(rol);
+
+        System.out.println("✅ Rol '" + rol.getNombre() + "' restablecido exitosamente.");
     }
 
 }
