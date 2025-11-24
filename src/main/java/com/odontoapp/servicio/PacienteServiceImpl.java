@@ -35,7 +35,7 @@ public class PacienteServiceImpl implements PacienteService {
     private final EmailService emailService;
     private final UsuarioService usuarioService;
     private final UsuarioRepository usuarioRepository;
-    private final TipoDocumentoRepository tipoDocumentoRepository; // Nuevo
+    private final TipoDocumentoRepository tipoDocumentoRepository;
 
     @Autowired
     public PacienteServiceImpl(PacienteRepository pacienteRepository, RolRepository rolRepository,
@@ -430,8 +430,7 @@ public class PacienteServiceImpl implements PacienteService {
 
     @Override
     @Transactional
-    public void restablecerPaciente(Long id) {
-
+    public String restablecerPaciente(Long id) {
         // 🔥 CORRECCIÓN: Usar el método que ignora el @Where para encontrar el registro
         // eliminado
         Paciente paciente = pacienteRepository.findByIdIgnorandoSoftDelete(id)
@@ -443,15 +442,93 @@ public class PacienteServiceImpl implements PacienteService {
 
         // 1. Restablecer Paciente
         paciente.setEliminado(false);
-        pacienteRepository.save(paciente);
+        // Guardamos al final para asegurar consistencia
 
-        // 2. Restablecer y activar Usuario asociado
-        if (paciente.getUsuario() != null) {
-            Usuario usuario = paciente.getUsuario();
-            usuario.setEstaActivo(true); // Activar usuario
-            usuario.setFechaEliminacion(null);
-            usuario.setEliminado(false);
-            usuarioRepository.save(usuario);
+        String passwordTemporal = null;
+        Usuario usuario = paciente.getUsuario();
+
+        // 2. Garantizar que existe un usuario asociado si el paciente tiene email
+        if (usuario == null && paciente.getEmail() != null && !paciente.getEmail().isEmpty()) {
+            System.out.println(
+                    ">>> ALERTA: Paciente " + id + " no tiene usuario asociado. Intentando crear/recuperar...");
+
+            // Verificar si el email ya está en uso por otro usuario
+            Optional<Usuario> existente = usuarioRepository.findByEmailIgnorandoSoftDelete(paciente.getEmail());
+
+            if (existente.isPresent()) {
+                Usuario uExistente = existente.get();
+                // Si el usuario existente está eliminado, podemos intentar reutilizarlo si no
+                // está asignado a otro paciente
+                if (uExistente.isEliminado()) {
+                    // Verificar si este usuario ya tiene un paciente asignado (diferente al actual)
+                    if (uExistente.getPaciente() != null && !uExistente.getPaciente().getId().equals(id)) {
+                        throw new IllegalStateException("El email " + paciente.getEmail()
+                                + " pertenece a un usuario eliminado que ya está asociado a otro paciente.");
+                    }
+                    usuario = uExistente;
+                    paciente.setUsuario(usuario);
+                    System.out.println(">>> Usuario existente recuperado por email: " + usuario.getId());
+                } else {
+                    // Si está activo, es un conflicto.
+                    throw new IllegalStateException("No se puede restaurar el acceso del paciente porque su email ("
+                            + paciente.getEmail() + ") está en uso por otro usuario activo.");
+                }
+            } else {
+                // Crear nuevo usuario si no existe
+                usuario = new Usuario();
+                usuario.setEmail(paciente.getEmail());
+                usuario.setNombreCompleto(paciente.getNombreCompleto());
+                usuario.setEstaActivo(true);
+
+                Rol rolPaciente = rolRepository.findByNombre("PACIENTE")
+                        .orElseThrow(() -> new IllegalStateException("Rol PACIENTE no encontrado"));
+                usuario.setRoles(Set.of(rolPaciente));
+
+                // Establecer contraseña temporal inicial
+                usuario.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+
+                paciente.setUsuario(usuario); // Esto persistirá el usuario por CascadeType.PERSIST
+                System.out.println(">>> Nuevo usuario creado para el paciente restaurado.");
+            }
         }
+
+        // 3. Restablecer y activar Usuario asociado (si existe o se acabó de crear)
+        if (usuario != null) {
+            // Restablecer estado del usuario
+            usuario.setEliminado(false);
+            usuario.setFechaEliminacion(null);
+            usuario.setEstaActivo(true);
+            usuario.setIntentosFallidos(0);
+            usuario.setFechaBloqueo(null);
+
+            // Generar nueva contraseña temporal y forzar cambio
+            passwordTemporal = com.odontoapp.util.PasswordUtil.generarPasswordAleatoria();
+            usuario.setPasswordTemporal(passwordTemporal);
+            usuario.setPassword(passwordEncoder.encode(passwordTemporal));
+            usuario.setDebeActualizarPassword(true);
+
+            // Guardar usuario (si ya existía)
+            usuarioRepository.save(usuario);
+
+            // 4. Intentar enviar email con contraseña temporal
+            try {
+                emailService.enviarPasswordTemporal(
+                        usuario.getEmail(),
+                        usuario.getNombreCompleto(),
+                        passwordTemporal);
+            } catch (Exception e) {
+                System.err.println("ALERTA: Paciente restablecido (" + usuario.getEmail()
+                        + ") pero falló el envío de email con nueva contraseña temporal: " + e.getMessage());
+                e.printStackTrace();
+                // NO lanzar excepción - permitir que la restauración se complete
+            }
+        } else {
+            System.out.println(
+                    ">>> ADVERTENCIA: Paciente " + id + " restaurado SIN usuario (no tenía email o no se pudo crear).");
+        }
+
+        pacienteRepository.save(paciente); // Guardar paciente finalmente
+
+        return passwordTemporal; // Retornar la contraseña para mostrarla al admin
     }
 }

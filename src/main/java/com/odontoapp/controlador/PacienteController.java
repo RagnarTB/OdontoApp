@@ -191,12 +191,18 @@ public class PacienteController {
     @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).RESTAURAR_PACIENTES)")
     public String restablecerPaciente(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            pacienteService.restablecerPaciente(id);
-            redirectAttributes.addFlashAttribute("success", "Paciente restablecido y activado con éxito.");
+            String passwordTemporal = pacienteService.restablecerPaciente(id);
+
+            if (passwordTemporal != null) {
+                redirectAttributes.addFlashAttribute("success",
+                        "Paciente restablecido con éxito. Revise su correo electronico para obtener su contraseña temporal (debe cambiarla en el próximo inicio de sesión)");
+            } else {
+                redirectAttributes.addFlashAttribute("success", "Paciente restablecido con éxito.");
+            }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error al restablecer el paciente: " + e.getMessage());
         }
-        return "redirect:/pacientes";
+        return "redirect:/administracion/eliminados?tipo=pacientes";
     }
 
     /**
@@ -232,32 +238,31 @@ public class PacienteController {
 
             // Obtener citas del paciente con paginación
             org.springframework.data.domain.Page<Cita> citasPage = citaRepository.findByPacienteId(
-                usuarioId,
-                PageRequest.of(citasPageNum, citasSize, Sort.by("fechaHoraInicio").descending())
-            );
+                    usuarioId,
+                    PageRequest.of(citasPageNum, citasSize, Sort.by("fechaHoraInicio").descending()));
             model.addAttribute("citasPage", citasPage);
 
             // Obtener tratamientos realizados del paciente con paginación
             int tratamientosSize = 10; // 10 tratamientos por página
 
-            org.springframework.data.domain.Page<TratamientoRealizado> tratamientosPageData =
-                    tratamientoRealizadoRepository.findByPacienteId(
-                        usuarioId, // ← FIX: Usar usuarioId en lugar de paciente.getId()
-                        PageRequest.of(tratamientosPage, tratamientosSize, Sort.by("fechaRealizacion").descending())
-                    );
+            org.springframework.data.domain.Page<TratamientoRealizado> tratamientosPageData = tratamientoRealizadoRepository
+                    .findByPacienteId(
+                            usuarioId, // ← FIX: Usar usuarioId en lugar de paciente.getId()
+                            PageRequest.of(tratamientosPage, tratamientosSize,
+                                    Sort.by("fechaRealizacion").descending()));
             model.addAttribute("tratamientosPage", tratamientosPageData);
 
-            // Obtener tratamientos planificados del paciente (solo PLANIFICADO y EN_CURSO, no los COMPLETADOS)
-            java.util.List<TratamientoPlanificado> tratamientosPlanificados =
-                    tratamientoPlanificadoRepository.findTratamientosPendientes(paciente.getUsuario());
+            // Obtener tratamientos planificados del paciente (solo PLANIFICADO y EN_CURSO,
+            // no los COMPLETADOS)
+            java.util.List<TratamientoPlanificado> tratamientosPlanificados = tratamientoPlanificadoRepository
+                    .findTratamientosPendientes(paciente.getUsuario());
             model.addAttribute("tratamientosPlanificados", tratamientosPlanificados);
 
             // Obtener comprobantes del paciente con paginación
-            org.springframework.data.domain.Page<Comprobante> comprobantesPage =
-                    comprobanteRepository.findByPacienteIdOrderByFechaEmisionDesc(
-                        usuarioId,
-                        PageRequest.of(comprobantesPageNum, comprobantesSize)
-                    );
+            org.springframework.data.domain.Page<Comprobante> comprobantesPage = comprobanteRepository
+                    .findByPacienteIdOrderByFechaEmisionDesc(
+                            usuarioId,
+                            PageRequest.of(comprobantesPageNum, comprobantesSize));
             model.addAttribute("comprobantesPage", comprobantesPage);
         }
 
@@ -287,8 +292,8 @@ public class PacienteController {
         detalle.put("numeroDocumento", paciente.getNumeroDocumento());
         detalle.put("email", paciente.getEmail());
         detalle.put("telefono", paciente.getTelefono());
-        detalle.put("fechaNacimiento", paciente.getFechaNacimiento() != null ?
-            paciente.getFechaNacimiento().toString() : null);
+        detalle.put("fechaNacimiento",
+                paciente.getFechaNacimiento() != null ? paciente.getFechaNacimiento().toString() : null);
         detalle.put("direccion", paciente.getDireccion());
 
         // Información médica
@@ -306,8 +311,10 @@ public class PacienteController {
             for (Cita cita : citas) {
                 Map<String, Object> citaMap = new java.util.HashMap<>();
                 citaMap.put("fecha", cita.getFechaHoraInicio().format(formatter));
-                citaMap.put("odontologo", cita.getOdontologo() != null ? cita.getOdontologo().getNombreCompleto() : "N/A");
-                citaMap.put("procedimiento", cita.getProcedimiento() != null ? cita.getProcedimiento().getNombre() : "N/A");
+                citaMap.put("odontologo",
+                        cita.getOdontologo() != null ? cita.getOdontologo().getNombreCompleto() : "N/A");
+                citaMap.put("procedimiento",
+                        cita.getProcedimiento() != null ? cita.getProcedimiento().getNombre() : "N/A");
                 citaMap.put("estado", cita.getEstadoCita() != null ? cita.getEstadoCita().getNombre() : "PENDIENTE");
                 citaMap.put("motivo", cita.getMotivoConsulta());
                 historialCitas.add(citaMap);
@@ -318,7 +325,8 @@ public class PacienteController {
         // Odontograma (cargar desde OdontogramaDienteRepository)
         java.util.List<Map<String, Object>> odontograma = new java.util.ArrayList<>();
         if (paciente.getUsuario() != null) {
-            java.util.List<OdontogramaDiente> dientes = odontogramaDienteRepository.findByPaciente(paciente.getUsuario());
+            java.util.List<OdontogramaDiente> dientes = odontogramaDienteRepository
+                    .findByPaciente(paciente.getUsuario());
 
             for (OdontogramaDiente diente : dientes) {
                 Map<String, Object> dienteMap = new java.util.HashMap<>();
