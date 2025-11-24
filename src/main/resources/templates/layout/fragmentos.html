@@ -121,19 +121,19 @@
                         </li>
                     </th:block>
 
-                    <!-- ADMINISTRACIÓN - Solo ADMIN -->
-                    <li class="nav-header" sec:authorize="hasRole('ADMIN')">
+                    <!-- ADMINISTRACIÓN - Permisos granulares -->
+                    <li class="nav-header" sec:authorize="hasAnyAuthority('VER_LISTA_USUARIOS', 'VER_LISTA_ROLES', 'VER_REGISTROS_ELIMINADOS')">
                         ADMINISTRACIÓN
                     </li>
 
-                    <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_USUARIOS')">
                         <a th:href="@{/usuarios}" class="nav-link">
                             <i class="nav-icon fas fa-users"></i>
                             <p>Usuarios</p>
                         </a>
                     </li>
 
-                    <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_ROLES')">
                         <a th:href="@{/roles}" class="nav-link">
                             <i class="nav-icon fas fa-user-shield"></i>
                             <p>Roles y Permisos</p>
@@ -147,54 +147,54 @@
                         </a>
                     </li>
 
-                    <!-- GESTIÓN CLÍNICA - ADMIN, ODONTOLOGO, RECEPCIONISTA -->
-                    <li class="nav-header" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
+                    <!-- GESTIÓN CLÍNICA - Permisos granulares -->
+                    <li class="nav-header" sec:authorize="hasAnyAuthority('VER_LISTA_PACIENTES', 'VER_LISTA_CITAS', 'VER_LISTA_SERVICIOS')">
                         GESTIÓN CLÍNICA
                     </li>
 
-                    <!-- Pacientes - ADMIN, ODONTOLOGO, RECEPCIONISTA -->
-                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
+                    <!-- Pacientes - Permiso granular -->
+                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_PACIENTES')">
                         <a th:href="@{/pacientes}" class="nav-link">
                             <i class="nav-icon fas fa-procedures"></i>
                             <p>Pacientes</p>
                         </a>
                     </li>
 
-                    <!-- Agenda de Citas - ADMIN, ODONTOLOGO, RECEPCIONISTA -->
-                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
+                    <!-- Agenda de Citas - Permiso granular -->
+                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_CITAS')">
                         <a th:href="@{/citas}" class="nav-link">
                             <i class="nav-icon fas fa-calendar-alt"></i>
                             <p>Agenda de Citas</p>
                         </a>
                     </li>
 
-                    <!-- Servicios - Solo ADMIN y ODONTOLOGO -->
-                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO')">
+                    <!-- Servicios - Permiso granular -->
+                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_SERVICIOS')">
                         <a th:href="@{/servicios}" class="nav-link">
                             <i class="nav-icon fas fa-clipboard-list"></i>
                             <p>Servicios</p>
                         </a>
                     </li>
 
-                    <!-- INVENTARIO - ADMIN, ODONTOLOGO, ALMACEN -->
-                    <li class="nav-header" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','ALMACEN')">
+                    <!-- INVENTARIO - Permiso granular -->
+                    <li class="nav-header" sec:authorize="hasAuthority('VER_LISTA_INVENTARIO')">
                         INVENTARIO
                     </li>
 
-                    <!-- Stock e Insumos - ADMIN, ODONTOLOGO, ALMACEN -->
-                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','ALMACEN')">
+                    <!-- Stock e Insumos - Permiso granular -->
+                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_INVENTARIO')">
                         <a th:href="@{/insumos}" class="nav-link">
                             <i class="nav-icon fas fa-boxes"></i>
                             <p>Stock e Insumos</p>
                         </a>
                     </li>
 
-                    <!-- FACTURACIÓN - ADMIN, ODONTOLOGO, RECEPCIONISTA -->
-                    <li class="nav-header" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
+                    <!-- FACTURACIÓN - Permiso granular -->
+                    <li class="nav-header" sec:authorize="hasAuthority('VER_LISTA_FACTURACION')">
                         FACTURACIÓN
                     </li>
 
-                    <li class="nav-item has-treeview" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA')">
+                    <li class="nav-item has-treeview" sec:authorize="hasAuthority('VER_LISTA_FACTURACION')">
                         <a href="#" class="nav-link">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
@@ -209,7 +209,7 @@
                                     <p>Ver Comprobantes</p>
                                 </a>
                             </li>
-                            <li class="nav-item">
+                            <li class="nav-item" sec:authorize="hasAuthority('CREAR_FACTURACION')">
                                 <a th:href="@{/facturacion/pos}" class="nav-link">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Punto de Venta (POS)</p>

@@ -113,15 +113,6 @@ public class RolController {
             RedirectAttributes redirectAttributes) { // Añadir RedirectAttributes
         Rol rol = rolService.buscarRolPorId(id).orElse(null);
         if (rol != null) {
-
-            // --- PROTECCIÓN EN CONTROLADOR ---
-            if (ROL_ADMIN.equals(rol.getNombre()) || ROL_PACIENTE.equals(rol.getNombre())) {
-                redirectAttributes.addFlashAttribute("error", "El rol '" + rol.getNombre() + "' no puede ser editado.");
-                return "redirect:/roles";
-            }
-            // Opcional: Proteger ODONTOLOGO también si no quieres que se edite nada
-            // if (ROL_ODONTOLOGO.equals(rol.getNombre())) { ... }
-
             RolDTO rolDTO = new RolDTO();
             rolDTO.setId(rol.getId());
             rolDTO.setNombre(rol.getNombre());
@@ -130,6 +121,7 @@ public class RolController {
             }
 
             model.addAttribute("rol", rolDTO);
+            model.addAttribute("esRolSistema", rol.isEsRolSistema()); // Pasar info al formulario
             cargarPermisos(model);
             return "modulos/roles/formulario";
         }

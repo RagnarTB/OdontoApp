@@ -68,9 +68,6 @@ public class SecurityConfig {
                                                 // Selector de rol - todos autenticados
                                                 .requestMatchers("/seleccionar-rol", "/seleccionar-rol/**").authenticated()
 
-                                                // ADMIN: Acceso total
-                                                .requestMatchers("/usuarios/**", "/roles/**").hasRole("ADMIN")
-
                                                 // PACIENTE: Portal exclusivo para pacientes
                                                 .requestMatchers("/paciente/**").hasRole("PACIENTE")
 
@@ -78,20 +75,14 @@ public class SecurityConfig {
                                                 .requestMatchers("/", "/home", "/dashboard")
                                                 .hasAnyRole("ADMIN", "ODONTOLOGO", "RECEPCIONISTA", "ALMACEN")
 
-                                                // ODONTOLOGO: GESTIÓN CLÍNICA + FACTURACIÓN (sin inventario)
+                                                // Los siguientes módulos usan @PreAuthorize con permisos granulares
+                                                // Solo requieren autenticación, el control de acceso se hace en los controllers
+                                                .requestMatchers("/usuarios/**", "/roles/**", "/administracion/**").authenticated()
                                                 .requestMatchers("/pacientes/**", "/servicios/**", "/facturacion/**",
-                                                                "/tratamientos/**", "/odontograma/**", "/api/odontograma/**")
-                                                .hasAnyRole("ODONTOLOGO", "ADMIN")
-
-                                                // RECEPCIONISTA: Citas, pacientes y facturación
-                                                .requestMatchers("/citas/**", "/agenda/**").hasAnyRole("RECEPCIONISTA", "ADMIN", "ODONTOLOGO")
-                                                .requestMatchers("/pacientes/**").hasAnyRole("RECEPCIONISTA", "ADMIN", "ODONTOLOGO")
-                                                .requestMatchers("/facturacion/**").hasAnyRole("RECEPCIONISTA", "ADMIN", "ODONTOLOGO")
-
-                                                // ALMACEN: Solo inventario
+                                                                "/tratamientos/**", "/odontograma/**", "/api/odontograma/**").authenticated()
+                                                .requestMatchers("/citas/**", "/agenda/**").authenticated()
                                                 .requestMatchers("/insumos/**", "/categorias-insumo/**",
-                                                                "/unidades-medida/**", "/movimientos-inventario/**")
-                                                .hasAnyRole("ALMACEN", "ADMIN")
+                                                                "/unidades-medida/**", "/movimientos-inventario/**").authenticated()
 
                                                 // Cualquier otra petición requiere autenticación
                                                 .anyRequest().authenticated())
