@@ -2,6 +2,7 @@ package com.odontoapp.controlador;
 
 // --- Imports necesarios ---
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap; // Import Arrays
@@ -16,6 +17,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -696,25 +698,32 @@ public class UsuarioController {
     }
 
     @PostMapping("/promocionar")
-    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_USUARIOS)")
-    public String promoverPacienteAPersonal(
-            @RequestParam Long pacienteId,
-            @RequestParam List<Long> roles,
+    @PreAuthorize("hasAuthority('CREAR_USUARIOS')")
+    public String promocionarPaciente(
+            @RequestParam("pacienteId") Long pacienteId,
+            @RequestParam("rolesIds") List<Long> rolesIds,
+            @RequestParam("telefono") String telefono,
+            @RequestParam("fechaContratacion") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaContratacion,
+            @RequestParam(value = "direccion", required = false) String direccion,
             RedirectAttributes redirectAttributes) {
-        try {
-            if (roles == null || roles.isEmpty()) {
-                redirectAttributes.addFlashAttribute("error",
-                        "Debe seleccionar al menos un rol de personal");
-                return "redirect:/usuarios";
-            }
 
-            usuarioService.promoverPacienteAPersonal(pacienteId, roles);
+        try {
+            usuarioService.promoverPacienteAPersonal(pacienteId, rolesIds, telefono, fechaContratacion, direccion);
             redirectAttributes.addFlashAttribute("success",
-                    "Paciente promocionado a personal clínico exitosamente");
+                    "Paciente promocionado exitosamente a personal clínico");
+        } catch (IllegalArgumentException e) {
+            // Errores de validación
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        } catch (IllegalStateException e) {
+            // Errores de estado (paciente eliminado, usuario inactivo, etc.)
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
+            // Otros errores
             redirectAttributes.addFlashAttribute("error",
-                    "Error al promocionar paciente: " + e.getMessage());
+                    "Error inesperado al promocionar paciente: " + e.getMessage());
+            e.printStackTrace();
         }
+
         return "redirect:/usuarios";
     }
 }

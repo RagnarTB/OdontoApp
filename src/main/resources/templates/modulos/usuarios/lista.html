@@ -371,9 +371,94 @@
                         <div class="modal-body">
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle mr-2"></i>
-                                <i class="fas fa-check mr-2"></i>Confirmar Promoción
-                                </button>
+                                <strong>Promoción de Paciente:</strong> Esta acción convertirá al paciente seleccionado
+                                en personal del sistema, asignándole nuevos roles de personal.
                             </div>
+
+                            <!-- Seleccionar Paciente -->
+                            <div class="form-group">
+                                <label for="pacienteSelect">Paciente <span class="text-danger">*</span></label>
+                                <select class="form-control" id="pacienteSelect" name="usuarioId" required>
+                                    <option value="">Seleccione un paciente...</option>
+                                </select>
+                                <small class="form-text text-muted">Busque y seleccione el paciente a
+                                    promocionar</small>
+                            </div>
+
+                            <!-- Información del Paciente Seleccionado -->
+                            <div id="infoPacienteSeleccionado" style="display: none;" class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Información del Paciente</h6>
+                                    <p class="mb-1"><strong>Documento:</strong> <span id="infoPacienteDoc"></span></p>
+                                    <p class="mb-1"><strong>Email:</strong> <span id="infoPacienteEmail"></span></p>
+                                    <p class="mb-0"><strong>Teléfono:</strong> <span id="infoPacienteTelefono"></span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Datos Requeridos para Personal -->
+                            <div class="card card-outline card-warning mb-3">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-user-tie mr-2"></i>Datos de Personal (Requeridos)
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="telefonoPromocion">Teléfono <span
+                                                        class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="telefonoPromocion"
+                                                    name="telefono" pattern="[0-9]{9}" maxlength="9" required
+                                                    placeholder="987654321">
+                                                <small class="form-text text-muted">9 dígitos</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="fechaContratacionPromocion">Fecha de Contratación <span
+                                                        class="text-danger">*</span></label>
+                                                <input type="date" class="form-control" id="fechaContratacionPromocion"
+                                                    name="fechaContratacion" required>
+                                                <small class="form-text text-muted">Fecha de inicio como
+                                                    personal</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="direccionPromocion">Dirección</label>
+                                        <input type="text" class="form-control" id="direccionPromocion" name="direccion"
+                                            placeholder="Av. Ejemplo 123">
+                                        <small class="form-text text-muted">Opcional pero recomendado</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Roles a Asignar -->
+                            <div class="card card-outline card-success">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-user-tag mr-2"></i>Roles de Personal a Asignar
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-2">Seleccione al menos un rol de personal:</p>
+                                    <div id="rolesPersonalCheckboxes">
+                                        <!-- Se llenarán dinámicamente -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                <i class="fas fa-times mr-2"></i>Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check mr-2"></i>Confirmar Promoción
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -624,6 +709,10 @@
 
             // Cargar pacientes activos al abrir el modal
             $('#modalPromocionPaciente').on('show.bs.modal', function () {
+                // Establecer fecha de hoy como valor por defecto
+                const hoy = new Date().toISOString().split('T')[0];
+                $('#fechaContratacionPromocion').val(hoy);
+
                 $.ajax({
                     url: '/usuarios/api/pacientes-activos',
                     method: 'GET',
@@ -691,6 +780,20 @@
                 const pacienteId = $('#pacienteSelect').val();
                 if (!pacienteId) {
                     mostrarAdvertencia('Debe seleccionar un paciente');
+                    return;
+                }
+
+                // Validar teléfono
+                const telefono = $('#telefonoPromocion').val();
+                if (!telefono || telefono.length !== 9) {
+                    mostrarAdvertencia('Debe ingresar un teléfono válido de 9 dígitos');
+                    return;
+                }
+
+                // Validar fecha de contratación
+                const fechaContratacion = $('#fechaContratacionPromocion').val();
+                if (!fechaContratacion) {
+                    mostrarAdvertencia('Debe ingresar la fecha de contratación');
                     return;
                 }
 

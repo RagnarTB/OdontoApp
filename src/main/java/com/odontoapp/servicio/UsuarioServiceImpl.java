@@ -1,5 +1,6 @@
 package com.odontoapp.servicio;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime; // NUEVO import
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +26,9 @@ import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.TipoDocumentoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.util.PasswordUtil;
-
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -601,28 +604,63 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
-    public void promoverPacienteAPersonal(Long pacienteId, List<Long> rolesIds) {
-        // Buscar paciente
+    public void promoverPacienteAPersonal(Long pacienteId, List<Long> rolesIds,
+            String telefono, LocalDate fechaContratacion, String direccion) {
+        // Validar que se proporcionen roles
+        if (rolesIds == null || rolesIds.isEmpty()) {
+            throw new IllegalArgumentException("Debe seleccionar al menos un rol de personal");
+        }
+        // Validar teléfono (obligatorio, 9 dígitos)
+        if (telefono == null || telefono.trim().isEmpty()) {
+            throw new IllegalArgumentException("El teléfono es obligatorio");
+        }
+        if (telefono.length() != 9 || !telefono.matches("[0-9]{9}")) {
+            throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos numéricos");
+        }
+        // Validar fecha de contratación (obligatoria, no futura)
+        if (fechaContratacion == null) {
+            throw new IllegalArgumentException("La fecha de contratación es obligatoria");
+        }
+        if (fechaContratacion.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("La fecha de contratación no puede ser futura");
+        }
+        // Buscar el paciente
         Paciente paciente = pacienteRepository.findById(pacienteId)
-                .orElseThrow(() -> new IllegalStateException("Paciente no encontrado"));
-
-        // Validar que esté activo
+                .orElseThrow(() -> new RuntimeException("Paciente no encontrado"));
+        // Verificar que el paciente esté activo
         if (paciente.isEliminado()) {
             throw new IllegalStateException("No se puede promocionar un paciente eliminado");
         }
-
-        // Obtener usuario asociado
+        // Obtener el usuario asociado al paciente
         Usuario usuario = paciente.getUsuario();
         if (usuario == null) {
             throw new IllegalStateException("El paciente no tiene usuario asociado");
         }
+        // Validar que el usuario esté activo
+        if (!usuario.isEstaActivo()) {
+            throw new IllegalStateException("No se puede promocionar un usuario inactivo");
+        }
+        // Actualizar datos del usuario con los campos requeridos
+        usuario.setTelefono(telefono);
+        usuario.setFechaContratacion(fechaContratacion);
 
-        // Agregar nuevos roles de personal
+        // Dirección es opcional pero se guarda si se proporciona
+        if (direccion != null && !direccion.trim().isEmpty()) {
+            usuario.setDireccion(direccion);
+        }
+        // Agregar los nuevos roles de personal (sin quitar el rol PACIENTE)
         List<Rol> nuevosRoles = rolRepository.findAllById(rolesIds);
-        usuario.getRoles().addAll(nuevosRoles);
+        if (nuevosRoles.isEmpty()) {
+            throw new IllegalArgumentException("Los roles seleccionados no son válidos");
+        }
 
-        // Guardar
+        // Agregar nuevos roles manteniendo los existentes
+        usuario.getRoles().addAll(nuevosRoles);
+        // Guardar cambios
         usuarioRepository.save(usuario);
+
+        System.out.println(">>> Paciente " + paciente.getNombreCompleto() +
+                " promocionado exitosamente a personal con " + nuevosRoles.size() + " rol(es)");
     }
 
 } // Fin de la clase

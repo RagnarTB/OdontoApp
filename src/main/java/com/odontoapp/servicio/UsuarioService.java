@@ -1,5 +1,6 @@
 package com.odontoapp.servicio;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,5 +30,6 @@ public interface UsuarioService {
 
     void restablecerUsuario(Long id);
 
-    void promoverPacienteAPersonal(Long pacienteId, List<Long> rolesIds);
+    void promoverPacienteAPersonal(Long pacienteId, List<Long> rolesIds,
+            String telefono, LocalDate fechaContratacion, String direccion);
 }

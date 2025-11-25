@@ -60,7 +60,7 @@ public class RolSelectorController {
 
             // Redirigir según el tipo de rol
             if ("PACIENTE".equals(rolUnico.getNombre())) {
-                return "redirect:/paciente/portal";
+                return "redirect:/paciente/dashboard";
             }
             return "redirect:/dashboard";
         }
@@ -123,7 +123,7 @@ public class RolSelectorController {
 
         // Redirigir según el tipo de rol
         if ("PACIENTE".equals(rolSeleccionado.getNombre())) {
-            return "redirect:/paciente/portal";
+            return "redirect:/paciente/dashboard";
         }
         return "redirect:/dashboard";
     }
