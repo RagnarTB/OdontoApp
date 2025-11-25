@@ -87,7 +87,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             boolean esPersonal = authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
                     .anyMatch(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_ODONTOLOGO")
-                            || role.equals("ROLE_RECEPCIONISTA") || role.equals("ROLE_AUXILIAR") || role.equals("ROLE_ALMACEN"));
+                            || role.equals("ROLE_RECEPCIONISTA") || role.equals("ROLE_AUXILIAR")
+                            || role.equals("ROLE_ALMACEN"));
 
             // Validar login de pacientes: solo permitir rol PACIENTE
             if ("paciente".equalsIgnoreCase(loginType)) {
@@ -154,21 +155,21 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             return; // Salir para pacientes
         }
 
-        // ✅ DETECTAR MÚLTIPLES ROLES DE PERSONAL (NUEVO)
-        // Contar cuántos roles de personal tiene el usuario (excluyendo PACIENTE)
-        long rolesPersonalCount = authentication.getAuthorities().stream()
+        // ✅ DETECTAR MÚLTIPLES ROLES (PACIENTE + PERSONAL o múltiples roles de
+        // PERSONAL)
+        // Contar TODOS los roles del usuario
+        long totalRoles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .filter(role -> role.startsWith("ROLE_") && !role.equals("ROLE_PACIENTE"))
+                .filter(role -> role.startsWith("ROLE_"))
                 .distinct()
                 .count();
-
-        // Si tiene múltiples roles de personal, redirigir al selector de roles
-        // (a menos que ya tenga un rol seleccionado en la sesión)
-        if (rolesPersonalCount > 1) {
+        // Si tiene más de 1 rol (ej: PACIENTE + ODONTOLOGO, o ADMIN + RECEPCIONISTA)
+        // redirigir al selector de roles (a menos que ya tenga un rol seleccionado)
+        if (totalRoles > 1) {
             String rolActivo = (String) request.getSession().getAttribute("rolActivo");
             if (rolActivo == null) {
                 String targetUrl = request.getContextPath() + "/seleccionar-rol";
-                log.info("Usuario con {} roles de personal detectado. Redirigiendo a selector de roles.", rolesPersonalCount);
+                log.info("Usuario con {} roles detectado. Redirigiendo a selector de roles.", totalRoles);
                 try {
                     if (!response.isCommitted()) {
                         response.sendRedirect(targetUrl);
@@ -184,7 +185,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             log.info("Usuario tiene rol activo seleccionado: {}", rolActivo);
         }
 
-        // Lógica SavedRequest (solo para personal - con try-catch y verificación de /error)
+        // Lógica SavedRequest (solo para personal - con try-catch y verificación de
+        // /error)
         SavedRequest savedRequest = null;
         try {
             savedRequest = requestCache.getRequest(request, response);
