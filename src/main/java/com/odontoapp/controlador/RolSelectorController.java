@@ -20,10 +20,10 @@ import jakarta.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
- * Controlador para gestionar la selección de rol cuando un usuario tiene múltiples roles.
+ * Controlador para gestionar la selección de rol cuando un usuario tiene
+ * múltiples roles.
  * Permite seleccionar el rol activo y cambiar entre roles sin cerrar sesión.
  */
 @Controller
@@ -48,24 +48,27 @@ public class RolSelectorController {
         Usuario usuario = usuarioRepository.findByEmail(username)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // Obtener roles del usuario (excluyendo PACIENTE para el selector de personal)
-        Set<Rol> rolesUsuario = usuario.getRoles().stream()
-                .filter(rol -> !"PACIENTE".equals(rol.getNombre()))
-                .collect(Collectors.toSet());
+        // Obtener TODOS los roles del usuario (incluyendo PACIENTE)
+        Set<Rol> rolesUsuario = usuario.getRoles();
 
-        // Si solo tiene un rol de personal, redirigir directamente
+        // Si solo tiene un rol, redirigir directamente
         if (rolesUsuario.size() == 1) {
             Rol rolUnico = rolesUsuario.iterator().next();
             session.setAttribute("rolActivo", rolUnico.getNombre());
             redirectAttributes.addFlashAttribute("info",
-                "Has iniciado sesión con el rol: " + rolUnico.getNombre());
+                    "Has iniciado sesión con el rol: " + rolUnico.getNombre());
+
+            // Redirigir según el tipo de rol
+            if ("PACIENTE".equals(rolUnico.getNombre())) {
+                return "redirect:/paciente/portal";
+            }
             return "redirect:/dashboard";
         }
 
-        // Si no tiene roles de personal, error
+        // Si no tiene roles, error
         if (rolesUsuario.isEmpty()) {
             redirectAttributes.addFlashAttribute("error",
-                "Tu cuenta no tiene roles de personal activos. Contacta al administrador.");
+                    "Tu cuenta no tiene roles activos. Contacta al administrador.");
             return "redirect:/login?logout";
         }
 
@@ -116,8 +119,12 @@ public class RolSelectorController {
         actualizarAuthoritiesConRolSeleccionado(authentication, rolSeleccionado, usuario);
 
         redirectAttributes.addFlashAttribute("success",
-            "Has seleccionado el rol: " + rolSeleccionado.getNombre());
+                "Has seleccionado el rol: " + rolSeleccionado.getNombre());
 
+        // Redirigir según el tipo de rol
+        if ("PACIENTE".equals(rolSeleccionado.getNombre())) {
+            return "redirect:/paciente/portal";
+        }
         return "redirect:/dashboard";
     }
 
@@ -151,8 +158,7 @@ public class RolSelectorController {
         if (rolSeleccionado.getPermisos() != null) {
             rolSeleccionado.getPermisos().forEach(permiso -> {
                 authorities.add(new SimpleGrantedAuthority(
-                    permiso.getAccion() + "_" + permiso.getModulo()
-                ));
+                        permiso.getAccion() + "_" + permiso.getModulo()));
             });
         }
 
@@ -165,10 +171,9 @@ public class RolSelectorController {
 
         // Crear nueva autenticación con las authorities actualizadas
         PreAuthenticatedAuthenticationToken newAuth = new PreAuthenticatedAuthenticationToken(
-            currentAuth.getPrincipal(),
-            currentAuth.getCredentials(),
-            authorities
-        );
+                currentAuth.getPrincipal(),
+                currentAuth.getCredentials(),
+                authorities);
 
         // Actualizar el contexto de seguridad
         SecurityContextHolder.getContext().setAuthentication(newAuth);

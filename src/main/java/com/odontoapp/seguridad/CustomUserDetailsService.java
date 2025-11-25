@@ -16,7 +16,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.odontoapp.entidad.Permiso;
-import com.odontoapp.entidad.Rol; // Asegúrate de importar tu servicio
+import com.odontoapp.entidad.Rol;
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.servicio.UsuarioService;
@@ -24,7 +24,6 @@ import com.odontoapp.servicio.UsuarioService;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    // Inyectamos el servicio en lugar del repositorio directamente
     private final UsuarioRepository usuarioRepository;
     private final UsuarioService usuarioService;
 
@@ -46,7 +45,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 throw new LockedException("La cuenta está bloqueada temporalmente.");
             } else {
                 usuarioService.resetearIntentosFallidos(email);
-                usuario.setFechaBloqueo(null); // Actualizamos el estado localmente para la sesión actual
+                usuario.setFechaBloqueo(null);
             }
         }
 
@@ -67,26 +66,26 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new User(
                 usuario.getEmail(),
                 usuario.getPassword(),
-                getAuthorities(usuario.getRoles()) // Usa el método para obtener permisos y roles
-        );
+                getAuthorities(usuario.getRoles()));
     }
 
-    // --- ESTE ES EL MÉTODO CLAVE ---
+    // --- MÉTODO PARA OBTENER AUTHORITIES ---
+    // Cargar TODOS los roles y permisos, el filtrado se hace en /seleccionar-rol
     private Collection<? extends GrantedAuthority> getAuthorities(Set<Rol> roles) {
         Set<GrantedAuthority> authorities = new HashSet<>();
+
         for (Rol rol : roles) {
-            // Añadimos el nombre del rol con prefijo ROLE_ (ej. "ROLE_ADMIN")
-            // Esto permite usar hasRole('ADMIN') en SecurityConfig y menús
+            // Añadir rol con prefijo ROLE_
             authorities.add(new SimpleGrantedAuthority("ROLE_" + rol.getNombre()));
 
-            // Añadimos todos los permisos asociados a ese rol
-            // Formato: ACCION_MODULO (ej. "VER_LISTA_PACIENTES")
+            // Añadir todos los permisos del rol
             if (rol.getPermisos() != null) {
                 for (Permiso permiso : rol.getPermisos()) {
                     authorities.add(new SimpleGrantedAuthority(permiso.getAccion() + "_" + permiso.getModulo()));
                 }
             }
         }
+
         return authorities;
     }
 }

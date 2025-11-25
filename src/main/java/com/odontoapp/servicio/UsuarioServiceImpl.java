@@ -206,6 +206,32 @@ public class UsuarioServiceImpl implements UsuarioService {
         List<Rol> rolesSeleccionados = rolRepository.findAllById(usuarioDTO.getRoles());
         usuario.setRoles(new HashSet<>(rolesSeleccionados));
 
+        boolean tieneRolPaciente = rolesSeleccionados.stream()
+                .anyMatch(r -> "PACIENTE".equals(r.getNombre()));
+        if (tieneRolPaciente) {
+            // Crear o actualizar Paciente
+            Paciente paciente = usuario.getPaciente();
+            if (paciente == null) {
+                paciente = new Paciente();
+                paciente.setUsuario(usuario);
+                paciente.setTipoDocumento(usuario.getTipoDocumento());
+                paciente.setNumeroDocumento(usuario.getNumeroDocumento());
+                paciente.setNombreCompleto(usuario.getNombreCompleto());
+                paciente.setEmail(usuario.getEmail());
+                paciente.setTelefono(usuario.getTelefono());
+                paciente.setFechaNacimiento(usuario.getFechaNacimiento());
+                paciente.setDireccion(usuario.getDireccion());
+            }
+
+            // Actualizar campos específicos de paciente (opcionales)
+            paciente.setAlergias(usuarioDTO.getAlergias());
+            paciente.setAntecedentesMedicos(usuarioDTO.getAntecedentesMedicos());
+            paciente.setTratamientosActuales(usuarioDTO.getTratamientosActuales());
+
+            pacienteRepository.save(paciente);
+            usuario.setPaciente(paciente);
+        }
+
         // --- VALIDAR Y ESTABLECER FECHA DE VIGENCIA ---
         boolean tieneRolAdmin = rolesSeleccionados.stream().anyMatch(r -> "ADMIN".equals(r.getNombre()));
 
@@ -311,13 +337,9 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     public Page<Usuario> listarTodosLosUsuarios(String keyword, Pageable pageable) {
         if (keyword != null && !keyword.isEmpty()) {
-            // Considerar buscar también por número de documento si es relevante
-            // return usuarioRepository.findByKeywordIncludingDocument(keyword, pageable);
-            // // Necesitarías crear este método
-            return usuarioRepository.findByKeyword(keyword, pageable);
+            return usuarioRepository.findUsuariosConRolesDePersonalByKeyword(keyword, pageable);
         }
-        // Usar findAllWithRoles para cargar roles con JOIN FETCH
-        return usuarioRepository.findAllWithRoles(pageable);
+        return usuarioRepository.findUsuariosConRolesDePersonal(pageable);
     }
 
     @Override
@@ -575,6 +597,32 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new DataIntegrityViolationException(
                     "El teléfono '" + telefono + "' ya está registrado para otro usuario.");
         }
+    }
+
+    @Override
+    @Transactional
+    public void promoverPacienteAPersonal(Long pacienteId, List<Long> rolesIds) {
+        // Buscar paciente
+        Paciente paciente = pacienteRepository.findById(pacienteId)
+                .orElseThrow(() -> new IllegalStateException("Paciente no encontrado"));
+
+        // Validar que esté activo
+        if (paciente.isEliminado()) {
+            throw new IllegalStateException("No se puede promocionar un paciente eliminado");
+        }
+
+        // Obtener usuario asociado
+        Usuario usuario = paciente.getUsuario();
+        if (usuario == null) {
+            throw new IllegalStateException("El paciente no tiene usuario asociado");
+        }
+
+        // Agregar nuevos roles de personal
+        List<Rol> nuevosRoles = rolRepository.findAllById(rolesIds);
+        usuario.getRoles().addAll(nuevosRoles);
+
+        // Guardar
+        usuarioRepository.save(usuario);
     }
 
 } // Fin de la clase

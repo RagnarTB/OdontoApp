@@ -5,8 +5,10 @@ import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap; // Import Arrays
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional; // Import Locale
 import java.util.stream.Collectors;
 
@@ -31,8 +33,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.odontoapp.dto.HorarioExcepcionDTO;
 import com.odontoapp.dto.UsuarioDTO;
+import com.odontoapp.entidad.Paciente;
 import com.odontoapp.entidad.Rol;
 import com.odontoapp.entidad.Usuario;
+import com.odontoapp.repositorio.PacienteRepository;
 import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.TipoDocumentoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
@@ -55,6 +59,7 @@ public class UsuarioController {
     private final RolRepository rolRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final ReniecService reniecService;
+    private final PacienteRepository pacienteRepository;
 
     // Constante para los días ordenados
     private static final List<DayOfWeek> DIAS_SEMANA_ORDENADOS = Arrays.asList(
@@ -63,12 +68,13 @@ public class UsuarioController {
 
     public UsuarioController(UsuarioService usuarioService, UsuarioRepository usuarioRepository,
             RolRepository rolRepository, TipoDocumentoRepository tipoDocumentoRepository,
-            ReniecService reniecService) {
+            ReniecService reniecService, PacienteRepository pacienteRepository) {
         this.usuarioService = usuarioService;
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.reniecService = reniecService;
+        this.pacienteRepository = pacienteRepository;
     }
 
     @GetMapping
@@ -197,7 +203,7 @@ public class UsuarioController {
 
             if (esSoloPaciente) {
                 redirectAttributes.addFlashAttribute("error",
-                    "Los pacientes solo pueden editarse desde la sección de Pacientes.");
+                        "Los pacientes solo pueden editarse desde la sección de Pacientes.");
                 return "redirect:/usuarios";
             }
             UsuarioDTO usuarioDTO = new UsuarioDTO();
@@ -237,6 +243,12 @@ public class UsuarioController {
                         .sorted((e1, e2) -> e1.getFecha().compareTo(e2.getFecha())) // Ordenar por fecha
                         .collect(Collectors.toList());
                 usuarioDTO.setExcepcionesHorario(excepcionesDTO);
+            }
+            if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
+                Paciente paciente = usuario.getPaciente();
+                usuarioDTO.setAlergias(paciente.getAlergias());
+                usuarioDTO.setAntecedentesMedicos(paciente.getAntecedentesMedicos());
+                usuarioDTO.setTratamientosActuales(paciente.getTratamientosActuales());
             }
 
             model.addAttribute("usuario", usuarioDTO);
@@ -343,7 +355,7 @@ public class UsuarioController {
      * Endpoint REST para consultar datos de una persona por DNI (RENIEC)
      * Compatible con el mismo formato que usa PacienteController
      *
-     * @param numDoc Número de documento a buscar
+     * @param numDoc    Número de documento a buscar
      * @param tipoDocId ID del tipo de documento
      * @return ResponseEntity con datos de RENIEC o error
      */
@@ -511,9 +523,8 @@ public class UsuarioController {
                     return ResponseEntity.ok(java.util.Map.of("disponible", true));
                 }
                 return ResponseEntity.ok(java.util.Map.of(
-                    "disponible", false,
-                    "mensaje", "El DNI ya está registrado en el sistema"
-                ));
+                        "disponible", false,
+                        "mensaje", "El DNI ya está registrado en el sistema"));
             }
 
             return ResponseEntity.ok(java.util.Map.of("disponible", true));
@@ -540,9 +551,8 @@ public class UsuarioController {
                     return ResponseEntity.ok(java.util.Map.of("disponible", true));
                 }
                 return ResponseEntity.ok(java.util.Map.of(
-                    "disponible", false,
-                    "mensaje", "El email ya está registrado en el sistema"
-                ));
+                        "disponible", false,
+                        "mensaje", "El email ya está registrado en el sistema"));
             }
 
             return ResponseEntity.ok(java.util.Map.of("disponible", true));
@@ -569,9 +579,8 @@ public class UsuarioController {
                     return ResponseEntity.ok(java.util.Map.of("disponible", true));
                 }
                 return ResponseEntity.ok(java.util.Map.of(
-                    "disponible", false,
-                    "mensaje", "El teléfono ya está registrado en el sistema"
-                ));
+                        "disponible", false,
+                        "mensaje", "El teléfono ya está registrado en el sistema"));
             }
 
             return ResponseEntity.ok(java.util.Map.of("disponible", true));
@@ -592,8 +601,8 @@ public class UsuarioController {
                     .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
             return ResponseEntity.ok(java.util.Map.of(
-                "horarioRegular", usuario.getHorarioRegular() != null ? usuario.getHorarioRegular() : new java.util.HashMap<>()
-            ));
+                    "horarioRegular",
+                    usuario.getHorarioRegular() != null ? usuario.getHorarioRegular() : new java.util.HashMap<>()));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(java.util.Map.of("error", e.getMessage()));
@@ -613,7 +622,8 @@ public class UsuarioController {
                     .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
             // Convertir Map<String, String> a Map<DayOfWeek, String>
-            java.util.Map<java.time.DayOfWeek, String> horarioRegular = new java.util.EnumMap<>(java.time.DayOfWeek.class);
+            java.util.Map<java.time.DayOfWeek, String> horarioRegular = new java.util.EnumMap<>(
+                    java.time.DayOfWeek.class);
 
             for (java.util.Map.Entry<String, String> entry : horarios.entrySet()) {
                 try {
@@ -628,9 +638,8 @@ public class UsuarioController {
             usuarioRepository.save(usuario);
 
             return ResponseEntity.ok(java.util.Map.of(
-                "success", true,
-                "mensaje", "Horarios actualizados correctamente"
-            ));
+                    "success", true,
+                    "mensaje", "Horarios actualizados correctamente"));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(java.util.Map.of("error", e.getMessage()));
@@ -642,11 +651,70 @@ public class UsuarioController {
         List<Rol> rolesActivos = rolRepository.findAll()
                 .stream()
                 .filter(Rol::isEstaActivo)
-                // Excluimos PACIENTE de la lista de roles asignables manualmente aquí
-                .filter(rol -> !"PACIENTE".equals(rol.getNombre()))
                 .collect(Collectors.toList());
         model.addAttribute("listaRoles", rolesActivos);
         model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll());
     }
 
+    @GetMapping("/api/pacientes-activos")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> obtenerPacientesActivos() {
+        try {
+            // Obtener todos los pacientes no eliminados
+            List<Paciente> pacientes = pacienteRepository.findAll()
+                    .stream()
+                    .filter(p -> !p.isEliminado())
+                    .filter(p -> {
+                        // Filtrar solo pacientes que NO tengan roles de personal
+                        if (p.getUsuario() == null)
+                            return true;
+
+                        boolean soloTieneRolPaciente = p.getUsuario().getRoles().stream()
+                                .allMatch(rol -> "PACIENTE".equals(rol.getNombre()));
+
+                        return soloTieneRolPaciente;
+                    })
+                    .collect(Collectors.toList());
+
+            // Mapear a formato JSON
+            List<Map<String, Object>> resultado = pacientes.stream()
+                    .map(p -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", p.getId());
+                        map.put("nombreCompleto", p.getNombreCompleto());
+                        map.put("numeroDocumento", p.getNumeroDocumento());
+                        map.put("email", p.getEmail());
+                        map.put("telefono", p.getTelefono());
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(resultado);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/promocionar")
+    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).CREAR_USUARIOS)")
+    public String promoverPacienteAPersonal(
+            @RequestParam Long pacienteId,
+            @RequestParam List<Long> roles,
+            RedirectAttributes redirectAttributes) {
+        try {
+            if (roles == null || roles.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error",
+                        "Debe seleccionar al menos un rol de personal");
+                return "redirect:/usuarios";
+            }
+
+            usuarioService.promoverPacienteAPersonal(pacienteId, roles);
+            redirectAttributes.addFlashAttribute("success",
+                    "Paciente promocionado a personal clínico exitosamente");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Error al promocionar paciente: " + e.getMessage());
+        }
+        return "redirect:/usuarios";
+    }
 }

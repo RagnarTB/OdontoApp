@@ -186,4 +186,34 @@ public class RolController {
                 .collect(Collectors.groupingBy(Permiso::getModulo));
         model.addAttribute("permisosAgrupados", permisosAgrupados);
     }
+
+    /**
+     * Obtiene roles de personal (todos excepto PACIENTE)
+     * Para usar en el modal de promoción de pacientes
+     */
+    @GetMapping("/api/roles-personal")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public org.springframework.http.ResponseEntity<List<Map<String, Object>>> obtenerRolesPersonal() {
+        try {
+            List<Rol> rolesPersonal = rolService.listarTodosLosRoles(null,
+                    PageRequest.of(0, 100)).getContent()
+                    .stream()
+                    .filter(Rol::isEstaActivo)
+                    .filter(rol -> !"PACIENTE".equals(rol.getNombre()))
+                    .collect(Collectors.toList());
+
+            List<Map<String, Object>> resultado = rolesPersonal.stream()
+                    .map(rol -> {
+                        Map<String, Object> map = new java.util.HashMap<>();
+                        map.put("id", rol.getId());
+                        map.put("nombre", rol.getNombre());
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+
+            return org.springframework.http.ResponseEntity.ok(resultado);
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().build();
+        }
+    }
 }

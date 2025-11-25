@@ -27,17 +27,20 @@
                         <h3 class="card-title">Datos del Usuario</h3>
                     </div>
 
-                    <form th:action="@{/usuarios/guardar}" th:object="${usuario}" method="post" id="usuarioForm" data-auto-loading="true">
+                    <form th:action="@{/usuarios/guardar}" th:object="${usuario}" method="post" id="usuarioForm"
+                        data-auto-loading="true">
                         <!-- Campo oculto para el ID (para edición) -->
                         <input type="hidden" th:field="*{id}" />
 
                         <div class="card-body">
 
                             <!-- ALERTA INFORMATIVA PARA MODO EDICIÓN -->
-                            <div th:if="${usuario.id != null}" class="alert alert-info alert-dismissible fade show" role="alert">
+                            <div th:if="${usuario.id != null}" class="alert alert-info alert-dismissible fade show"
+                                role="alert">
                                 <h5><i class="icon fas fa-info-circle"></i> Modo Edición</h5>
                                 <strong>Campos editables:</strong> Email, Teléfono, Dirección, Roles y Horarios.<br>
-                                <strong>Campos protegidos:</strong> Tipo de documento, Número de documento, Nombre completo, Fecha de nacimiento y Fecha de contratación.
+                                <strong>Campos protegidos:</strong> Tipo de documento, Número de documento, Nombre
+                                completo, Fecha de nacimiento y Fecha de contratación.
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -93,17 +96,19 @@
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="tipoDocumentoId">Tipo Documento <span class="text-danger">*</span></label>
+                                        <label for="tipoDocumentoId">Tipo Documento <span
+                                                class="text-danger">*</span></label>
                                         <!-- Hidden field para enviar el valor en modo edición -->
-                                        <input th:if="${usuario.id != null}" type="hidden" th:field="*{tipoDocumentoId}" />
+                                        <input th:if="${usuario.id != null}" type="hidden"
+                                            th:field="*{tipoDocumentoId}" />
                                         <select class="form-control" th:field="*{tipoDocumentoId}" id="tipoDocumentoId"
-                                            th:disabled="${usuario.id != null}"
-                                            required
+                                            th:disabled="${usuario.id != null}" required
                                             th:classappend="${#fields.hasErrors('tipoDocumentoId')} ? 'is-invalid' : ''">
                                             <option value="">Seleccione...</option>
                                             <option th:each="tipo : ${tiposDocumento}" th:value="${tipo.id}"
                                                 th:text="${tipo.nombre}"
-                                                th:selected="${usuario.tipoDocumentoId != null && usuario.tipoDocumentoId == tipo.id}"></option>
+                                                th:selected="${usuario.tipoDocumentoId != null && usuario.tipoDocumentoId == tipo.id}">
+                                            </option>
                                         </select>
                                         <div th:if="${#fields.hasErrors('tipoDocumentoId')}" class="invalid-feedback"
                                             th:errors="*{tipoDocumentoId}"></div>
@@ -114,13 +119,12 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="numeroDocumento">N&uacute;mero Documento <span class="text-danger">*</span></label>
+                                        <label for="numeroDocumento">N&uacute;mero Documento <span
+                                                class="text-danger">*</span></label>
                                         <div class="input-group">
                                             <input type="text" class="form-control" th:field="*{numeroDocumento}"
                                                 id="numeroDocumento" placeholder="Número de Documento"
-                                                th:readonly="${usuario.id != null}"
-                                                maxlength="8"
-                                                required
+                                                th:readonly="${usuario.id != null}" maxlength="8" required
                                                 th:classappend="${#fields.hasErrors('numeroDocumento')} ? 'is-invalid' : ''">
                                             <div class="input-group-append">
                                                 <button class="btn btn-outline-secondary" type="button"
@@ -142,10 +146,10 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="nombreCompleto">Nombre Completo <span class="text-danger">*</span></label>
+                                        <label for="nombreCompleto">Nombre Completo <span
+                                                class="text-danger">*</span></label>
                                         <input type="text" class="form-control" th:field="*{nombreCompleto}"
-                                            id="nombreCompleto" placeholder="Busque DNI para autocompletar"
-                                            readonly
+                                            id="nombreCompleto" placeholder="Busque DNI para autocompletar" readonly
                                             data-validar="nombre"
                                             th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''"
                                             required>
@@ -174,7 +178,8 @@
                                         <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback"
                                             th:errors="*{email}"></div>
                                         <small th:if="${usuario.id != null}" class="form-text text-muted">
-                                            <i class="fas fa-lock"></i> Campo no editable - El email no puede ser modificado
+                                            <i class="fas fa-lock"></i> Campo no editable - El email no puede ser
+                                            modificado
                                         </small>
                                     </div>
                                 </div>
@@ -182,9 +187,7 @@
                                     <div class="form-group">
                                         <label for="telefono">Tel&eacute;fono</label>
                                         <input type="text" class="form-control" id="telefono" th:field="*{telefono}"
-                                            placeholder="987654321"
-                                            data-validar="telefono"
-                                            maxlength="9"
+                                            placeholder="987654321" data-validar="telefono" maxlength="9"
                                             th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('telefono')}" class="invalid-feedback"
                                             th:errors="*{telefono}"></div>
@@ -195,19 +198,19 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="fechaNacimiento">Fecha de Nacimiento <span class="text-danger">*</span></label>
+                                        <label for="fechaNacimiento">Fecha de Nacimiento <span
+                                                class="text-danger">*</span></label>
                                         <!-- Hidden field para enviar el valor en modo edición con formato ISO -->
                                         <input th:if="${usuario.id != null}" type="hidden" name="fechaNacimiento"
                                             th:value="${usuario.fechaNacimiento != null ? usuario.fechaNacimiento : ''}" />
                                         <!-- Input visible en modo edición (texto plano) -->
                                         <input th:if="${usuario.id != null}" type="text" class="form-control bg-light"
-                                            th:value="${usuario.fechaNacimiento != null ? #temporals.format(usuario.fechaNacimiento, 'dd/MM/yyyy') : ''}" readonly />
+                                            th:value="${usuario.fechaNacimiento != null ? #temporals.format(usuario.fechaNacimiento, 'dd/MM/yyyy') : ''}"
+                                            readonly />
                                         <!-- Input normal en modo creación -->
-                                        <input th:if="${usuario.id == null}" type="date" class="form-control" id="fechaNacimiento"
-                                            th:field="*{fechaNacimiento}"
-                                            data-validar="edad-minima"
-                                            data-edad-minima="18"
-                                            required
+                                        <input th:if="${usuario.id == null}" type="date" class="form-control"
+                                            id="fechaNacimiento" th:field="*{fechaNacimiento}"
+                                            data-validar="edad-minima" data-edad-minima="18" required
                                             th:classappend="${#fields.hasErrors('fechaNacimiento')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('fechaNacimiento')}" class="invalid-feedback"
                                             th:errors="*{fechaNacimiento}"></div>
@@ -223,18 +226,19 @@
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label for="fechaContratacion">Fecha Contrataci&oacute;n <span class="text-danger">*</span></label>
+                                        <label for="fechaContratacion">Fecha Contrataci&oacute;n <span
+                                                class="text-danger">*</span></label>
                                         <!-- Hidden field para enviar el valor en modo edición con formato ISO -->
                                         <input th:if="${usuario.id != null}" type="hidden" name="fechaContratacion"
                                             th:value="${usuario.fechaContratacion != null ? usuario.fechaContratacion : ''}" />
                                         <!-- Input visible en modo edición (texto plano) -->
                                         <input th:if="${usuario.id != null}" type="text" class="form-control bg-light"
-                                            th:value="${usuario.fechaContratacion != null ? #temporals.format(usuario.fechaContratacion, 'dd/MM/yyyy') : ''}" readonly />
+                                            th:value="${usuario.fechaContratacion != null ? #temporals.format(usuario.fechaContratacion, 'dd/MM/yyyy') : ''}"
+                                            readonly />
                                         <!-- Input normal en modo creación -->
-                                        <input th:if="${usuario.id == null}" type="date" class="form-control" id="fechaContratacion"
-                                            th:field="*{fechaContratacion}"
-                                            data-validar="fecha-no-futura"
-                                            required
+                                        <input th:if="${usuario.id == null}" type="date" class="form-control"
+                                            id="fechaContratacion" th:field="*{fechaContratacion}"
+                                            data-validar="fecha-no-futura" required
                                             th:classappend="${#fields.hasErrors('fechaContratacion')} ? 'is-invalid' : ''">
                                         <div th:if="${#fields.hasErrors('fechaContratacion')}" class="invalid-feedback"
                                             th:errors="*{fechaContratacion}"></div>
@@ -248,17 +252,20 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group" id="grupoFechaVigencia">
-                                        <label for="fechaVigencia">Fecha de Vigencia <span class="text-danger" id="vigenciaRequired">*</span></label>
+                                        <label for="fechaVigencia">Fecha de Vigencia <span class="text-danger"
+                                                id="vigenciaRequired">*</span></label>
 
                                         <!-- En modo edición: campo hidden para binding + campo texto readonly para mostrar -->
-                                        <input th:if="${usuario.id != null}" type="hidden" id="fechaVigenciaHidden" th:field="*{fechaVigencia}" />
-                                        <input th:if="${usuario.id != null}" type="text" class="form-control" id="fechaVigenciaDisplay"
+                                        <input th:if="${usuario.id != null}" type="hidden" id="fechaVigenciaHidden"
+                                            th:field="*{fechaVigencia}" />
+                                        <input th:if="${usuario.id != null}" type="text" class="form-control"
+                                            id="fechaVigenciaDisplay"
                                             th:value="${usuario.fechaVigencia != null ? #temporals.format(usuario.fechaVigencia, 'dd/MM/yyyy') : 'No establecida'}"
                                             readonly style="background-color: #e9ecef;" />
 
                                         <!-- En modo creación: input date normal -->
-                                        <input th:if="${usuario.id == null}" type="date" class="form-control" id="fechaVigencia"
-                                            th:field="*{fechaVigencia}"
+                                        <input th:if="${usuario.id == null}" type="date" class="form-control"
+                                            id="fechaVigencia" th:field="*{fechaVigencia}"
                                             data-validar="fecha-no-pasada"
                                             th:classappend="${#fields.hasErrors('fechaVigencia')} ? 'is-invalid' : ''">
 
@@ -267,20 +274,21 @@
 
                                         <!-- Checkbox para habilitar edición en modo editar -->
                                         <div th:if="${usuario.id != null}" class="custom-control custom-checkbox mt-2">
-                                            <input type="checkbox" class="custom-control-input" id="checkEditarFechaVigencia">
+                                            <input type="checkbox" class="custom-control-input"
+                                                id="checkEditarFechaVigencia">
                                             <label class="custom-control-label" for="checkEditarFechaVigencia">
                                                 <i class="fas fa-unlock-alt"></i> Permitir editar fecha de vigencia
                                             </label>
                                         </div>
 
                                         <!-- Campo date que aparece solo cuando se marca el checkbox -->
-                                        <input th:if="${usuario.id != null}" type="date" class="form-control mt-2" id="fechaVigenciaEdit"
-                                            th:value="${usuario.fechaVigencia}"
-                                            style="display: none;"
-                                            data-validar="fecha-no-pasada">
+                                        <input th:if="${usuario.id != null}" type="date" class="form-control mt-2"
+                                            id="fechaVigenciaEdit" th:value="${usuario.fechaVigencia}"
+                                            style="display: none;" data-validar="fecha-no-pasada">
 
                                         <small th:if="${usuario.id == null}" class="form-text text-info">
-                                            <i class="fas fa-info-circle"></i> Fecha hasta la cual el usuario tendrá acceso (no requerido para ADMIN)
+                                            <i class="fas fa-info-circle"></i> Fecha hasta la cual el usuario tendrá
+                                            acceso (no requerido para ADMIN)
                                         </small>
                                     </div>
                                 </div>
@@ -312,6 +320,33 @@
                                 </div>
                                 <div th:if="${#fields.hasErrors('roles')}" class="invalid-feedback d-block"
                                     th:errors="*{roles}"></div>
+                            </div>
+                            <!-- SECCIÓN DE DATOS DE PACIENTE (Visible solo si se marca PACIENTE) -->
+                            <div id="seccionDatosPaciente" style="display: none;">
+                                <hr>
+                                <h5 class="mt-4 mb-3 text-primary">
+                                    <i class="fas fa-user-injured mr-2"></i>Datos Clínicos del Paciente
+                                </h5>
+
+                                <div class="form-group">
+                                    <label for="alergias">Alergias Conocidas</label>
+                                    <textarea class="form-control" th:field="*{alergias}" id="alergias" rows="3"
+                                        placeholder="Ej: Penicilina, AINES..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="antecedentesMedicos">Antecedentes Médicos</label>
+                                    <textarea class="form-control" th:field="*{antecedentesMedicos}"
+                                        id="antecedentesMedicos" rows="3"
+                                        placeholder="Ej: Hipertensión, Diabetes..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="tratamientosActuales">Tratamientos Actuales</label>
+                                    <textarea class="form-control" th:field="*{tratamientosActuales}"
+                                        id="tratamientosActuales" rows="3"
+                                        placeholder="Medicamentos o tratamientos en curso..."></textarea>
+                                </div>
                             </div>
 
                             <!-- SECCIÓN DE HORARIOS (Visible solo si se marca ODONTOLOGO) -->
@@ -345,11 +380,13 @@
                                         <div class="card">
                                             <div class="card-header" th:id="'heading-' + ${dia}">
                                                 <button class="btn btn-link" type="button" data-toggle="collapse"
-                                                    th:attr="data-target='#collapse-' + ${dia}"
-                                                    aria-expanded="false">
-                                                    <span class="dia-icon" th:text="${#strings.substring(dia.toString(), 0, 2)}">L</span>
-                                                    <strong th:text="${#strings.capitalize(#strings.toLowerCase(dia.getDisplayName(T(java.time.format.TextStyle).FULL, localeEs)))}">Lunes</strong>
-                                                    <span class="badge badge-primary ml-2" th:id="'badge-' + ${dia}">Sin configurar</span>
+                                                    th:attr="data-target='#collapse-' + ${dia}" aria-expanded="false">
+                                                    <span class="dia-icon"
+                                                        th:text="${#strings.substring(dia.toString(), 0, 2)}">L</span>
+                                                    <strong
+                                                        th:text="${#strings.capitalize(#strings.toLowerCase(dia.getDisplayName(T(java.time.format.TextStyle).FULL, localeEs)))}">Lunes</strong>
+                                                    <span class="badge badge-primary ml-2" th:id="'badge-' + ${dia}">Sin
+                                                        configurar</span>
                                                 </button>
                                             </div>
                                             <div th:id="'collapse-' + ${dia}" class="collapse"
@@ -384,7 +421,8 @@
                         </div> <!-- Fin .card-body -->
 
                         <div class="card-footer">
-                            <button type="submit" class="btn btn-primary" data-loading-text="Guardando usuario..."><i class="fas fa-save mr-2"></i>Guardar
+                            <button type="submit" class="btn btn-primary" data-loading-text="Guardando usuario..."><i
+                                    class="fas fa-save mr-2"></i>Guardar
                                 Usuario</button>
                             <a th:href="@{/usuarios}" class="btn btn-secondary">Cancelar</a>
                         </div>
@@ -475,7 +513,7 @@
                 }
 
                 // Limpiar campos si cambia el tipo de documento (solo en modo creación)
-                tipoDocumentoSelect.addEventListener('change', function() {
+                tipoDocumentoSelect.addEventListener('change', function () {
                     // ✅ SOLO limpiar campos si estamos en modo CREACIÓN (no en edición)
                     const modoEdicion = document.querySelector('input[name="id"]')?.value;
                     if (!modoEdicion) {
@@ -488,7 +526,7 @@
                 });
 
                 // Si se cambia o borra el DNI, limpiar el nombre automáticamente
-                numeroDocumentoInput.addEventListener('input', function() {
+                numeroDocumentoInput.addEventListener('input', function () {
                     const modoEdicion = document.querySelector('input[name="id"]')?.value;
                     if (!modoEdicion) {
                         // Solo si estamos en modo creación
@@ -540,7 +578,7 @@
                             numDoc: dni,
                             tipoDocId: tipoDocId
                         },
-                        success: function(response) {
+                        success: function (response) {
                             cerrarCargando();
                             if (response.nombreCompleto) {
                                 nombreCompletoInput.value = response.nombreCompleto;
@@ -560,7 +598,7 @@
                                 mostrarAdvertencia('No se encontraron datos para este DNI');
                             }
                         },
-                        error: function(xhr) {
+                        error: function (xhr) {
                             cerrarCargando();
                             nombreCompletoInput.readOnly = false;
                             nombreCompletoInput.classList.remove('bg-light');
@@ -574,7 +612,7 @@
                             docError.textContent = errorMsg;
                             mostrarAdvertencia(errorMsg);
                         },
-                        complete: function() {
+                        complete: function () {
                             // Re-habilitar el input de número de documento solo en modo creación
                             const modoEdicion = document.querySelector('input[name="id"]')?.value;
                             if (!modoEdicion) {
@@ -585,7 +623,7 @@
                 }
 
                 // Evento al hacer clic en el botón de búsqueda
-                btnBuscarDni.addEventListener('click', function() {
+                btnBuscarDni.addEventListener('click', function () {
                     const dni = numeroDocumentoInput.value.trim();
                     if (dni.length === 8) {
                         buscarDatosReniec(dni);
@@ -595,7 +633,7 @@
                 });
 
                 // Auto-búsqueda al escribir (debounce de 1 segundo)
-                numeroDocumentoInput.addEventListener('input', function() {
+                numeroDocumentoInput.addEventListener('input', function () {
                     const dni = this.value.trim();
 
                     // Limpiar timeout anterior
@@ -608,7 +646,7 @@
                     if (!modoEdicion) {
                         // Si tiene 8 dígitos y es DNI, buscar automáticamente después de 1 segundo
                         if (esDNI() && dni.length === 8 && /^\d{8}$/.test(dni)) {
-                            timeoutId = setTimeout(function() {
+                            timeoutId = setTimeout(function () {
                                 buscarDatosReniec(dni);
                             }, 1000);
                         }
@@ -639,7 +677,7 @@
                         rolAdminId = cb.value;
                     }
 
-                    cb.addEventListener('change', function() {
+                    cb.addEventListener('change', function () {
                         toggleSeccionHorarios();
                         toggleFechaVigencia();
                         verificarRolAdmin(this);
@@ -686,6 +724,47 @@
                     }
                 }
 
+                let rolPacienteId = null;
+                checkboxesRoles.forEach(cb => {
+                    const rolNombre = cb.dataset.rolNombre ? cb.dataset.rolNombre.toUpperCase() : '';
+                    if (rolNombre === 'PACIENTE') {
+                        rolPacienteId = cb.value;
+                    }
+
+                    cb.addEventListener('change', function () {
+                        toggleSeccionHorarios();
+                        toggleFechaVigencia();
+                        toggleSeccionDatosPaciente(); // Nueva función
+                        verificarRolAdmin(this);
+                    });
+                });
+                function toggleSeccionDatosPaciente() {
+                    const seccionDatosPaciente = document.getElementById('seccionDatosPaciente');
+                    let pacienteSeleccionado = false;
+
+                    checkboxesRoles.forEach(cb => {
+                        if (cb.value === rolPacienteId && cb.checked) {
+                            pacienteSeleccionado = true;
+                        }
+                    });
+
+                    if (pacienteSeleccionado) {
+                        seccionDatosPaciente.style.display = 'block';
+                        // Habilitar campos
+                        seccionDatosPaciente.querySelectorAll('textarea').forEach(el => {
+                            el.disabled = false;
+                        });
+                    } else {
+                        seccionDatosPaciente.style.display = 'none';
+                        // Deshabilitar y limpiar campos
+                        seccionDatosPaciente.querySelectorAll('textarea').forEach(el => {
+                            el.disabled = true;
+                        });
+                    }
+                }
+                // Llamar al inicio
+                toggleSeccionDatosPaciente();
+
                 // --- FUNCIÓN PARA TOGGLE DE FECHA DE VIGENCIA ---
                 function toggleFechaVigencia() {
                     let adminSeleccionado = false;
@@ -715,9 +794,9 @@
                         Swal.fire({
                             title: '¿Asignar rol ADMIN?',
                             html: '<p class="text-warning"><strong>ADVERTENCIA:</strong></p>' +
-                                  '<p>Está a punto de asignar el rol de <strong>ADMINISTRADOR</strong>.</p>' +
-                                  '<p>Este rol tiene acceso completo al sistema y <strong>NO podrá ser modificado posteriormente</strong>.</p>' +
-                                  '<p>¿Está completamente seguro?</p>',
+                                '<p>Está a punto de asignar el rol de <strong>ADMINISTRADOR</strong>.</p>' +
+                                '<p>Este rol tiene acceso completo al sistema y <strong>NO podrá ser modificado posteriormente</strong>.</p>' +
+                                '<p>¿Está completamente seguro?</p>',
                             icon: 'warning',
                             showCancelButton: true,
                             confirmButtonColor: '#d33',
@@ -730,13 +809,13 @@
                                 Swal.fire({
                                     title: 'SEGUNDA CONFIRMACIÓN',
                                     html: '<p class="text-danger"><strong>Esta es su última oportunidad.</strong></p>' +
-                                          '<p>Una vez guardado, este usuario con rol ADMIN:</p>' +
-                                          '<ul class="text-left">' +
-                                          '<li>Tendrá acceso completo al sistema</li>' +
-                                          '<li>NO podrá ser modificado ni eliminado</li>' +
-                                          '<li>No requerirá fecha de vigencia</li>' +
-                                          '</ul>' +
-                                          '<p><strong>¿Confirma la asignación del rol ADMIN?</strong></p>',
+                                        '<p>Una vez guardado, este usuario con rol ADMIN:</p>' +
+                                        '<ul class="text-left">' +
+                                        '<li>Tendrá acceso completo al sistema</li>' +
+                                        '<li>NO podrá ser modificado ni eliminado</li>' +
+                                        '<li>No requerirá fecha de vigencia</li>' +
+                                        '</ul>' +
+                                        '<p><strong>¿Confirma la asignación del rol ADMIN?</strong></p>',
                                     icon: 'error',
                                     showCancelButton: true,
                                     confirmButtonColor: '#d33',
@@ -773,7 +852,7 @@
                 const fechaVigenciaHidden = document.getElementById('fechaVigenciaHidden');
 
                 if (checkEditarFechaVigencia && fechaVigenciaDisplay && fechaVigenciaEdit && fechaVigenciaHidden) {
-                    checkEditarFechaVigencia.addEventListener('change', function() {
+                    checkEditarFechaVigencia.addEventListener('change', function () {
                         if (this.checked) {
                             // Mostrar campo de edición
                             fechaVigenciaDisplay.style.display = 'none';
@@ -796,7 +875,7 @@
                     });
 
                     // Sincronizar cambios del campo edit al hidden
-                    fechaVigenciaEdit.addEventListener('change', function() {
+                    fechaVigenciaEdit.addEventListener('change', function () {
                         fechaVigenciaHidden.value = this.value;
                     });
                 }
@@ -843,111 +922,111 @@
 
                 // === VALIDACIONES EN TIEMPO REAL ===
 
-            // Obtener ID del usuario si estamos en modo edición
-            const usuarioIdInput = document.querySelector('input[name="id"]');
-            const usuarioIdActual = usuarioIdInput ? usuarioIdInput.value : null;
+                // Obtener ID del usuario si estamos en modo edición
+                const usuarioIdInput = document.querySelector('input[name="id"]');
+                const usuarioIdActual = usuarioIdInput ? usuarioIdInput.value : null;
 
-            // Validar DNI duplicado
-            let dniTimeout;
-            numeroDocumentoInput.addEventListener('blur', function() {
-                const dni = this.value.trim();
-                const docError = document.getElementById('doc-error');
+                // Validar DNI duplicado
+                let dniTimeout;
+                numeroDocumentoInput.addEventListener('blur', function () {
+                    const dni = this.value.trim();
+                    const docError = document.getElementById('doc-error');
 
-                if (dni.length === 8 && /^\d{8}$/.test(dni) && !usuarioIdActual) {
-                    clearTimeout(dniTimeout);
-                    dniTimeout = setTimeout(function() {
-                        $.ajax({
-                            url: '/usuarios/api/validar-dni',
-                            method: 'GET',
-                            data: {
-                                dni: dni,
-                                usuarioId: usuarioIdActual
-                            },
-                            success: function(response) {
-                                if (!response.disponible) {
-                                    docError.textContent = response.mensaje;
-                                    numeroDocumentoInput.classList.add('is-invalid');
-                                } else {
-                                    docError.textContent = '';
-                                    numeroDocumentoInput.classList.remove('is-invalid');
+                    if (dni.length === 8 && /^\d{8}$/.test(dni) && !usuarioIdActual) {
+                        clearTimeout(dniTimeout);
+                        dniTimeout = setTimeout(function () {
+                            $.ajax({
+                                url: '/usuarios/api/validar-dni',
+                                method: 'GET',
+                                data: {
+                                    dni: dni,
+                                    usuarioId: usuarioIdActual
+                                },
+                                success: function (response) {
+                                    if (!response.disponible) {
+                                        docError.textContent = response.mensaje;
+                                        numeroDocumentoInput.classList.add('is-invalid');
+                                    } else {
+                                        docError.textContent = '';
+                                        numeroDocumentoInput.classList.remove('is-invalid');
+                                    }
                                 }
-                            }
-                        });
-                    }, 500);
-                }
-            });
+                            });
+                        }, 500);
+                    }
+                });
 
-            // Validar email duplicado
-            let emailTimeout;
-            const emailInput = document.getElementById('email');
-            const emailFeedback = document.createElement('small');
-            emailFeedback.className = 'form-text text-danger';
-            emailFeedback.id = 'email-error';
-            emailInput.parentNode.appendChild(emailFeedback);
+                // Validar email duplicado
+                let emailTimeout;
+                const emailInput = document.getElementById('email');
+                const emailFeedback = document.createElement('small');
+                emailFeedback.className = 'form-text text-danger';
+                emailFeedback.id = 'email-error';
+                emailInput.parentNode.appendChild(emailFeedback);
 
-            emailInput.addEventListener('blur', function() {
-                const email = this.value.trim();
+                emailInput.addEventListener('blur', function () {
+                    const email = this.value.trim();
 
-                if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                    clearTimeout(emailTimeout);
-                    emailTimeout = setTimeout(function() {
-                        $.ajax({
-                            url: '/usuarios/api/validar-email',
-                            method: 'GET',
-                            data: {
-                                email: email,
-                                usuarioId: usuarioIdActual
-                            },
-                            success: function(response) {
-                                if (!response.disponible) {
-                                    emailFeedback.textContent = response.mensaje;
-                                    emailInput.classList.add('is-invalid');
-                                } else {
-                                    emailFeedback.textContent = '';
-                                    emailInput.classList.remove('is-invalid');
+                    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        clearTimeout(emailTimeout);
+                        emailTimeout = setTimeout(function () {
+                            $.ajax({
+                                url: '/usuarios/api/validar-email',
+                                method: 'GET',
+                                data: {
+                                    email: email,
+                                    usuarioId: usuarioIdActual
+                                },
+                                success: function (response) {
+                                    if (!response.disponible) {
+                                        emailFeedback.textContent = response.mensaje;
+                                        emailInput.classList.add('is-invalid');
+                                    } else {
+                                        emailFeedback.textContent = '';
+                                        emailInput.classList.remove('is-invalid');
+                                    }
                                 }
-                            }
-                        });
-                    }, 500);
-                }
-            });
+                            });
+                        }, 500);
+                    }
+                });
 
-            // Validar teléfono duplicado
-            let telefonoTimeout;
-            const telefonoInput = document.getElementById('telefono');
-            const telefonoFeedback = document.createElement('small');
-            telefonoFeedback.className = 'form-text text-danger';
-            telefonoFeedback.id = 'telefono-error';
-            telefonoInput.parentNode.appendChild(telefonoFeedback);
+                // Validar teléfono duplicado
+                let telefonoTimeout;
+                const telefonoInput = document.getElementById('telefono');
+                const telefonoFeedback = document.createElement('small');
+                telefonoFeedback.className = 'form-text text-danger';
+                telefonoFeedback.id = 'telefono-error';
+                telefonoInput.parentNode.appendChild(telefonoFeedback);
 
-            telefonoInput.addEventListener('blur', function() {
-                const telefono = this.value.trim();
+                telefonoInput.addEventListener('blur', function () {
+                    const telefono = this.value.trim();
 
-                if (telefono && /^\d{9}$/.test(telefono)) {
-                    clearTimeout(telefonoTimeout);
-                    telefonoTimeout = setTimeout(function() {
-                        $.ajax({
-                            url: '/usuarios/api/validar-telefono',
-                            method: 'GET',
-                            data: {
-                                telefono: telefono,
-                                usuarioId: usuarioIdActual
-                            },
-                            success: function(response) {
-                                if (!response.disponible) {
-                                    telefonoFeedback.textContent = response.mensaje;
-                                    telefonoInput.classList.add('is-invalid');
-                                } else {
-                                    telefonoFeedback.textContent = '';
-                                    telefonoInput.classList.remove('is-invalid');
+                    if (telefono && /^\d{9}$/.test(telefono)) {
+                        clearTimeout(telefonoTimeout);
+                        telefonoTimeout = setTimeout(function () {
+                            $.ajax({
+                                url: '/usuarios/api/validar-telefono',
+                                method: 'GET',
+                                data: {
+                                    telefono: telefono,
+                                    usuarioId: usuarioIdActual
+                                },
+                                success: function (response) {
+                                    if (!response.disponible) {
+                                        telefonoFeedback.textContent = response.mensaje;
+                                        telefonoInput.classList.add('is-invalid');
+                                    } else {
+                                        telefonoFeedback.textContent = '';
+                                        telefonoInput.classList.remove('is-invalid');
+                                    }
                                 }
-                            }
-                        });
-                    }, 500);
-                }
-            });
+                            });
+                        }, 500);
+                    }
+                });
 
-            // === FIN VALIDACIONES EN TIEMPO REAL ===
+                // === FIN VALIDACIONES EN TIEMPO REAL ===
 
             }); // Fin DOMContentLoaded
 

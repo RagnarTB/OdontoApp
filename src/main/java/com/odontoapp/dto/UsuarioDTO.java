@@ -51,18 +51,25 @@ public class UsuarioDTO {
     @NotEmpty(message = "Debe seleccionar al menos un rol")
     private List<Long> roles;
 
+    private String alergias;
+    private String antecedentesMedicos;
+    private String tratamientosActuales;
+
     // --- CAMPOS PARA HORARIO ---
 
     /**
      * Mapa para recibir/enviar el horario regular desde el formulario.
-     * La clave será DayOfWeek y el valor el string con intervalos "HH:mm-HH:mm,HH:mm-HH:mm".
+     * La clave será DayOfWeek y el valor el string con intervalos
+     * "HH:mm-HH:mm,HH:mm-HH:mm".
      */
     private Map<DayOfWeek, @Pattern(regexp = "^$|([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9](,([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9])*$", message = "Formato de horas inválido. Use HH:mm-HH:mm (ej. 09:00-13:00). Separe múltiples intervalos con comas o deje vacío si no trabaja.") String> horarioRegular = new EnumMap<>(
             DayOfWeek.class);
 
     /**
      * Lista para recibir/enviar las excepciones de horario.
-     * @Valid permite que las validaciones dentro de HorarioExcepcionDTO se ejecuten.
+     * 
+     * @Valid permite que las validaciones dentro de HorarioExcepcionDTO se
+     *        ejecuten.
      */
     @Valid
     private List<HorarioExcepcionDTO> excepcionesHorario = new ArrayList<>();

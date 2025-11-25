@@ -115,9 +115,8 @@
                 <div th:each="rol : ${roles}" class="role-card-container">
                     <div class="card role-card text-center" th:attr="data-rol-id=${rol.id}">
                         <div class="card-body">
-                            <input type="radio" name="rolId" th:value="${rol.id}"
-                                   th:id="'rol-' + ${rol.id}"
-                                   style="display: none;">
+                            <input type="radio" name="rolId" th:value="${rol.id}" th:id="'rol-' + ${rol.id}"
+                                style="display: none;">
                             <label th:for="'rol-' + ${rol.id}" style="cursor: pointer; width: 100%;">
                                 <!-- Icono según el rol -->
                                 <div class="role-icon text-primary">
@@ -125,8 +124,9 @@
                                     <i th:if="${rol.nombre == 'ODONTOLOGO'}" class="fas fa-user-md"></i>
                                     <i th:if="${rol.nombre == 'RECEPCIONISTA'}" class="fas fa-user-tie"></i>
                                     <i th:if="${rol.nombre == 'ALMACEN'}" class="fas fa-warehouse"></i>
-                                    <i th:if="${rol.nombre != 'ADMIN' && rol.nombre != 'ODONTOLOGO' && rol.nombre != 'RECEPCIONISTA' && rol.nombre != 'ALMACEN'}"
-                                       class="fas fa-user-tag"></i>
+                                    <i th:if="${rol.nombre == 'PACIENTE'}" class="fas fa-user-injured"></i>
+                                    <i th:if="${rol.nombre != 'ADMIN' && rol.nombre != 'ODONTOLOGO' && rol.nombre != 'RECEPCIONISTA' && rol.nombre != 'ALMACEN' && rol.nombre != 'PACIENTE'}"
+                                        class="fas fa-user-tag"></i>
                                 </div>
 
                                 <h4 class="card-title mb-2" th:text="${rol.nombre}">Rol</h4>
@@ -134,10 +134,14 @@
                                 <!-- Descripción del rol -->
                                 <p class="text-muted small">
                                     <span th:if="${rol.nombre == 'ADMIN'}">Acceso completo al sistema</span>
-                                    <span th:if="${rol.nombre == 'ODONTOLOGO'}">Gestión de pacientes y tratamientos</span>
+                                    <span th:if="${rol.nombre == 'ODONTOLOGO'}">Gestión de pacientes y
+                                        tratamientos</span>
                                     <span th:if="${rol.nombre == 'RECEPCIONISTA'}">Gestión de citas y facturación</span>
                                     <span th:if="${rol.nombre == 'ALMACEN'}">Gestión de inventario</span>
-                                    <span th:if="${rol.nombre != 'ADMIN' && rol.nombre != 'ODONTOLOGO' && rol.nombre != 'RECEPCIONISTA' && rol.nombre != 'ALMACEN'}">
+                                    <span th:if="${rol.nombre == 'PACIENTE'}">Portal de paciente - Mis citas y
+                                        tratamientos</span>
+                                    <span
+                                        th:if="${rol.nombre != 'ADMIN' && rol.nombre != 'ODONTOLOGO' && rol.nombre != 'RECEPCIONISTA' && rol.nombre != 'ALMACEN' && rol.nombre != 'PACIENTE'}">
                                         Rol personalizado
                                     </span>
                                 </p>
@@ -159,12 +163,12 @@
                     <i class="fas fa-check"></i> Confirmar Selección
                 </button>
 
-                <a th:href="@{/dashboard}" class="btn btn-secondary btn-lg ml-2"
-                   th:if="${!modoSeleccion}">
+                <a th:href="@{/dashboard}" class="btn btn-secondary btn-lg ml-2" th:if="${!modoSeleccion}">
                     <i class="fas fa-times"></i> Cancelar
                 </a>
 
-                <button type="button" class="btn btn-outline-danger btn-lg ml-2" onclick="document.getElementById('logoutFormRol').submit();">
+                <button type="button" class="btn btn-outline-danger btn-lg ml-2"
+                    onclick="document.getElementById('logoutFormRol').submit();">
                     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                 </button>
             </div>
@@ -186,9 +190,9 @@
     <script th:src="@{/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             // Manejar selección de rol
-            $('.role-card').on('click', function() {
+            $('.role-card').on('click', function () {
                 // Remover selección previa
                 $('.role-card').removeClass('selected');
                 $('input[name="rolId"]').prop('checked', false);
@@ -202,14 +206,14 @@
             });
 
             // Marcar el radio button si se hace clic en cualquier parte de la card
-            $('input[name="rolId"]').on('change', function() {
+            $('input[name="rolId"]').on('change', function () {
                 if ($(this).is(':checked')) {
                     $('#btnConfirmar').prop('disabled', false);
                 }
             });
 
             // Auto-submit al hacer doble clic en una card
-            $('.role-card').on('dblclick', function() {
+            $('.role-card').on('dblclick', function () {
                 $(this).find('input[name="rolId"]').prop('checked', true);
                 $('#rolForm').submit();
             });
