@@ -637,9 +637,26 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (!usuario.isEstaActivo()) {
             throw new IllegalStateException("No se puede promocionar un usuario inactivo");
         }
-        // Actualizar SOLO los datos de personal (los datos del paciente ya existen)
+        // ✅ SINCRONIZAR datos del paciente al usuario
+        // Esto asegura que el usuario tenga todos los datos necesarios para el
+        // formulario de edición
+        usuario.setTipoDocumento(paciente.getTipoDocumento());
+        usuario.setNumeroDocumento(paciente.getNumeroDocumento());
+        usuario.setNombreCompleto(paciente.getNombreCompleto());
+        usuario.setFechaNacimiento(paciente.getFechaNacimiento());
+
+        // Actualizar teléfono y dirección solo si el paciente los tiene
+        if (paciente.getTelefono() != null && !paciente.getTelefono().trim().isEmpty()) {
+            usuario.setTelefono(paciente.getTelefono());
+        }
+        if (paciente.getDireccion() != null && !paciente.getDireccion().trim().isEmpty()) {
+            usuario.setDireccion(paciente.getDireccion());
+        }
+
+        // Actualizar datos de personal
         usuario.setFechaContratacion(fechaContratacion);
         usuario.setFechaVigencia(fechaVigencia);
+
         // Agregar los nuevos roles de personal (sin quitar el rol PACIENTE)
         List<Rol> nuevosRoles = rolRepository.findAllById(rolesIds);
         if (nuevosRoles.isEmpty()) {

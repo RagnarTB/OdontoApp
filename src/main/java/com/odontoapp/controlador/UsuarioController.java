@@ -687,6 +687,9 @@ public class UsuarioController {
                         map.put("numeroDocumento", p.getNumeroDocumento());
                         map.put("email", p.getEmail());
                         map.put("telefono", p.getTelefono());
+                        map.put("fechaNacimiento",
+                                p.getFechaNacimiento() != null ? p.getFechaNacimiento().toString() : null);
+                        map.put("direccion", p.getDireccion());
                         return map;
                     })
                     .collect(Collectors.toList());

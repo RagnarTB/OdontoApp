@@ -82,7 +82,7 @@ public class RolSelectorController {
             // Primer login, debe seleccionar
             model.addAttribute("modoSeleccion", true);
         }
-
+        session.setAttribute("totalRoles", rolesUsuario.size());
         model.addAttribute("usuario", usuario);
         model.addAttribute("roles", rolesUsuario);
 
@@ -114,7 +114,7 @@ public class RolSelectorController {
         // Guardar el rol activo en la sesión
         session.setAttribute("rolActivo", rolSeleccionado.getNombre());
         session.setAttribute("rolActivoId", rolSeleccionado.getId());
-
+        session.setAttribute("totalRoles", usuario.getRoles().size());
         // Actualizar las authorities del contexto de seguridad con el rol seleccionado
         actualizarAuthoritiesConRolSeleccionado(authentication, rolSeleccionado, usuario);
 
@@ -133,6 +133,15 @@ public class RolSelectorController {
      */
     @GetMapping("/cambiar")
     public String cambiarRol(HttpSession session, Model model) {
+        // Obtener el total de roles antes de limpiar la sesión
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        Usuario usuario = usuarioRepository.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Guardar total de roles en sesión para mostrar dropdown
+        session.setAttribute("totalRoles", usuario.getRoles().size());
+
         // Limpiar el rol activo de la sesión para forzar nueva selección
         session.removeAttribute("rolActivo");
         session.removeAttribute("rolActivoId");

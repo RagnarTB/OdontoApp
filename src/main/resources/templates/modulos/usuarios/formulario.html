@@ -677,10 +677,20 @@
                         rolAdminId = cb.value;
                     }
 
-                    cb.addEventListener('change', function () {
-                        toggleSeccionHorarios();
-                        toggleFechaVigencia();
-                        verificarRolAdmin(this);
+                    cb.addEventListener('change', function (event) {
+                        // Si es ADMIN y se está marcando, prevenir el cambio hasta confirmar
+                        if (this.dataset.rolNombre && this.dataset.rolNombre.toUpperCase() === 'ADMIN' && this.checked) {
+                            event.preventDefault();
+                            this.checked = false; // Desmarcar temporalmente
+                            verificarRolAdmin(this);
+                        } else {
+                            toggleSeccionHorarios();
+                            toggleFechaVigencia();
+                            if (this.dataset.rolNombre && this.dataset.rolNombre.toUpperCase() === 'ADMIN' && !this.checked) {
+                                // Si se desmarca ADMIN, no pedir confirmación
+                                toggleFechaVigencia();
+                            }
+                        }
                     });
                 });
 
@@ -790,7 +800,7 @@
 
                 // --- FUNCIÓN PARA VERIFICAR ROL ADMIN (DOBLE CONFIRMACIÓN) ---
                 function verificarRolAdmin(checkbox) {
-                    if (checkbox.dataset.rolNombre && checkbox.dataset.rolNombre.toUpperCase() === 'ADMIN' && checkbox.checked) {
+                    if (checkbox.dataset.rolNombre && checkbox.dataset.rolNombre.toUpperCase() === 'ADMIN') {
                         Swal.fire({
                             title: '¿Asignar rol ADMIN?',
                             html: '<p class="text-warning"><strong>ADVERTENCIA:</strong></p>' +
@@ -829,6 +839,9 @@
                                         toggleFechaVigencia();
                                         mostrarInfo('Asignación de rol ADMIN cancelada');
                                     } else {
+                                        // ✅ MARCAR EL CHECKBOX DESPUÉS DE CONFIRMAR
+                                        checkbox.checked = true;
+                                        toggleFechaVigencia();
                                         mostrarExito('Rol ADMIN confirmado. Recuerde que este cambio es permanente.');
                                     }
                                 });
