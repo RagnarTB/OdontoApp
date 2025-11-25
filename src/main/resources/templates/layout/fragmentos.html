@@ -13,19 +13,8 @@
         </ul>
 
         <ul class="navbar-nav ml-auto">
-            <!-- Dropdown de Rol Activo (solo para personal con múltiples roles) -->
+            <!-- Dropdown de Rol Activo (solo para usuarios con múltiples roles) -->
             <li class="nav-item dropdown" th:if="${session.totalRoles != null and session.totalRoles > 1}">
-                <a class="nav-link dropdown-toggle" href="#" id="rolDropdown" role="button" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-user-tag"></i>
-                    <span th:text="${session.rolActivo != null ? session.rolActivo : 'Mi Rol'}">Mi Rol</span>
-                </a>
-            </li>
-        </ul>
-
-        <ul class="navbar-nav ml-auto">
-            <!-- Dropdown de Rol Activo (solo para personal con múltiples roles) -->
-            <li class="nav-item dropdown" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA','ALMACEN')">
                 <a class="nav-link dropdown-toggle" href="#" id="rolDropdown" role="button" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
                     <i class="fas fa-user-tag"></i>
@@ -45,11 +34,9 @@
                     </a>
                 </div>
             </li>
-
             <!-- Logout -->
             <li class="nav-item">
                 <form th:action="@{/logout}" method="post" id="logoutForm"></form>
-
                 <a class="nav-link" href="#" role="button" onclick="document.getElementById('logoutForm').submit();">
                     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                 </a>

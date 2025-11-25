@@ -66,7 +66,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/cambiar-password-obligatorio").authenticated()
 
                                                 // Selector de rol - todos autenticados
-                                                .requestMatchers("/seleccionar-rol", "/seleccionar-rol/**").authenticated()
+                                                .requestMatchers("/seleccionar-rol", "/seleccionar-rol/**")
+                                                .authenticated()
 
                                                 // PACIENTE: Portal exclusivo para pacientes
                                                 .requestMatchers("/paciente/**").hasRole("PACIENTE")
@@ -76,13 +77,18 @@ public class SecurityConfig {
                                                 .hasAnyRole("ADMIN", "ODONTOLOGO", "RECEPCIONISTA", "ALMACEN")
 
                                                 // Los siguientes módulos usan @PreAuthorize con permisos granulares
-                                                // Solo requieren autenticación, el control de acceso se hace en los controllers
-                                                .requestMatchers("/usuarios/**", "/roles/**", "/administracion/**").authenticated()
+                                                // Solo requieren autenticación, el control de acceso se hace en los
+                                                // controllers
+                                                .requestMatchers("/usuarios/**", "/roles/**", "/administracion/**")
+                                                .authenticated()
                                                 .requestMatchers("/pacientes/**", "/servicios/**", "/facturacion/**",
-                                                                "/tratamientos/**", "/odontograma/**", "/api/odontograma/**").authenticated()
+                                                                "/tratamientos/**", "/odontograma/**",
+                                                                "/api/odontograma/**")
+                                                .authenticated()
                                                 .requestMatchers("/citas/**", "/agenda/**").authenticated()
                                                 .requestMatchers("/insumos/**", "/categorias-insumo/**",
-                                                                "/unidades-medida/**", "/movimientos-inventario/**").authenticated()
+                                                                "/unidades-medida/**", "/movimientos-inventario/**")
+                                                .authenticated()
 
                                                 // Cualquier otra petición requiere autenticación
                                                 .anyRequest().authenticated())

@@ -27,7 +27,8 @@
                         <h3 class="card-title">Datos del Rol</h3>
                     </div>
                     <!-- Añadir id al form para el JS -->
-                    <form th:action="@{/roles/guardar}" th:object="${rol}" method="post" id="rolForm" data-auto-loading="true">
+                    <form th:action="@{/roles/guardar}" th:object="${rol}" method="post" id="rolForm"
+                        data-auto-loading="true">
                         <!-- ID Oculto para Edición -->
                         <input type="hidden" th:field="*{id}" id="rolId" />
 
@@ -72,6 +73,15 @@
                             <!-- Campo Permisos -->
                             <div class="form-group">
                                 <label>Permisos Asignados</label>
+
+                                <!-- Mensaje informativo para rol PACIENTE -->
+                                <div th:if="${esRolPaciente}" class="alert alert-warning" role="alert">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    <strong>Nota:</strong> Los permisos del rol PACIENTE están predefinidos por el
+                                    sistema y no pueden modificarse.
+                                    Puedes visualizarlos pero no editarlos.
+                                </div>
+
                                 <div class="row">
                                     <!-- Iterar sobre permisos agrupados por módulo -->
                                     <div class="col-md-4 mb-3" th:each="entry : ${permisosAgrupados}">
@@ -80,12 +90,13 @@
                                         <div class="pl-3">
                                             <!-- Iterar sobre permisos dentro de cada módulo -->
                                             <div class="form-check" th:each="permiso : ${entry.value}">
-                                                <!-- Añadir clase 'permiso-checkbox' -->
+                                                <!-- Añadir clase 'permiso-checkbox' y deshabilitar si es rol PACIENTE -->
                                                 <input class="form-check-input permiso-checkbox" type="checkbox"
                                                     th:field="*{permisos}" th:value="${permiso.id}"
-                                                    th:id="${'permiso-' + permiso.id}" />
+                                                    th:id="${'permiso-' + permiso.id}" th:disabled="${esRolPaciente}" />
                                                 <label class="form-check-label" th:for="${'permiso-' + permiso.id}"
-                                                    th:text="${permiso.accion}"></label>
+                                                    th:text="${permiso.accion}"
+                                                    th:classappend="${esRolPaciente} ? 'text-muted' : ''"></label>
                                             </div>
                                         </div>
                                     </div>
@@ -98,8 +109,9 @@
 
                         <div class="card-footer">
                             <!-- Añadir id al botón para el JS -->
-                            <button type="submit" class="btn btn-primary" id="btnGuardarRol" data-loading-text="Guardando rol..."><i
-                                    class="fas fa-save mr-2"></i>Guardar Rol</button>
+                            <button type="submit" class="btn btn-primary" id="btnGuardarRol"
+                                data-loading-text="Guardando rol..."><i class="fas fa-save mr-2"></i>Guardar
+                                Rol</button>
                             <a th:href="@{/roles}" class="btn btn-secondary">Cancelar</a>
                         </div>
                     </form>

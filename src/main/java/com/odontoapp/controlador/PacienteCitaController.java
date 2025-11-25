@@ -97,11 +97,11 @@ public class PacienteCitaController {
     @GetMapping("/lista")
     @Transactional(readOnly = true)
     public String verListaCitas(Model model,
-                                @RequestParam(defaultValue = "0") int page,
-                                @RequestParam(defaultValue = "20") int size,
-                                @RequestParam(required = false) Long estadoId,
-                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
-                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Long estadoId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta) {
 
         // Obtener usuario autenticado
         Usuario usuario = obtenerUsuarioAutenticado();
@@ -119,7 +119,7 @@ public class PacienteCitaController {
         if (estadoId != null || fechaDesdeDateTime != null || fechaHastaDateTime != null) {
             // Aplicar filtros
             paginaCitas = citaRepository.findByPacienteIdWithFilters(
-                usuario.getId(), estadoId, fechaDesdeDateTime, fechaHastaDateTime, pageable);
+                    usuario.getId(), estadoId, fechaDesdeDateTime, fechaHastaDateTime, pageable);
         } else {
             // Sin filtros, solo por pacienteId
             paginaCitas = citaRepository.findByPacienteId(usuario.getId(), pageable);
@@ -161,7 +161,7 @@ public class PacienteCitaController {
 
         // Buscar SOLO citas del paciente autenticado en el rango de fechas
         List<Cita> citas = citaRepository.findByPacienteIdAndFechaHoraInicioBetween(
-            usuario.getId(), inicioDateTime, finDateTime);
+                usuario.getId(), inicioDateTime, finDateTime);
 
         // Mapear a FullCalendarEventDTO
         return citas.stream()
@@ -194,12 +194,13 @@ public class PacienteCitaController {
 
         try {
             // Llamar al servicio para obtener disponibilidad
-            Map<String, Object> disponibilidad = citaService.buscarDisponibilidad(odontologoId, fecha, duracion, citaIdExcluir);
+            Map<String, Object> disponibilidad = citaService.buscarDisponibilidad(odontologoId, fecha, duracion,
+                    citaIdExcluir);
 
             // Obtener horarios disponibles
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> horariosDisponibles =
-                    (List<Map<String, Object>>) disponibilidad.get("horariosDisponibles");
+            List<Map<String, Object>> horariosDisponibles = (List<Map<String, Object>>) disponibilidad
+                    .get("horariosDisponibles");
 
             // Filtrar para el día de hoy
             if (fecha.equals(LocalDate.now())) {
@@ -211,7 +212,7 @@ public class PacienteCitaController {
                             LocalDateTime fechaHoraSlot = LocalDateTime.of(fecha,
                                     java.time.LocalTime.parse(horaInicio));
                             return fechaHoraSlot.isAfter(minimoAdelante) ||
-                                   fechaHoraSlot.equals(minimoAdelante);
+                                    fechaHoraSlot.equals(minimoAdelante);
                         })
                         .collect(Collectors.toList());
 
@@ -224,7 +225,8 @@ public class PacienteCitaController {
 
                     if (horariosDisponiblesOriginales > 0) {
                         disponibilidad.put("disponible", false);
-                        disponibilidad.put("motivo", "Los horarios disponibles para hoy requieren al menos 30 minutos de anticipación.");
+                        disponibilidad.put("motivo",
+                                "Los horarios disponibles para hoy requieren al menos 30 minutos de anticipación.");
                     }
                     horariosDisponibles = horariosFiltrados;
                 }
@@ -247,6 +249,7 @@ public class PacienteCitaController {
     /**
      * Agenda una nueva cita para el paciente autenticado.
      * El pacienteUsuarioId se establece automáticamente.
+     * La cita se crea como PENDIENTE (requiere confirmación del personal).
      */
     @PostMapping("/agendar")
     public String agendarCita(@ModelAttribute CitaDTO dto, RedirectAttributes attributes) {
@@ -255,7 +258,8 @@ public class PacienteCitaController {
             Usuario usuario = obtenerUsuarioAutenticado();
 
             // Forzar pacienteUsuarioId al ID del usuario autenticado
-            citaService.agendarCita(
+            // Usar agendarCitaPaciente para crear la cita como PENDIENTE
+            citaService.agendarCitaPaciente(
                     usuario.getId(), // Siempre el usuario autenticado
                     dto.getOdontologoUsuarioId(),
                     dto.getProcedimientoId(),
@@ -263,7 +267,8 @@ public class PacienteCitaController {
                     dto.getMotivoConsulta(),
                     null // notasInternas no permitidas para pacientes
             );
-            attributes.addFlashAttribute("success", "Cita agendada con éxito. Pendiente de confirmación.");
+            attributes.addFlashAttribute("success",
+                    "Cita agendada con éxito. Pendiente de confirmación por el personal de la clínica.");
         } catch (IllegalStateException e) {
             attributes.addFlashAttribute("error", "Error al agendar: " + e.getMessage());
         } catch (Exception e) {
@@ -275,7 +280,8 @@ public class PacienteCitaController {
 
     /**
      * Reprograma una cita existente del paciente.
-     * Solo si la cita pertenece al paciente y está en estado PENDIENTE o CONFIRMADA.
+     * Solo si la cita pertenece al paciente y está en estado PENDIENTE o
+     * CONFIRMADA.
      */
     @PostMapping("/reprogramar")
     public String reprogramarCita(
@@ -316,7 +322,8 @@ public class PacienteCitaController {
 
     /**
      * Cancela una cita del paciente.
-     * Solo si la cita pertenece al paciente y está en estado PENDIENTE o CONFIRMADA.
+     * Solo si la cita pertenece al paciente y está en estado PENDIENTE o
+     * CONFIRMADA.
      */
     @PostMapping("/cancelar")
     public String cancelarCita(
@@ -377,13 +384,12 @@ public class PacienteCitaController {
         return new FullCalendarEventDTO(
                 cita.getId().toString(),
                 cita.getOdontologo().getNombreCompleto() + " - " +
-                (cita.getProcedimiento() != null ? cita.getProcedimiento().getNombre() : "Consulta"),
+                        (cita.getProcedimiento() != null ? cita.getProcedimiento().getNombre() : "Consulta"),
                 cita.getFechaHoraInicio().toString(),
                 cita.getFechaHoraFin().toString(),
                 color,
                 color,
-                extendedProps
-        );
+                extendedProps);
     }
 
     /**
