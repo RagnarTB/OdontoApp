@@ -51,6 +51,7 @@ public interface CitaService {
     /**
      * Agenda una nueva cita para un paciente.
      * Valida la disponibilidad del odontólogo y detecta conflictos de horario.
+     * Las citas se crean como CONFIRMADA (para uso del personal de la clínica).
      *
      * @param pacienteId ID del paciente
      * @param odontologoId ID del odontólogo
@@ -58,12 +59,32 @@ public interface CitaService {
      * @param fechaHoraInicio Fecha y hora de inicio de la cita
      * @param motivoConsulta Motivo de la consulta
      * @param notas Notas adicionales (opcional)
-     * @return La cita creada con estado PENDIENTE
+     * @return La cita creada con estado CONFIRMADA
      * @throws IllegalStateException si hay conflicto de horarios
      * @throws IllegalArgumentException si los parámetros no son válidos
      */
     Cita agendarCita(Long pacienteId, Long odontologoId, Long procedimientoId,
                      LocalDateTime fechaHoraInicio, String motivoConsulta, String notas);
+
+    /**
+     * Agenda una nueva cita para un paciente (usada por pacientes).
+     * Valida la disponibilidad del odontólogo y detecta conflictos de horario.
+     * Las citas se crean como PENDIENTE y requieren confirmación del personal.
+     *
+     * @param pacienteId ID del paciente
+     * @param odontologoId ID del odontólogo
+     * @param procedimientoId ID del procedimiento a realizar
+     * @param fechaHoraInicio Fecha y hora de inicio de la cita
+     * @param motivoConsulta Motivo de la consulta
+     * @param notas Notas adicionales (opcional)
+     * @param crearComoPendiente true para crear como PENDIENTE, false para CONFIRMADA
+     * @return La cita creada con el estado especificado
+     * @throws IllegalStateException si hay conflicto de horarios
+     * @throws IllegalArgumentException si los parámetros no son válidos
+     */
+    Cita agendarCita(Long pacienteId, Long odontologoId, Long procedimientoId,
+                     LocalDateTime fechaHoraInicio, String motivoConsulta, String notas,
+                     boolean crearComoPendiente);
 
     /**
      * Reprograma una cita existente a un nuevo horario.

@@ -23,6 +23,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -321,6 +323,7 @@ public class CitaController {
 
     /**
      * Confirma una cita pendiente.
+     * Solo el odontólogo asignado, administradores y recepcionistas pueden confirmar citas.
      *
      * @param citaId ID de la cita a confirmar
      * @param attributes Atributos para mensajes flash
@@ -330,6 +333,27 @@ public class CitaController {
     @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EDITAR_CITAS)")
     public String confirmarCita(@RequestParam Long citaId, RedirectAttributes attributes) {
         try {
+            // Obtener usuario autenticado
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+            var usuarioAutenticado = usuarioRepository.findByEmail(username)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            // Obtener la cita
+            Cita cita = citaRepository.findById(citaId)
+                    .orElseThrow(() -> new IllegalStateException("Cita no encontrada"));
+
+            // Verificar permisos: Solo el odontólogo asignado, admins o recepcionistas pueden confirmar
+            boolean esOdontologoAsignado = cita.getOdontologo().getId().equals(usuarioAutenticado.getId());
+            boolean esAdminORecepcionista = usuarioAutenticado.getRoles().stream()
+                    .anyMatch(rol -> "ADMIN".equals(rol.getNombre()) || "RECEPCIONISTA".equals(rol.getNombre()));
+
+            if (!esOdontologoAsignado && !esAdminORecepcionista) {
+                attributes.addFlashAttribute("error",
+                    "Solo el odontólogo asignado, administradores o recepcionistas pueden confirmar esta cita.");
+                return "redirect:/citas";
+            }
+
             citaService.confirmarCita(citaId);
             attributes.addFlashAttribute("success", "Cita confirmada con éxito.");
         } catch (IllegalStateException e) {

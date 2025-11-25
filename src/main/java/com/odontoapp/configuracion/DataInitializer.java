@@ -521,10 +521,9 @@ public class DataInitializer implements CommandLineRunner {
         });
 
         // ... (Creación de Roles y Usuario Admin - sin cambios) ...
-        // PACIENTE: Solo puede ver su perfil y sus citas
-        Set<Permiso> permisosPaciente = new HashSet<>();
-        permisoRepository.findByModuloAndAccion("CITAS", "VER_LISTA").ifPresent(permisosPaciente::add);
-        permisoRepository.findByModuloAndAccion("CITAS", "VER_DETALLE").ifPresent(permisosPaciente::add);
+        // PACIENTE: Sin permisos tradicionales - acceso controlado por URLs /paciente/* y lógica de controladores
+        // El paciente solo puede ver su propia información a través de endpoints específicos
+        Set<Permiso> permisosPaciente = new HashSet<>(); // Sin permisos tradicionales
         crearRolSiNoExiste("PACIENTE", permisosPaciente);
 
         // ODONTOLOGO: GESTIÓN CLÍNICA (Pacientes, Citas, Servicios) + FACTURACIÓN + Tratamientos + Odontograma

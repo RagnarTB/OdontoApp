@@ -255,13 +255,15 @@ public class PacienteCitaController {
             Usuario usuario = obtenerUsuarioAutenticado();
 
             // Forzar pacienteUsuarioId al ID del usuario autenticado
+            // Usar el método sobrecargado que crea la cita como PENDIENTE (true)
             citaService.agendarCita(
                     usuario.getId(), // Siempre el usuario autenticado
                     dto.getOdontologoUsuarioId(),
                     dto.getProcedimientoId(),
                     dto.getFechaHoraInicio(),
                     dto.getMotivoConsulta(),
-                    null // notasInternas no permitidas para pacientes
+                    null, // notasInternas no permitidas para pacientes
+                    true // Crear como PENDIENTE (requiere confirmación)
             );
             attributes.addFlashAttribute("success", "Cita agendada con éxito. Pendiente de confirmación.");
         } catch (IllegalStateException e) {

@@ -324,6 +324,15 @@ public class CitaServiceImpl implements CitaService {
     @Override
     public Cita agendarCita(Long pacienteId, Long odontologoId, Long procedimientoId,
                            LocalDateTime fechaHoraInicio, String motivoConsulta, String notas) {
+        // Método por defecto: crear como CONFIRMADA (uso del personal)
+        return agendarCita(pacienteId, odontologoId, procedimientoId,
+                          fechaHoraInicio, motivoConsulta, notas, false);
+    }
+
+    @Override
+    public Cita agendarCita(Long pacienteId, Long odontologoId, Long procedimientoId,
+                           LocalDateTime fechaHoraInicio, String motivoConsulta, String notas,
+                           boolean crearComoPendiente) {
 
         // Validar que todos los parámetros requeridos estén presentes
         if (pacienteId == null || odontologoId == null || procedimientoId == null || fechaHoraInicio == null) {
@@ -409,9 +418,10 @@ public class CitaServiceImpl implements CitaService {
                 "Por favor seleccione un horario dentro de las horas de atención.");
         }
 
-        // Crear la cita como CONFIRMADA (las citas presenciales se crean confirmadas)
-        EstadoCita estadoConfirmada = estadoCitaRepository.findByNombre(ESTADO_CONFIRMADA)
-                .orElseThrow(() -> new IllegalStateException("Estado CONFIRMADA no encontrado en la base de datos"));
+        // Determinar el estado inicial de la cita
+        String nombreEstadoInicial = crearComoPendiente ? ESTADO_PENDIENTE : ESTADO_CONFIRMADA;
+        EstadoCita estadoInicial = estadoCitaRepository.findByNombre(nombreEstadoInicial)
+                .orElseThrow(() -> new IllegalStateException("Estado " + nombreEstadoInicial + " no encontrado en la base de datos"));
 
         Cita nuevaCita = new Cita();
         nuevaCita.setPaciente(paciente);
@@ -420,7 +430,7 @@ public class CitaServiceImpl implements CitaService {
         nuevaCita.setFechaHoraInicio(fechaHoraInicio);
         nuevaCita.setFechaHoraFin(fechaHoraFin);
         nuevaCita.setDuracionEstimadaMinutos(procedimiento.getDuracionBaseMinutos());
-        nuevaCita.setEstadoCita(estadoConfirmada);
+        nuevaCita.setEstadoCita(estadoInicial);
         nuevaCita.setMotivoConsulta(motivoConsulta);
         nuevaCita.setNotas(notas);
 
