@@ -1,6 +1,7 @@
 /* Estilos Generales para las Vistas */
 body {
-    background-color: #f4f6f9; /* Fondo gris claro como en Figma */
+    background-color: #f4f6f9;
+    /* Fondo gris claro como en Figma */
 }
 
 .content-wrapper {
@@ -13,7 +14,8 @@ body {
 }
 
 .user-list-header {
-    display: none; /* Ocultamos la cabecera de tabla tradicional */
+    display: none;
+    /* Ocultamos la cabecera de tabla tradicional */
 }
 
 /* Tarjeta de cada usuario (reemplaza la fila <tr>) */
@@ -24,14 +26,15 @@ body {
     border-radius: 10px;
     padding: 15px;
     margin-bottom: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     transition: box-shadow 0.3s ease;
 }
+
 .user-card:hover {
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
-.user-card > div {
+.user-card>div {
     flex: 1;
     padding: 0 10px;
 }
@@ -55,23 +58,37 @@ body {
     font-size: 1.2rem;
     margin-right: 15px;
 }
-.user-avatar.bg-purple { background-color: #6f42c1; }
-.user-avatar.bg-teal { background-color: #20c997; }
-.user-avatar.bg-orange { background-color: #fd7e14; }
-.user-avatar.bg-info { background-color: #17a2b8; }
+
+.user-avatar.bg-purple {
+    background-color: #6f42c1;
+}
+
+.user-avatar.bg-teal {
+    background-color: #20c997;
+}
+
+.user-avatar.bg-orange {
+    background-color: #fd7e14;
+}
+
+.user-avatar.bg-info {
+    background-color: #17a2b8;
+}
 
 
 .user-details .user-name {
     font-weight: 600;
     color: #333;
 }
+
 .user-details .user-email {
     font-size: 0.85rem;
     color: #777;
 }
 
 /* Píldoras de Rol y Estado */
-.role-pill, .status-pill {
+.role-pill,
+.status-pill {
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
@@ -80,70 +97,111 @@ body {
     display: inline-block;
 }
 
-.role-pill.admin { background-color: #e7dff8; color: #6f42c1; }
-.role-pill.odontologo { background-color: #d3f3ea; color: #20c997; }
-.role-pill.recepcionista { background-color: #fff0e4; color: #fd7e14; }
-.role-pill.enfermero { background-color: #d1ecf1; color: #0c5460; }
-.role-pill.paciente { background-color: #e2e3e5; color: #495057; }
+.role-pill.admin {
+    background-color: #e7dff8;
+    color: #6f42c1;
+}
+
+.role-pill.odontologo {
+    background-color: #d3f3ea;
+    color: #20c997;
+}
+
+.role-pill.recepcionista {
+    background-color: #fff0e4;
+    color: #fd7e14;
+}
+
+.role-pill.enfermero {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.role-pill.paciente {
+    background-color: #e2e3e5;
+    color: #495057;
+}
 
 
-.status-pill.active { background-color: #d4edda; color: #155724; }
-.status-pill.inactive { background-color: #f8d7da; color: #721c24; }
+.status-pill.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-pill.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
 
 /* Columna de Acciones */
 .user-actions {
     text-align: right;
     flex: 1.5;
 }
+
 .user-actions .btn {
     margin-left: 5px;
 }
 
 /* Estilo para el Switch de Estado */
 .switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 28px;
-  vertical-align: middle;
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+    vertical-align: middle;
 }
-.switch input { display: none; }
+
+.switch input {
+    display: none;
+}
+
 .slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
-  border-radius: 28px;
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 28px;
 }
+
 .slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
 }
-input:checked + .slider {
-  background-color: #28a745;
+
+input:checked+.slider {
+    background-color: #28a745;
 }
-input:checked + .slider:before {
-  transform: translateX(22px);
+
+input:checked+.slider:before {
+    transform: translateX(22px);
 }
 
 /* --- NUEVO: Estilos para la Fila de Cabecera --- */
 .user-list-card-header {
     display: flex;
     align-items: center;
-    padding: 10px 15px; /* Similar al padding del user-card */
-    margin-bottom: 8px; /* Espacio antes de la primera tarjeta */
+    padding: 10px 15px;
+    /* Similar al padding del user-card */
+    margin-bottom: 8px;
+    /* Espacio antes de la primera tarjeta */
     font-weight: 600;
-    color: #6c757d; /* Color gris como en Figma */
+    color: #6c757d;
+    /* Color gris como en Figma */
     font-size: 0.85rem;
-    border-bottom: 1px solid #dee2e6; /* Línea separadora */
+    border-bottom: 1px solid #dee2e6;
+    /* Línea separadora */
 }
 
 /* --- NUEVO: Estilos más explícitos para Columnas --- */
@@ -153,16 +211,19 @@ input:checked + .slider:before {
 .user-card {
     display: flex;
     align-items: center;
-    padding: 10px 15px; /* Ajusta padding si es necesario */
+    padding: 10px 15px;
+    /* Ajusta padding si es necesario */
 }
 
 /* Estilo base para todas las columnas (header y card) */
-.user-list-card-header > div,
-.user-card > div {
+.user-list-card-header>div,
+.user-card>div {
     padding: 0 10px;
-    flex-shrink: 1; /* Permitir que encojan si no hay espacio */
-    flex-grow: 0;   /* No crecer por defecto */
-    /* background-color: rgba(255,0,0,0.1); /* Descomenta para debug visual */ */
+    flex-shrink: 1;
+    /* Permitir que encojan si no hay espacio */
+    flex-grow: 0;
+    /* No crecer por defecto */
+    /* background-color: rgba(255,0,0,0.1); /* Descomenta para debug visual */
 }
 
 /* --- Tamaños específicos por columna --- */
@@ -170,43 +231,57 @@ input:checked + .slider:before {
 /* Col 1: Usuario */
 .user-list-card-header .user-info-header,
 .user-card .user-info {
-    flex-basis: 30%; /* Ancho base más grande */
-    flex-grow: 3;    /* Permitir crecer más */
+    flex-basis: 30%;
+    /* Ancho base más grande */
+    flex-grow: 3;
+    /* Permitir crecer más */
 }
 
 /* Col 2: Rol */
-.user-list-card-header .user-role-header, /* Nueva clase para header */
-.user-card .user-role {                 /* Nueva clase para datos */
+.user-list-card-header .user-role-header,
+/* Nueva clase para header */
+.user-card .user-role {
+    /* Nueva clase para datos */
     flex-basis: 12%;
     flex-grow: 1;
-    text-align: center; /* Centrar píldora */
+    text-align: center;
+    /* Centrar píldora */
 }
 
 /* Col 3: Contacto */
-.user-list-card-header .user-contact-header, /* Nueva clase */
-.user-card .user-contact {                  /* Nueva clase */
+.user-list-card-header .user-contact-header,
+/* Nueva clase */
+.user-card .user-contact {
+    /* Nueva clase */
     flex-basis: 12%;
     flex-grow: 1;
 }
 
 /* Col 4: Contratación */
-.user-list-card-header .user-hiring-header, /* Nueva clase */
-.user-card .user-hiring {                   /* Nueva clase */
+.user-list-card-header .user-hiring-header,
+/* Nueva clase */
+.user-card .user-hiring {
+    /* Nueva clase */
     flex-basis: 12%;
     flex-grow: 1;
 }
 
 /* Col 5: Estado */
-.user-list-card-header .user-status-header, /* Nueva clase */
-.user-card .user-status {                   /* Nueva clase */
+.user-list-card-header .user-status-header,
+/* Nueva clase */
+.user-card .user-status {
+    /* Nueva clase */
     flex-basis: 10%;
     flex-grow: 1;
-    text-align: center; /* Centrar píldora */
+    text-align: center;
+    /* Centrar píldora */
 }
 
 /* Col 6: Último Acceso */
-.user-list-card-header .user-access-header, /* Nueva clase */
-.user-card .user-access {                   /* Nueva clase */
+.user-list-card-header .user-access-header,
+/* Nueva clase */
+.user-card .user-access {
+    /* Nueva clase */
     flex-basis: 12%;
     flex-grow: 1;
 }

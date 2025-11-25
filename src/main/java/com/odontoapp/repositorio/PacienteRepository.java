@@ -12,18 +12,15 @@ import java.util.Optional;
 public interface PacienteRepository extends JpaRepository<Paciente, Long> {
 
     // --- Consultas que SÍ respetan el soft delete (@Where) ---
-    // 🔥 MODIFICADO: Buscar por Número y Tipo de Documento
     @Query("SELECT p FROM Paciente p WHERE p.numeroDocumento = :numDoc AND p.tipoDocumento.id = :tipoDocId")
     Optional<Paciente> findByNumeroTipoDocumento(@Param("numDoc") String numDoc, @Param("tipoDocId") Long tipoDocId);
 
     Optional<Paciente> findByEmail(String email);
 
-    // 🔥 MODIFICADO: Búsqueda por palabra clave (ahora incluye numeroDocumento)
     @Query("SELECT p FROM Paciente p WHERE p.nombreCompleto LIKE %:keyword% OR p.numeroDocumento LIKE %:keyword% OR p.email LIKE %:keyword%")
     Page<Paciente> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     // --- Consultas que IGNORAN el soft delete (para validaciones) ---
-    // 🔥 MODIFICADO: Ignorar Soft Delete usando Número y Tipo de Documento
     @Query("SELECT p FROM Paciente p WHERE p.numeroDocumento = :numDoc AND p.tipoDocumento.id = :tipoDocId")
     Optional<Paciente> findByNumeroTipoDocumentoIgnorandoSoftDelete(@Param("numDoc") String numDoc,
             @Param("tipoDocId") Long tipoDocId);
@@ -36,29 +33,41 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
 
     /**
      * Cuenta los pacientes creados en un rango de fechas (para estadísticas)
-     * @param inicio Fecha y hora de inicio
-     * @param fin Fecha y hora de fin
-     * @return Número de pacientes creados en el rango
      */
     Long countByFechaCreacionBetween(java.time.LocalDateTime inicio, java.time.LocalDateTime fin);
 
     /**
      * Cuenta el total de pacientes activos
-     * @return Total de pacientes activos
      */
     Long countByEliminadoFalse();
 
     /**
      * Busca un paciente por su usuario asociado
-     * @param usuario El usuario asociado al paciente
-     * @return Optional con el paciente si existe
      */
     @Query("SELECT p FROM Paciente p WHERE p.usuario = :usuario")
     Optional<Paciente> findByUsuario(@Param("usuario") com.odontoapp.entidad.Usuario usuario);
 
     // --- MÉTODO PARA LISTAR PACIENTES ELIMINADOS ---
-    @Query(value = "SELECT * FROM pacientes WHERE eliminado = true ORDER BY fecha_modificacion DESC",
-           countQuery = "SELECT COUNT(*) FROM pacientes WHERE eliminado = true",
-           nativeQuery = true)
+    // Solo mostrar pacientes que tienen ÚNICAMENTE el rol PACIENTE
+    @Query(value = "SELECT p.* FROM pacientes p " +
+            "INNER JOIN usuarios u ON p.usuario_id = u.id " +
+            "WHERE p.eliminado = true " +
+            "AND (u.id NOT IN (SELECT ur.usuario_id FROM usuarios_roles ur " +
+            "                  INNER JOIN roles r ON ur.rol_id = r.id " +
+            "                  WHERE r.nombre != 'PACIENTE') " +
+            "     OR u.id IN (SELECT ur2.usuario_id FROM usuarios_roles ur2 " +
+            "                 GROUP BY ur2.usuario_id " +
+            "                 HAVING COUNT(DISTINCT ur2.rol_id) = 1 " +
+            "                 AND MAX((SELECT nombre FROM roles WHERE id = ur2.rol_id)) = 'PACIENTE')) " +
+            "ORDER BY p.fecha_modificacion DESC", countQuery = "SELECT COUNT(*) FROM pacientes p " +
+                    "INNER JOIN usuarios u ON p.usuario_id = u.id " +
+                    "WHERE p.eliminado = true " +
+                    "AND (u.id NOT IN (SELECT ur.usuario_id FROM usuarios_roles ur " +
+                    "                  INNER JOIN roles r ON ur.rol_id = r.id " +
+                    "                  WHERE r.nombre != 'PACIENTE') " +
+                    "     OR u.id IN (SELECT ur2.usuario_id FROM usuarios_roles ur2 " +
+                    "                 GROUP BY ur2.usuario_id " +
+                    "                 HAVING COUNT(DISTINCT ur2.rol_id) = 1 " +
+                    "                 AND MAX((SELECT nombre FROM roles WHERE id = ur2.rol_id)) = 'PACIENTE'))", nativeQuery = true)
     Page<Paciente> findEliminados(Pageable pageable);
 }

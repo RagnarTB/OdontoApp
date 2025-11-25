@@ -54,4 +54,5 @@ public class Paciente extends EntidadAuditable {
     @OneToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinColumn(name = "usuario_id", referencedColumnName = "id", unique = true)
     private Usuario usuario;
+
 }

@@ -1,5 +1,6 @@
 package com.odontoapp.servicio;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime; // NUEVO import
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +26,9 @@ import com.odontoapp.repositorio.RolRepository;
 import com.odontoapp.repositorio.TipoDocumentoRepository;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.util.PasswordUtil;
-
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -206,6 +209,32 @@ public class UsuarioServiceImpl implements UsuarioService {
         List<Rol> rolesSeleccionados = rolRepository.findAllById(usuarioDTO.getRoles());
         usuario.setRoles(new HashSet<>(rolesSeleccionados));
 
+        boolean tieneRolPaciente = rolesSeleccionados.stream()
+                .anyMatch(r -> "PACIENTE".equals(r.getNombre()));
+        if (tieneRolPaciente) {
+            // Crear o actualizar Paciente
+            Paciente paciente = usuario.getPaciente();
+            if (paciente == null) {
+                paciente = new Paciente();
+                paciente.setUsuario(usuario);
+                paciente.setTipoDocumento(usuario.getTipoDocumento());
+                paciente.setNumeroDocumento(usuario.getNumeroDocumento());
+                paciente.setNombreCompleto(usuario.getNombreCompleto());
+                paciente.setEmail(usuario.getEmail());
+                paciente.setTelefono(usuario.getTelefono());
+                paciente.setFechaNacimiento(usuario.getFechaNacimiento());
+                paciente.setDireccion(usuario.getDireccion());
+            }
+
+            // Actualizar campos específicos de paciente (opcionales)
+            paciente.setAlergias(usuarioDTO.getAlergias());
+            paciente.setAntecedentesMedicos(usuarioDTO.getAntecedentesMedicos());
+            paciente.setTratamientosActuales(usuarioDTO.getTratamientosActuales());
+
+            pacienteRepository.save(paciente);
+            usuario.setPaciente(paciente);
+        }
+
         // --- VALIDAR Y ESTABLECER FECHA DE VIGENCIA ---
         boolean tieneRolAdmin = rolesSeleccionados.stream().anyMatch(r -> "ADMIN".equals(r.getNombre()));
 
@@ -311,13 +340,9 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     public Page<Usuario> listarTodosLosUsuarios(String keyword, Pageable pageable) {
         if (keyword != null && !keyword.isEmpty()) {
-            // Considerar buscar también por número de documento si es relevante
-            // return usuarioRepository.findByKeywordIncludingDocument(keyword, pageable);
-            // // Necesitarías crear este método
-            return usuarioRepository.findByKeyword(keyword, pageable);
+            return usuarioRepository.findUsuariosConRolesDePersonalByKeyword(keyword, pageable);
         }
-        // Usar findAllWithRoles para cargar roles con JOIN FETCH
-        return usuarioRepository.findAllWithRoles(pageable);
+        return usuarioRepository.findUsuariosConRolesDePersonal(pageable);
     }
 
     @Override
@@ -575,6 +600,74 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new DataIntegrityViolationException(
                     "El teléfono '" + telefono + "' ya está registrado para otro usuario.");
         }
+    }
+
+    @Override
+    @Transactional
+    public void promoverPacienteAPersonal(Long pacienteId, List<Long> rolesIds,
+            LocalDate fechaContratacion, LocalDate fechaVigencia) {
+        // Validar que se proporcionen roles
+        if (rolesIds == null || rolesIds.isEmpty()) {
+            throw new IllegalArgumentException("Debe seleccionar al menos un rol de personal");
+        }
+        // Validar fecha de contratación (obligatoria, no futura)
+        if (fechaContratacion == null) {
+            throw new IllegalArgumentException("La fecha de contratación es obligatoria");
+        }
+        if (fechaContratacion.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("La fecha de contratación no puede ser futura");
+        }
+        // Validar fecha de vigencia (obligatoria)
+        if (fechaVigencia == null) {
+            throw new IllegalArgumentException("La fecha de vigencia es obligatoria");
+        }
+        // Buscar el paciente
+        Paciente paciente = pacienteRepository.findById(pacienteId)
+                .orElseThrow(() -> new RuntimeException("Paciente no encontrado"));
+        // Verificar que el paciente esté activo
+        if (paciente.isEliminado()) {
+            throw new IllegalStateException("No se puede promocionar un paciente eliminado");
+        }
+        // Obtener el usuario asociado al paciente
+        Usuario usuario = paciente.getUsuario();
+        if (usuario == null) {
+            throw new IllegalStateException("El paciente no tiene usuario asociado");
+        }
+        // Validar que el usuario esté activo
+        if (!usuario.isEstaActivo()) {
+            throw new IllegalStateException("No se puede promocionar un usuario inactivo");
+        }
+        // ✅ SINCRONIZAR datos del paciente al usuario
+        // Esto asegura que el usuario tenga todos los datos necesarios para el
+        // formulario de edición
+        usuario.setTipoDocumento(paciente.getTipoDocumento());
+        usuario.setNumeroDocumento(paciente.getNumeroDocumento());
+        usuario.setNombreCompleto(paciente.getNombreCompleto());
+        usuario.setFechaNacimiento(paciente.getFechaNacimiento());
+
+        // Actualizar teléfono y dirección solo si el paciente los tiene
+        if (paciente.getTelefono() != null && !paciente.getTelefono().trim().isEmpty()) {
+            usuario.setTelefono(paciente.getTelefono());
+        }
+        if (paciente.getDireccion() != null && !paciente.getDireccion().trim().isEmpty()) {
+            usuario.setDireccion(paciente.getDireccion());
+        }
+
+        // Actualizar datos de personal
+        usuario.setFechaContratacion(fechaContratacion);
+        usuario.setFechaVigencia(fechaVigencia);
+
+        // Agregar los nuevos roles de personal (sin quitar el rol PACIENTE)
+        List<Rol> nuevosRoles = rolRepository.findAllById(rolesIds);
+        if (nuevosRoles.isEmpty()) {
+            throw new IllegalArgumentException("Los roles seleccionados no son válidos");
+        }
+        // Agregar nuevos roles manteniendo los existentes
+        usuario.getRoles().addAll(nuevosRoles);
+        // Guardar cambios
+        usuarioRepository.save(usuario);
+        System.out.println(">>> Paciente " + paciente.getNombreCompleto() +
+                " promocionado exitosamente a personal con " + nuevosRoles.size() + " rol(es)");
     }
 
 } // Fin de la clase

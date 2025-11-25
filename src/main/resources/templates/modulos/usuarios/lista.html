@@ -1,461 +1,606 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      th:replace="~{layout/base :: layout(titulo='Gestión de Usuarios', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
+    th:replace="~{layout/base :: layout(titulo='Gestión de Usuarios', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
 
 <body>
-<div id="contenido-principal">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Gestión de Usuarios</h1>
-                    <p class="text-muted">Administra los usuarios y roles del sistema</p>
+    <div id="contenido-principal">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Gestión de Usuarios</h1>
+                        <p class="text-muted">Administra los usuarios y roles del sistema</p>
+                    </div>
+                    <div class="col-sm-6">
+                        <button type="button" class="btn btn-success float-sm-right mr-2" data-toggle="modal"
+                            data-target="#modalPromocionPaciente" sec:authorize="hasAuthority('CREAR_USUARIOS')">
+                            <i class="fas fa-user-md mr-2"></i>Promocionar Paciente a Personal
+                        </button>
+                        <a th:href="@{/usuarios/nuevo}" class="btn btn-primary float-sm-right mr-2"
+                            sec:authorize="hasAuthority('CREAR_USUARIOS')">
+                            <i class="fas fa-plus"></i> Nuevo Usuario
+                        </a>
+                    </div>
                 </div>
-                <div class="col-sm-6">
-                    <a th:href="@{/usuarios/nuevo}" class="btn btn-primary float-sm-right"
-                       sec:authorize="hasAuthority('CREAR_USUARIOS')">
-                        <i class="fas fa-plus"></i> Nuevo Usuario
-                    </a>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${success}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
                 </div>
-            </div>
-        </div>
-    </section>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                </div>
 
-    <section class="content">
-        <div class="container-fluid">
-
-            <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
-                <span th:text="${success}"></span>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            </div>
-            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                <span th:text="${error}"></span>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            </div>
-
-            <div class="card">
-                <div class="card-body d-flex justify-content-between">
-                    <form th:action="@{/usuarios}" method="get" class="form-inline w-100">
-                        <div class="input-group w-100">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text bg-transparent border-right-0"><i class="fas fa-search"></i></span>
+                <div class="card">
+                    <div class="card-body d-flex justify-content-between">
+                        <form th:action="@{/usuarios}" method="get" class="form-inline w-100">
+                            <div class="input-group w-100">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-transparent border-right-0"><i
+                                            class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" name="keyword" class="form-control border-left-0"
+                                    placeholder="Buscar por nombre, email o teléfono..." th:value="${keyword}">
                             </div>
-                            <input type="text" name="keyword" class="form-control border-left-0"
-                                   placeholder="Buscar por nombre, email o teléfono..." th:value="${keyword}">
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card user-list-container">
+                    <div class="card-header">
+                        <h3 class="card-title">Usuarios del Sistema <span class="badge badge-secondary ml-1"
+                                th:text="${paginaUsuarios.totalElements}"></span></h3>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="user-list-card-header d-none d-md-flex">
+                            <div class="user-info-header">Usuario</div>
+                            <div class="user-role-header">Roles</div>
+                            <div class="user-contact-header">Contacto</div>
+                            <div class="user-hiring-header">Contratación</div>
+                            <div class="user-status-header">Estado</div>
+                            <div class="user-access-header">Último Acceso</div>
+                            <div class="user-actions-header">Acciones</div>
                         </div>
-                    </form>
-                </div>
-            </div>
 
-            <div class="card user-list-container">
-                <div class="card-header">
-                    <h3 class="card-title">Usuarios del Sistema <span class="badge badge-secondary ml-1" th:text="${paginaUsuarios.totalElements}"></span></h3>
-                </div>
-                <div class="card-body">
+                        <div th:if="${!paginaUsuarios.empty}">
+                            <div class="user-card" th:each="usuario : ${paginaUsuarios.content}">
 
-                    <div class="user-list-card-header d-none d-md-flex">
-                        <div class="user-info-header">Usuario</div>          <div class="user-role-header">Roles</div>              <div class="user-contact-header">Contacto</div>      <div class="user-hiring-header">Contratación</div>  <div class="user-status-header">Estado</div>         <div class="user-access-header">Último Acceso</div>   <div class="user-actions-header">Acciones</div>      </div>
-
-                    <div th:if="${!paginaUsuarios.empty}">
-                        <div class="user-card" th:each="usuario : ${paginaUsuarios.content}">
-
-                            <div class="user-info">
-                                <div class="user-avatar"
-                                     th:classappend="${#strings.containsIgnoreCase(usuario.getRoles().iterator().next().getNombre(), 'Admin')} ? 'bg-purple' : (${#strings.containsIgnoreCase(usuario.getRoles().iterator().next().getNombre(), 'Odontologo')} ? 'bg-teal' : (${#strings.containsIgnoreCase(usuario.getRoles().iterator().next().getNombre(), 'Recepcionista')} ? 'bg-orange' : 'bg-info'))"
-                                     th:text="${#strings.substring(usuario.nombreCompleto, 0, 1) + (#strings.contains(usuario.nombreCompleto, ' ') ? #strings.substring(usuario.nombreCompleto, #strings.indexOf(usuario.nombreCompleto, ' ')+1, #strings.indexOf(usuario.nombreCompleto, ' ')+2) : '')}">
+                                <div class="user-info">
+                                    <div class="user-avatar"
+                                        th:classappend="${#strings.containsIgnoreCase(usuario.getRoles().iterator().next().getNombre(), 'Admin')} ? 'bg-purple' : (${#strings.containsIgnoreCase(usuario.getRoles().iterator().next().getNombre(), 'Odontologo')} ? 'bg-teal' : (${#strings.containsIgnoreCase(usuario.getRoles().iterator().next().getNombre(), 'Recepcionista')} ? 'bg-orange' : 'bg-info'))"
+                                        th:text="${#strings.substring(usuario.nombreCompleto, 0, 1) + (#strings.contains(usuario.nombreCompleto, ' ') ? #strings.substring(usuario.nombreCompleto, #strings.indexOf(usuario.nombreCompleto, ' ')+1, #strings.indexOf(usuario.nombreCompleto, ' ')+2) : '')}">
+                                    </div>
+                                    <div class="user-details">
+                                        <div class="user-name" th:text="${usuario.nombreCompleto}"></div>
+                                        <div class="user-email" th:text="${usuario.email}"></div>
+                                    </div>
                                 </div>
-                                <div class="user-details">
-                                    <div class="user-name" th:text="${usuario.nombreCompleto}"></div>
-                                    <div class="user-email" th:text="${usuario.email}"></div>
+
+                                <div class="user-role">
+                                    <span th:each="rol, iterStat : ${usuario.getRoles()}" class="role-pill"
+                                        th:classappend="${#strings.toLowerCase(rol.getNombre())}"
+                                        th:text="${rol.getNombre()}"
+                                        style="margin-right: 4px; margin-bottom: 4px; display: inline-block;"></span>
                                 </div>
-                            </div>
 
-                            <div class="user-role">
-                                <span th:each="rol, iterStat : ${usuario.getRoles()}"
-                                      class="role-pill"
-                                      th:classappend="${#strings.toLowerCase(rol.getNombre())}"
-                                      th:text="${rol.getNombre()}"
-                                      style="margin-right: 4px; margin-bottom: 4px; display: inline-block;"></span>
-                            </div>
+                                <div class="user-contact">
+                                    <span th:text="${usuario.telefono ?: '-'}"></span>
+                                </div>
 
-                            <div class="user-contact">
-                                <span th:text="${usuario.telefono ?: '-'}"></span>
-                            </div>
+                                <div class="user-hiring">
+                                    <span th:if="${usuario.fechaContratacion}"
+                                        th:text="${#temporals.format(usuario.fechaContratacion, 'dd/MM/yyyy')}"></span>
+                                    <span th:unless="${usuario.fechaContratacion}" class="text-muted">-</span>
+                                </div>
 
-                            <div class="user-hiring">
-                                <span th:if="${usuario.fechaContratacion}"
-                                      th:text="${#temporals.format(usuario.fechaContratacion, 'dd/MM/yyyy')}"></span>
-                                <span th:unless="${usuario.fechaContratacion}" class="text-muted">-</span>
-                            </div>
+                                <div class="user-status">
+                                    <span class="status-pill"
+                                        th:classappend="${usuario.estaActivo} ? 'active' : 'inactive'"
+                                        th:text="${usuario.estaActivo} ? 'Activo' : 'Inactivo'">
+                                    </span>
+                                    <!-- Badge de bloqueo por intentos fallidos -->
+                                    <span
+                                        th:if="${usuario.fechaBloqueo != null && usuario.fechaBloqueo.isAfter(T(java.time.LocalDateTime).now())}"
+                                        class="badge badge-danger d-block mt-1" title="Usuario bloqueado temporalmente">
+                                        <i class="fas fa-lock"></i> Bloqueado
+                                    </span>
+                                    <!-- Badge de intentos fallidos (advertencia) -->
+                                    <span
+                                        th:if="${usuario.intentosFallidos > 0 && (usuario.fechaBloqueo == null || usuario.fechaBloqueo.isBefore(T(java.time.LocalDateTime).now()))}"
+                                        class="badge badge-warning d-block mt-1"
+                                        th:title="'Intentos fallidos: ' + ${usuario.intentosFallidos}">
+                                        <i class="fas fa-exclamation-triangle"></i> <span
+                                            th:text="${usuario.intentosFallidos}">0</span> intentos
+                                    </span>
+                                </div>
 
-                            <div class="user-status">
-                                <span class="status-pill"
-                                      th:classappend="${usuario.estaActivo} ? 'active' : 'inactive'"
-                                      th:text="${usuario.estaActivo} ? 'Activo' : 'Inactivo'">
-                                </span>
-                                <!-- Badge de bloqueo por intentos fallidos -->
-                                <span th:if="${usuario.fechaBloqueo != null && usuario.fechaBloqueo.isAfter(T(java.time.LocalDateTime).now())}"
-                                      class="badge badge-danger d-block mt-1"
-                                      title="Usuario bloqueado temporalmente">
-                                    <i class="fas fa-lock"></i> Bloqueado
-                                </span>
-                                <!-- Badge de intentos fallidos (advertencia) -->
-                                <span th:if="${usuario.intentosFallidos > 0 && (usuario.fechaBloqueo == null || usuario.fechaBloqueo.isBefore(T(java.time.LocalDateTime).now()))}"
-                                      class="badge badge-warning d-block mt-1"
-                                      th:title="'Intentos fallidos: ' + ${usuario.intentosFallidos}">
-                                    <i class="fas fa-exclamation-triangle"></i> <span th:text="${usuario.intentosFallidos}">0</span> intentos
-                                </span>
-                            </div>
+                                <div class="user-access">
+                                    <span th:if="${usuario.ultimoAcceso}"
+                                        th:text="${#temporals.format(usuario.ultimoAcceso, 'dd/MM/yyyy HH:mm')}"></span>
+                                    <span th:unless="${usuario.ultimoAcceso}" class="text-muted">-</span>
+                                </div>
 
-                            <div class="user-access">
-                                <span th:if="${usuario.ultimoAcceso}"
-                                      th:text="${#temporals.format(usuario.ultimoAcceso, 'dd/MM/yyyy HH:mm')}"></span> <span th:unless="${usuario.ultimoAcceso}" class="text-muted">-</span>
-                            </div>
+                                <div class="user-actions">
+                                    <!-- Mostrar badge para super-admin (NO editable) -->
+                                    <span th:if="${usuario.esSuperAdmin}" class="badge badge-primary">
+                                        <i class="fas fa-shield-alt"></i> Super Admin
+                                    </span>
 
-                            <div class="user-actions">
-                                <!-- Mostrar badge para super-admin (NO editable) -->
-                                <span th:if="${usuario.esSuperAdmin}" class="badge badge-primary">
-                                    <i class="fas fa-shield-alt"></i> Super Admin
-                                </span>
+                                    <!-- Badge para pacientes pendientes de completar registro -->
+                                    <span
+                                        th:if="${!usuario.esSuperAdmin && usuario.nombreCompleto == 'Paciente Pendiente'}"
+                                        class="badge badge-warning">
+                                        <i class="fas fa-clock"></i> Registro Pendiente
+                                    </span>
 
-                                <!-- Badge para pacientes pendientes de completar registro -->
-                                <span th:if="${!usuario.esSuperAdmin && usuario.nombreCompleto == 'Paciente Pendiente'}"
-                                      class="badge badge-warning">
-                                    <i class="fas fa-clock"></i> Registro Pendiente
-                                </span>
-
-                                <!-- Mostrar acciones para TODOS los usuarios excepto super-admin -->
-                                <div th:if="${!usuario.esSuperAdmin}">
-                                    <!-- Ocultar toggle de activar/desactivar para pacientes pendientes -->
-                                    <label th:if="${usuario.nombreCompleto != 'Paciente Pendiente'}"
-                                           class="switch" title="Cambiar Estado"
-                                           data-permiso="EDITAR_USUARIOS"
-                                           data-accion-descripcion="cambiar el estado de usuarios">
-                                        <input type="checkbox" th:checked="${usuario.estaActivo}"
-                                               th:attr="onchange=|location.href='@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}'|">
-                                        <span class="slider"></span>
-                                    </label>
-                                    <!-- Botón de editar solo para usuarios que NO son solo pacientes y NO son pacientes pendientes -->
-                                    <a th:if="${usuario.nombreCompleto != 'Paciente Pendiente' && (!usuario.getRoles().![nombre].contains('PACIENTE') || usuario.getRoles().size() > 1)}"
-                                       th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
-                                       class="btn btn-sm btn-outline-secondary" title="Editar"
-                                       data-permiso="EDITAR_USUARIOS"
-                                       data-accion-descripcion="editar usuarios">
-                                        <i class="fas fa-pencil-alt"></i>
-                                    </a>
-                                    <!-- Botón de excepciones solo para Odontólogos -->
-                                    <button th:if="${usuario.getRoles().![nombre].contains('ODONTOLOGO')}"
+                                    <!-- Mostrar acciones para TODOS los usuarios excepto super-admin -->
+                                    <div th:if="${!usuario.esSuperAdmin}">
+                                        <!-- Ocultar toggle de activar/desactivar para pacientes pendientes -->
+                                        <label th:if="${usuario.nombreCompleto != 'Paciente Pendiente'}" class="switch"
+                                            title="Cambiar Estado" data-permiso="EDITAR_USUARIOS"
+                                            data-accion-descripcion="cambiar el estado de usuarios">
+                                            <input type="checkbox" th:checked="${usuario.estaActivo}"
+                                                th:attr="onchange=|location.href='@{/usuarios/cambiar-estado/{id}(id=${usuario.id})}'|">
+                                            <span class="slider"></span>
+                                        </label>
+                                        <!-- Botón de editar solo para usuarios que NO son solo pacientes y NO son pacientes pendientes -->
+                                        <a th:if="${usuario.nombreCompleto != 'Paciente Pendiente' && (!usuario.getRoles().![nombre].contains('PACIENTE') || usuario.getRoles().size() > 1)}"
+                                            th:href="@{/usuarios/editar/{id}(id=${usuario.id})}"
+                                            class="btn btn-sm btn-outline-secondary" title="Editar"
+                                            data-permiso="EDITAR_USUARIOS" data-accion-descripcion="editar usuarios">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </a>
+                                        <!-- Botón de excepciones solo para Odontólogos -->
+                                        <button th:if="${usuario.getRoles().![nombre].contains('ODONTOLOGO')}"
                                             type="button" class="btn btn-sm btn-outline-info btn-gestionar-excepciones"
                                             title="Gestionar Excepciones de Horario"
                                             th:attr="data-usuario-id=${usuario.id},data-usuario-nombre=${usuario.nombreCompleto}"
                                             data-permiso="EDITAR_USUARIOS"
                                             data-accion-descripcion="gestionar excepciones de horario">
-                                        <i class="fas fa-calendar-times"></i>
+                                            <i class="fas fa-calendar-times"></i>
+                                        </button>
+                                        <!-- Ocultar botón de eliminar para pacientes pendientes -->
+                                        <a th:if="${usuario.nombreCompleto != 'Paciente Pendiente'}"
+                                            th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
+                                            class="btn btn-sm btn-outline-danger btn-eliminar-usuario" title="Eliminar"
+                                            th:data-nombre="${usuario.nombreCompleto}" data-permiso="ELIMINAR_USUARIOS"
+                                            data-accion-descripcion="eliminar usuarios">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div th:if="${paginaUsuarios.empty}" class="text-center p-5">
+                            <p class="text-muted">No se encontraron usuarios con los criterios de búsqueda.</p>
+                        </div>
+
+                    </div>
+                    <div class="card-footer clearfix" th:if="${paginaUsuarios.totalPages > 0}">
+                        <div class="float-left">
+                            <small class="text-muted">
+                                Mostrando <span th:text="${paginaUsuarios.numberOfElements}"></span> de
+                                <span th:text="${paginaUsuarios.totalElements}"></span> usuarios
+                                (Página <span th:text="${paginaUsuarios.number + 1}"></span> de
+                                <span th:text="${paginaUsuarios.totalPages}"></span>)
+                            </small>
+                        </div>
+                        <ul class="pagination pagination-sm m-0 float-right" th:if="${paginaUsuarios.totalPages > 1}">
+                            <!-- Primera página -->
+                            <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/usuarios(page=0, keyword=${keyword})}"
+                                    aria-label="Primera">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <!-- Página anterior -->
+                            <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
+                                <a class="page-link"
+                                    th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, keyword=${keyword})}"
+                                    aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            <!-- Números de página -->
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaUsuarios.totalPages - 1)}"
+                                th:if="${i >= paginaUsuarios.number - 2 && i <= paginaUsuarios.number + 2}"
+                                th:classappend="${i == paginaUsuarios.number} ? 'active'">
+                                <a class="page-link" th:href="@{/usuarios(page=${i}, keyword=${keyword})}"
+                                    th:text="${i + 1}"></a>
+                            </li>
+                            <!-- Página siguiente -->
+                            <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
+                                <a class="page-link"
+                                    th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, keyword=${keyword})}"
+                                    aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <!-- Última página -->
+                            <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
+                                <a class="page-link"
+                                    th:href="@{/usuarios(page=${paginaUsuarios.totalPages - 1}, keyword=${keyword})}"
+                                    aria-label="Última">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Modal para Gestionar Excepciones de Horario -->
+        <div class="modal fade" id="modalExcepciones" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-calendar-times mr-2"></i>
+                            Gestionar Excepciones de Horario
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <h6 class="mb-3">
+                            <i class="fas fa-user-md mr-2"></i>
+                            Odontólogo: <strong id="nombreOdontologo"></strong>
+                        </h6>
+
+                        <!-- Formulario para agregar nueva excepción -->
+                        <div class="card card-outline card-primary mb-3">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-plus-circle mr-2"></i>
+                                    Agregar Nueva Excepción
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="formNuevaExcepcion">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="fechaExcepcion">Fecha <span
+                                                        class="text-danger">*</span></label>
+                                                <input type="date" class="form-control" id="fechaExcepcion" required>
+                                                <small class="form-text text-muted">Fecha de la excepción</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="horasExcepcion">Horario <span
+                                                        class="text-danger">*</span></label>
+                                                <select class="form-control" id="tipoExcepcion">
+                                                    <option value="NO_LABORABLE">Día No Laborable</option>
+                                                    <option value="CUSTOM">Horario Especial</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4" id="campoHorarioEspecial" style="display: none;">
+                                            <div class="form-group">
+                                                <label for="horasExcepcion">Horario Especial</label>
+                                                <input type="text" class="form-control" id="horasExcepcion"
+                                                    placeholder="ej: 08:00-12:00">
+                                                <small class="form-text text-muted">HH:mm-HH:mm</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="motivoExcepcion">Motivo</label>
+                                        <input type="text" class="form-control" id="motivoExcepcion"
+                                            placeholder="ej: Vacaciones, Permiso médico, Capacitación">
+                                        <small class="form-text text-muted">Describe el motivo de la excepción</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-plus mr-2"></i>Agregar Excepción
                                     </button>
-                                    <!-- Ocultar botón de eliminar para pacientes pendientes -->
-                                    <a th:if="${usuario.nombreCompleto != 'Paciente Pendiente'}"
-                                       th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
-                                       class="btn btn-sm btn-outline-danger btn-eliminar-usuario" title="Eliminar"
-                                       th:data-nombre="${usuario.nombreCompleto}"
-                                       data-permiso="ELIMINAR_USUARIOS"
-                                       data-accion-descripcion="eliminar usuarios">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </a>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Historial de Excepciones -->
+                        <div class="card card-outline card-secondary">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-history mr-2"></i>
+                                    Historial de Excepciones
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="loadingExcepciones" class="text-center py-3">
+                                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                                    <p class="mt-2">Cargando excepciones...</p>
+                                </div>
+                                <div id="tablaExcepcionesContainer" style="display: none;">
+                                    <table class="table table-sm table-hover">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th style="width: 20%;">Fecha</th>
+                                                <th style="width: 35%;">Horario/Estado</th>
+                                                <th style="width: 35%;">Motivo</th>
+                                                <th style="width: 10%;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaExcepciones">
+                                            <!-- Se llenará con JavaScript -->
+                                        </tbody>
+                                    </table>
+                                    <div id="noExcepciones" class="alert alert-info" style="display: none;">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        No hay excepciones registradas. Agregue una usando el formulario superior.
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <div th:if="${paginaUsuarios.empty}" class="text-center p-5">
-                        <p class="text-muted">No se encontraron usuarios con los criterios de búsqueda.</p>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-2"></i>Cerrar
+                        </button>
                     </div>
-
                 </div>
-                <div class="card-footer clearfix" th:if="${paginaUsuarios.totalPages > 0}">
-                    <div class="float-left">
-                        <small class="text-muted">
-                            Mostrando <span th:text="${paginaUsuarios.numberOfElements}"></span> de
-                            <span th:text="${paginaUsuarios.totalElements}"></span> usuarios
-                            (Página <span th:text="${paginaUsuarios.number + 1}"></span> de
-                            <span th:text="${paginaUsuarios.totalPages}"></span>)
-                        </small>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalPromocionPaciente" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-user-plus mr-2"></i>Promocionar Paciente a Personal
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
                     </div>
-                    <ul class="pagination pagination-sm m-0 float-right" th:if="${paginaUsuarios.totalPages > 1}">
-                        <!-- Primera página -->
-                        <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
-                            <a class="page-link" th:href="@{/usuarios(page=0, keyword=${keyword})}" aria-label="Primera">
-                                <span aria-hidden="true">&laquo;&laquo;</span>
-                            </a>
-                        </li>
-                        <!-- Página anterior -->
-                        <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
-                            <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, keyword=${keyword})}" aria-label="Anterior">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        <!-- Números de página -->
-                        <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaUsuarios.totalPages - 1)}"
-                            th:if="${i >= paginaUsuarios.number - 2 && i <= paginaUsuarios.number + 2}"
-                            th:classappend="${i == paginaUsuarios.number} ? 'active'">
-                            <a class="page-link" th:href="@{/usuarios(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
-                        </li>
-                        <!-- Página siguiente -->
-                        <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
-                            <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, keyword=${keyword})}" aria-label="Siguiente">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <!-- Última página -->
-                        <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
-                            <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.totalPages - 1}, keyword=${keyword})}" aria-label="Última">
-                                <span aria-hidden="true">&raquo;&raquo;</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div> </div> </section>
-
-    <!-- Modal para Gestionar Excepciones de Horario -->
-    <div class="modal fade" id="modalExcepciones" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-info text-white">
-                    <h5 class="modal-title">
-                        <i class="fas fa-calendar-times mr-2"></i>
-                        Gestionar Excepciones de Horario
-                    </h5>
-                    <button type="button" class="close text-white" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <h6 class="mb-3">
-                        <i class="fas fa-user-md mr-2"></i>
-                        Odontólogo: <strong id="nombreOdontologo"></strong>
-                    </h6>
-
-                    <!-- Formulario para agregar nueva excepción -->
-                    <div class="card card-outline card-primary mb-3">
-                        <div class="card-header">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-plus-circle mr-2"></i>
-                                Agregar Nueva Excepción
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <form id="formNuevaExcepcion">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="fechaExcepcion">Fecha <span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control" id="fechaExcepcion" required>
-                                            <small class="form-text text-muted">Fecha de la excepción</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="horasExcepcion">Horario <span class="text-danger">*</span></label>
-                                            <select class="form-control" id="tipoExcepcion">
-                                                <option value="NO_LABORABLE">Día No Laborable</option>
-                                                <option value="CUSTOM">Horario Especial</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4" id="campoHorarioEspecial" style="display: none;">
-                                        <div class="form-group">
-                                            <label for="horasExcepcion">Horario Especial</label>
-                                            <input type="text" class="form-control" id="horasExcepcion"
-                                                   placeholder="ej: 08:00-12:00">
-                                            <small class="form-text text-muted">HH:mm-HH:mm</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="motivoExcepcion">Motivo</label>
-                                    <input type="text" class="form-control" id="motivoExcepcion"
-                                           placeholder="ej: Vacaciones, Permiso médico, Capacitación">
-                                    <small class="form-text text-muted">Describe el motivo de la excepción</small>
-                                </div>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-plus mr-2"></i>Agregar Excepción
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Historial de Excepciones -->
-                    <div class="card card-outline card-secondary">
-                        <div class="card-header">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-history mr-2"></i>
-                                Historial de Excepciones
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div id="loadingExcepciones" class="text-center py-3">
-                                <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
-                                <p class="mt-2">Cargando excepciones...</p>
+                    <form id="formPromocionPaciente" th:action="@{/usuarios/promocionar}" method="post">
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                <strong>Promoción de Paciente:</strong> El paciente mantendrá todos sus datos personales
+                                y médicos.
+                                Solo debe asignar roles de personal y fechas administrativas.
                             </div>
-                            <div id="tablaExcepcionesContainer" style="display: none;">
-                                <table class="table table-sm table-hover">
-                                    <thead class="thead-light">
-                                        <tr>
-                                            <th style="width: 20%;">Fecha</th>
-                                            <th style="width: 35%;">Horario/Estado</th>
-                                            <th style="width: 35%;">Motivo</th>
-                                            <th style="width: 10%;">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tablaExcepciones">
-                                        <!-- Se llenará con JavaScript -->
-                                    </tbody>
-                                </table>
-                                <div id="noExcepciones" class="alert alert-info" style="display: none;">
-                                    <i class="fas fa-info-circle mr-2"></i>
-                                    No hay excepciones registradas. Agregue una usando el formulario superior.
+                            <!-- Selector de Paciente -->
+                            <div class="form-group">
+                                <label for="pacienteSelect">Seleccionar Paciente <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-control select2" id="pacienteSelect" name="pacienteId" required>
+                                    <option value="">Busque y seleccione un paciente...</option>
+                                </select>
+                            </div>
+                            <!-- Datos del Paciente (Solo Lectura) -->
+                            <div id="datosPaciente" style="display: none;">
+                                <div class="card card-outline card-primary mb-3">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-user mr-2"></i>Datos del Paciente (Registrados)
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p class="mb-2"><strong>Documento:</strong> <span
+                                                        id="infoPacienteDoc"></span></p>
+                                                <p class="mb-2"><strong>Nombre:</strong> <span
+                                                        id="infoPacienteNombre"></span></p>
+                                                <p class="mb-2"><strong>Email:</strong> <span
+                                                        id="infoPacienteEmail"></span></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-2"><strong>Teléfono:</strong> <span
+                                                        id="infoPacienteTelefono"></span></p>
+                                                <p class="mb-2"><strong>Fecha Nacimiento:</strong> <span
+                                                        id="infoPacienteFechaNac"></span></p>
+                                                <p class="mb-2"><strong>Dirección:</strong> <span
+                                                        id="infoPacienteDireccion"></span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Datos de Personal (Nuevos) -->
+                                <div class="card card-outline card-warning mb-3">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-briefcase mr-2"></i>Datos de Personal (Requeridos)
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="fechaContratacionPromocion">Fecha de Contratación <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="date" class="form-control"
+                                                        id="fechaContratacionPromocion" name="fechaContratacion"
+                                                        required>
+                                                    <small class="form-text text-muted">No puede ser futura</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="fechaVigenciaPromocion">Fecha de Vigencia <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="date" class="form-control" id="fechaVigenciaPromocion"
+                                                        name="fechaVigencia" required>
+                                                    <small class="form-text text-muted">Fecha hasta la cual tendrá
+                                                        acceso (no requerido para ADMIN)</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Roles de Personal -->
+                                <div class="card card-outline card-success">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-user-tag mr-2"></i>Roles de Personal a Asignar <span
+                                                class="text-danger">*</span>
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="text-muted mb-3">Seleccione al menos un rol de personal:</p>
+                                        <div id="rolesPersonalCheckboxes">
+                                            <!-- Se llenarán dinámicamente -->
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        <i class="fas fa-times mr-2"></i>Cerrar
-                    </button>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                <i class="fas fa-times mr-2"></i>Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-success" id="btnConfirmarPromocion" disabled>
+                                <i class="fas fa-check mr-2"></i>Confirmar Promoción
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
 
-<div id="page-scripts" th:fragment="scripts">
-<script>
-    // Confirmación de eliminación de usuario con SweetAlert2
-    $(document).on('click', '.btn-eliminar-usuario', function(e) {
-        e.preventDefault();
-        const url = $(this).attr('href');
-        const nombre = $(this).data('nombre');
+    <div id="page-scripts" th:fragment="scripts">
+        <script>
+            // Confirmación de eliminación de usuario con SweetAlert2
+            $(document).on('click', '.btn-eliminar-usuario', function (e) {
+                e.preventDefault();
+                const url = $(this).attr('href');
+                const nombre = $(this).data('nombre');
 
-        confirmarEliminacion(nombre).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = url;
+                confirmarEliminacion(nombre).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = url;
+                    }
+                });
+            });
+
+            // === FUNCIONES UTILITY PARA ALERTAS ===
+            function mostrarExito(mensaje) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: mensaje,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
             }
-        });
-    });
 
-    // === FUNCIONES UTILITY PARA ALERTAS ===
-    function mostrarExito(mensaje) {
-        Swal.fire({
-            icon: 'success',
-            title: '¡Éxito!',
-            text: mensaje,
-            timer: 3000,
-            timerProgressBar: true,
-            showConfirmButton: false
-        });
-    }
+            function mostrarError(mensaje) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: mensaje,
+                    confirmButtonText: 'Entendido'
+                });
+            }
 
-    function mostrarError(mensaje) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: mensaje,
-            confirmButtonText: 'Entendido'
-        });
-    }
+            function mostrarAdvertencia(mensaje) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Advertencia',
+                    text: mensaje,
+                    confirmButtonText: 'Entendido'
+                });
+            }
 
-    function mostrarAdvertencia(mensaje) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Advertencia',
-            text: mensaje,
-            confirmButtonText: 'Entendido'
-        });
-    }
+            function mostrarInfo(mensaje) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Información',
+                    text: mensaje,
+                    confirmButtonText: 'Entendido'
+                });
+            }
 
-    function mostrarInfo(mensaje) {
-        Swal.fire({
-            icon: 'info',
-            title: 'Información',
-            text: mensaje,
-            confirmButtonText: 'Entendido'
-        });
-    }
+            // === GESTIÓN DE EXCEPCIONES DE HORARIO ===
+            let usuarioIdActual = null;
 
-    // === GESTIÓN DE EXCEPCIONES DE HORARIO ===
-    let usuarioIdActual = null;
+            // Abrir modal de excepciones
+            $(document).on('click', '.btn-gestionar-excepciones', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
 
-    // Abrir modal de excepciones
-    $(document).on('click', '.btn-gestionar-excepciones', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
+                // Cerrar cualquier otro modal primero para evitar conflictos
+                $('.modal').modal('hide');
 
-        // Cerrar cualquier otro modal primero para evitar conflictos
-        $('.modal').modal('hide');
+                usuarioIdActual = $(this).data('usuario-id');
+                const nombreUsuario = $(this).data('usuario-nombre');
 
-        usuarioIdActual = $(this).data('usuario-id');
-        const nombreUsuario = $(this).data('usuario-nombre');
+                $('#nombreOdontologo').text(nombreUsuario);
 
-        $('#nombreOdontologo').text(nombreUsuario);
+                // Abrir modal después de un pequeño delay para asegurar que otros modales se cierren
+                setTimeout(function () {
+                    $('#modalExcepciones').modal('show');
 
-        // Abrir modal después de un pequeño delay para asegurar que otros modales se cierren
-        setTimeout(function() {
-            $('#modalExcepciones').modal('show');
+                    // Limpiar formulario
+                    $('#formNuevaExcepcion')[0].reset();
+                    $('#campoHorarioEspecial').hide();
 
-            // Limpiar formulario
-            $('#formNuevaExcepcion')[0].reset();
-            $('#campoHorarioEspecial').hide();
+                    // Cargar excepciones
+                    cargarExcepciones();
+                }, 300);
+            });
 
-            // Cargar excepciones
-            cargarExcepciones();
-        }, 300);
-    });
-
-    // Mostrar/ocultar campo de horario especial
-    $('#tipoExcepcion').on('change', function() {
-        if ($(this).val() === 'CUSTOM') {
-            $('#campoHorarioEspecial').show();
-            $('#horasExcepcion').attr('required', true);
-        } else {
-            $('#campoHorarioEspecial').hide();
-            $('#horasExcepcion').attr('required', false);
-        }
-    });
-
-    // Cargar excepciones de un usuario
-    function cargarExcepciones() {
-        $('#loadingExcepciones').show();
-        $('#tablaExcepcionesContainer').hide();
-
-        $.ajax({
-            url: `/usuarios/${usuarioIdActual}/excepciones`,
-            method: 'GET',
-            success: function(excepciones) {
-                $('#loadingExcepciones').hide();
-                $('#tablaExcepcionesContainer').show();
-
-                const tbody = $('#tablaExcepciones');
-                tbody.empty();
-
-                if (excepciones.length === 0) {
-                    $('#noExcepciones').show();
+            // Mostrar/ocultar campo de horario especial
+            $('#tipoExcepcion').on('change', function () {
+                if ($(this).val() === 'CUSTOM') {
+                    $('#campoHorarioEspecial').show();
+                    $('#horasExcepcion').attr('required', true);
                 } else {
-                    $('#noExcepciones').hide();
+                    $('#campoHorarioEspecial').hide();
+                    $('#horasExcepcion').attr('required', false);
+                }
+            });
 
-                    excepciones.forEach(exc => {
-                        // Parsear fecha correctamente sin timezone offset
-                        // exc.fecha viene como "2024-11-14", debemos agregar 'T00:00:00' para evitar timezone issues
-                        const fecha = new Date(exc.fecha + 'T00:00:00').toLocaleDateString('es-PE', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                        });
-                        const horasBadge = exc.horas === 'NO_LABORABLE'
-                            ? '<span class="badge badge-danger">Día No Laborable</span>'
-                            : `<span class="badge badge-info">${exc.horas}</span>`;
+            // Cargar excepciones de un usuario
+            function cargarExcepciones() {
+                $('#loadingExcepciones').show();
+                $('#tablaExcepcionesContainer').hide();
 
-                        const fila = `
+                $.ajax({
+                    url: `/usuarios/${usuarioIdActual}/excepciones`,
+                    method: 'GET',
+                    success: function (excepciones) {
+                        $('#loadingExcepciones').hide();
+                        $('#tablaExcepcionesContainer').show();
+
+                        const tbody = $('#tablaExcepciones');
+                        tbody.empty();
+
+                        if (excepciones.length === 0) {
+                            $('#noExcepciones').show();
+                        } else {
+                            $('#noExcepciones').hide();
+
+                            excepciones.forEach(exc => {
+                                // Parsear fecha correctamente sin timezone offset
+                                // exc.fecha viene como "2024-11-14", debemos agregar 'T00:00:00' para evitar timezone issues
+                                const fecha = new Date(exc.fecha + 'T00:00:00').toLocaleDateString('es-PE', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit'
+                                });
+                                const horasBadge = exc.horas === 'NO_LABORABLE'
+                                    ? '<span class="badge badge-danger">Día No Laborable</span>'
+                                    : `<span class="badge badge-info">${exc.horas}</span>`;
+
+                                const fila = `
                             <tr>
                                 <td>${fecha}</td>
                                 <td>${horasBadge}</td>
@@ -468,109 +613,276 @@
                                 </td>
                             </tr>
                         `;
-                        tbody.append(fila);
-                    });
-                }
-            },
-            error: function(xhr) {
-                $('#loadingExcepciones').hide();
-                mostrarError('Error al cargar las excepciones');
+                                tbody.append(fila);
+                            });
+                        }
+                    },
+                    error: function (xhr) {
+                        $('#loadingExcepciones').hide();
+                        mostrarError('Error al cargar las excepciones');
+                    }
+                });
             }
-        });
-    }
 
-    // Agregar nueva excepción
-    $('#formNuevaExcepcion').on('submit', function(e) {
-        e.preventDefault();
+            // Agregar nueva excepción
+            $('#formNuevaExcepcion').on('submit', function (e) {
+                e.preventDefault();
 
-        const tipoExc = $('#tipoExcepcion').val();
-        const horas = tipoExc === 'NO_LABORABLE' ? 'NO_LABORABLE' : $('#horasExcepcion').val();
+                const tipoExc = $('#tipoExcepcion').val();
+                const horas = tipoExc === 'NO_LABORABLE' ? 'NO_LABORABLE' : $('#horasExcepcion').val();
 
-        const datos = {
-            fecha: $('#fechaExcepcion').val(),
-            horas: horas,
-            motivo: $('#motivoExcepcion').val() || ''
-        };
+                const datos = {
+                    fecha: $('#fechaExcepcion').val(),
+                    horas: horas,
+                    motivo: $('#motivoExcepcion').val() || ''
+                };
 
-        // Validar horario especial si aplica
-        if (tipoExc === 'CUSTOM' && !horas) {
-            mostrarAdvertencia('Debe ingresar el horario especial');
-            return;
-        }
-
-        // Obtener token CSRF
-        const token = $('meta[name="_csrf"]').attr('content');
-        const header = $('meta[name="_csrf_header"]').attr('content');
-
-        $.ajax({
-            url: `/usuarios/${usuarioIdActual}/excepciones`,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(datos),
-            beforeSend: function(xhr) {
-                if (token && header) {
-                    xhr.setRequestHeader(header, token);
+                // Validar horario especial si aplica
+                if (tipoExc === 'CUSTOM' && !horas) {
+                    mostrarAdvertencia('Debe ingresar el horario especial');
+                    return;
                 }
-            },
-            success: function(response) {
-                mostrarExito('Excepción agregada correctamente');
-                $('#formNuevaExcepcion')[0].reset();
-                $('#campoHorarioEspecial').hide();
-                cargarExcepciones();
-            },
-            error: function(xhr) {
-                const error = xhr.responseJSON?.error || 'Error al agregar la excepción';
-                mostrarError(error);
-            }
-        });
-    });
 
-    // Eliminar excepción
-    $(document).on('click', '.btn-eliminar-excepcion', function() {
-        const excepcionFecha = $(this).data('excepcion-fecha');
-
-        Swal.fire({
-            title: '¿Eliminar excepción?',
-            text: 'Esta acción no se puede deshacer',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
                 // Obtener token CSRF
                 const token = $('meta[name="_csrf"]').attr('content');
                 const header = $('meta[name="_csrf_header"]').attr('content');
 
                 $.ajax({
-                    url: `/usuarios/${usuarioIdActual}/excepciones/${excepcionFecha}`,
-                    method: 'DELETE',
-                    beforeSend: function(xhr) {
+                    url: `/usuarios/${usuarioIdActual}/excepciones`,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(datos),
+                    beforeSend: function (xhr) {
                         if (token && header) {
                             xhr.setRequestHeader(header, token);
                         }
                     },
-                    success: function(response) {
-                        mostrarExito('Excepción eliminada correctamente');
+                    success: function (response) {
+                        mostrarExito('Excepción agregada correctamente');
+                        $('#formNuevaExcepcion')[0].reset();
+                        $('#campoHorarioEspecial').hide();
                         cargarExcepciones();
                     },
-                    error: function(xhr) {
-                        mostrarError('Error al eliminar la excepción');
+                    error: function (xhr) {
+                        const error = xhr.responseJSON?.error || 'Error al agregar la excepción';
+                        mostrarError(error);
                     }
                 });
-            }
-        });
-    });
+            });
 
-    // Configurar fecha mínima (hoy) en el campo de fecha
-    $(document).ready(function() {
-        const hoy = new Date().toISOString().split('T')[0];
-        $('#fechaExcepcion').attr('min', hoy);
-    });
+            // Eliminar excepción
+            $(document).on('click', '.btn-eliminar-excepcion', function () {
+                const excepcionFecha = $(this).data('excepcion-fecha');
 
-</script>
-</div>
+                Swal.fire({
+                    title: '¿Eliminar excepción?',
+                    text: 'Esta acción no se puede deshacer',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Obtener token CSRF
+                        const token = $('meta[name="_csrf"]').attr('content');
+                        const header = $('meta[name="_csrf_header"]').attr('content');
+
+                        $.ajax({
+                            url: `/usuarios/${usuarioIdActual}/excepciones/${excepcionFecha}`,
+                            method: 'DELETE',
+                            beforeSend: function (xhr) {
+                                if (token && header) {
+                                    xhr.setRequestHeader(header, token);
+                                }
+                            },
+                            success: function (response) {
+                                mostrarExito('Excepción eliminada correctamente');
+                                cargarExcepciones();
+                            },
+                            error: function (xhr) {
+                                mostrarError('Error al eliminar la excepción');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Configurar fecha mínima (hoy) en el campo de fecha
+            $(document).ready(function () {
+                const hoy = new Date().toISOString().split('T')[0];
+                $('#fechaExcepcion').attr('min', hoy);
+            });
+
+            // Cargar pacientes activos al abrir el modal
+            $('#modalPromocionPaciente').on('show.bs.modal', function () {
+                // Establecer fecha de hoy como valor por defecto
+                const hoy = new Date().toISOString().split('T')[0];
+                $('#fechaContratacionPromocion').val(hoy);
+
+                // Establecer fecha de vigencia a 1 año desde hoy
+                const unAnio = new Date();
+                unAnio.setFullYear(unAnio.getFullYear() + 1);
+                $('#fechaVigenciaPromocion').val(unAnio.toISOString().split('T')[0]);
+                // Cargar pacientes
+                $.ajax({
+                    url: '/usuarios/api/pacientes-activos',
+                    method: 'GET',
+                    success: function (pacientes) {
+                        const select = $('#pacienteSelect');
+                        select.empty().append('<option value="">Busque y seleccione un paciente...</option>');
+                        pacientes.forEach(p => {
+                            select.append(`<option value="${p.id}" 
+                                data-doc="${p.numeroDocumento || ''}" 
+                                data-nombre="${p.nombreCompleto || ''}"
+                                data-email="${p.email || ''}" 
+                                data-telefono="${p.telefono || 'No registrado'}"
+                                data-fecha-nac="${p.fechaNacimiento || ''}"
+                                data-direccion="${p.direccion || 'No registrada'}">
+                                ${p.nombreCompleto} - ${p.numeroDocumento}
+                            </option>`);
+                        });
+                        select.select2({
+                            placeholder: 'Buscar paciente...',
+                            allowClear: true,
+                            width: '100%'
+                        });
+                    },
+                    error: function () {
+                        mostrarError('Error al cargar la lista de pacientes');
+                    }
+                });
+                // Cargar roles de personal (sin PACIENTE)
+                $.ajax({
+                    url: '/roles/api/roles-personal',
+                    method: 'GET',
+                    success: function (roles) {
+                        const container = $('#rolesPersonalCheckboxes');
+                        container.empty();
+                        roles.forEach(rol => {
+                            container.append(`
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="roles" value="${rol.id}" id="rolPromo${rol.id}">
+                                    <label class="form-check-label" for="rolPromo${rol.id}">
+                                        ${rol.nombre}
+                                    </label>
+                                </div>
+                            `);
+                        });
+                    },
+                    error: function () {
+                        mostrarError('Error al cargar los roles de personal');
+                    }
+                });
+            });
+            // Mostrar datos del paciente seleccionado
+            $('#pacienteSelect').on('change', function () {
+                const selected = $(this).find(':selected');
+                if (selected.val()) {
+                    // Mostrar datos del paciente
+                    $('#infoPacienteDoc').text(selected.data('doc'));
+                    $('#infoPacienteNombre').text(selected.data('nombre'));
+                    $('#infoPacienteEmail').text(selected.data('email'));
+                    $('#infoPacienteTelefono').text(selected.data('telefono'));
+                    $('#infoPacienteFechaNac').text(selected.data('fecha-nac') || 'No registrada');
+                    $('#infoPacienteDireccion').text(selected.data('direccion'));
+
+                    $('#datosPaciente').slideDown();
+                    $('#btnConfirmarPromocion').prop('disabled', false);
+                } else {
+                    $('#datosPaciente').slideUp();
+                    $('#btnConfirmarPromocion').prop('disabled', true);
+                }
+            });
+            // Limpiar formulario al cerrar modal
+            $('#modalPromocionPaciente').on('hidden.bs.modal', function () {
+                $('#formPromocionPaciente')[0].reset();
+                $('#pacienteSelect').val('').trigger('change');
+                $('#datosPaciente').hide();
+                $('input[name="roles"]').prop('checked', false);
+                $('#btnConfirmarPromocion').prop('disabled', true);
+            });
+
+
+
+            // Mostrar info del paciente seleccionado y pre-cargar datos
+            $('#pacienteSelect').on('change', function () {
+                const selected = $(this).find(':selected');
+                if (selected.val()) {
+                    const doc = selected.data('doc');
+                    const email = selected.data('email');
+                    const telefono = selected.data('telefono');
+                    const direccion = selected.data('direccion');
+
+                    // Mostrar información del paciente
+                    $('#infoPacienteDoc').text(doc);
+                    $('#infoPacienteEmail').text(email);
+                    $('#infoPacienteTelefono').text(telefono || 'No registrado');
+                    $('#infoPacienteSeleccionado').slideDown();
+
+                    // PRE-CARGAR datos en los campos del formulario
+                    $('#telefonoPromocion').val(telefono || '');
+                    $('#direccionPromocion').val(direccion || '');
+
+                } else {
+                    $('#infoPacienteSeleccionado').slideUp();
+                    // Limpiar campos si no hay paciente seleccionado
+                    $('#telefonoPromocion').val('');
+                    $('#direccionPromocion').val('');
+                }
+            });
+            // Validar y enviar formulario de promoción
+            $('#formPromocionPaciente').on('submit', function (e) {
+                e.preventDefault();
+                // Validar que se haya seleccionado un paciente
+                const pacienteId = $('#pacienteSelect').val();
+                if (!pacienteId) {
+                    mostrarAdvertencia('Debe seleccionar un paciente');
+                    return;
+                }
+                // Validar fecha de contratación
+                const fechaContratacion = $('#fechaContratacionPromocion').val();
+                if (!fechaContratacion) {
+                    mostrarAdvertencia('Debe ingresar la fecha de contratación');
+                    return;
+                }
+
+                // Validar que fecha de contratación no sea futura
+                if (new Date(fechaContratacion) > new Date()) {
+                    mostrarAdvertencia('La fecha de contratación no puede ser futura');
+                    return;
+                }
+                // Validar fecha de vigencia
+                const fechaVigencia = $('#fechaVigenciaPromocion').val();
+                if (!fechaVigencia) {
+                    mostrarAdvertencia('Debe ingresar la fecha de vigencia');
+                    return;
+                }
+                // Obtener roles seleccionados
+                const rolesSeleccionados = [];
+                $('input[name="roles"]:checked').each(function () {
+                    rolesSeleccionados.push($(this).val());
+                });
+                if (rolesSeleccionados.length === 0) {
+                    mostrarAdvertencia('Debe seleccionar al menos un rol de personal');
+                    return;
+                }
+                // Crear formulario con los datos correctos
+                const form = $(this);
+                // Limpiar inputs de roles anteriores
+                form.find('input[name="rolesIds"]').remove();
+                // Agregar cada rol como un input separado
+                rolesSeleccionados.forEach(rolId => {
+                    form.append(`<input type="hidden" name="rolesIds" value="${rolId}">`);
+                });
+                // Enviar formulario
+                form.off('submit').submit();
+            });
+
+        </script>
+    </div>
 </body>
+
 </html>

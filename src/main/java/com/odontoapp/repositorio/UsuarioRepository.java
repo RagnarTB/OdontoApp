@@ -117,4 +117,18 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
                                         "    HAVING COUNT(DISTINCT r2.id) = 1 AND MAX(r2.nombre) = 'PACIENTE'" +
                                         ") OR u.id NOT IN (SELECT usuario_id FROM usuarios_roles))", nativeQuery = true)
         Page<Usuario> findEliminadosExcluyendoSoloPacientes(Pageable pageable);
+
+        @Query("SELECT DISTINCT u FROM Usuario u " +
+                        "LEFT JOIN FETCH u.roles r " +
+                        "WHERE u.eliminado = false " +
+                        "AND EXISTS (SELECT 1 FROM Rol rol WHERE rol MEMBER OF u.roles AND rol.nombre != 'PACIENTE')")
+        Page<Usuario> findUsuariosConRolesDePersonal(Pageable pageable);
+
+        @Query("SELECT DISTINCT u FROM Usuario u " +
+                        "LEFT JOIN FETCH u.roles r " +
+                        "WHERE u.eliminado = false " +
+                        "AND (u.nombreCompleto LIKE %:keyword% OR u.email LIKE %:keyword% OR u.numeroDocumento LIKE %:keyword%) "
+                        +
+                        "AND EXISTS (SELECT 1 FROM Rol rol WHERE rol MEMBER OF u.roles AND rol.nombre != 'PACIENTE')")
+        Page<Usuario> findUsuariosConRolesDePersonalByKeyword(@Param("keyword") String keyword, Pageable pageable);
 }

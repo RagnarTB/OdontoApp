@@ -1,5 +1,7 @@
 package com.odontoapp.servicio;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -27,4 +29,7 @@ public interface UsuarioService {
     void cambiarEstadoUsuario(Long id, boolean activar) throws UnsupportedOperationException, IllegalStateException;
 
     void restablecerUsuario(Long id);
+
+    void promoverPacienteAPersonal(Long pacienteId, List<Long> rolesIds,
+            LocalDate fechaContratacion, LocalDate fechaVigencia);
 }

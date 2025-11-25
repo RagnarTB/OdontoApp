@@ -14,15 +14,28 @@
 
         <ul class="navbar-nav ml-auto">
             <!-- Dropdown de Rol Activo (solo para personal con múltiples roles) -->
+            <li class="nav-item dropdown" th:if="${session.totalRoles != null and session.totalRoles > 1}">
+                <a class="nav-link dropdown-toggle" href="#" id="rolDropdown" role="button" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-user-tag"></i>
+                    <span th:text="${session.rolActivo != null ? session.rolActivo : 'Mi Rol'}">Mi Rol</span>
+                </a>
+            </li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+            <!-- Dropdown de Rol Activo (solo para personal con múltiples roles) -->
             <li class="nav-item dropdown" sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA','ALMACEN')">
-                <a class="nav-link dropdown-toggle" href="#" id="rolDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <a class="nav-link dropdown-toggle" href="#" id="rolDropdown" role="button" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
                     <i class="fas fa-user-tag"></i>
                     <span th:text="${session.rolActivo != null ? session.rolActivo : 'Mi Rol'}">Mi Rol</span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right" aria-labelledby="rolDropdown">
                     <div class="dropdown-item-text text-sm">
                         <strong>Rol Activo:</strong>
-                        <span class="badge badge-primary" th:text="${session.rolActivo != null ? session.rolActivo : 'No seleccionado'}">
+                        <span class="badge badge-primary"
+                            th:text="${session.rolActivo != null ? session.rolActivo : 'No seleccionado'}">
                             No seleccionado
                         </span>
                     </div>
@@ -46,13 +59,8 @@
 
     <!-- Sidebar -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4" th:fragment="sidebar">
-        <!-- Logo con redirección condicional según rol -->
-        <a sec:authorize="hasRole('PACIENTE')" th:href="@{/paciente/dashboard}" class="brand-link">
-            <img th:src="@{/adminlte/dist/img/AdminLTELogo.png}" alt="OdontoApp Logo"
-                class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-light">OdontoApp</span>
-        </a>
-        <a sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA','ALMACEN')" th:href="@{/dashboard}" class="brand-link">
+        <!-- Logo con redirección condicional según rol activo -->
+        <a th:href="${session.rolActivo == 'PACIENTE' ? '/paciente/dashboard' : '/dashboard'}" class="brand-link">
             <img th:src="@{/adminlte/dist/img/AdminLTELogo.png}" alt="OdontoApp Logo"
                 class="brand-image img-circle elevation-3" style="opacity: .8">
             <span class="brand-text font-weight-light">OdontoApp</span>
@@ -76,7 +84,7 @@
                     data-accordion="false">
 
                     <!-- ======================= MENÚ PARA PACIENTES ======================= -->
-                    <th:block sec:authorize="hasRole('PACIENTE')">
+                    <th:block th:if="${session.rolActivo == 'PACIENTE'}">
                         <!-- Dashboard del Paciente -->
                         <li class="nav-item">
                             <a th:href="@{/paciente/dashboard}" class="nav-link">
@@ -111,7 +119,7 @@
                     </th:block>
 
                     <!-- ======================= MENÚ PARA STAFF ======================= -->
-                    <th:block sec:authorize="hasAnyRole('ADMIN','ODONTOLOGO','RECEPCIONISTA','ALMACEN')">
+                    <th:block th:if="${session.rolActivo != null and session.rolActivo != 'PACIENTE'}">
                         <!-- DASHBOARD -->
                         <li class="nav-item">
                             <a th:href="@{/dashboard}" class="nav-link">
@@ -122,7 +130,8 @@
                     </th:block>
 
                     <!-- ADMINISTRACIÓN - Permisos granulares -->
-                    <li class="nav-header" sec:authorize="hasAnyAuthority('VER_LISTA_USUARIOS', 'VER_LISTA_ROLES', 'VER_REGISTROS_ELIMINADOS')">
+                    <li class="nav-header"
+                        sec:authorize="hasAnyAuthority('VER_LISTA_USUARIOS', 'VER_LISTA_ROLES', 'VER_REGISTROS_ELIMINADOS')">
                         ADMINISTRACIÓN
                     </li>
 
@@ -140,7 +149,8 @@
                         </a>
                     </li>
 
-                    <li class="nav-item" sec:authorize="hasAnyAuthority('RESTAURAR_USUARIOS', 'RESTAURAR_PACIENTES', 'RESTAURAR_ROLES', 'RESTAURAR_SERVICIOS', 'RESTAURAR_INVENTARIO')">
+                    <li class="nav-item"
+                        sec:authorize="hasAnyAuthority('RESTAURAR_USUARIOS', 'RESTAURAR_PACIENTES', 'RESTAURAR_ROLES', 'RESTAURAR_SERVICIOS', 'RESTAURAR_INVENTARIO')">
                         <a th:href="@{/administracion/eliminados}" class="nav-link">
                             <i class="nav-icon fas fa-trash-restore text-warning"></i>
                             <p>Registros Eliminados</p>
@@ -148,7 +158,8 @@
                     </li>
 
                     <!-- GESTIÓN CLÍNICA - Permisos granulares -->
-                    <li class="nav-header" sec:authorize="hasAnyAuthority('VER_LISTA_PACIENTES', 'VER_LISTA_CITAS', 'VER_LISTA_SERVICIOS')">
+                    <li class="nav-header"
+                        sec:authorize="hasAnyAuthority('VER_LISTA_PACIENTES', 'VER_LISTA_CITAS', 'VER_LISTA_SERVICIOS')">
                         GESTIÓN CLÍNICA
                     </li>
 

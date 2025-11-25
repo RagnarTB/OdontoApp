@@ -23,6 +23,7 @@ import com.odontoapp.repositorio.UsuarioRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @Component
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
@@ -87,7 +88,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             boolean esPersonal = authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
                     .anyMatch(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_ODONTOLOGO")
-                            || role.equals("ROLE_RECEPCIONISTA") || role.equals("ROLE_AUXILIAR") || role.equals("ROLE_ALMACEN"));
+                            || role.equals("ROLE_RECEPCIONISTA") || role.equals("ROLE_AUXILIAR")
+                            || role.equals("ROLE_ALMACEN"));
 
             // Validar login de pacientes: solo permitir rol PACIENTE
             if ("paciente".equalsIgnoreCase(loginType)) {
@@ -132,43 +134,52 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             return;
         }
 
-        // ✅ REGLA ESPECIAL PARA PACIENTES: Siempre redirigir a /paciente/dashboard
-        // Ignorar SavedRequest para usuarios con rol PACIENTE
+        // ✅ REGLA ESPECIAL PARA PACIENTES: Solo redirigir si ÚNICAMENTE tiene rol
+        // PACIENTE
+        // Si tiene PACIENTE + otros roles, debe ir al selector de roles
         boolean esPaciente = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(role -> role.equals("ROLE_PACIENTE"));
-
         if (esPaciente) {
-            String targetUrl = "/paciente/dashboard";
-            log.info("Usuario PACIENTE detectado. Redirigiendo directamente a: {}", targetUrl);
-            try {
-                if (!response.isCommitted()) {
-                    response.sendRedirect(request.getContextPath() + targetUrl);
-                    log.info("Redirección a portal de paciente enviada.");
-                } else {
-                    log.warn("La respuesta ya estaba 'committed'. No se pudo redirigir a {}", targetUrl);
+            // Verificar si SOLO tiene rol PACIENTE (no tiene otros roles de personal)
+            boolean soloEsPaciente = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .filter(role -> role.startsWith("ROLE_"))
+                    .allMatch(role -> role.equals("ROLE_PACIENTE"));
+            if (soloEsPaciente) {
+                String targetUrl = "/paciente/dashboard";
+                log.info("Usuario con SOLO rol PACIENTE detectado. Redirigiendo directamente a: {}", targetUrl);
+                try {
+                    if (!response.isCommitted()) {
+                        response.sendRedirect(request.getContextPath() + targetUrl);
+                        log.info("Redirección a portal de paciente enviada.");
+                    } else {
+                        log.warn("La respuesta ya estaba 'committed'. No se pudo redirigir a {}", targetUrl);
+                    }
+                } catch (IllegalStateException | IOException e) {
+                    log.error("¡ERROR al intentar redirigir a portal de paciente!", e);
                 }
-            } catch (IllegalStateException | IOException e) {
-                log.error("¡ERROR al intentar redirigir a portal de paciente!", e);
+                return; // Salir solo si es ÚNICAMENTE paciente
             }
-            return; // Salir para pacientes
+            // Si tiene PACIENTE + otros roles, continuar al selector de roles
+            log.info("Usuario tiene rol PACIENTE + otros roles. Continuando al selector de roles.");
         }
 
-        // ✅ DETECTAR MÚLTIPLES ROLES DE PERSONAL (NUEVO)
-        // Contar cuántos roles de personal tiene el usuario (excluyendo PACIENTE)
-        long rolesPersonalCount = authentication.getAuthorities().stream()
+        // ✅ DETECTAR MÚLTIPLES ROLES (PACIENTE + PERSONAL o múltiples roles de
+        // PERSONAL)
+        // Contar TODOS los roles del usuario
+        long totalRoles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .filter(role -> role.startsWith("ROLE_") && !role.equals("ROLE_PACIENTE"))
+                .filter(role -> role.startsWith("ROLE_"))
                 .distinct()
                 .count();
-
-        // Si tiene múltiples roles de personal, redirigir al selector de roles
-        // (a menos que ya tenga un rol seleccionado en la sesión)
-        if (rolesPersonalCount > 1) {
+        // Si tiene más de 1 rol (ej: PACIENTE + ODONTOLOGO, o ADMIN + RECEPCIONISTA)
+        // redirigir al selector de roles (a menos que ya tenga un rol seleccionado)
+        if (totalRoles > 1) {
             String rolActivo = (String) request.getSession().getAttribute("rolActivo");
             if (rolActivo == null) {
                 String targetUrl = request.getContextPath() + "/seleccionar-rol";
-                log.info("Usuario con {} roles de personal detectado. Redirigiendo a selector de roles.", rolesPersonalCount);
+                log.info("Usuario con {} roles detectado. Redirigiendo a selector de roles.", totalRoles);
                 try {
                     if (!response.isCommitted()) {
                         response.sendRedirect(targetUrl);
@@ -184,7 +195,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             log.info("Usuario tiene rol activo seleccionado: {}", rolActivo);
         }
 
-        // Lógica SavedRequest (solo para personal - con try-catch y verificación de /error)
+        // Lógica SavedRequest (solo para personal - con try-catch y verificación de
+        // /error)
         SavedRequest savedRequest = null;
         try {
             savedRequest = requestCache.getRequest(request, response);
@@ -224,7 +236,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
         // Lógica Final Redirección por Rol (con try-catch)
         // Se ejecutará si no hay SavedRequest o si el SavedRequest apuntaba a /error
-        String targetUrl = determineTargetUrl(authentication);
+        HttpSession session = request.getSession();
+        String targetUrl = determineTargetUrl(authentication, session);
         log.info("Procediendo con redirección final por rol a: {}", targetUrl);
         try {
             if (!response.isCommitted()) {
@@ -238,9 +251,15 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         }
     }
 
-    protected String determineTargetUrl(Authentication authentication) {
+    protected String determineTargetUrl(Authentication authentication, HttpSession session) {
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-
+        // Contar total de roles para la sesión
+        long totalRoles = authorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(role -> role.startsWith("ROLE_"))
+                .distinct()
+                .count();
+        session.setAttribute("totalRoles", (int) totalRoles);
         for (GrantedAuthority grantedAuthority : authorities) {
             log.debug("Evaluando rol: {}", grantedAuthority.getAuthority());
             if (grantedAuthority.getAuthority().equals("ROLE_PACIENTE")) {
@@ -248,7 +267,6 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
                 return "/paciente/dashboard";
             }
         }
-
         log.info("Ningún rol específico coincidió. URL objetivo por defecto: /dashboard");
         return "/dashboard";
     }
