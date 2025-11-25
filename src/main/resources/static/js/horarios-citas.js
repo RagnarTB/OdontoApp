@@ -3,7 +3,7 @@
  * Manejo de selección de horarios disponibles para agendar citas
  */
 
-(function() {
+(function () {
     'use strict';
 
     let horarioSeleccionado = null;
@@ -18,28 +18,16 @@
         // Verificar si ya hay una fecha pre-cargada (viene del calendario)
         const fechaActual = $('#fechaCitaAgendar').val();
         const fechaHoraActual = $('#fechaHoraInicioAgendar').val();
-
         // Limpiar estado anterior
         horarioSeleccionado = null;
         fechaSeleccionada = null;
         odontologoSeleccionado = null;
         $('#grilla-horarios-disponibles').html('');
         $('#horario-seleccionado-texto').text('Ninguno');
+        // NOTA: NO inicializamos Select2 para pacienteIdAgendar porque ese campo
+        // NO existe en el panel de paciente (solo en admin panel)
 
-        // Inicializar Select2 para mejorar experiencia de usuario y corregir bug de selección
-        if (!$('#pacienteIdAgendar').hasClass('select2-hidden-accessible')) {
-            $('#pacienteIdAgendar').select2({
-                placeholder: 'Seleccione un paciente',
-                allowClear: true,
-                dropdownParent: $('#modalAgendarCita'),
-                language: {
-                    noResults: function() {
-                        return "No se encontraron pacientes";
-                    }
-                }
-            });
-        }
-
+        // Inicializar Select2 solo para odontólogo
         if (!$('#odontologoIdAgendar').hasClass('select2-hidden-accessible')) {
             $('#odontologoIdAgendar').select2({
                 placeholder: 'Seleccione un odontólogo',
@@ -47,11 +35,9 @@
                 dropdownParent: $('#modalAgendarCita')
             });
         }
-
         // Configurar fecha mínima (hoy)
         const hoy = new Date().toISOString().split('T')[0];
         $('#fechaCitaAgendar').attr('min', hoy);
-
         // Si NO hay fecha pre-cargada desde el calendario, usar hoy por defecto
         if (!fechaActual) {
             $('#fechaCitaAgendar').val(hoy);
@@ -107,7 +93,7 @@
                 fecha: fecha,
                 duracion: duracionProcedimiento
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.error) {
                     mostrarError(response.mensaje);
                     return;
@@ -115,7 +101,7 @@
 
                 mostrarGrillaHorarios(response);
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 $('#grilla-horarios-disponibles').html(
                     '<div class="alert alert-danger">' +
                     '<i class="fas fa-exclamation-triangle mr-2"></i>' +
@@ -178,7 +164,7 @@
         // Grilla de horarios
         const grilla = $('<div class="horarios-grid"></div>');
 
-        response.horariosDisponibles.forEach(function(slot) {
+        response.horariosDisponibles.forEach(function (slot) {
             const boton = $('<button type="button" class="horario-slot"></button>');
             boton.addClass(slot.disponible ? 'disponible' : 'ocupado');
             boton.text(slot.inicio);
@@ -186,7 +172,7 @@
             boton.attr('data-fin', slot.fin);
 
             if (slot.disponible) {
-                boton.on('click', function() {
+                boton.on('click', function () {
                     seleccionarHorario(slot.inicio, slot.fin);
                 });
                 boton.append('<span class="duracion-texto">' + duracionProcedimiento + 'min</span>');
@@ -240,17 +226,13 @@
             mostrarAdvertencia('Por favor seleccione un horario disponible');
             return false;
         }
-
         if (!$('#odontologoIdAgendar').val()) {
             mostrarAdvertencia('Por favor seleccione un odontólogo');
             return false;
         }
-
-        if (!$('#pacienteIdAgendar').val()) {
-            mostrarAdvertencia('Por favor seleccione un paciente');
-            return false;
-        }
-
+        // NOTA: NO validamos pacienteIdAgendar porque en el panel de paciente
+        // el paciente se establece automáticamente en el backend por seguridad
+        // Solo el admin panel requiere seleccionar paciente manualmente
         return true;
     }
 
@@ -293,15 +275,15 @@
 
     function validarPasoActual() {
         if (pasoActual === 1) {
-            // Validar paciente y odontólogo
-            if (!$('#pacienteIdAgendar').val()) {
-                mostrarAdvertencia('Por favor seleccione un paciente');
-                return false;
-            }
+            // NOTA: En el panel de paciente NO validamos pacienteIdAgendar
+            // porque el paciente se establece automáticamente en el backend
+
+            // Validar odontólogo
             if (!$('#odontologoIdAgendar').val()) {
                 mostrarAdvertencia('Por favor seleccione un odontólogo');
                 return false;
             }
+            // Validar fecha
             if (!$('#fechaCitaAgendar').val()) {
                 mostrarAdvertencia('Por favor seleccione una fecha');
                 return false;
@@ -317,9 +299,9 @@
     }
 
     // Inicializar cuando el DOM esté listo
-    $(document).ready(function() {
+    $(document).ready(function () {
         // Inicializar al abrir el modal
-        $('#modalAgendarCita').on('show.bs.modal', function() {
+        $('#modalAgendarCita').on('show.bs.modal', function () {
             inicializarSistemaHorarios();
             // Resetear wizard
             pasoActual = 1;
@@ -333,23 +315,23 @@
         });
 
         // Navegación del wizard
-        $('#btnWizardSiguiente').on('click', function() {
+        $('#btnWizardSiguiente').on('click', function () {
             if (validarPasoActual()) {
                 cambiarPaso(pasoActual + 1);
             }
         });
 
-        $('#btnWizardAnterior').on('click', function() {
+        $('#btnWizardAnterior').on('click', function () {
             cambiarPaso(pasoActual - 1);
         });
 
         // Cargar horarios cuando cambie la fecha u odontólogo
-        $('#fechaCitaAgendar, #odontologoIdAgendar, #procedimientoIdAgendar').on('change', function() {
+        $('#fechaCitaAgendar, #odontologoIdAgendar, #procedimientoIdAgendar').on('change', function () {
             cargarHorariosDisponibles();
         });
 
         // Botón manual de refrescar horarios (útil cuando se edita el horario del odontólogo)
-        $('#btnRefrescarHorarios').on('click', function() {
+        $('#btnRefrescarHorarios').on('click', function () {
             // Animar el ícono de refrescar
             $(this).find('i').addClass('fa-spin');
             setTimeout(() => {
@@ -361,7 +343,7 @@
         });
 
         // Validar antes de enviar
-        $('#modalAgendarCita form').on('submit', function(e) {
+        $('#modalAgendarCita form').on('submit', function (e) {
             if (!validarFormularioCita()) {
                 e.preventDefault();
                 return false;
@@ -381,7 +363,7 @@
     /**
      * Inicializa el modal de reprogramación cuando se abre
      */
-    $('#btnReprogramar').on('click', function() {
+    $('#btnReprogramar').on('click', function () {
         // Obtener datos de la cita del modal de detalle
         const citaId = $('#detalleCitaId').val();
         const paciente = $('#detallePaciente').text();
@@ -421,7 +403,7 @@
     /**
      * Cargar horarios cuando cambia la fecha en reprogramación
      */
-    $('#fechaCitaReprogramar').on('change', function() {
+    $('#fechaCitaReprogramar').on('change', function () {
         const fecha = $(this).val();
         if (!fecha || !odontologoIdReprogramar) {
             return;
@@ -446,7 +428,7 @@
                 duracion: duracionReprogramar,
                 citaIdExcluir: citaIdActual  // Excluir cita actual para que su horario aparezca disponible
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.error) {
                     $('#grilla-horarios-disponibles-reprogramar').html(
                         '<div class="alert alert-danger">' +
@@ -459,7 +441,7 @@
 
                 mostrarGrillaHorariosReprogramar(response);
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 $('#grilla-horarios-disponibles-reprogramar').html(
                     '<div class="alert alert-danger">' +
                     '<i class="fas fa-exclamation-triangle mr-2"></i>' +
@@ -500,18 +482,18 @@
 
         // Crear grilla
         let html = '<div class="horarios-grid">';
-        horarios.forEach(function(slot) {
+        horarios.forEach(function (slot) {
             html += '<button type="button" class="btn btn-outline-primary btn-horario-slot-reprogramar" ' +
-                   'data-hora="' + slot.inicio + '">' +
-                   '<i class="far fa-clock mr-1"></i>' + slot.inicio +
-                   '</button>';
+                'data-hora="' + slot.inicio + '">' +
+                '<i class="far fa-clock mr-1"></i>' + slot.inicio +
+                '</button>';
         });
         html += '</div>';
 
         container.html(html);
 
         // Agregar event listeners
-        $('.btn-horario-slot-reprogramar').on('click', function() {
+        $('.btn-horario-slot-reprogramar').on('click', function () {
             const hora = $(this).data('hora');
             seleccionarHorarioReprogramar(hora);
 
@@ -556,7 +538,7 @@
     /**
      * Validar antes de enviar reprogramación
      */
-    $('#modalReprogramarCita form').on('submit', function(e) {
+    $('#modalReprogramarCita form').on('submit', function (e) {
         if (!horarioSeleccionadoReprogramar) {
             e.preventDefault();
             mostrarError('Por favor seleccione un horario para la reprogramación');

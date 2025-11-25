@@ -192,7 +192,18 @@
 
                         <!-- Campo hidden para enviar la fecha/hora seleccionada -->
                         <input type="hidden" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
-                        <!-- El pacienteUsuarioId se establece automáticamente en el controlador -->
+                        <!-- ============================================================================
+     IMPORTANTE - SEGURIDAD DEL PANEL DE PACIENTE:
+     ============================================================================
+     El campo pacienteUsuarioId NO se envía desde el formulario del panel de paciente.
+     Se establece automáticamente en el backend (PacienteCitaController.agendarCita)
+     usando el usuario autenticado: usuario.getId()
+     
+     Esto previene que un paciente pueda crear citas para otros pacientes.
+     
+     NOTA: El admin panel SÍ tiene un campo <select> para seleccionar paciente,
+     pero el panel de paciente NO lo tiene por seguridad.
+     ============================================================================ -->
 
                         <!-- PASO 1: Información Básica -->
                         <div class="wizard-content-step active" id="wizard-step-1">

@@ -58,52 +58,69 @@ public class PacientePerfilController {
             @RequestParam(defaultValue = "0") int comprobantesPageNum,
             @RequestParam(defaultValue = "10") int comprobantesSize,
             @RequestParam(defaultValue = "0") int tratamientosPage,
-            Model model) {
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        try {
+            // Obtener usuario autenticado
+            Usuario usuario = obtenerUsuarioAutenticado();
 
-        // Obtener usuario autenticado
-        Usuario usuario = obtenerUsuarioAutenticado();
-
-        // Buscar el paciente asociado
-        Paciente paciente = pacienteRepository.findByUsuario(usuario)
-                .orElseThrow(() -> new RuntimeException("Paciente no encontrado"));
-
-        model.addAttribute("paciente", paciente);
-        model.addAttribute("usuario", usuario);
-
-        // Obtener citas del paciente con paginación
-        Page<Cita> citasPage = citaRepository.findByPacienteId(
-            usuario.getId(),
-            PageRequest.of(citasPageNum, citasSize, Sort.by("fechaHoraInicio").descending())
-        );
-        model.addAttribute("citasPage", citasPage);
-
-        // Obtener tratamientos realizados del paciente con paginación
-        int tratamientosSize = 10;
-        Page<TratamientoRealizado> tratamientosPageData =
-                tratamientoRealizadoRepository.findByPacienteId(
+            System.out.println("🔍 DEBUG - Buscando paciente para usuario:");
+            System.out.println("   - ID: " + usuario.getId());
+            System.out.println("   - Email: " + usuario.getEmail());
+            System.out.println("   - Nombre: " + usuario.getNombreCompleto());
+            // Buscar el paciente asociado
+            Paciente paciente = pacienteRepository.findByUsuario(usuario)
+                    .orElseThrow(() -> {
+                        System.err.println("❌ ERROR - No se encontró paciente para usuario ID: " + usuario.getId());
+                        System.err.println("   Ejecute el script SQL de verificación en la guía (CAMBIO #3)");
+                        return new RuntimeException(
+                                "No se encontró un registro de paciente asociado a su usuario. " +
+                                        "Por favor, contacte al administrador del sistema.");
+                    });
+            System.out.println("✅ Paciente encontrado:");
+            System.out.println("   - ID: " + paciente.getId());
+            System.out.println("   - Nombre: " + paciente.getNombreCompleto());
+            System.out.println(
+                    "   - Documento: " + paciente.getTipoDocumento().getCodigo() + " " + paciente.getNumeroDocumento());
+            model.addAttribute("paciente", paciente);
+            model.addAttribute("usuario", usuario);
+            // Obtener citas del paciente con paginación
+            Page<Cita> citasPage = citaRepository.findByPacienteId(
                     usuario.getId(),
-                    PageRequest.of(tratamientosPage, tratamientosSize, Sort.by("fechaRealizacion").descending())
-                );
-        model.addAttribute("tratamientosPage", tratamientosPageData);
-
-        // Obtener tratamientos planificados del paciente (solo PLANIFICADO y EN_CURSO)
-        List<TratamientoPlanificado> tratamientosPlanificados =
-                tratamientoPlanificadoRepository.findTratamientosPendientes(usuario);
-        model.addAttribute("tratamientosPlanificados", tratamientosPlanificados);
-
-        // Obtener comprobantes del paciente con paginación
-        Page<Comprobante> comprobantesPage =
-                comprobanteRepository.findByPacienteIdOrderByFechaEmisionDesc(
+                    PageRequest.of(citasPageNum, citasSize, Sort.by("fechaHoraInicio").descending()));
+            model.addAttribute("citasPage", citasPage);
+            System.out.println("   - Citas encontradas: " + citasPage.getTotalElements());
+            // Obtener tratamientos realizados del paciente con paginación
+            int tratamientosSize = 10;
+            Page<TratamientoRealizado> tratamientosPageData = tratamientoRealizadoRepository.findByPacienteId(
                     usuario.getId(),
-                    PageRequest.of(comprobantesPageNum, comprobantesSize)
-                );
-        model.addAttribute("comprobantesPage", comprobantesPage);
+                    PageRequest.of(tratamientosPage, tratamientosSize, Sort.by("fechaRealizacion").descending()));
+            model.addAttribute("tratamientosPage", tratamientosPageData);
+            System.out.println("   - Tratamientos realizados: " + tratamientosPageData.getTotalElements());
+            // Obtener tratamientos planificados del paciente (solo PLANIFICADO y EN_CURSO)
+            List<TratamientoPlanificado> tratamientosPlanificados = tratamientoPlanificadoRepository
+                    .findTratamientosPendientes(usuario);
+            model.addAttribute("tratamientosPlanificados", tratamientosPlanificados);
+            System.out.println("   - Tratamientos planificados: " + tratamientosPlanificados.size());
+            // Obtener comprobantes del paciente con paginación
+            Page<Comprobante> comprobantesPage = comprobanteRepository.findByPacienteIdOrderByFechaEmisionDesc(
+                    usuario.getId(),
+                    PageRequest.of(comprobantesPageNum, comprobantesSize));
+            model.addAttribute("comprobantesPage", comprobantesPage);
+            System.out.println("   - Comprobantes: " + comprobantesPage.getTotalElements());
+            // Obtener odontograma
+            List<OdontogramaDiente> dientes = odontogramaDienteRepository.findByPaciente(usuario);
+            model.addAttribute("odontograma", dientes);
+            System.out.println("   - Dientes en odontograma: " + dientes.size());
+            return "paciente/perfil/historial";
 
-        // Obtener odontograma
-        List<OdontogramaDiente> dientes = odontogramaDienteRepository.findByPaciente(usuario);
-        model.addAttribute("odontograma", dientes);
+        } catch (RuntimeException e) {
+            System.err.println("❌ ERROR en verPerfil: " + e.getMessage());
+            e.printStackTrace();
 
-        return "paciente/perfil/historial";
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/paciente/dashboard";
+        }
     }
 
     /**
@@ -161,7 +178,8 @@ public class PacientePerfilController {
         }
 
         try {
-            // SOLO actualizar campos permitidos: teléfono, dirección, alergias, antecedentes
+            // SOLO actualizar campos permitidos: teléfono, dirección, alergias,
+            // antecedentes
             // NOTA: El email NO es editable por seguridad
             paciente.setTelefono(pacienteDTO.getTelefono());
             paciente.setDireccion(pacienteDTO.getDireccion());
