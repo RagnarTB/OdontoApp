@@ -31,5 +31,5 @@ public interface UsuarioService {
     void restablecerUsuario(Long id);
 
     void promoverPacienteAPersonal(Long pacienteId, List<Long> rolesIds,
-            String telefono, LocalDate fechaContratacion, String direccion);
+            LocalDate fechaContratacion, LocalDate fechaVigencia);
 }

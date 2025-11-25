@@ -605,17 +605,10 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public void promoverPacienteAPersonal(Long pacienteId, List<Long> rolesIds,
-            String telefono, LocalDate fechaContratacion, String direccion) {
+            LocalDate fechaContratacion, LocalDate fechaVigencia) {
         // Validar que se proporcionen roles
         if (rolesIds == null || rolesIds.isEmpty()) {
             throw new IllegalArgumentException("Debe seleccionar al menos un rol de personal");
-        }
-        // Validar teléfono (obligatorio, 9 dígitos)
-        if (telefono == null || telefono.trim().isEmpty()) {
-            throw new IllegalArgumentException("El teléfono es obligatorio");
-        }
-        if (telefono.length() != 9 || !telefono.matches("[0-9]{9}")) {
-            throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos numéricos");
         }
         // Validar fecha de contratación (obligatoria, no futura)
         if (fechaContratacion == null) {
@@ -623,6 +616,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         if (fechaContratacion.isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("La fecha de contratación no puede ser futura");
+        }
+        // Validar fecha de vigencia (obligatoria)
+        if (fechaVigencia == null) {
+            throw new IllegalArgumentException("La fecha de vigencia es obligatoria");
         }
         // Buscar el paciente
         Paciente paciente = pacienteRepository.findById(pacienteId)
@@ -640,25 +637,18 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (!usuario.isEstaActivo()) {
             throw new IllegalStateException("No se puede promocionar un usuario inactivo");
         }
-        // Actualizar datos del usuario con los campos requeridos
-        usuario.setTelefono(telefono);
+        // Actualizar SOLO los datos de personal (los datos del paciente ya existen)
         usuario.setFechaContratacion(fechaContratacion);
-
-        // Dirección es opcional pero se guarda si se proporciona
-        if (direccion != null && !direccion.trim().isEmpty()) {
-            usuario.setDireccion(direccion);
-        }
+        usuario.setFechaVigencia(fechaVigencia);
         // Agregar los nuevos roles de personal (sin quitar el rol PACIENTE)
         List<Rol> nuevosRoles = rolRepository.findAllById(rolesIds);
         if (nuevosRoles.isEmpty()) {
             throw new IllegalArgumentException("Los roles seleccionados no son válidos");
         }
-
         // Agregar nuevos roles manteniendo los existentes
         usuario.getRoles().addAll(nuevosRoles);
         // Guardar cambios
         usuarioRepository.save(usuario);
-
         System.out.println(">>> Paciente " + paciente.getNombreCompleto() +
                 " promocionado exitosamente a personal con " + nuevosRoles.size() + " rol(es)");
     }

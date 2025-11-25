@@ -702,28 +702,22 @@ public class UsuarioController {
     public String promocionarPaciente(
             @RequestParam("pacienteId") Long pacienteId,
             @RequestParam("rolesIds") List<Long> rolesIds,
-            @RequestParam("telefono") String telefono,
             @RequestParam("fechaContratacion") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaContratacion,
-            @RequestParam(value = "direccion", required = false) String direccion,
+            @RequestParam("fechaVigencia") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaVigencia,
             RedirectAttributes redirectAttributes) {
-
         try {
-            usuarioService.promoverPacienteAPersonal(pacienteId, rolesIds, telefono, fechaContratacion, direccion);
+            usuarioService.promoverPacienteAPersonal(pacienteId, rolesIds, fechaContratacion, fechaVigencia);
             redirectAttributes.addFlashAttribute("success",
                     "Paciente promocionado exitosamente a personal clínico");
         } catch (IllegalArgumentException e) {
-            // Errores de validación
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         } catch (IllegalStateException e) {
-            // Errores de estado (paciente eliminado, usuario inactivo, etc.)
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
-            // Otros errores
             redirectAttributes.addFlashAttribute("error",
                     "Error inesperado al promocionar paciente: " + e.getMessage());
             e.printStackTrace();
         }
-
         return "redirect:/usuarios";
     }
 }

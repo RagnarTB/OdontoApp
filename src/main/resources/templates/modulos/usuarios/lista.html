@@ -354,108 +354,116 @@
             </div>
         </div>
 
-        <!-- Modal para Promocionar Paciente a Personal -->
         <div class="modal fade" id="modalPromocionPaciente" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header bg-success text-white">
                         <h5 class="modal-title">
-                            <i class="fas fa-user-plus mr-2"></i>Establecer Paciente como Personal Clínico
+                            <i class="fas fa-user-plus mr-2"></i>Promocionar Paciente a Personal
                         </h5>
                         <button type="button" class="close text-white" data-dismiss="modal">
                             <span>&times;</span>
                         </button>
                     </div>
-
                     <form id="formPromocionPaciente" th:action="@{/usuarios/promocionar}" method="post">
                         <div class="modal-body">
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle mr-2"></i>
-                                <strong>Promoción de Paciente:</strong> Esta acción convertirá al paciente seleccionado
-                                en personal del sistema, asignándole nuevos roles de personal.
+                                <strong>Promoción de Paciente:</strong> El paciente mantendrá todos sus datos personales
+                                y médicos.
+                                Solo debe asignar roles de personal y fechas administrativas.
                             </div>
-
-                            <!-- Seleccionar Paciente -->
+                            <!-- Selector de Paciente -->
                             <div class="form-group">
-                                <label for="pacienteSelect">Paciente <span class="text-danger">*</span></label>
-                                <select class="form-control" id="pacienteSelect" name="usuarioId" required>
-                                    <option value="">Seleccione un paciente...</option>
+                                <label for="pacienteSelect">Seleccionar Paciente <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-control select2" id="pacienteSelect" name="pacienteId" required>
+                                    <option value="">Busque y seleccione un paciente...</option>
                                 </select>
-                                <small class="form-text text-muted">Busque y seleccione el paciente a
-                                    promocionar</small>
                             </div>
-
-                            <!-- Información del Paciente Seleccionado -->
-                            <div id="infoPacienteSeleccionado" style="display: none;" class="card bg-light mb-3">
-                                <div class="card-body">
-                                    <h6 class="card-title">Información del Paciente</h6>
-                                    <p class="mb-1"><strong>Documento:</strong> <span id="infoPacienteDoc"></span></p>
-                                    <p class="mb-1"><strong>Email:</strong> <span id="infoPacienteEmail"></span></p>
-                                    <p class="mb-0"><strong>Teléfono:</strong> <span id="infoPacienteTelefono"></span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- Datos Requeridos para Personal -->
-                            <div class="card card-outline card-warning mb-3">
-                                <div class="card-header">
-                                    <h6 class="card-title mb-0">
-                                        <i class="fas fa-user-tie mr-2"></i>Datos de Personal (Requeridos)
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="telefonoPromocion">Teléfono <span
-                                                        class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" id="telefonoPromocion"
-                                                    name="telefono" pattern="[0-9]{9}" maxlength="9" required
-                                                    placeholder="987654321">
-                                                <small class="form-text text-muted">9 dígitos</small>
+                            <!-- Datos del Paciente (Solo Lectura) -->
+                            <div id="datosPaciente" style="display: none;">
+                                <div class="card card-outline card-primary mb-3">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-user mr-2"></i>Datos del Paciente (Registrados)
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p class="mb-2"><strong>Documento:</strong> <span
+                                                        id="infoPacienteDoc"></span></p>
+                                                <p class="mb-2"><strong>Nombre:</strong> <span
+                                                        id="infoPacienteNombre"></span></p>
+                                                <p class="mb-2"><strong>Email:</strong> <span
+                                                        id="infoPacienteEmail"></span></p>
                                             </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="fechaContratacionPromocion">Fecha de Contratación <span
-                                                        class="text-danger">*</span></label>
-                                                <input type="date" class="form-control" id="fechaContratacionPromocion"
-                                                    name="fechaContratacion" required>
-                                                <small class="form-text text-muted">Fecha de inicio como
-                                                    personal</small>
+                                            <div class="col-md-6">
+                                                <p class="mb-2"><strong>Teléfono:</strong> <span
+                                                        id="infoPacienteTelefono"></span></p>
+                                                <p class="mb-2"><strong>Fecha Nacimiento:</strong> <span
+                                                        id="infoPacienteFechaNac"></span></p>
+                                                <p class="mb-2"><strong>Dirección:</strong> <span
+                                                        id="infoPacienteDireccion"></span></p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="direccionPromocion">Dirección</label>
-                                        <input type="text" class="form-control" id="direccionPromocion" name="direccion"
-                                            placeholder="Av. Ejemplo 123">
-                                        <small class="form-text text-muted">Opcional pero recomendado</small>
+                                </div>
+                                <!-- Datos de Personal (Nuevos) -->
+                                <div class="card card-outline card-warning mb-3">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-briefcase mr-2"></i>Datos de Personal (Requeridos)
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="fechaContratacionPromocion">Fecha de Contratación <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="date" class="form-control"
+                                                        id="fechaContratacionPromocion" name="fechaContratacion"
+                                                        required>
+                                                    <small class="form-text text-muted">No puede ser futura</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="fechaVigenciaPromocion">Fecha de Vigencia <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="date" class="form-control" id="fechaVigenciaPromocion"
+                                                        name="fechaVigencia" required>
+                                                    <small class="form-text text-muted">Fecha hasta la cual tendrá
+                                                        acceso (no requerido para ADMIN)</small>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Roles a Asignar -->
-                            <div class="card card-outline card-success">
-                                <div class="card-header">
-                                    <h6 class="card-title mb-0">
-                                        <i class="fas fa-user-tag mr-2"></i>Roles de Personal a Asignar
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <p class="text-muted mb-2">Seleccione al menos un rol de personal:</p>
-                                    <div id="rolesPersonalCheckboxes">
-                                        <!-- Se llenarán dinámicamente -->
+                                <!-- Roles de Personal -->
+                                <div class="card card-outline card-success">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-user-tag mr-2"></i>Roles de Personal a Asignar <span
+                                                class="text-danger">*</span>
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="text-muted mb-3">Seleccione al menos un rol de personal:</p>
+                                        <div id="rolesPersonalCheckboxes">
+                                            <!-- Se llenarán dinámicamente -->
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">
                                 <i class="fas fa-times mr-2"></i>Cancelar
                             </button>
-                            <button type="submit" class="btn btn-success">
+                            <button type="submit" class="btn btn-success" id="btnConfirmarPromocion" disabled>
                                 <i class="fas fa-check mr-2"></i>Confirmar Promoción
                             </button>
                         </div>
@@ -713,83 +721,127 @@
                 const hoy = new Date().toISOString().split('T')[0];
                 $('#fechaContratacionPromocion').val(hoy);
 
+                // Establecer fecha de vigencia a 1 año desde hoy
+                const unAnio = new Date();
+                unAnio.setFullYear(unAnio.getFullYear() + 1);
+                $('#fechaVigenciaPromocion').val(unAnio.toISOString().split('T')[0]);
+                // Cargar pacientes
                 $.ajax({
                     url: '/usuarios/api/pacientes-activos',
                     method: 'GET',
                     success: function (pacientes) {
                         const select = $('#pacienteSelect');
-                        select.empty().append('<option value="">Seleccione un paciente...</option>');
-
+                        select.empty().append('<option value="">Busque y seleccione un paciente...</option>');
                         pacientes.forEach(p => {
                             select.append(`<option value="${p.id}" 
-                    data-doc="${p.numeroDocumento}" 
-                    data-email="${p.email}" 
-                    data-telefono="${p.telefono}">
-                    ${p.nombreCompleto} - ${p.numeroDocumento}
-                </option>`);
+                                data-doc="${p.numeroDocumento || ''}" 
+                                data-nombre="${p.nombreCompleto || ''}"
+                                data-email="${p.email || ''}" 
+                                data-telefono="${p.telefono || 'No registrado'}"
+                                data-fecha-nac="${p.fechaNacimiento || ''}"
+                                data-direccion="${p.direccion || 'No registrada'}">
+                                ${p.nombreCompleto} - ${p.numeroDocumento}
+                            </option>`);
                         });
-
                         select.select2({
                             placeholder: 'Buscar paciente...',
-                            allowClear: true
+                            allowClear: true,
+                            width: '100%'
                         });
+                    },
+                    error: function () {
+                        mostrarError('Error al cargar la lista de pacientes');
                     }
                 });
-
-                // Cargar roles de personal
+                // Cargar roles de personal (sin PACIENTE)
                 $.ajax({
                     url: '/roles/api/roles-personal',
                     method: 'GET',
                     success: function (roles) {
                         const container = $('#rolesPersonalCheckboxes');
                         container.empty();
-
                         roles.forEach(rol => {
                             container.append(`
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" 
-                               name="roles" value="${rol.id}" id="rolPromo${rol.id}">
-                        <label class="form-check-label" for="rolPromo${rol.id}">
-                            ${rol.nombre}
-                        </label>
-                    </div>
-                `);
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="roles" value="${rol.id}" id="rolPromo${rol.id}">
+                                    <label class="form-check-label" for="rolPromo${rol.id}">
+                                        ${rol.nombre}
+                                    </label>
+                                </div>
+                            `);
                         });
+                    },
+                    error: function () {
+                        mostrarError('Error al cargar los roles de personal');
                     }
                 });
             });
-
-            // Mostrar info del paciente seleccionado
+            // Mostrar datos del paciente seleccionado
             $('#pacienteSelect').on('change', function () {
                 const selected = $(this).find(':selected');
                 if (selected.val()) {
+                    // Mostrar datos del paciente
                     $('#infoPacienteDoc').text(selected.data('doc'));
+                    $('#infoPacienteNombre').text(selected.data('nombre'));
                     $('#infoPacienteEmail').text(selected.data('email'));
-                    $('#infoPacienteTelefono').text(selected.data('telefono') || 'No registrado');
-                    $('#infoPacienteSeleccionado').slideDown();
+                    $('#infoPacienteTelefono').text(selected.data('telefono'));
+                    $('#infoPacienteFechaNac').text(selected.data('fecha-nac') || 'No registrada');
+                    $('#infoPacienteDireccion').text(selected.data('direccion'));
+
+                    $('#datosPaciente').slideDown();
+                    $('#btnConfirmarPromocion').prop('disabled', false);
                 } else {
-                    $('#infoPacienteSeleccionado').slideUp();
+                    $('#datosPaciente').slideUp();
+                    $('#btnConfirmarPromocion').prop('disabled', true);
                 }
             });
+            // Limpiar formulario al cerrar modal
+            $('#modalPromocionPaciente').on('hidden.bs.modal', function () {
+                $('#formPromocionPaciente')[0].reset();
+                $('#pacienteSelect').val('').trigger('change');
+                $('#datosPaciente').hide();
+                $('input[name="roles"]').prop('checked', false);
+                $('#btnConfirmarPromocion').prop('disabled', true);
+            });
 
+
+
+            // Mostrar info del paciente seleccionado y pre-cargar datos
+            $('#pacienteSelect').on('change', function () {
+                const selected = $(this).find(':selected');
+                if (selected.val()) {
+                    const doc = selected.data('doc');
+                    const email = selected.data('email');
+                    const telefono = selected.data('telefono');
+                    const direccion = selected.data('direccion');
+
+                    // Mostrar información del paciente
+                    $('#infoPacienteDoc').text(doc);
+                    $('#infoPacienteEmail').text(email);
+                    $('#infoPacienteTelefono').text(telefono || 'No registrado');
+                    $('#infoPacienteSeleccionado').slideDown();
+
+                    // PRE-CARGAR datos en los campos del formulario
+                    $('#telefonoPromocion').val(telefono || '');
+                    $('#direccionPromocion').val(direccion || '');
+
+                } else {
+                    $('#infoPacienteSeleccionado').slideUp();
+                    // Limpiar campos si no hay paciente seleccionado
+                    $('#telefonoPromocion').val('');
+                    $('#direccionPromocion').val('');
+                }
+            });
             // Validar y enviar formulario de promoción
             $('#formPromocionPaciente').on('submit', function (e) {
                 e.preventDefault();
-
                 // Validar que se haya seleccionado un paciente
                 const pacienteId = $('#pacienteSelect').val();
                 if (!pacienteId) {
                     mostrarAdvertencia('Debe seleccionar un paciente');
                     return;
                 }
-
-                // Validar teléfono
-                const telefono = $('#telefonoPromocion').val();
-                if (!telefono || telefono.length !== 9) {
-                    mostrarAdvertencia('Debe ingresar un teléfono válido de 9 dígitos');
-                    return;
-                }
-
                 // Validar fecha de contratación
                 const fechaContratacion = $('#fechaContratacionPromocion').val();
                 if (!fechaContratacion) {
@@ -797,28 +849,34 @@
                     return;
                 }
 
+                // Validar que fecha de contratación no sea futura
+                if (new Date(fechaContratacion) > new Date()) {
+                    mostrarAdvertencia('La fecha de contratación no puede ser futura');
+                    return;
+                }
+                // Validar fecha de vigencia
+                const fechaVigencia = $('#fechaVigenciaPromocion').val();
+                if (!fechaVigencia) {
+                    mostrarAdvertencia('Debe ingresar la fecha de vigencia');
+                    return;
+                }
                 // Obtener roles seleccionados
                 const rolesSeleccionados = [];
                 $('input[name="roles"]:checked').each(function () {
                     rolesSeleccionados.push($(this).val());
                 });
-
                 if (rolesSeleccionados.length === 0) {
                     mostrarAdvertencia('Debe seleccionar al menos un rol de personal');
                     return;
                 }
-
                 // Crear formulario con los datos correctos
                 const form = $(this);
-
                 // Limpiar inputs de roles anteriores
                 form.find('input[name="rolesIds"]').remove();
-
-                // Agregar cada rol como un input separado 
+                // Agregar cada rol como un input separado
                 rolesSeleccionados.forEach(rolId => {
                     form.append(`<input type="hidden" name="rolesIds" value="${rolId}">`);
                 });
-
                 // Enviar formulario
                 form.off('submit').submit();
             });
