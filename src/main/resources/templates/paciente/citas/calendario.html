@@ -1,437 +1,445 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: layout(titulo='Mis Citas', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
+    th:replace="~{layout/base :: layout(titulo='Mis Citas', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
 
 <body>
-<div id="contenido-principal">
+    <div id="contenido-principal">
 
-    <style>
-        /* Estilo para fechas pasadas */
-        .fc-day-past {
-            background-color: #f5f5f5 !important;
-            opacity: 0.6;
-        }
+        <style>
+            /* Estilo para fechas pasadas */
+            .fc-day-past {
+                background-color: #f5f5f5 !important;
+                opacity: 0.6;
+            }
 
-        .fc-timegrid-slot.fc-timegrid-slot-past {
-            background-color: #fafafa !important;
-            opacity: 0.5;
-        }
+            .fc-timegrid-slot.fc-timegrid-slot-past {
+                background-color: #fafafa !important;
+                opacity: 0.5;
+            }
 
-        .fc-timegrid-slot-past {
-            cursor: not-allowed !important;
-        }
+            .fc-timegrid-slot-past {
+                cursor: not-allowed !important;
+            }
 
-        .badge-orange {
-            background-color: #fd7e14;
-            color: white;
-        }
-    </style>
+            .badge-orange {
+                background-color: #fd7e14;
+                color: white;
+            }
+        </style>
 
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1><i class="fas fa-calendar-alt"></i> Mis Citas</h1>
-                    <p class="text-muted">Agenda y gestiona tus citas médicas</p>
-                </div>
-                <div class="col-sm-6">
-                    <button type="button" class="btn btn-primary float-sm-right" data-toggle="modal" data-target="#modalAgendarCita">
-                        <i class="fas fa-plus"></i> Agendar Nueva Cita
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="content">
-        <div class="container-fluid">
-
-            <!-- Leyenda -->
-            <div class="card card-outline card-info mb-3">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-12">
-                            <strong class="mr-2">Leyenda de Estados:</strong>
-                            <span class="badge badge-warning mr-2"><i class="fas fa-circle"></i> Pendiente</span>
-                            <span class="badge badge-info mr-2"><i class="fas fa-circle"></i> Confirmada</span>
-                            <span class="badge badge-success mr-2"><i class="fas fa-circle"></i> Asistió</span>
-                            <span class="badge badge-danger mr-2"><i class="fas fa-circle"></i> No Asistió</span>
-                            <span class="badge badge-secondary mr-2"><i class="fas fa-circle"></i> Cancelada</span>
-                            <span class="badge badge-orange mr-2"><i class="fas fa-circle"></i> Reprogramada</span>
-                        </div>
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1><i class="fas fa-calendar-alt"></i> Mis Citas</h1>
+                        <p class="text-muted">Agenda y gestiona tus citas médicas</p>
+                    </div>
+                    <div class="col-sm-6">
+                        <button type="button" class="btn btn-primary float-sm-right" data-toggle="modal"
+                            data-target="#modalAgendarCita">
+                            <i class="fas fa-plus"></i> Agendar Nueva Cita
+                        </button>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Calendario -->
-            <div class="card card-primary">
-                <div class="card-body p-0">
-                    <div id="calendario" style="padding: 15px;"></div>
-                </div>
-            </div>
+        <section class="content">
+            <div class="container-fluid">
 
-        </div>
-    </section>
-
-    <!-- MODAL: Agendar Cita con Wizard -->
-    <div th:replace="~{paciente/citas/fragmentos :: modalAgendarCita}"></div>
-
-    <!-- MODAL: Detalle de Cita -->
-    <div class="modal fade" id="modalDetalleCita" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-info">
-                    <h4 class="modal-title"><i class="fas fa-info-circle"></i> Detalle de Cita</h4>
-                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <dl class="row">
-                        <dt class="col-sm-4">ID de Cita:</dt>
-                        <dd class="col-sm-8" id="detalleCitaId"></dd>
-
-                        <dt class="col-sm-4">Fecha y Hora:</dt>
-                        <dd class="col-sm-8" id="detalleFechaHora"></dd>
-
-                        <dt class="col-sm-4">Odontólogo:</dt>
-                        <dd class="col-sm-8" id="detalleOdontologo"></dd>
-
-                        <dt class="col-sm-4">Procedimiento:</dt>
-                        <dd class="col-sm-8" id="detalleProcedimiento"></dd>
-
-                        <dt class="col-sm-4">Duración:</dt>
-                        <dd class="col-sm-8" id="detalleDuracion"></dd>
-
-                        <dt class="col-sm-4">Estado:</dt>
-                        <dd class="col-sm-8" id="detalleEstado"></dd>
-
-                        <dt class="col-sm-4">Motivo:</dt>
-                        <dd class="col-sm-8" id="detalleMotivo"></dd>
-                    </dl>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-warning" id="btnReprogramar" style="display: none;">
-                        <i class="fas fa-calendar"></i> Reprogramar
-                    </button>
-                    <button type="button" class="btn btn-danger" id="btnCancelar" style="display: none;">
-                        <i class="fas fa-ban"></i> Cancelar Cita
-                    </button>
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: Reprogramar Cita -->
-    <div class="modal fade" id="modalReprogramarCita" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h4 class="modal-title"><i class="fas fa-calendar"></i> Reprogramar Cita</h4>
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                </div>
-                <form th:action="@{/paciente/citas/reprogramar}" method="post" id="formReprogramarCita">
-                    <div class="modal-body">
-
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            La cita reprogramada deberá ser confirmada nuevamente por el personal de la clínica.
-                        </div>
-
-                        <input type="hidden" name="citaId" id="reprogramarCitaId">
-                        <input type="hidden" name="odontologoUsuarioId" id="reprogramarOdontologoId">
-
-                        <div class="form-group">
-                            <label>Cita Actual:</label>
-                            <p id="reprogramarCitaActual" class="form-control-plaintext font-weight-bold"></p>
-                        </div>
-
+                <!-- Leyenda -->
+                <div class="card card-outline card-info mb-3">
+                    <div class="card-body">
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="reprogramarFecha">Nueva Fecha <span class="text-danger">*</span></label>
-                                    <input type="date" name="fecha" id="reprogramarFecha" class="form-control" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="reprogramarHora">Nueva Hora <span class="text-danger">*</span></label>
-                                    <select name="hora" id="reprogramarHora" class="form-control" required disabled>
-                                        <option value="">Seleccione fecha primero</option>
-                                    </select>
-                                </div>
+                            <div class="col-12">
+                                <strong class="mr-2">Leyenda de Estados:</strong>
+                                <span class="badge badge-warning mr-2"><i class="fas fa-circle"></i> Pendiente</span>
+                                <span class="badge badge-info mr-2"><i class="fas fa-circle"></i> Confirmada</span>
+                                <span class="badge badge-success mr-2"><i class="fas fa-circle"></i> Asistió</span>
+                                <span class="badge badge-danger mr-2"><i class="fas fa-circle"></i> No Asistió</span>
+                                <span class="badge badge-secondary mr-2"><i class="fas fa-circle"></i> Cancelada</span>
+                                <span class="badge badge-orange mr-2"><i class="fas fa-circle"></i> Reprogramada</span>
                             </div>
                         </div>
-
-                        <input type="hidden" name="nuevaFechaHoraInicio" id="reprogramarNuevaFechaHora">
-                        <input type="hidden" name="motivo" value="Reprogramado por el paciente">
-
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-warning"><i class="fas fa-save"></i> Reprogramar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: Cancelar Cita -->
-    <div class="modal fade" id="modalCancelarCita" tabindex="-1" role="dialog">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger">
-                    <h4 class="modal-title"><i class="fas fa-ban"></i> Cancelar Cita</h4>
-                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
                 </div>
-                <form th:action="@{/paciente/citas/cancelar}" method="post" id="formCancelarCita">
+
+                <!-- Calendario -->
+                <div class="card card-primary">
+                    <div class="card-body p-0">
+                        <div id="calendario" style="padding: 15px;"></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MODAL: Agendar Cita con Wizard -->
+        <div th:replace="~{paciente/citas/fragmentos :: modalAgendarCita}"></div>
+
+        <!-- MODAL: Detalle de Cita -->
+        <div class="modal fade" id="modalDetalleCita" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-info">
+                        <h4 class="modal-title"><i class="fas fa-info-circle"></i> Detalle de Cita</h4>
+                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                    </div>
                     <div class="modal-body">
+                        <dl class="row">
+                            <dt class="col-sm-4">ID de Cita:</dt>
+                            <dd class="col-sm-8" id="detalleCitaId"></dd>
 
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <strong>Atención:</strong> Esta acción no se puede deshacer.
-                        </div>
+                            <dt class="col-sm-4">Fecha y Hora:</dt>
+                            <dd class="col-sm-8" id="detalleFechaHora"></dd>
 
-                        <input type="hidden" name="citaId" id="cancelarCitaId">
+                            <dt class="col-sm-4">Odontólogo:</dt>
+                            <dd class="col-sm-8" id="detalleOdontologo"></dd>
 
-                        <div class="form-group">
-                            <label>Cita a cancelar:</label>
-                            <p id="cancelarCitaInfo" class="form-control-plaintext font-weight-bold"></p>
-                        </div>
+                            <dt class="col-sm-4">Procedimiento:</dt>
+                            <dd class="col-sm-8" id="detalleProcedimiento"></dd>
 
-                        <div class="form-group">
-                            <label for="cancelarMotivo">Motivo de Cancelación <span class="text-danger">*</span></label>
-                            <textarea name="motivo" id="cancelarMotivo" class="form-control" rows="3" required
-                                      placeholder="Por favor indique el motivo de la cancelación"></textarea>
-                        </div>
+                            <dt class="col-sm-4">Duración:</dt>
+                            <dd class="col-sm-8" id="detalleDuracion"></dd>
 
+                            <dt class="col-sm-4">Estado:</dt>
+                            <dd class="col-sm-8" id="detalleEstado"></dd>
+
+                            <dt class="col-sm-4">Motivo:</dt>
+                            <dd class="col-sm-8" id="detalleMotivo"></dd>
+                        </dl>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Volver</button>
-                        <button type="submit" class="btn btn-danger"><i class="fas fa-ban"></i> Confirmar Cancelación</button>
+                        <button type="button" class="btn btn-warning" id="btnReprogramar" style="display: none;">
+                            <i class="fas fa-calendar"></i> Reprogramar
+                        </button>
+                        <button type="button" class="btn btn-danger" id="btnCancelar" style="display: none;">
+                            <i class="fas fa-ban"></i> Cancelar Cita
+                        </button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
+
+        <!-- MODAL: Reprogramar Cita -->
+        <div class="modal fade" id="modalReprogramarCita" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h4 class="modal-title"><i class="fas fa-calendar"></i> Reprogramar Cita</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <form th:action="@{/paciente/citas/reprogramar}" method="post" id="formReprogramarCita">
+                        <div class="modal-body">
+
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                La cita reprogramada deberá ser confirmada nuevamente por el personal de la clínica.
+                            </div>
+
+                            <input type="hidden" name="citaId" id="reprogramarCitaId">
+                            <input type="hidden" name="odontologoUsuarioId" id="reprogramarOdontologoId">
+
+                            <div class="form-group">
+                                <label>Cita Actual:</label>
+                                <p id="reprogramarCitaActual" class="form-control-plaintext font-weight-bold"></p>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="reprogramarFecha">Nueva Fecha <span
+                                                class="text-danger">*</span></label>
+                                        <input type="date" name="fecha" id="reprogramarFecha" class="form-control"
+                                            required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="reprogramarHora">Nueva Hora <span
+                                                class="text-danger">*</span></label>
+                                        <select name="hora" id="reprogramarHora" class="form-control" required disabled>
+                                            <option value="">Seleccione fecha primero</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="nuevaFechaHoraInicio" id="reprogramarNuevaFechaHora">
+                            <input type="hidden" name="motivo" value="Reprogramado por el paciente">
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-warning"><i class="fas fa-save"></i>
+                                Reprogramar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: Cancelar Cita -->
+        <div class="modal fade" id="modalCancelarCita" tabindex="-1" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger">
+                        <h4 class="modal-title"><i class="fas fa-ban"></i> Cancelar Cita</h4>
+                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                    </div>
+                    <form th:action="@{/paciente/citas/cancelar}" method="post" id="formCancelarCita">
+                        <div class="modal-body">
+
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Atención:</strong> Esta acción no se puede deshacer.
+                            </div>
+
+                            <input type="hidden" name="citaId" id="cancelarCitaId">
+
+                            <div class="form-group">
+                                <label>Cita a cancelar:</label>
+                                <p id="cancelarCitaInfo" class="form-control-plaintext font-weight-bold"></p>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cancelarMotivo">Motivo de Cancelación <span
+                                        class="text-danger">*</span></label>
+                                <textarea name="motivo" id="cancelarMotivo" class="form-control" rows="3" required
+                                    placeholder="Por favor indique el motivo de la cancelación"></textarea>
+                            </div>
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Volver</button>
+                            <button type="submit" class="btn btn-danger"><i class="fas fa-ban"></i> Confirmar
+                                Cancelación</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-</div>
+    <!-- SCRIPTS ESPECÍFICOS DE LA PÁGINA -->
+    <th:block th:fragment="page-scripts">
+        <!-- FullCalendar -->
+        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.8/locales/es.global.min.js"></script>
 
-<!-- SCRIPTS ESPECÍFICOS DE LA PÁGINA -->
-<th:block th:fragment="page-scripts">
-    <!-- FullCalendar -->
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.8/locales/es.global.min.js"></script>
+        <!-- Script de horarios y wizard -->
+        <script th:src="@{/js/horarios-citas.js}"></script>
 
-    <!-- Script de horarios y wizard -->
-    <script th:src="@{/js/horarios-citas.js}"></script>
+        <script th:inline="javascript">
+            window.addEventListener('DOMContentLoaded', function () {
+                // Variables globales
+                let calendar;
+                let citaActual = null;
 
-    <script th:inline="javascript">
-        $(document).ready(function() {
-            // Variables globales
-            let calendar;
-            let citaActual = null;
+                // Inicializar calendario
+                inicializarCalendario();
 
-            // Inicializar calendario
-            inicializarCalendario();
+                // Event Listeners (reprogramar y cancelar - el wizard se encarga del agendar)
+                $('#reprogramarFecha').on('change', cargarHorariosReprogramacion);
+                $('#reprogramarHora').on('change', actualizarFechaHoraReprogramacion);
+                $('#btnReprogramar').on('click', abrirModalReprogramar);
+                $('#btnCancelar').on('click', abrirModalCancelar);
 
-            // Event Listeners (reprogramar y cancelar - el wizard se encarga del agendar)
-            $('#reprogramarFecha').on('change', cargarHorariosReprogramacion);
-            $('#reprogramarHora').on('change', actualizarFechaHoraReprogramacion);
-            $('#btnReprogramar').on('click', abrirModalReprogramar);
-            $('#btnCancelar').on('click', abrirModalCancelar);
+                function inicializarCalendario() {
+                    const calendarEl = document.getElementById('calendario');
 
-            function inicializarCalendario() {
-                const calendarEl = document.getElementById('calendario');
-
-                calendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'timeGridWeek',
-                    locale: 'es',
-                    headerToolbar: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                    },
-                    slotMinTime: '08:00:00',
-                    slotMaxTime: '20:00:00',
-                    allDaySlot: false,
-                    height: 'auto',
-                    events: function(info, successCallback, failureCallback) {
-                        fetch('/paciente/citas/api/eventos?' + new URLSearchParams({
-                            start: info.startStr,
-                            end: info.endStr
-                        }))
-                        .then(response => response.json())
-                        .then(data => successCallback(data))
-                        .catch(error => {
-                            console.error('Error al cargar eventos:', error);
-                            failureCallback(error);
-                        });
-                    },
-                    eventClick: function(info) {
-                        mostrarDetalleCita(info.event);
-                    },
-                    eventDidMount: function(info) {
-                        // Marcar slots pasados
-                        const ahora = new Date();
-                        if (info.event.start < ahora) {
-                            info.el.classList.add('evento-pasado');
+                    calendar = new FullCalendar.Calendar(calendarEl, {
+                        initialView: 'timeGridWeek',
+                        locale: 'es',
+                        headerToolbar: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                        },
+                        slotMinTime: '08:00:00',
+                        slotMaxTime: '20:00:00',
+                        allDaySlot: false,
+                        height: 'auto',
+                        events: function (info, successCallback, failureCallback) {
+                            fetch('/paciente/citas/api/eventos?' + new URLSearchParams({
+                                start: info.startStr,
+                                end: info.endStr
+                            }))
+                                .then(response => response.json())
+                                .then(data => successCallback(data))
+                                .catch(error => {
+                                    console.error('Error al cargar eventos:', error);
+                                    failureCallback(error);
+                                });
+                        },
+                        eventClick: function (info) {
+                            mostrarDetalleCita(info.event);
+                        },
+                        eventDidMount: function (info) {
+                            // Marcar slots pasados
+                            const ahora = new Date();
+                            if (info.event.start < ahora) {
+                                info.el.classList.add('evento-pasado');
+                            }
                         }
+                    });
+
+                    calendar.render();
+                }
+
+                function mostrarDetalleCita(event) {
+                    const props = event.extendedProps;
+
+                    citaActual = {
+                        id: event.id,
+                        odontologoId: props.odontologoId,
+                        odontologoNombre: props.odontologoNombre,
+                        procedimientoId: props.procedimientoId,
+                        procedimientoNombre: props.procedimientoNombre,
+                        estadoNombre: props.estadoNombre,
+                        fechaHoraInicio: event.start,
+                        fechaHoraFin: event.end,
+                        motivoConsulta: props.motivoConsulta || 'No especificado'
+                    };
+
+                    // Llenar modal de detalle
+                    $('#detalleCitaId').text('#' + event.id);
+                    $('#detalleFechaHora').text(formatearFechaHora(event.start));
+                    $('#detalleOdontologo').text(props.odontologoNombre);
+                    $('#detalleProcedimiento').text(props.procedimientoNombre || 'Consulta General');
+
+                    const duracion = Math.round((event.end - event.start) / 60000);
+                    $('#detalleDuracion').text(duracion + ' minutos');
+
+                    $('#detalleEstado').html(obtenerBadgeEstado(props.estadoNombre));
+                    $('#detalleMotivo').text(props.motivoConsulta || 'No especificado');
+
+                    // Mostrar/ocultar botones según estado
+                    const estadosModificables = ['PENDIENTE', 'CONFIRMADA'];
+                    if (estadosModificables.includes(props.estadoNombre)) {
+                        $('#btnReprogramar').show();
+                        $('#btnCancelar').show();
+                    } else {
+                        $('#btnReprogramar').hide();
+                        $('#btnCancelar').hide();
                     }
-                });
 
-                calendar.render();
-            }
-
-            function mostrarDetalleCita(event) {
-                const props = event.extendedProps;
-
-                citaActual = {
-                    id: event.id,
-                    odontologoId: props.odontologoId,
-                    odontologoNombre: props.odontologoNombre,
-                    procedimientoId: props.procedimientoId,
-                    procedimientoNombre: props.procedimientoNombre,
-                    estadoNombre: props.estadoNombre,
-                    fechaHoraInicio: event.start,
-                    fechaHoraFin: event.end,
-                    motivoConsulta: props.motivoConsulta || 'No especificado'
-                };
-
-                // Llenar modal de detalle
-                $('#detalleCitaId').text('#' + event.id);
-                $('#detalleFechaHora').text(formatearFechaHora(event.start));
-                $('#detalleOdontologo').text(props.odontologoNombre);
-                $('#detalleProcedimiento').text(props.procedimientoNombre || 'Consulta General');
-
-                const duracion = Math.round((event.end - event.start) / 60000);
-                $('#detalleDuracion').text(duracion + ' minutos');
-
-                $('#detalleEstado').html(obtenerBadgeEstado(props.estadoNombre));
-                $('#detalleMotivo').text(props.motivoConsulta || 'No especificado');
-
-                // Mostrar/ocultar botones según estado
-                const estadosModificables = ['PENDIENTE', 'CONFIRMADA'];
-                if (estadosModificables.includes(props.estadoNombre)) {
-                    $('#btnReprogramar').show();
-                    $('#btnCancelar').show();
-                } else {
-                    $('#btnReprogramar').hide();
-                    $('#btnCancelar').hide();
+                    $('#modalDetalleCita').modal('show');
                 }
 
-                $('#modalDetalleCita').modal('show');
-            }
+                function abrirModalReprogramar() {
+                    if (!citaActual) return;
 
-            function abrirModalReprogramar() {
-                if (!citaActual) return;
+                    $('#reprogramarCitaId').val(citaActual.id);
+                    $('#reprogramarOdontologoId').val(citaActual.odontologoId);
+                    $('#reprogramarCitaActual').text(
+                        formatearFechaHora(citaActual.fechaHoraInicio) + ' - ' + citaActual.procedimientoNombre
+                    );
 
-                $('#reprogramarCitaId').val(citaActual.id);
-                $('#reprogramarOdontologoId').val(citaActual.odontologoId);
-                $('#reprogramarCitaActual').text(
-                    formatearFechaHora(citaActual.fechaHoraInicio) + ' - ' + citaActual.procedimientoNombre
-                );
-
-                $('#modalDetalleCita').modal('hide');
-                $('#modalReprogramarCita').modal('show');
-            }
-
-            function cargarHorariosReprogramacion() {
-                const fecha = $('#reprogramarFecha').val();
-                const odontologoId = $('#reprogramarOdontologoId').val();
-
-                if (!fecha || !odontologoId || !citaActual) {
-                    $('#reprogramarHora').prop('disabled', true);
-                    return;
+                    $('#modalDetalleCita').modal('hide');
+                    $('#modalReprogramarCita').modal('show');
                 }
 
-                const duracion = Math.round((citaActual.fechaHoraFin - citaActual.fechaHoraInicio) / 60000);
+                function cargarHorariosReprogramacion() {
+                    const fecha = $('#reprogramarFecha').val();
+                    const odontologoId = $('#reprogramarOdontologoId').val();
 
-                fetch('/paciente/citas/api/horarios-disponibles?' + new URLSearchParams({
-                    odontologoId: odontologoId,
-                    fecha: fecha,
-                    duracion: duracion,
-                    citaIdExcluir: citaActual.id
-                }))
-                .then(response => response.json())
-                .then(data => {
-                    const select = $('#reprogramarHora');
-                    select.empty();
-
-                    if (!data.disponible || !data.horariosDisponibles || data.horariosDisponibles.length === 0) {
-                        select.append('<option value="">No hay horarios disponibles</option>');
-                        select.prop('disabled', true);
+                    if (!fecha || !odontologoId || !citaActual) {
+                        $('#reprogramarHora').prop('disabled', true);
                         return;
                     }
 
-                    select.append('<option value="">Seleccione un horario...</option>');
-                    data.horariosDisponibles.forEach(slot => {
-                        if (slot.disponible) {
-                            select.append(`<option value="${slot.inicio}">${slot.inicio} - ${slot.fin}</option>`);
-                        }
-                    });
-                    select.prop('disabled', false);
-                })
-                .catch(error => {
-                    console.error('Error al cargar horarios:', error);
-                });
-            }
+                    const duracion = Math.round((citaActual.fechaHoraFin - citaActual.fechaHoraInicio) / 60000);
 
-            function actualizarFechaHoraReprogramacion() {
-                const fecha = $('#reprogramarFecha').val();
-                const hora = $('#reprogramarHora').val();
+                    fetch('/paciente/citas/api/horarios-disponibles?' + new URLSearchParams({
+                        odontologoId: odontologoId,
+                        fecha: fecha,
+                        duracion: duracion,
+                        citaIdExcluir: citaActual.id
+                    }))
+                        .then(response => response.json())
+                        .then(data => {
+                            const select = $('#reprogramarHora');
+                            select.empty();
 
-                if (fecha && hora) {
-                    $('#reprogramarNuevaFechaHora').val(fecha + 'T' + hora);
+                            if (!data.disponible || !data.horariosDisponibles || data.horariosDisponibles.length === 0) {
+                                select.append('<option value="">No hay horarios disponibles</option>');
+                                select.prop('disabled', true);
+                                return;
+                            }
+
+                            select.append('<option value="">Seleccione un horario...</option>');
+                            data.horariosDisponibles.forEach(slot => {
+                                if (slot.disponible) {
+                                    select.append(`<option value="${slot.inicio}">${slot.inicio} - ${slot.fin}</option>`);
+                                }
+                            });
+                            select.prop('disabled', false);
+                        })
+                        .catch(error => {
+                            console.error('Error al cargar horarios:', error);
+                        });
                 }
-            }
 
-            function abrirModalCancelar() {
-                if (!citaActual) return;
+                function actualizarFechaHoraReprogramacion() {
+                    const fecha = $('#reprogramarFecha').val();
+                    const hora = $('#reprogramarHora').val();
 
-                $('#cancelarCitaId').val(citaActual.id);
-                $('#cancelarCitaInfo').text(
-                    formatearFechaHora(citaActual.fechaHoraInicio) + ' - ' + citaActual.procedimientoNombre
-                );
+                    if (fecha && hora) {
+                        $('#reprogramarNuevaFechaHora').val(fecha + 'T' + hora);
+                    }
+                }
 
-                $('#modalDetalleCita').modal('hide');
-                $('#modalCancelarCita').modal('show');
-            }
+                function abrirModalCancelar() {
+                    if (!citaActual) return;
 
-            function formatearFechaHora(date) {
-                return new Date(date).toLocaleString('es-PE', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
+                    $('#cancelarCitaId').val(citaActual.id);
+                    $('#cancelarCitaInfo').text(
+                        formatearFechaHora(citaActual.fechaHoraInicio) + ' - ' + citaActual.procedimientoNombre
+                    );
+
+                    $('#modalDetalleCita').modal('hide');
+                    $('#modalCancelarCita').modal('show');
+                }
+
+                function formatearFechaHora(date) {
+                    return new Date(date).toLocaleString('es-PE', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+
+                function obtenerBadgeEstado(estado) {
+                    const badges = {
+                        'PENDIENTE': '<span class="badge badge-warning">Pendiente</span>',
+                        'CONFIRMADA': '<span class="badge badge-info">Confirmada</span>',
+                        'ASISTIO': '<span class="badge badge-success">Asistió</span>',
+                        'NO_ASISTIO': '<span class="badge badge-danger">No Asistió</span>',
+                        'CANCELADA_PACIENTE': '<span class="badge badge-secondary">Cancelada</span>',
+                        'CANCELADA_CLINICA': '<span class="badge badge-secondary">Cancelada</span>',
+                        'REPROGRAMADA': '<span class="badge badge-orange">Reprogramada</span>'
+                    };
+                    return badges[estado] || '<span class="badge badge-light">' + estado + '</span>';
+                }
+
+                // Limpiar modales al cerrar (el wizard se encarga de limpiar el modal de agendar)
+                $('#modalReprogramarCita').on('hidden.bs.modal', function () {
+                    $('#formReprogramarCita')[0].reset();
+                    $('#reprogramarHora').prop('disabled', true);
                 });
-            }
 
-            function obtenerBadgeEstado(estado) {
-                const badges = {
-                    'PENDIENTE': '<span class="badge badge-warning">Pendiente</span>',
-                    'CONFIRMADA': '<span class="badge badge-info">Confirmada</span>',
-                    'ASISTIO': '<span class="badge badge-success">Asistió</span>',
-                    'NO_ASISTIO': '<span class="badge badge-danger">No Asistió</span>',
-                    'CANCELADA_PACIENTE': '<span class="badge badge-secondary">Cancelada</span>',
-                    'CANCELADA_CLINICA': '<span class="badge badge-secondary">Cancelada</span>',
-                    'REPROGRAMADA': '<span class="badge badge-orange">Reprogramada</span>'
-                };
-                return badges[estado] || '<span class="badge badge-light">' + estado + '</span>';
-            }
-
-            // Limpiar modales al cerrar (el wizard se encarga de limpiar el modal de agendar)
-            $('#modalReprogramarCita').on('hidden.bs.modal', function() {
-                $('#formReprogramarCita')[0].reset();
-                $('#reprogramarHora').prop('disabled', true);
+                $('#modalCancelarCita').on('hidden.bs.modal', function () {
+                    $('#formCancelarCita')[0].reset();
+                });
             });
-
-            $('#modalCancelarCita').on('hidden.bs.modal', function() {
-                $('#formCancelarCita')[0].reset();
-            });
-        });
-    </script>
-</th:block>
+        </script>
+    </th:block>
 
 </body>
+
 </html>

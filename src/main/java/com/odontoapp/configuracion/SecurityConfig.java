@@ -70,16 +70,18 @@ public class SecurityConfig {
                                                 .authenticated()
 
                                                 // PACIENTE: Portal exclusivo para pacientes
+                                                // ✅ CORREGIDO: Usar formato ACCION_MODULO que coincide con
+                                                // CustomUserDetailsService
                                                 .requestMatchers("/usuarios/cambiar-password").authenticated()
                                                 .requestMatchers("/paciente/**").hasAnyAuthority(
-                                                                "VER_MIS_CITAS",
-                                                                "AGENDAR_CITA",
-                                                                "CANCELAR_MIS_CITAS",
-                                                                "VER_MI_PERFIL",
-                                                                "EDITAR_MI_PERFIL",
-                                                                "VER_MIS_TRATAMIENTOS",
-                                                                "VER_MI_ODONTOGRAMA",
-                                                                "VER_MIS_COMPROBANTES")
+                                                                "VER_MIS_CITAS_PANEL_PACIENTE",
+                                                                "AGENDAR_CITA_PANEL_PACIENTE",
+                                                                "CANCELAR_MIS_CITAS_PANEL_PACIENTE",
+                                                                "VER_MI_PERFIL_PANEL_PACIENTE",
+                                                                "EDITAR_MI_PERFIL_PANEL_PACIENTE",
+                                                                "VER_MIS_TRATAMIENTOS_PANEL_PACIENTE",
+                                                                "VER_MI_ODONTOGRAMA_PANEL_PACIENTE",
+                                                                "VER_MIS_COMPROBANTES_PANEL_PACIENTE")
 
                                                 // Dashboard general: NO permitir a PACIENTE (usan /paciente/dashboard)
                                                 .requestMatchers("/", "/home", "/dashboard")
