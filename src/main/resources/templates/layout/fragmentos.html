@@ -144,8 +144,8 @@
                         </a>
                     </li>
 
-                    <!-- GESTIÓN CLÍNICA - Permisos granulares -->
-                    <li class="nav-header"
+                    <!-- GESTIÓN CLÍNICA - Permisos granulares (SOLO PARA STAFF, NO PACIENTES) -->
+                    <li class="nav-header" th:if="${session.rolActivo != 'PACIENTE'}"
                         sec:authorize="hasAnyAuthority('VER_LISTA_PACIENTES', 'VER_LISTA_CITAS', 'VER_LISTA_SERVICIOS')">
                         GESTIÓN CLÍNICA
                     </li>
@@ -158,8 +158,9 @@
                         </a>
                     </li>
 
-                    <!-- Agenda de Citas - Permiso granular -->
-                    <li class="nav-item" sec:authorize="hasAuthority('VER_LISTA_CITAS')">
+                    <!-- Agenda de Citas - Permiso granular (SOLO STAFF) -->
+                    <li class="nav-item" th:if="${session.rolActivo != 'PACIENTE'}"
+                        sec:authorize="hasAuthority('VER_LISTA_CITAS')">
                         <a th:href="@{/citas}" class="nav-link">
                             <i class="nav-icon fas fa-calendar-alt"></i>
                             <p>Agenda de Citas</p>
@@ -187,12 +188,14 @@
                         </a>
                     </li>
 
-                    <!-- FACTURACIÓN - Permiso granular -->
-                    <li class="nav-header" sec:authorize="hasAuthority('VER_LISTA_FACTURACION')">
+                    <!-- FACTURACIÓN - Permiso granular (SOLO STAFF) -->
+                    <li class="nav-header" th:if="${session.rolActivo != 'PACIENTE'}"
+                        sec:authorize="hasAuthority('VER_LISTA_FACTURACION')">
                         FACTURACIÓN
                     </li>
 
-                    <li class="nav-item has-treeview" sec:authorize="hasAuthority('VER_LISTA_FACTURACION')">
+                    <li class="nav-item has-treeview" th:if="${session.rolActivo != 'PACIENTE'}"
+                        sec:authorize="hasAuthority('VER_LISTA_FACTURACION')">
                         <a href="#" class="nav-link">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>

@@ -70,7 +70,16 @@ public class SecurityConfig {
                                                 .authenticated()
 
                                                 // PACIENTE: Portal exclusivo para pacientes
-                                                .requestMatchers("/paciente/**").hasRole("PACIENTE")
+                                                .requestMatchers("/usuarios/cambiar-password").authenticated()
+                                                .requestMatchers("/paciente/**").hasAnyAuthority(
+                                                                "VER_MIS_CITAS",
+                                                                "AGENDAR_CITA",
+                                                                "CANCELAR_MIS_CITAS",
+                                                                "VER_MI_PERFIL",
+                                                                "EDITAR_MI_PERFIL",
+                                                                "VER_MIS_TRATAMIENTOS",
+                                                                "VER_MI_ODONTOGRAMA",
+                                                                "VER_MIS_COMPROBANTES")
 
                                                 // Dashboard general: NO permitir a PACIENTE (usan /paciente/dashboard)
                                                 .requestMatchers("/", "/home", "/dashboard")

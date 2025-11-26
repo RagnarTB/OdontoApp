@@ -299,6 +299,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuarioGuardado;
         try {
             usuarioGuardado = usuarioRepository.save(usuario);
+            if (esNuevo) {
+                crearPacienteParaUsuario(usuarioGuardado);
+            }
+
         } catch (DataIntegrityViolationException e) {
             // Capturar específicamente constraint violations (ej. email duplicado a nivel
             // de BD)
@@ -668,6 +672,51 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuarioRepository.save(usuario);
         System.out.println(">>> Paciente " + paciente.getNombreCompleto() +
                 " promocionado exitosamente a personal con " + nuevosRoles.size() + " rol(es)");
+    }
+
+    /**
+     * Crea automáticamente un registro de Paciente para un Usuario con rol PACIENTE
+     * Solo se ejecuta si el usuario tiene rol PACIENTE y no tiene registro de
+     * paciente
+     * 
+     * @param usuario Usuario recién creado o actualizado
+     */
+    private void crearPacienteParaUsuario(Usuario usuario) {
+        // Verificar si el usuario tiene rol PACIENTE
+        boolean tieneRolPaciente = usuario.getRoles().stream()
+                .anyMatch(rol -> "PACIENTE".equals(rol.getNombre()));
+
+        if (!tieneRolPaciente) {
+            return; // No es paciente, no hacer nada
+        }
+
+        // Verificar si ya tiene registro de paciente
+        Optional<Paciente> pacienteExistente = pacienteRepository.findByUsuario(usuario);
+        if (pacienteExistente.isPresent()) {
+            System.out.println(">>> Usuario ID " + usuario.getId() + " ya tiene registro de paciente");
+            return; // Ya tiene registro, no crear duplicado
+        }
+
+        // Crear registro de paciente
+        Paciente nuevoPaciente = new Paciente();
+        nuevoPaciente.setUsuario(usuario);
+        nuevoPaciente.setNombreCompleto(usuario.getNombreCompleto());
+        nuevoPaciente.setNumeroDocumento(usuario.getNumeroDocumento());
+        nuevoPaciente.setTipoDocumento(usuario.getTipoDocumento());
+        nuevoPaciente.setEmail(usuario.getEmail());
+        nuevoPaciente.setTelefono(usuario.getTelefono());
+        nuevoPaciente.setDireccion(usuario.getDireccion());
+        nuevoPaciente.setFechaNacimiento(usuario.getFechaNacimiento());
+        nuevoPaciente.setAlergias(null);
+        nuevoPaciente.setAntecedentesMedicos(null);
+        nuevoPaciente.setTratamientosActuales(null);
+        nuevoPaciente.setEliminado(false);
+        nuevoPaciente.setCreadoPor("SISTEMA");
+
+        pacienteRepository.save(nuevoPaciente);
+
+        System.out.println("✅ Registro de paciente creado automáticamente para usuario: "
+                + usuario.getEmail() + " (ID: " + usuario.getId() + ")");
     }
 
 } // Fin de la clase

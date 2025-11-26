@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
-    th:replace="~{layout/base :: layout(titulo='Historial de Citas', contenido=~{::#contenido-principal})}">
+    th:replace="~{layout/base :: layout(titulo='Historial de Citas', contenido=~{::#contenido-principal}, scripts=~{::#lista-scripts})}">
 
 <body>
     <div id="contenido-principal">
@@ -474,6 +474,14 @@
             });
         </script>
 
+    </div>
+    <div id="lista-scripts">
+        <script>
+            // Activar tooltips de Bootstrap
+            $(function () {
+                $('[data-toggle="tooltip"]').tooltip();
+            });
+        </script>
     </div>
 </body>
 

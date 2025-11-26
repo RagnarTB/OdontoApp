@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
+import com.odontoapp.dto.CitaDTO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -77,11 +77,14 @@ public class PacienteCitaController {
             System.out.println("   - Usuario ID: " + usuario.getId());
             System.out.println("   - Email: " + usuario.getEmail());
             System.out.println("   - Página: " + page + ", Tamaño: " + size);
+
             // Crear paginación ordenada por fecha descendente
             Pageable pageable = PageRequest.of(page, size, Sort.by("fechaHoraInicio").descending());
+
             // Convertir fechas a LocalDateTime si es necesario
             LocalDateTime fechaDesdeDateTime = (fechaDesde != null) ? fechaDesde.atStartOfDay() : null;
             LocalDateTime fechaHastaDateTime = (fechaHasta != null) ? fechaHasta.atTime(23, 59, 59) : null;
+
             // Obtener citas del paciente según filtros
             Page<Cita> paginaCitas;
             if (estadoId != null || fechaDesdeDateTime != null || fechaHastaDateTime != null) {
@@ -96,14 +99,20 @@ public class PacienteCitaController {
                 paginaCitas = citaRepository.findByPacienteId(usuario.getId(), pageable);
             }
             System.out.println("   - Citas encontradas: " + paginaCitas.getTotalElements());
+
+            // CONVERTIR Cita a CitaDTO
+            Page<CitaDTO> paginaCitasDTO = paginaCitas.map(this::convertirACitaDTO);
+
             // Cargar listas para los filtros
             var listaEstados = estadoCitaRepository.findAll();
+
             // Añadir al modelo
-            model.addAttribute("paginaCitas", paginaCitas);
+            model.addAttribute("paginaCitas", paginaCitasDTO); // ← Ahora es CitaDTO
             model.addAttribute("listaEstados", listaEstados);
             model.addAttribute("estadoIdFiltro", estadoId);
             model.addAttribute("fechaDesdeFiltro", fechaDesde);
             model.addAttribute("fechaHastaFiltro", fechaHasta);
+
             return "paciente/citas/lista";
 
         } catch (Exception e) {
@@ -453,5 +462,37 @@ public class PacienteCitaController {
             case "REPROGRAMADA" -> "#fd7e14"; // Naranja
             default -> "#007bff"; // Azul por defecto
         };
+    }
+
+    /**
+     * Convierte una entidad Cita a CitaDTO para la vista
+     */
+    private CitaDTO convertirACitaDTO(Cita cita) {
+        CitaDTO dto = new CitaDTO();
+
+        dto.setId(cita.getId());
+        dto.setPacienteUsuarioId(cita.getPaciente().getId());
+        dto.setOdontologoUsuarioId(cita.getOdontologo().getId());
+        dto.setFechaHoraInicio(cita.getFechaHoraInicio());
+        dto.setFechaHoraFin(cita.getFechaHoraFin());
+        dto.setMotivoConsulta(cita.getMotivoConsulta());
+        dto.setNotasInternas(cita.getNotasInternas());
+
+        // Campos de solo lectura
+        dto.setPacienteNombre(cita.getPaciente().getNombreCompleto());
+        dto.setOdontologoNombre(cita.getOdontologo().getNombreCompleto());
+        dto.setEstadoCitaNombre(cita.getEstadoCita().getNombre());
+
+        // Procedimiento (puede ser null)
+        if (cita.getProcedimiento() != null) {
+            dto.setProcedimientoId(cita.getProcedimiento().getId());
+            dto.setProcedimientoNombre(cita.getProcedimiento().getNombre());
+            dto.setDuracionEstimadaMinutos(cita.getProcedimiento().getDuracionBaseMinutos());
+            dto.setPrecioBase(cita.getProcedimiento().getPrecioBase());
+        }
+
+        dto.setMotivoCancelacion(cita.getMotivoCancelacion());
+
+        return dto;
     }
 }

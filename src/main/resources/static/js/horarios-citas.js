@@ -281,12 +281,17 @@
                 mostrarAdvertencia('Por favor seleccione un paciente');
                 return false;
             }
+            // VALIDAR PROCEDIMIENTO: Obligatorio en admin panel
+            const campoProcedimiento = $('#procedimientoIdAgendar');
+            if (campoProcedimiento.length > 0 && !campoProcedimiento.val()) {
+                mostrarAdvertencia('Por favor seleccione un procedimiento');
+                return false;
+            }
             // Validar odontólogo
             if (!$('#odontologoIdAgendar').val()) {
                 mostrarAdvertencia('Por favor seleccione un odontólogo');
                 return false;
             }
-
             // Validar fecha
             if (!$('#fechaCitaAgendar').val()) {
                 mostrarAdvertencia('Por favor seleccione una fecha');
