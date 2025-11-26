@@ -57,12 +57,87 @@ public class PacienteCitaController {
     /**
      * Muestra el calendario de citas del paciente
      */
+    /**
+     * Vista principal: Lista de citas del paciente
+     * URL: /paciente/citas
+     */
     @GetMapping
+    @Transactional(readOnly = true)
+    public String verListaCitasPrincipal(
+            Model model,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Long estadoId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta) {
+        try {
+            // Obtener usuario autenticado
+            Usuario usuario = obtenerUsuarioAutenticado();
+            System.out.println("🔍 DEBUG - Cargando lista de citas del paciente:");
+            System.out.println("   - Usuario ID: " + usuario.getId());
+            System.out.println("   - Email: " + usuario.getEmail());
+            System.out.println("   - Página: " + page + ", Tamaño: " + size);
+            // Crear paginación ordenada por fecha descendente
+            Pageable pageable = PageRequest.of(page, size, Sort.by("fechaHoraInicio").descending());
+            // Convertir fechas a LocalDateTime si es necesario
+            LocalDateTime fechaDesdeDateTime = (fechaDesde != null) ? fechaDesde.atStartOfDay() : null;
+            LocalDateTime fechaHastaDateTime = (fechaHasta != null) ? fechaHasta.atTime(23, 59, 59) : null;
+            // Obtener citas del paciente según filtros
+            Page<Cita> paginaCitas;
+            if (estadoId != null || fechaDesdeDateTime != null || fechaHastaDateTime != null) {
+                // Aplicar filtros
+                System.out.println("   - Aplicando filtros: Estado=" + estadoId +
+                        ", Desde=" + fechaDesde + ", Hasta=" + fechaHasta);
+                paginaCitas = citaRepository.findByPacienteIdWithFilters(
+                        usuario.getId(), estadoId, fechaDesdeDateTime, fechaHastaDateTime, pageable);
+            } else {
+                // Sin filtros, solo por pacienteId
+                System.out.println("   - Sin filtros, mostrando todas las citas");
+                paginaCitas = citaRepository.findByPacienteId(usuario.getId(), pageable);
+            }
+            System.out.println("   - Citas encontradas: " + paginaCitas.getTotalElements());
+            // Cargar listas para los filtros
+            var listaEstados = estadoCitaRepository.findAll();
+            // Añadir al modelo
+            model.addAttribute("paginaCitas", paginaCitas);
+            model.addAttribute("listaEstados", listaEstados);
+            model.addAttribute("estadoIdFiltro", estadoId);
+            model.addAttribute("fechaDesdeFiltro", fechaDesde);
+            model.addAttribute("fechaHastaFiltro", fechaHasta);
+            return "paciente/citas/lista";
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al cargar lista de citas: " + e.getMessage());
+            e.printStackTrace();
+
+            model.addAttribute("paginaCitas", Page.empty());
+            model.addAttribute("listaEstados", List.of());
+            model.addAttribute("error", "Error al cargar las citas. Por favor, intente nuevamente.");
+
+            return "paciente/citas/lista";
+        }
+    }
+
+    /**
+     * Vista secundaria: Calendario de citas del paciente
+     * URL: /paciente/citas/calendario
+     */
+    @GetMapping("/calendario")
     public String verCalendario(Model model) {
         try {
+            // Obtener usuario autenticado
+            Usuario usuarioActual = obtenerUsuarioAutenticado();
+            System.out.println("🔍 DEBUG - Cargando calendario del paciente:");
+            System.out.println("   - Usuario ID: " + usuarioActual.getId());
             // Buscar usuarios ACTIVOS con rol ODONTOLOGO
-            var listaOdontologos = usuarioRepository.findActiveByRolesNombre("ODONTOLOGO");
-
+            var todosOdontologos = usuarioRepository.findActiveByRolesNombre("ODONTOLOGO");
+            // FILTRAR: Excluir al usuario actual si tiene rol ODONTOLOGO
+            // Un odontólogo no debe poder agendarse citas a sí mismo como paciente
+            var listaOdontologos = todosOdontologos.stream()
+                    .filter(odontologo -> !odontologo.getId().equals(usuarioActual.getId()))
+                    .collect(Collectors.toList());
+            System.out.println("   - Total odontólogos: " + todosOdontologos.size());
+            System.out.println("   - Odontólogos disponibles: " + listaOdontologos.size());
             // Buscar procedimientos con relaciones cargadas
             var listaProcedimientos = procedimientoRepository.findAllWithRelations();
 
@@ -76,8 +151,9 @@ public class PacienteCitaController {
             model.addAttribute("citaDTO", new CitaDTO());
 
             return "paciente/citas/calendario";
+
         } catch (Exception e) {
-            System.err.println("Error al cargar calendario de citas (paciente): " + e.getMessage());
+            System.err.println("❌ Error al cargar calendario: " + e.getMessage());
             e.printStackTrace();
 
             // Inicializar listas vacías para evitar errores en la vista
@@ -85,57 +161,10 @@ public class PacienteCitaController {
             model.addAttribute("listaProcedimientos", List.of());
             model.addAttribute("listaEstadosCita", List.of());
             model.addAttribute("citaDTO", new CitaDTO());
-            model.addAttribute("error", "Error al cargar los datos del calendario.");
+            model.addAttribute("error", "Error al cargar el calendario.");
 
             return "paciente/citas/calendario";
         }
-    }
-
-    /**
-     * Muestra la vista de lista de citas del paciente con filtros y paginación
-     */
-    @GetMapping("/lista")
-    @Transactional(readOnly = true)
-    public String verListaCitas(Model model,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) Long estadoId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta) {
-
-        // Obtener usuario autenticado
-        Usuario usuario = obtenerUsuarioAutenticado();
-
-        // Crear paginación ordenada por fecha descendente
-        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaHoraInicio").descending());
-
-        // Convertir fechas a LocalDateTime si es necesario
-        LocalDateTime fechaDesdeDateTime = (fechaDesde != null) ? fechaDesde.atStartOfDay() : null;
-        LocalDateTime fechaHastaDateTime = (fechaHasta != null) ? fechaHasta.atTime(23, 59, 59) : null;
-
-        // Obtener citas del paciente según filtros
-        Page<Cita> paginaCitas;
-
-        if (estadoId != null || fechaDesdeDateTime != null || fechaHastaDateTime != null) {
-            // Aplicar filtros
-            paginaCitas = citaRepository.findByPacienteIdWithFilters(
-                    usuario.getId(), estadoId, fechaDesdeDateTime, fechaHastaDateTime, pageable);
-        } else {
-            // Sin filtros, solo por pacienteId
-            paginaCitas = citaRepository.findByPacienteId(usuario.getId(), pageable);
-        }
-
-        // Cargar listas para los filtros
-        var listaEstados = estadoCitaRepository.findAll();
-
-        // Añadir al modelo
-        model.addAttribute("paginaCitas", paginaCitas);
-        model.addAttribute("listaEstados", listaEstados);
-        model.addAttribute("estadoIdFiltro", estadoId);
-        model.addAttribute("fechaDesdeFiltro", fechaDesde);
-        model.addAttribute("fechaHastaFiltro", fechaHasta);
-
-        return "paciente/citas/lista";
     }
 
     /**
@@ -148,25 +177,44 @@ public class PacienteCitaController {
     public List<FullCalendarEventDTO> getEventos(
             @RequestParam String start,
             @RequestParam String end) {
-
         // Obtener usuario autenticado
         Usuario usuario = obtenerUsuarioAutenticado();
-
         // Parsear fechas de ISO 8601 a LocalDate
         LocalDate fechaInicio = LocalDate.parse(start.substring(0, 10));
         LocalDate fechaFin = LocalDate.parse(end.substring(0, 10));
-
         LocalDateTime inicioDateTime = fechaInicio.atStartOfDay();
         LocalDateTime finDateTime = fechaFin.atTime(23, 59, 59);
-
+        System.out.println("🔍 DEBUG - Cargando eventos del calendario (PACIENTE):");
+        System.out.println("   - Usuario ID: " + usuario.getId());
+        System.out.println("   - Email: " + usuario.getEmail());
+        System.out.println("   - Rango solicitado: " + start + " a " + end);
+        System.out.println("   - Rango parseado: " + inicioDateTime + " a " + finDateTime);
         // Buscar SOLO citas del paciente autenticado en el rango de fechas
         List<Cita> citas = citaRepository.findByPacienteIdAndFechaHoraInicioBetween(
                 usuario.getId(), inicioDateTime, finDateTime);
+        System.out.println("   - Citas encontradas en BD: " + citas.size());
 
+        if (!citas.isEmpty()) {
+            Cita primeraCita = citas.get(0);
+            System.out.println("   - Primera cita:");
+            System.out.println("     * ID: " + primeraCita.getId());
+            System.out.println("     * Fecha: " + primeraCita.getFechaHoraInicio());
+            System.out.println("     * Estado: " + primeraCita.getEstadoCita().getNombre());
+            System.out.println("     * Odontólogo: " + primeraCita.getOdontologo().getNombreCompleto());
+        } else {
+            System.out.println("   ⚠️ NO se encontraron citas para este paciente en el rango especificado");
+        }
         // Mapear a FullCalendarEventDTO
-        return citas.stream()
+        List<FullCalendarEventDTO> eventos = citas.stream()
                 .map(this::mapearCitaAEvento)
                 .collect(Collectors.toList());
+
+        System.out.println("   - Eventos mapeados: " + eventos.size());
+
+        if (eventos.isEmpty() && !citas.isEmpty()) {
+            System.err.println("   ❌ ERROR: Se encontraron citas pero NO se mapearon a eventos!");
+        }
+        return eventos;
     }
 
     /**

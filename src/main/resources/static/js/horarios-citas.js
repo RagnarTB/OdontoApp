@@ -275,14 +275,18 @@
 
     function validarPasoActual() {
         if (pasoActual === 1) {
-            // NOTA: En el panel de paciente NO validamos pacienteIdAgendar
-            // porque el paciente se establece automáticamente en el backend
-
+            // VALIDAR PACIENTE: Solo en admin panel (si el campo existe)
+            const campoPaciente = $('#pacienteIdAgendar');
+            if (campoPaciente.length > 0 && !campoPaciente.val()) {
+                mostrarAdvertencia('Por favor seleccione un paciente');
+                return false;
+            }
             // Validar odontólogo
             if (!$('#odontologoIdAgendar').val()) {
                 mostrarAdvertencia('Por favor seleccione un odontólogo');
                 return false;
             }
+
             // Validar fecha
             if (!$('#fechaCitaAgendar').val()) {
                 mostrarAdvertencia('Por favor seleccione una fecha');

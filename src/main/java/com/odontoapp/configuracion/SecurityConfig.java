@@ -85,7 +85,9 @@ public class SecurityConfig {
                                                                 "/tratamientos/**", "/odontograma/**",
                                                                 "/api/odontograma/**")
                                                 .authenticated()
-                                                .requestMatchers("/citas/**", "/agenda/**").authenticated()
+                                                // CITAS: Solo personal de la clínica (NO pacientes)
+                                                .requestMatchers("/citas/**", "/agenda/**")
+                                                .hasAnyRole("ADMIN", "ODONTOLOGO", "RECEPCIONISTA")
                                                 .requestMatchers("/insumos/**", "/categorias-insumo/**",
                                                                 "/unidades-medida/**", "/movimientos-inventario/**")
                                                 .authenticated()
