@@ -57,7 +57,8 @@ public class CitaServiceImpl implements CitaService {
     private static final String ESTADO_REPROGRAMADA = "REPROGRAMADA";
 
     private static final String NO_LABORABLE = "NO_LABORABLE";
-    private static final int INTERVALO_MINUTOS = 15; // Intervalos de 15 minutos (para permitir slots a las 8:00, 8:15, 8:30, 8:45, etc.)
+    private static final int INTERVALO_MINUTOS = 15; // Intervalos de 15 minutos (para permitir slots a las 8:00, 8:15,
+                                                     // 8:30, 8:45, etc.)
     private static final int BUFFER_MINUTOS = 15; // Buffer de 15 minutos después de cada cita
 
     // --- Dependencias ---
@@ -77,19 +78,19 @@ public class CitaServiceImpl implements CitaService {
     private final FacturacionService facturacionService;
 
     public CitaServiceImpl(CitaRepository citaRepository,
-                          UsuarioRepository usuarioRepository,
-                          ProcedimientoRepository procedimientoRepository,
-                          EstadoCitaRepository estadoCitaRepository,
-                          EmailService emailService,
-                          ProcedimientoInsumoRepository procedimientoInsumoRepository,
-                          InsumoRepository insumoRepository,
-                          TratamientoPlanificadoRepository tratamientoPlanificadoRepository,
-                          TratamientoRealizadoRepository tratamientoRealizadoRepository,
-                          MovimientoInventarioRepository movimientoInventarioRepository,
-                          TipoMovimientoRepository tipoMovimientoRepository,
-                          MotivoMovimientoRepository motivoMovimientoRepository,
-                          InventarioService inventarioService,
-                          FacturacionService facturacionService) {
+            UsuarioRepository usuarioRepository,
+            ProcedimientoRepository procedimientoRepository,
+            EstadoCitaRepository estadoCitaRepository,
+            EmailService emailService,
+            ProcedimientoInsumoRepository procedimientoInsumoRepository,
+            InsumoRepository insumoRepository,
+            TratamientoPlanificadoRepository tratamientoPlanificadoRepository,
+            TratamientoRealizadoRepository tratamientoRealizadoRepository,
+            MovimientoInventarioRepository movimientoInventarioRepository,
+            TipoMovimientoRepository tipoMovimientoRepository,
+            MotivoMovimientoRepository motivoMovimientoRepository,
+            InventarioService inventarioService,
+            FacturacionService facturacionService) {
         this.citaRepository = citaRepository;
         this.usuarioRepository = usuarioRepository;
         this.procedimientoRepository = procedimientoRepository;
@@ -122,7 +123,8 @@ public class CitaServiceImpl implements CitaService {
      * Buscar disponibilidad de horarios considerando la duración del procedimiento
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> buscarDisponibilidad(Long odontologoId, LocalDate fecha, Integer duracionMinutos, Long citaIdExcluir) {
+    public Map<String, Object> buscarDisponibilidad(Long odontologoId, LocalDate fecha, Integer duracionMinutos,
+            Long citaIdExcluir) {
         Usuario odontologo = usuarioRepository.findById(odontologoId)
                 .orElseThrow(() -> new EntityNotFoundException("Odontólogo no encontrado con ID: " + odontologoId));
 
@@ -178,12 +180,14 @@ public class CitaServiceImpl implements CitaService {
     }
 
     /**
-     * Calcula los horarios disponibles considerando las citas ya agendadas y la duración del procedimiento.
+     * Calcula los horarios disponibles considerando las citas ya agendadas y la
+     * duración del procedimiento.
+     * 
      * @param duracionMinutos Duración del procedimiento en minutos
-     * @param citaIdExcluir ID de cita a excluir (puede ser null)
+     * @param citaIdExcluir   ID de cita a excluir (puede ser null)
      */
     private List<Map<String, Object>> calcularHorariosDisponibles(Usuario odontologo, LocalDate fecha,
-                                                                   String horarioStr, Integer duracionMinutos, Long citaIdExcluir) {
+            String horarioStr, Integer duracionMinutos, Long citaIdExcluir) {
         List<Map<String, Object>> slots = new ArrayList<>();
 
         // Usar duración por defecto si no se especifica
@@ -196,7 +200,8 @@ public class CitaServiceImpl implements CitaService {
 
         for (String intervalo : intervalos) {
             String[] partes = intervalo.trim().split("-");
-            if (partes.length != 2) continue;
+            if (partes.length != 2)
+                continue;
 
             LocalTime horaInicio = LocalTime.parse(partes[0].trim());
             LocalTime horaFin = LocalTime.parse(partes[1].trim());
@@ -208,7 +213,8 @@ public class CitaServiceImpl implements CitaService {
             List<Cita> citasEnIntervalo = citaRepository.findConflictingCitas(
                     odontologo.getId(), inicioIntervalo, finIntervalo);
 
-            // Filtrar solo citas activas (excluir canceladas, reprogramadas y la cita a excluir)
+            // Filtrar solo citas activas (excluir canceladas, reprogramadas y la cita a
+            // excluir)
             citasEnIntervalo = citasEnIntervalo.stream()
                     .filter(c -> {
                         String estado = c.getEstadoCita().getNombre();
@@ -226,7 +232,7 @@ public class CitaServiceImpl implements CitaService {
             // Generar slots de tiempo cada 30 minutos
             LocalDateTime slotActual = inicioIntervalo;
             while (slotActual.plusMinutes(INTERVALO_MINUTOS).isBefore(finIntervalo) ||
-                   slotActual.plusMinutes(INTERVALO_MINUTOS).equals(finIntervalo)) {
+                    slotActual.plusMinutes(INTERVALO_MINUTOS).equals(finIntervalo)) {
 
                 LocalDateTime finSlot = slotActual.plusMinutes(INTERVALO_MINUTOS);
 
@@ -271,7 +277,8 @@ public class CitaServiceImpl implements CitaService {
     }
 
     /**
-     * Verifica si el horario de la cita está dentro del horario laboral del odontólogo.
+     * Verifica si el horario de la cita está dentro del horario laboral del
+     * odontólogo.
      * Considera tanto el horario regular como las excepciones.
      */
     private boolean estaEnHorarioLaboral(Usuario odontologo, LocalDateTime inicio, LocalDateTime fin) {
@@ -307,7 +314,8 @@ public class CitaServiceImpl implements CitaService {
 
         for (String intervalo : intervalos) {
             String[] partes = intervalo.trim().split("-");
-            if (partes.length != 2) continue;
+            if (partes.length != 2)
+                continue;
 
             LocalTime horarioInicioIntervalo = LocalTime.parse(partes[0].trim());
             LocalTime horarioFinIntervalo = LocalTime.parse(partes[1].trim());
@@ -323,16 +331,7 @@ public class CitaServiceImpl implements CitaService {
 
     @Override
     public Cita agendarCita(Long pacienteId, Long odontologoId, Long procedimientoId,
-                           LocalDateTime fechaHoraInicio, String motivoConsulta, String notas) {
-        // Método por defecto: crear como CONFIRMADA (uso del personal)
-        return agendarCita(pacienteId, odontologoId, procedimientoId,
-                          fechaHoraInicio, motivoConsulta, notas, false);
-    }
-
-    @Override
-    public Cita agendarCita(Long pacienteId, Long odontologoId, Long procedimientoId,
-                           LocalDateTime fechaHoraInicio, String motivoConsulta, String notas,
-                           boolean crearComoPendiente) {
+            LocalDateTime fechaHoraInicio, String motivoConsulta, String notas) {
 
         // Validar que todos los parámetros requeridos estén presentes
         if (pacienteId == null || odontologoId == null || procedimientoId == null || fechaHoraInicio == null) {
@@ -347,7 +346,8 @@ public class CitaServiceImpl implements CitaService {
                 .orElseThrow(() -> new EntityNotFoundException("Odontólogo no encontrado con ID: " + odontologoId));
 
         Procedimiento procedimiento = procedimientoRepository.findById(procedimientoId)
-                .orElseThrow(() -> new EntityNotFoundException("Procedimiento no encontrado con ID: " + procedimientoId));
+                .orElseThrow(
+                        () -> new EntityNotFoundException("Procedimiento no encontrado con ID: " + procedimientoId));
 
         // Calcular fecha de fin basada en la duración del procedimiento
         LocalDateTime fechaHoraFin = fechaHoraInicio.plusMinutes(procedimiento.getDuracionBaseMinutos());
@@ -358,7 +358,8 @@ public class CitaServiceImpl implements CitaService {
         }
 
         // Verificar disponibilidad del odontólogo
-        // NOTA: No agregamos el buffer aquí porque estaOcupado() ya lo considera internamente
+        // NOTA: No agregamos el buffer aquí porque estaOcupado() ya lo considera
+        // internamente
         List<Cita> citasConflictivas = citaRepository.findConflictingCitas(
                 odontologoId, fechaHoraInicio, fechaHoraFin);
 
@@ -373,12 +374,13 @@ public class CitaServiceImpl implements CitaService {
         // Verificar conflictos usando el método que considera el buffer internamente
         if (estaOcupado(fechaHoraInicio, fechaHoraFin, citasActivas)) {
             throw new IllegalStateException(
-                "El odontólogo no está disponible en ese horario. " +
-                "Recuerde que se requiere un tiempo de buffer de " + BUFFER_MINUTOS +
-                " minutos después de cada cita.");
+                    "El odontólogo no está disponible en ese horario. " +
+                            "Recuerde que se requiere un tiempo de buffer de " + BUFFER_MINUTOS +
+                            " minutos después de cada cita.");
         }
 
-        // Verificar que el PACIENTE no tenga otra cita en el mismo horario (con cualquier odontólogo)
+        // Verificar que el PACIENTE no tenga otra cita en el mismo horario (con
+        // cualquier odontólogo)
         List<Cita> citasPaciente = citaRepository.findConflictingCitas(
                 pacienteId, fechaHoraInicio, fechaHoraFin);
 
@@ -391,15 +393,15 @@ public class CitaServiceImpl implements CitaService {
 
         if (!citasActivasPaciente.isEmpty()) {
             throw new IllegalStateException(
-                "El paciente ya tiene una cita agendada en este horario con otro odontólogo. " +
-                "Por favor seleccione otro horario.");
+                    "El paciente ya tiene una cita agendada en este horario con otro odontólogo. " +
+                            "Por favor seleccione otro horario.");
         }
 
         // Verificar que el paciente esté activo
         if (!paciente.isEstaActivo()) {
             throw new IllegalStateException(
-                "No se puede agendar una cita para un paciente inactivo. " +
-                "Por favor active el paciente primero.");
+                    "No se puede agendar una cita para un paciente inactivo. " +
+                            "Por favor active el paciente primero.");
         }
 
         // Verificar que el horario esté dentro del horario laboral del odontólogo
@@ -414,14 +416,13 @@ public class CitaServiceImpl implements CitaService {
         // Validar que el horario específico esté dentro de los rangos laborales
         if (!estaEnHorarioLaboral(odontologo, fechaHoraInicio, fechaHoraFin)) {
             throw new IllegalStateException(
-                "El horario seleccionado está fuera del horario laboral del odontólogo. " +
-                "Por favor seleccione un horario dentro de las horas de atención.");
+                    "El horario seleccionado está fuera del horario laboral del odontólogo. " +
+                            "Por favor seleccione un horario dentro de las horas de atención.");
         }
 
-        // Determinar el estado inicial de la cita
-        String nombreEstadoInicial = crearComoPendiente ? ESTADO_PENDIENTE : ESTADO_CONFIRMADA;
-        EstadoCita estadoInicial = estadoCitaRepository.findByNombre(nombreEstadoInicial)
-                .orElseThrow(() -> new IllegalStateException("Estado " + nombreEstadoInicial + " no encontrado en la base de datos"));
+        // Crear la cita como CONFIRMADA (las citas presenciales se crean confirmadas)
+        EstadoCita estadoConfirmada = estadoCitaRepository.findByNombre(ESTADO_CONFIRMADA)
+                .orElseThrow(() -> new IllegalStateException("Estado CONFIRMADA no encontrado en la base de datos"));
 
         Cita nuevaCita = new Cita();
         nuevaCita.setPaciente(paciente);
@@ -430,7 +431,7 @@ public class CitaServiceImpl implements CitaService {
         nuevaCita.setFechaHoraInicio(fechaHoraInicio);
         nuevaCita.setFechaHoraFin(fechaHoraFin);
         nuevaCita.setDuracionEstimadaMinutos(procedimiento.getDuracionBaseMinutos());
-        nuevaCita.setEstadoCita(estadoInicial);
+        nuevaCita.setEstadoCita(estadoConfirmada);
         nuevaCita.setMotivoConsulta(motivoConsulta);
         nuevaCita.setNotas(notas);
 
@@ -438,7 +439,126 @@ public class CitaServiceImpl implements CitaService {
     }
 
     @Override
-    public Cita reprogramarCita(Long citaId, Long nuevoOdontologoId, LocalDateTime nuevaFechaHoraInicio, String motivo) {
+    public Cita agendarCitaPaciente(Long pacienteId, Long odontologoId, Long procedimientoId,
+            LocalDateTime fechaHoraInicio, String motivoConsulta, String notas) {
+
+        // Validar que todos los parámetros requeridos estén presentes
+        if (pacienteId == null || odontologoId == null || procedimientoId == null || fechaHoraInicio == null) {
+            throw new IllegalArgumentException("Todos los parámetros requeridos deben estar presentes");
+        }
+
+        // Buscar entidades relacionadas
+        Usuario paciente = usuarioRepository.findById(pacienteId)
+                .orElseThrow(() -> new EntityNotFoundException("Paciente no encontrado con ID: " + pacienteId));
+
+        Usuario odontologo = usuarioRepository.findById(odontologoId)
+                .orElseThrow(() -> new EntityNotFoundException("Odontólogo no encontrado con ID: " + odontologoId));
+
+        Procedimiento procedimiento = procedimientoRepository.findById(procedimientoId)
+                .orElseThrow(
+                        () -> new EntityNotFoundException("Procedimiento no encontrado con ID: " + procedimientoId));
+
+        // Calcular fecha de fin basada en la duración del procedimiento
+        LocalDateTime fechaHoraFin = fechaHoraInicio.plusMinutes(procedimiento.getDuracionBaseMinutos());
+
+        // Verificar que la fecha no sea en el pasado
+        if (fechaHoraInicio.isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("No se puede agendar una cita en el pasado");
+        }
+
+        // Verificar disponibilidad del odontólogo
+        List<Cita> citasConflictivas = citaRepository.findConflictingCitas(
+                odontologoId, fechaHoraInicio, fechaHoraFin);
+
+        // Filtrar solo citas activas (no canceladas ni reprogramadas)
+        List<Cita> citasActivas = citasConflictivas.stream()
+                .filter(c -> {
+                    String estado = c.getEstadoCita().getNombre();
+                    return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+                })
+                .collect(Collectors.toList());
+
+        // Verificar conflictos usando el método que considera el buffer internamente
+        if (estaOcupado(fechaHoraInicio, fechaHoraFin, citasActivas)) {
+            throw new IllegalStateException(
+                    "El odontólogo no está disponible en ese horario. " +
+                            "Recuerde que se requiere un tiempo de buffer de " + BUFFER_MINUTOS +
+                            " minutos después de cada cita.");
+        }
+
+        // Verificar que el PACIENTE no tenga otra cita en el mismo horario (con
+        // cualquier odontólogo)
+        List<Cita> citasPaciente = citaRepository.findConflictingCitas(
+                pacienteId, fechaHoraInicio, fechaHoraFin);
+
+        List<Cita> citasActivasPaciente = citasPaciente.stream()
+                .filter(c -> {
+                    String estado = c.getEstadoCita().getNombre();
+                    return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+                })
+                .collect(Collectors.toList());
+
+        if (!citasActivasPaciente.isEmpty()) {
+            throw new IllegalStateException(
+                    "Ya tienes una cita agendada en este horario. " +
+                            "Por favor selecciona otro horario.");
+        }
+
+        // Verificar que el paciente esté activo
+        if (!paciente.isEstaActivo()) {
+            throw new IllegalStateException(
+                    "No se puede agendar una cita para un paciente inactivo. " +
+                            "Por favor contacta con la clínica.");
+        }
+
+        // Verificar que el horario esté dentro del horario laboral del odontólogo
+        LocalDate fecha = fechaHoraInicio.toLocalDate();
+        Map<String, Object> disponibilidad = buscarDisponibilidad(odontologoId, fecha);
+
+        if (!(boolean) disponibilidad.get("disponible")) {
+            throw new IllegalStateException("El odontólogo no está disponible en esta fecha: " +
+                    disponibilidad.get("motivo"));
+        }
+
+        // Validar que el horario específico esté dentro de los rangos laborales
+        if (!estaEnHorarioLaboral(odontologo, fechaHoraInicio, fechaHoraFin)) {
+            throw new IllegalStateException(
+                    "El horario seleccionado está fuera del horario laboral del odontólogo. " +
+                            "Por favor selecciona un horario dentro de las horas de atención.");
+        }
+
+        // Crear la cita como PENDIENTE (las citas del portal de pacientes requieren
+        // confirmación)
+        EstadoCita estadoPendiente = estadoCitaRepository.findByNombre(ESTADO_PENDIENTE)
+                .orElseThrow(() -> new IllegalStateException("Estado PENDIENTE no encontrado en la base de datos"));
+
+        Cita nuevaCita = new Cita();
+        nuevaCita.setPaciente(paciente);
+        nuevaCita.setOdontologo(odontologo);
+        nuevaCita.setProcedimiento(procedimiento);
+        nuevaCita.setFechaHoraInicio(fechaHoraInicio);
+        nuevaCita.setFechaHoraFin(fechaHoraFin);
+        nuevaCita.setDuracionEstimadaMinutos(procedimiento.getDuracionBaseMinutos());
+        nuevaCita.setEstadoCita(estadoPendiente);
+        nuevaCita.setMotivoConsulta(motivoConsulta);
+        nuevaCita.setNotas(notas);
+
+        Cita citaGuardada = citaRepository.save(nuevaCita);
+
+        // Enviar email de notificación al paciente
+        try {
+            emailService.enviarConfirmacionCita(citaGuardada);
+        } catch (Exception e) {
+            System.err.println("Error al enviar email de confirmación: " + e.getMessage());
+            // No lanzar excepción, la cita ya fue creada exitosamente
+        }
+
+        return citaGuardada;
+    }
+
+    @Override
+    public Cita reprogramarCita(Long citaId, Long nuevoOdontologoId, LocalDateTime nuevaFechaHoraInicio,
+            String motivo) {
         Cita citaOriginal = citaRepository.findById(citaId)
                 .orElseThrow(() -> new EntityNotFoundException("Cita no encontrada con ID: " + citaId));
 
@@ -452,18 +572,19 @@ public class CitaServiceImpl implements CitaService {
             throw new IllegalStateException("Esta cita ya fue reprogramada");
         }
 
-        // Usar el nuevo odontólogo si se proporciona, de lo contrario mantener el original
+        // Usar el nuevo odontólogo si se proporciona, de lo contrario mantener el
+        // original
         Long odontologoIdFinal = (nuevoOdontologoId != null) ? nuevoOdontologoId : citaOriginal.getOdontologo().getId();
 
-        // Crear nueva cita con los mismos datos pero nueva fecha y posiblemente nuevo odontólogo
+        // Crear nueva cita con los mismos datos pero nueva fecha y posiblemente nuevo
+        // odontólogo
         Cita nuevaCita = agendarCita(
                 citaOriginal.getPaciente().getId(),
                 odontologoIdFinal,
                 citaOriginal.getProcedimiento().getId(),
                 nuevaFechaHoraInicio,
                 citaOriginal.getMotivoConsulta(),
-                "Reprogramación: " + (motivo != null ? motivo : "Sin motivo especificado")
-        );
+                "Reprogramación: " + (motivo != null ? motivo : "Sin motivo especificado"));
 
         // Marcar la cita original como REPROGRAMADA
         EstadoCita estadoReprogramada = estadoCitaRepository.findByNombre(ESTADO_REPROGRAMADA)
@@ -586,7 +707,8 @@ public class CitaServiceImpl implements CitaService {
         // y descontar inmediatamente el inventario asociado al procedimiento.
 
         if (asistio && cita.getProcedimiento() != null) {
-            System.out.println("ℹ️ Paciente ASISTIÓ - Cita ID: " + citaId + ", Procedimiento: " + cita.getProcedimiento().getNombre());
+            System.out.println("ℹ️ Paciente ASISTIÓ - Cita ID: " + citaId + ", Procedimiento: "
+                    + cita.getProcedimiento().getNombre());
 
             // Verificar si ya existe un TratamientoRealizado para esta cita
             List<TratamientoRealizado> tratamientosExistentes = tratamientoRealizadoRepository.findByCitaId(citaId);
@@ -599,31 +721,30 @@ public class CitaServiceImpl implements CitaService {
                 tratamientoMinimo.setOdontologo(cita.getOdontologo());
                 tratamientoMinimo.setPiezaDental(null);
                 tratamientoMinimo.setDescripcionTrabajo("Tratamiento realizado en cita del " +
-                    cita.getFechaHoraInicio().toLocalDate());
+                        cita.getFechaHoraInicio().toLocalDate());
                 tratamientoMinimo.setFechaRealizacion(cita.getFechaHoraInicio());
 
                 TratamientoRealizado guardado = tratamientoRealizadoRepository.save(tratamientoMinimo);
                 System.out.println("✅ TratamientoRealizado MÍNIMO creado - ID: " + guardado.getId() +
-                                 " (Coherencia: ASISTIO = REALIZADO)");
+                        " (Coherencia: ASISTIO = REALIZADO)");
 
                 // DESCUENTO DE STOCK INMEDIATO
                 try {
                     String referenciaCita = "Cita #" + citaId;
                     inventarioService.descontarStockPorProcedimientoRealizado(
-                        guardado.getProcedimiento().getId(),
-                        null,  // cantidadAjustada: null = usar cantidad por defecto
-                        null,  // insumoAjustadoId: null = descontar todos los insumos por defecto
-                        referenciaCita
-                    );
+                            guardado.getProcedimiento().getId(),
+                            null, // cantidadAjustada: null = usar cantidad por defecto
+                            null, // insumoAjustadoId: null = descontar todos los insumos por defecto
+                            referenciaCita);
                     System.out.println("✅ Stock descontado automáticamente para procedimiento: " +
-                                     guardado.getProcedimiento().getNombre() + " (Cita #" + citaId + ")");
+                            guardado.getProcedimiento().getNombre() + " (Cita #" + citaId + ")");
                 } catch (Exception e) {
                     System.err.println("⚠️ Error al descontar stock: " + e.getMessage());
                     // Log pero no fallar la cita - el descuento se puede hacer manualmente
                 }
             } else {
                 System.out.println("✓ Ya existe TratamientoRealizado para esta cita - ID: " +
-                                 tratamientosExistentes.get(0).getId() + " (stock ya procesado)");
+                        tratamientosExistentes.get(0).getId() + " (stock ya procesado)");
             }
         }
 
@@ -635,11 +756,14 @@ public class CitaServiceImpl implements CitaService {
             System.out.println("🔍 [DEBUG] Tratamiento planificado encontrado:");
             System.out.println("   - ID: " + tratamientoPlanificado.getId());
             System.out.println("   - Estado actual: " + estadoActualTrat);
-            System.out.println("   - Procedimiento: " + (tratamientoPlanificado.getProcedimiento() != null ? tratamientoPlanificado.getProcedimiento().getNombre() : "N/A"));
+            System.out.println("   - Procedimiento: " + (tratamientoPlanificado.getProcedimiento() != null
+                    ? tratamientoPlanificado.getProcedimiento().getNombre()
+                    : "N/A"));
             System.out.println("   - Paciente ID: " + tratamientoPlanificado.getPaciente().getId());
 
             if (asistio) {
-                // PACIENTE ASISTIÓ: Marcar tratamiento como COMPLETADO para excluirlo de pendientes
+                // PACIENTE ASISTIÓ: Marcar tratamiento como COMPLETADO para excluirlo de
+                // pendientes
                 if ("EN_CURSO".equals(estadoActualTrat) || "PLANIFICADO".equals(estadoActualTrat)) {
                     tratamientoPlanificado.setEstado("COMPLETADO");
                     tratamientoPlanificadoRepository.save(tratamientoPlanificado);
@@ -648,9 +772,11 @@ public class CitaServiceImpl implements CitaService {
                     System.out.println("✅ Tratamiento planificado marcado como COMPLETADO (Cita: " + citaId + ")");
                     System.out.println("   → ID: " + tratamientoPlanificado.getId());
                     System.out.println("   → Nuevo estado: COMPLETADO");
-                    System.out.println("   → El TratamientoRealizado se creará desde el Modal Avanzado de Tratamientos");
+                    System.out
+                            .println("   → El TratamientoRealizado se creará desde el Modal Avanzado de Tratamientos");
                 } else {
-                    System.out.println("⚠️ El tratamiento planificado ya está en estado: " + estadoActualTrat + " (no se actualiza)");
+                    System.out.println("⚠️ El tratamiento planificado ya está en estado: " + estadoActualTrat
+                            + " (no se actualiza)");
                 }
             } else {
                 // PACIENTE NO ASISTIÓ: Volver a PLANIFICADO para poder reagendar
@@ -659,7 +785,9 @@ public class CitaServiceImpl implements CitaService {
                     tratamientoPlanificado.setCitaAsociada(null); // Desvincular la cita
                     tratamientoPlanificadoRepository.save(tratamientoPlanificado);
                     tratamientoPlanificadoRepository.flush(); // Forzar escritura inmediata
-                    System.out.println("⚠️ Paciente no asistió - Tratamiento planificado vuelto a PLANIFICADO para cita: " + citaId);
+                    System.out
+                            .println("⚠️ Paciente no asistió - Tratamiento planificado vuelto a PLANIFICADO para cita: "
+                                    + citaId);
                 }
             }
         } else {
@@ -673,8 +801,10 @@ public class CitaServiceImpl implements CitaService {
             try {
                 // Generar comprobante automáticamente (sin detalles adicionales)
                 // Solo incluye el procedimiento de la cita con su precio base
-                // Los insumos ya fueron descontados del inventario pero NO se cobran por separado
-                // El método generarComprobanteDesdeCita ya valida que no exista un comprobante previo
+                // Los insumos ya fueron descontados del inventario pero NO se cobran por
+                // separado
+                // El método generarComprobanteDesdeCita ya valida que no exista un comprobante
+                // previo
                 facturacionService.generarComprobanteDesdeCita(citaId, null);
                 System.out.println("✅ Comprobante generado automáticamente para cita: " + citaId);
             } catch (IllegalStateException e) {
@@ -682,7 +812,8 @@ public class CitaServiceImpl implements CitaService {
                 System.out.println("ℹ️ No se generó comprobante para cita " + citaId + ": " + e.getMessage());
             } catch (Exception e) {
                 // Log del error pero no fallar la marcación de asistencia
-                System.err.println("⚠️ Error al generar comprobante automático para cita " + citaId + ": " + e.getMessage());
+                System.err.println(
+                        "⚠️ Error al generar comprobante automático para cita " + citaId + ": " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -692,11 +823,12 @@ public class CitaServiceImpl implements CitaService {
 
     /**
      * Descuenta los insumos asociados a un procedimiento del inventario.
-     * Se utiliza cuando un paciente asiste a una cita y se consume el procedimiento.
+     * Se utiliza cuando un paciente asiste a una cita y se consume el
+     * procedimiento.
      * Registra movimientos de inventario con motivo "Uso en procedimiento".
      *
      * @param procedimientoId ID del procedimiento
-     * @param citaId ID de la cita para referencia
+     * @param citaId          ID de la cita para referencia
      */
     private void descontarInsumosDelProcedimiento(Long procedimientoId, Long citaId) {
         // Obtener tipo y motivo de movimiento
@@ -718,8 +850,7 @@ public class CitaServiceImpl implements CitaService {
             if (stockAnterior.compareTo(cantidadADescontar) < 0) {
                 throw new IllegalStateException(
                         "Stock insuficiente del insumo: " + insumo.getNombre() +
-                        " (Disponible: " + stockAnterior + ", Requerido: " + cantidadADescontar + ")"
-                );
+                                " (Disponible: " + stockAnterior + ", Requerido: " + cantidadADescontar + ")");
             }
 
             // Descontar del stock
@@ -780,7 +911,8 @@ public class CitaServiceImpl implements CitaService {
 
         List<Cita> citas = citaRepository.findByFechaHoraInicioBetween(inicio, fin);
 
-        // Filtrar por odontólogo si se especificó y excluir citas canceladas/reprogramadas
+        // Filtrar por odontólogo si se especificó y excluir citas
+        // canceladas/reprogramadas
         citas = citas.stream()
                 .filter(c -> {
                     // Filtrar por odontólogo si se especificó
@@ -799,8 +931,8 @@ public class CitaServiceImpl implements CitaService {
     @Override
     @Transactional(readOnly = true)
     public Page<Cita> listarCitasConFiltros(Long estadoId, Long odontologoId,
-                                             LocalDate fechaDesde, LocalDate fechaHasta,
-                                             Pageable pageable) {
+            LocalDate fechaDesde, LocalDate fechaHasta,
+            Pageable pageable) {
         // Convertir fechas a LocalDateTime si están presentes
         LocalDateTime fechaDesdeTime = fechaDesde != null ? fechaDesde.atStartOfDay() : null;
         LocalDateTime fechaHastaTime = fechaHasta != null ? fechaHasta.atTime(23, 59, 59) : null;
@@ -834,15 +966,15 @@ public class CitaServiceImpl implements CitaService {
                     }
                     return true;
                 })
-                .sorted((c1, c2) -> c2.getFechaHoraInicio().compareTo(c1.getFechaHoraInicio())) // Ordenar por fecha desc
+                .sorted((c1, c2) -> c2.getFechaHoraInicio().compareTo(c1.getFechaHoraInicio())) // Ordenar por fecha
+                                                                                                // desc
                 .collect(Collectors.toList());
 
         // Implementar paginación manual
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), citasFiltradas.size());
 
-        List<Cita> paginaActual = start >= citasFiltradas.size() ?
-                List.of() : citasFiltradas.subList(start, end);
+        List<Cita> paginaActual = start >= citasFiltradas.size() ? List.of() : citasFiltradas.subList(start, end);
 
         return new org.springframework.data.domain.PageImpl<>(
                 paginaActual, pageable, citasFiltradas.size());
