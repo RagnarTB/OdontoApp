@@ -66,23 +66,40 @@ public class SecurityConfig {
                                                 .requestMatchers("/cambiar-password-obligatorio").authenticated()
 
                                                 // Selector de rol - todos autenticados
-                                                .requestMatchers("/seleccionar-rol", "/seleccionar-rol/**").authenticated()
+                                                .requestMatchers("/seleccionar-rol", "/seleccionar-rol/**")
+                                                .authenticated()
 
                                                 // PACIENTE: Portal exclusivo para pacientes
-                                                .requestMatchers("/paciente/**").hasRole("PACIENTE")
+                                                .requestMatchers("/usuarios/cambiar-password").authenticated()
+                                                .requestMatchers("/paciente/**").hasAnyAuthority(
+                                                                "VER_MIS_CITAS",
+                                                                "AGENDAR_CITA",
+                                                                "CANCELAR_MIS_CITAS",
+                                                                "VER_MI_PERFIL",
+                                                                "EDITAR_MI_PERFIL",
+                                                                "VER_MIS_TRATAMIENTOS",
+                                                                "VER_MI_ODONTOGRAMA",
+                                                                "VER_MIS_COMPROBANTES")
 
                                                 // Dashboard general: NO permitir a PACIENTE (usan /paciente/dashboard)
                                                 .requestMatchers("/", "/home", "/dashboard")
                                                 .hasAnyRole("ADMIN", "ODONTOLOGO", "RECEPCIONISTA", "ALMACEN")
 
                                                 // Los siguientes módulos usan @PreAuthorize con permisos granulares
-                                                // Solo requieren autenticación, el control de acceso se hace en los controllers
-                                                .requestMatchers("/usuarios/**", "/roles/**", "/administracion/**").authenticated()
+                                                // Solo requieren autenticación, el control de acceso se hace en los
+                                                // controllers
+                                                .requestMatchers("/usuarios/**", "/roles/**", "/administracion/**")
+                                                .authenticated()
                                                 .requestMatchers("/pacientes/**", "/servicios/**", "/facturacion/**",
-                                                                "/tratamientos/**", "/odontograma/**", "/api/odontograma/**").authenticated()
-                                                .requestMatchers("/citas/**", "/agenda/**").authenticated()
+                                                                "/tratamientos/**", "/odontograma/**",
+                                                                "/api/odontograma/**")
+                                                .authenticated()
+                                                // CITAS: Solo personal de la clínica (NO pacientes)
+                                                .requestMatchers("/citas/**", "/agenda/**")
+                                                .hasAnyRole("ADMIN", "ODONTOLOGO", "RECEPCIONISTA")
                                                 .requestMatchers("/insumos/**", "/categorias-insumo/**",
-                                                                "/unidades-medida/**", "/movimientos-inventario/**").authenticated()
+                                                                "/unidades-medida/**", "/movimientos-inventario/**")
+                                                .authenticated()
 
                                                 // Cualquier otra petición requiere autenticación
                                                 .anyRequest().authenticated())

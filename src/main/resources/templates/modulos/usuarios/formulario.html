@@ -302,130 +302,116 @@
                                             th:errors="*{direccion}"></div>
                                         <small class="form-text text-success">
                                             <i class="fas fa-edit"></i> Campo editable
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
+                                            <i class="fas fa-user-injured mr-2"></i>Datos Clínicos del Paciente
+                                            </h5>
 
-                            <!-- ROLES -->
-                            <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-user-shield mr-2"></i>Roles</h5>
-                            <div class="form-group">
-                                <div th:each="rol : ${listaRoles}" class="form-check form-check-inline">
-                                    <input class="form-check-input rol-checkbox" type="checkbox" th:field="*{roles}"
-                                        th:value="${rol.id}" th:id="${'rol-' + rol.id}"
-                                        th:attr="data-rol-nombre=${rol.nombre}"
-                                        th:classappend="${#fields.hasErrors('roles')} ? 'is-invalid' : ''" />
-                                    <label class="form-check-label" th:for="${'rol-' + rol.id}"
-                                        th:text="${rol.nombre}"></label>
-                                </div>
-                                <div th:if="${#fields.hasErrors('roles')}" class="invalid-feedback d-block"
-                                    th:errors="*{roles}"></div>
-                            </div>
-                            <!-- SECCIÓN DE DATOS DE PACIENTE (Visible solo si se marca PACIENTE) -->
-                            <div id="seccionDatosPaciente" style="display: none;">
-                                <hr>
-                                <h5 class="mt-4 mb-3 text-primary">
-                                    <i class="fas fa-user-injured mr-2"></i>Datos Clínicos del Paciente
-                                </h5>
-
-                                <div class="form-group">
-                                    <label for="alergias">Alergias Conocidas</label>
-                                    <textarea class="form-control" th:field="*{alergias}" id="alergias" rows="3"
-                                        placeholder="Ej: Penicilina, AINES..."></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="antecedentesMedicos">Antecedentes Médicos</label>
-                                    <textarea class="form-control" th:field="*{antecedentesMedicos}"
-                                        id="antecedentesMedicos" rows="3"
-                                        placeholder="Ej: Hipertensión, Diabetes..."></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="tratamientosActuales">Tratamientos Actuales</label>
-                                    <textarea class="form-control" th:field="*{tratamientosActuales}"
-                                        id="tratamientosActuales" rows="3"
-                                        placeholder="Medicamentos o tratamientos en curso..."></textarea>
-                                </div>
-                            </div>
-
-                            <!-- SECCIÓN DE HORARIOS (Visible solo si se marca ODONTOLOGO) -->
-                            <div id="seccionHorarios" style="display: none;">
-                                <hr>
-                                <h5 class="mt-4 mb-3 text-primary"><i class="far fa-calendar-alt mr-2"></i>Horario
-                                    Laboral (Odont&oacute;logo)</h5>
-                                <p class="text-muted small">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    Seleccione visualmente los bloques de horario haciendo click en ellos.
-                                    Puede usar los horarios predefinidos o seleccionar bloques individuales.
-                                </p>
-
-                                <!-- Acciones Rápidas -->
-                                <div class="acciones-rapidas">
-                                    <button type="button" id="btnAplicarTodos" class="btn btn-info btn-sm">
-                                        <i class="fas fa-copy mr-2"></i>Aplicar horario del Lunes a todos los días
-                                    </button>
-                                    <button type="button" id="btnAplicarLaborables" class="btn btn-success btn-sm">
-                                        <i class="fas fa-business-time mr-2"></i>Aplicar solo a días laborables (Ma-Vi)
-                                    </button>
-                                </div>
-
-                                <!-- Horario Regular con Selector Visual -->
-                                <h6 class="mb-3">
-                                    <i class="fas fa-clock mr-2"></i>Horario Regular Semanal
-                                </h6>
-
-                                <div class="accordion" id="accordionHorarios">
-                                    <div th:each="dia : ${diasSemana}" class="accordion-dia">
-                                        <div class="card">
-                                            <div class="card-header" th:id="'heading-' + ${dia}">
-                                                <button class="btn btn-link" type="button" data-toggle="collapse"
-                                                    th:attr="data-target='#collapse-' + ${dia}" aria-expanded="false">
-                                                    <span class="dia-icon"
-                                                        th:text="${#strings.substring(dia.toString(), 0, 2)}">L</span>
-                                                    <strong
-                                                        th:text="${#strings.capitalize(#strings.toLowerCase(dia.getDisplayName(T(java.time.format.TextStyle).FULL, localeEs)))}">Lunes</strong>
-                                                    <span class="badge badge-primary ml-2" th:id="'badge-' + ${dia}">Sin
-                                                        configurar</span>
-                                                </button>
+                                            <div class="form-group">
+                                                <label for="alergias">Alergias Conocidas</label>
+                                                <textarea class="form-control" th:field="*{alergias}" id="alergias"
+                                                    rows="3" placeholder="Ej: Penicilina, AINES..."></textarea>
                                             </div>
-                                            <div th:id="'collapse-' + ${dia}" class="collapse"
-                                                th:attr="aria-labelledby='heading-' + ${dia}"
-                                                data-parent="#accordionHorarios">
-                                                <div class="card-body">
-                                                    <!-- Selector visual -->
-                                                    <div th:id="'selector-' + ${dia}"></div>
 
-                                                    <!-- Preview del horario -->
-                                                    <div class="horario-preview mt-3">
-                                                        <strong>Horario configurado:</strong>
-                                                        <div th:id="'preview-' + ${dia}" class="mt-1">
-                                                            <em class="text-muted">Sin horario configurado</em>
+                                            <div class="form-group">
+                                                <label for="antecedentesMedicos">Antecedentes Médicos</label>
+                                                <textarea class="form-control" th:field="*{antecedentesMedicos}"
+                                                    id="antecedentesMedicos" rows="3"
+                                                    placeholder="Ej: Hipertensión, Diabetes..."></textarea>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="tratamientosActuales">Tratamientos Actuales</label>
+                                                <textarea class="form-control" th:field="*{tratamientosActuales}"
+                                                    id="tratamientosActuales" rows="3"
+                                                    placeholder="Medicamentos o tratamientos en curso..."></textarea>
+                                            </div>
+                                    </div>
+
+                                    <!-- SECCIÓN DE HORARIOS (Visible solo si se marca ODONTOLOGO) -->
+                                    <div id="seccionHorarios" style="display: none;">
+                                        <hr>
+                                        <h5 class="mt-4 mb-3 text-primary"><i
+                                                class="far fa-calendar-alt mr-2"></i>Horario
+                                            Laboral (Odont&oacute;logo)</h5>
+                                        <p class="text-muted small">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            Seleccione visualmente los bloques de horario haciendo click en ellos.
+                                            Puede usar los horarios predefinidos o seleccionar bloques individuales.
+                                        </p>
+
+                                        <!-- Acciones Rápidas -->
+                                        <div class="acciones-rapidas">
+                                            <button type="button" id="btnAplicarTodos" class="btn btn-info btn-sm">
+                                                <i class="fas fa-copy mr-2"></i>Aplicar horario del Lunes a todos los
+                                                días
+                                            </button>
+                                            <button type="button" id="btnAplicarLaborables"
+                                                class="btn btn-success btn-sm">
+                                                <i class="fas fa-business-time mr-2"></i>Aplicar solo a días laborables
+                                                (Ma-Vi)
+                                            </button>
+                                        </div>
+
+                                        <!-- Horario Regular con Selector Visual -->
+                                        <h6 class="mb-3">
+                                            <i class="fas fa-clock mr-2"></i>Horario Regular Semanal
+                                        </h6>
+
+                                        <div class="accordion" id="accordionHorarios">
+                                            <div th:each="dia : ${diasSemana}" class="accordion-dia">
+                                                <div class="card">
+                                                    <div class="card-header" th:id="'heading-' + ${dia}">
+                                                        <button class="btn btn-link" type="button"
+                                                            data-toggle="collapse"
+                                                            th:attr="data-target='#collapse-' + ${dia}"
+                                                            aria-expanded="false">
+                                                            <span class="dia-icon"
+                                                                th:text="${#strings.substring(dia.toString(), 0, 2)}">L</span>
+                                                            <strong
+                                                                th:text="${#strings.capitalize(#strings.toLowerCase(dia.getDisplayName(T(java.time.format.TextStyle).FULL, localeEs)))}">Lunes</strong>
+                                                            <span class="badge badge-primary ml-2"
+                                                                th:id="'badge-' + ${dia}">Sin
+                                                                configurar</span>
+                                                        </button>
+                                                    </div>
+                                                    <div th:id="'collapse-' + ${dia}" class="collapse"
+                                                        th:attr="aria-labelledby='heading-' + ${dia}"
+                                                        data-parent="#accordionHorarios">
+                                                        <div class="card-body">
+                                                            <!-- Selector visual -->
+                                                            <div th:id="'selector-' + ${dia}"></div>
+
+                                                            <!-- Preview del horario -->
+                                                            <div class="horario-preview mt-3">
+                                                                <strong>Horario configurado:</strong>
+                                                                <div th:id="'preview-' + ${dia}" class="mt-1">
+                                                                    <em class="text-muted">Sin horario configurado</em>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Input hidden para enviar el valor -->
+                                                            <input type="hidden"
+                                                                th:name="'horarioRegular[' + ${dia} + ']'"
+                                                                th:value="*{horarioRegular != null ? horarioRegular[__${dia}__] : ''}" />
                                                         </div>
                                                     </div>
-
-                                                    <!-- Input hidden para enviar el valor -->
-                                                    <input type="hidden" th:name="'horarioRegular[' + ${dia} + ']'"
-                                                        th:value="*{horarioRegular != null ? horarioRegular[__${dia}__] : ''}" />
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+
+                                        <div class="text-danger small mt-2"
+                                            th:if="${#fields.hasErrors('horarioRegular')}"
+                                            th:errors="*{horarioRegular}"></div>
+
+                                    </div> <!-- Fin #seccionHorarios -->
+
+                                </div> <!-- Fin .card-body -->
+
+                                <div class="card-footer">
+                                    <button type="submit" class="btn btn-primary"
+                                        data-loading-text="Guardando usuario..."><i class="fas fa-save mr-2"></i>Guardar
+                                        Usuario</button>
+                                    <a th:href="@{/usuarios}" class="btn btn-secondary">Cancelar</a>
                                 </div>
-
-                                <div class="text-danger small mt-2" th:if="${#fields.hasErrors('horarioRegular')}"
-                                    th:errors="*{horarioRegular}"></div>
-
-                            </div> <!-- Fin #seccionHorarios -->
-
-                        </div> <!-- Fin .card-body -->
-
-                        <div class="card-footer">
-                            <button type="submit" class="btn btn-primary" data-loading-text="Guardando usuario..."><i
-                                    class="fas fa-save mr-2"></i>Guardar
-                                Usuario</button>
-                            <a th:href="@{/usuarios}" class="btn btn-secondary">Cancelar</a>
-                        </div>
                     </form>
                 </div>
             </div>

@@ -44,25 +44,50 @@ public class DashboardController {
 
     @GetMapping("/paciente/dashboard")
     public String verDashboardPaciente(Model model) {
-        // Obtener el usuario autenticado
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+            System.out.println("🔍 DEBUG - Dashboard paciente: " + username);
+            Usuario usuario = usuarioRepository.findByEmail(username)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            // Obtener estadísticas con manejo de errores
+            Map<String, Object> estadisticas;
+            try {
+                estadisticas = pacienteDashboardService.obtenerEstadisticasPaciente(usuario.getId());
+            } catch (Exception e) {
+                System.err.println("❌ Error en estadísticas: " + e.getMessage());
+                e.printStackTrace();
 
-        // Buscar el usuario por email
-        Usuario usuario = usuarioRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                // Estadísticas vacías por defecto
+                estadisticas = new java.util.HashMap<>();
+                estadisticas.put("proximasCitas", java.util.List.of());
+                estadisticas.put("ultimaCita", null);
+                estadisticas.put("tratamientosEnCurso", java.util.List.of());
+                estadisticas.put("saldoPendiente", java.math.BigDecimal.ZERO);
+                estadisticas.put("citasCanceladas", 0L);
 
-        // Obtener estadísticas del paciente
-        Map<String, Object> estadisticas = pacienteDashboardService.obtenerEstadisticasPaciente(usuario.getId());
+                model.addAttribute("error", "Error al cargar estadísticas");
+            }
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("proximasCitas", estadisticas.get("proximasCitas"));
+            model.addAttribute("ultimaCita", estadisticas.get("ultimaCita"));
+            model.addAttribute("tratamientosEnCurso", estadisticas.get("tratamientosEnCurso"));
+            model.addAttribute("saldoPendiente", estadisticas.get("saldoPendiente"));
+            model.addAttribute("citasCanceladas", estadisticas.get("citasCanceladas"));
+            return "paciente/dashboard";
 
-        // Agregar al modelo
-        model.addAttribute("usuario", usuario);
-        model.addAttribute("proximasCitas", estadisticas.get("proximasCitas"));
-        model.addAttribute("ultimaCita", estadisticas.get("ultimaCita"));
-        model.addAttribute("tratamientosEnCurso", estadisticas.get("tratamientosEnCurso"));
-        model.addAttribute("saldoPendiente", estadisticas.get("saldoPendiente"));
-        model.addAttribute("citasCanceladas", estadisticas.get("citasCanceladas"));
+        } catch (Exception e) {
+            System.err.println("❌ ERROR CRÍTICO en dashboard: " + e.getMessage());
+            e.printStackTrace();
 
-        return "paciente/dashboard";
+            model.addAttribute("error", "Error al cargar el dashboard");
+            model.addAttribute("proximasCitas", java.util.List.of());
+            model.addAttribute("ultimaCita", null);
+            model.addAttribute("tratamientosEnCurso", java.util.List.of());
+            model.addAttribute("saldoPendiente", java.math.BigDecimal.ZERO);
+            model.addAttribute("citasCanceladas", 0L);
+
+            return "paciente/dashboard";
+        }
     }
 }

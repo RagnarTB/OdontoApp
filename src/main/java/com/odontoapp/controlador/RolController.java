@@ -60,6 +60,10 @@ public class RolController {
         model.addAttribute("paginaRoles", paginaRoles);
         model.addAttribute("keyword", keyword); // Mantener keyword original para mostrar en input de búsqueda
         model.addAttribute("mostrarEliminados", false);
+
+        // Pasar lista de roles protegidos al frontend para condicionar botones
+        model.addAttribute("rolesProtegidos", List.of(ROL_ADMIN, ROL_PACIENTE, ROL_ODONTOLOGO));
+
         return "modulos/roles/lista";
     }
 
@@ -122,6 +126,11 @@ public class RolController {
 
             model.addAttribute("rol", rolDTO);
             model.addAttribute("esRolSistema", rol.isEsRolSistema()); // Pasar info al formulario
+
+            // Identificar si es rol PACIENTE para deshabilitar permisos
+            boolean esRolPaciente = ROL_PACIENTE.equals(rol.getNombre());
+            model.addAttribute("esRolPaciente", esRolPaciente);
+
             cargarPermisos(model);
             return "modulos/roles/formulario";
         }
