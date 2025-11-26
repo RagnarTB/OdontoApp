@@ -69,7 +69,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/seleccionar-rol", "/seleccionar-rol/**").authenticated()
 
                                                 // PACIENTE: Portal exclusivo para pacientes
-                                                .requestMatchers("/paciente/**").hasAuthority("PACIENTE")
+                                                .requestMatchers("/paciente/**").hasRole("PACIENTE")
 
                                                 // Dashboard general: NO permitir a PACIENTE (usan /paciente/dashboard)
                                                 .requestMatchers("/", "/home", "/dashboard")
