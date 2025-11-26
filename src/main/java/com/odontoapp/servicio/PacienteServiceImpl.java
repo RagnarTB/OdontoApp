@@ -163,7 +163,7 @@ public class PacienteServiceImpl implements PacienteService {
                 .orElseThrow(() -> new IllegalStateException("Tipo de documento no encontrado."));
 
         if (esNuevo) {
-            // 🟢 CREACIÓN DE NUEVO PACIENTE + USUARIO INACTIVO ASOCIADO
+            // 🟢 CREACIÓN DE NUEVO PACIENTE + USUARIO ACTIVO (creado por admin)
             paciente = new Paciente();
             Rol rolPaciente = rolRepository.findByNombre("PACIENTE")
                     .orElseThrow(() -> new IllegalStateException("El rol 'PACIENTE' no se encuentra en el sistema."));
@@ -172,12 +172,12 @@ public class PacienteServiceImpl implements PacienteService {
             usuarioPaciente.setEmail(pacienteDTO.getEmail());
             usuarioPaciente.setNombreCompleto(pacienteDTO.getNombreCompleto());
             usuarioPaciente.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Pass temporal
-            usuarioPaciente.setEstaActivo(false); // Inactivo hasta que se active por email
+            usuarioPaciente.setEstaActivo(true); // ✅ ACTIVO inmediatamente (creado por admin)
             usuarioPaciente.setVerificationToken(UUID.randomUUID().toString());
             usuarioPaciente.setRoles(Set.of(rolPaciente));
 
             paciente.setUsuario(usuarioPaciente); // El save del paciente persistirá al usuario
-            enviarEmailActivacion = true; // Marcar para enviar email
+            enviarEmailActivacion = true; // Marcar para enviar email con enlace para establecer contraseña
 
         } else {
             // ✳️ EDICIÓN DE PACIENTE EXISTENTE
