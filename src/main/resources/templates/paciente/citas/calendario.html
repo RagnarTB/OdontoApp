@@ -225,52 +225,79 @@
 
     <!-- SCRIPTS ESPECÍFICOS DE LA PÁGINA -->
     <th:block th:fragment="page-scripts">
-        <!-- FullCalendar -->
-        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.8/locales/es.global.min.js"></script>
-
+        <script th:src="@{/adminlte/plugins/jquery/jquery.min.js}"></script>
+        <!-- Moment.js -->
+        <script th:src="@{/adminlte/plugins/moment/moment.min.js}"></script>
+        <!-- FullCalendar (versión local 5.x - igual que admin) -->
+        <link rel="stylesheet" th:href="@{/adminlte/plugins/fullcalendar/main.css}">
+        <script th:src="@{/adminlte/plugins/fullcalendar/main.js}"></script>
+        <script th:src="@{/adminlte/plugins/fullcalendar/locales-all.js}"></script>
         <!-- Script de horarios y wizard -->
         <script th:src="@{/js/horarios-citas.js}"></script>
-
         <script th:inline="javascript">
             window.addEventListener('DOMContentLoaded', function () {
                 // Variables globales
                 let calendar;
                 let citaActual = null;
-
                 // Inicializar calendario
                 inicializarCalendario();
-
                 // Event Listeners (reprogramar y cancelar - el wizard se encarga del agendar)
                 $('#reprogramarFecha').on('change', cargarHorariosReprogramacion);
                 $('#reprogramarHora').on('change', actualizarFechaHoraReprogramacion);
                 $('#btnReprogramar').on('click', abrirModalReprogramar);
                 $('#btnCancelar').on('click', abrirModalCancelar);
-
                 function inicializarCalendario() {
                     const calendarEl = document.getElementById('calendario');
-
+                    if (!calendarEl) {
+                        console.error('❌ No se encontró el elemento #calendario');
+                        return;
+                    }
+                    console.log('✅ Inicializando calendario del paciente...');
                     calendar = new FullCalendar.Calendar(calendarEl, {
-                        initialView: 'timeGridWeek',
                         locale: 'es',
+                        initialView: 'timeGridWeek',
                         headerToolbar: {
                             left: 'prev,next today',
                             center: 'title',
                             right: 'dayGridMonth,timeGridWeek,timeGridDay'
                         },
+                        buttonText: {
+                            today: 'Hoy',
+                            month: 'Mes',
+                            week: 'Semana',
+                            day: 'Día'
+                        },
                         slotMinTime: '08:00:00',
                         slotMaxTime: '20:00:00',
+                        slotDuration: '00:30:00',
                         allDaySlot: false,
                         height: 'auto',
+                        navLinks: true,
+                        editable: false,
+                        selectable: false,
                         events: function (info, successCallback, failureCallback) {
+                            console.log('📡 Cargando eventos del calendario...');
+                            console.log('   Rango:', info.startStr, 'a', info.endStr);
                             fetch('/paciente/citas/api/eventos?' + new URLSearchParams({
                                 start: info.startStr,
                                 end: info.endStr
                             }))
-                                .then(response => response.json())
-                                .then(data => successCallback(data))
+                                .then(response => {
+                                    console.log('   Status:', response.status);
+                                    if (!response.ok) {
+                                        throw new Error('Error HTTP: ' + response.status);
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    console.log('   ✅ Eventos recibidos:', data.length);
+                                    if (data.length > 0) {
+                                        console.log('   Primera cita:', data[0]);
+                                    }
+                                    successCallback(data);
+                                })
                                 .catch(error => {
-                                    console.error('Error al cargar eventos:', error);
+                                    console.error('   ❌ Error al cargar eventos:', error);
                                     failureCallback(error);
                                 });
                         },
@@ -278,15 +305,16 @@
                             mostrarDetalleCita(info.event);
                         },
                         eventDidMount: function (info) {
-                            // Marcar slots pasados
+                            // Marcar eventos pasados
                             const ahora = new Date();
                             if (info.event.start < ahora) {
                                 info.el.classList.add('evento-pasado');
+                                info.el.style.opacity = '0.6';
                             }
                         }
                     });
-
                     calendar.render();
+                    console.log('✅ Calendario renderizado');
                 }
 
                 function mostrarDetalleCita(event) {

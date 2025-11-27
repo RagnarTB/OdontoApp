@@ -477,6 +477,7 @@ public class PacienteCitaController {
         dto.setFechaHoraFin(cita.getFechaHoraFin());
         dto.setMotivoConsulta(cita.getMotivoConsulta());
         dto.setNotasInternas(cita.getNotasInternas());
+        dto.setEstadoCitaDescripcion(cita.getEstadoCita().getDescripcion());
 
         // Campos de solo lectura
         dto.setPacienteNombre(cita.getPaciente().getNombreCompleto());

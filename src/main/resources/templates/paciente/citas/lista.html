@@ -13,10 +13,16 @@
                         <p class="text-muted">Consulta todas tus citas pasadas y futuras</p>
                     </div>
                     <div class="col-sm-6">
+                        <button type="button" class="btn btn-success float-sm-right ml-2" data-toggle="modal"
+                            data-target="#modalAgendarCita">
+                            <i class="fas fa-plus-circle"></i> Agendar Nueva Cita
+                        </button>
                         <a th:href="@{/paciente/citas/calendario}" class="btn btn-primary float-sm-right">
                             <i class="fas fa-calendar"></i> Ver Calendario
                         </a>
                     </div>
+
+
                 </div>
             </div>
         </section>
@@ -120,7 +126,7 @@
                                     <td>
                                         <span th:text="${#temporals.format(cita.fechaHoraInicio, 'HH:mm')}">Hora</span>
                                     </td>
-                                    <td th:text="${cita.odontologo.nombreCompleto}">Doctor</td>
+                                    <td th:text="${cita.odontologoNombre}">Doctor</td>
                                     <td
                                         th:text="${cita.procedimientoNombre != null ? cita.procedimientoNombre : 'Consulta General'}">
                                         Procedimiento</td>
@@ -133,41 +139,40 @@
                                     </td>
                                     <td>
                                         <span class="badge" th:classappend="${
-                                              cita.estadoCita.nombre == 'PENDIENTE' ? 'badge-warning' :
-                                              cita.estadoCita.nombre == 'CONFIRMADA' ? 'badge-info' :
-                                              cita.estadoCita.nombre == 'ASISTIO' ? 'badge-success' :
-                                              cita.estadoCita.nombre == 'NO_ASISTIO' ? 'badge-danger' :
-                                              cita.estadoCita.nombre == 'REPROGRAMADA' ? 'badge-orange' :
-                                              'badge-secondary'
-                                          }" th:text="${cita.estadoCita.descripcion}">Estado</span>
+      cita.estadoCitaNombre == 'PENDIENTE' ? 'badge-warning' :
+      cita.estadoCitaNombre == 'CONFIRMADA' ? 'badge-info' :
+      cita.estadoCitaNombre == 'ASISTIO' ? 'badge-success' :
+      cita.estadoCitaNombre == 'NO_ASISTIO' ? 'badge-danger' :
+      cita.estadoCitaNombre == 'REPROGRAMADA' ? 'badge-orange' :
+      'badge-secondary'
+   }" th:text="${cita.estadoCitaNombre}">Estado</span>
                                     </td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-info btn-ver-detalle" th:data-cita-id="${cita.id}"
                                             th:data-fecha="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}"
-                                            th:data-odontologo="${cita.odontologo.nombreCompleto}"
-                                            th:data-procedimiento="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}"
-                                            th:data-duracion="${cita.procedimiento != null ? cita.procedimiento.duracionEstimada : 30}"
-                                            th:data-estado="${cita.estadoCita.descripcion}"
-                                            th:data-estado-nombre="${cita.estadoCita.nombre}"
+                                            th:data-odontologo="${cita.odontologoNombre}"
+                                            th:data-procedimiento="${cita.procedimientoNombre != null ? cita.procedimientoNombre : 'Consulta General'}"
+                                            th:data-duracion="${cita.duracionEstimadaMinutos != null ? cita.duracionEstimadaMinutos : 30}"
+                                            th:data-estado-nombre="${cita.estadoCitaNombre}"
                                             th:data-motivo="${cita.motivoConsulta}" title="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
 
                                         <!-- Botones solo para citas modificables -->
                                         <th:block
-                                            th:if="${cita.estadoCita.nombre == 'PENDIENTE' || cita.estadoCita.nombre == 'CONFIRMADA'}">
+                                            th:if="${cita.estadoCitaNombre == 'PENDIENTE' || cita.estadoCitaNombre == 'CONFIRMADA'}">
                                             <button class="btn btn-sm btn-warning btn-reprogramar"
                                                 th:data-cita-id="${cita.id}"
-                                                th:data-odontologo-id="${cita.odontologo.id}"
+                                                th:data-odontologo-id="${cita.odontologoUsuarioId}"
                                                 th:data-fecha="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}"
-                                                th:data-procedimiento="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}"
+                                                th:data-procedimiento="${cita.procedimientoNombre != null ? cita.procedimientoNombre : 'Consulta General'}"
                                                 title="Reprogramar">
                                                 <i class="fas fa-calendar"></i>
                                             </button>
                                             <button class="btn btn-sm btn-danger btn-cancelar"
                                                 th:data-cita-id="${cita.id}"
                                                 th:data-fecha="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}"
-                                                th:data-procedimiento="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}"
+                                                th:data-procedimiento="${cita.procedimientoNombre != null ? cita.procedimientoNombre : 'Consulta General'}"
                                                 title="Cancelar">
                                                 <i class="fas fa-ban"></i>
                                             </button>
