@@ -654,7 +654,7 @@ public class UsuarioController {
                 .stream()
                 .filter(Rol::isEstaActivo)
                 .collect(Collectors.toList());
-        model.addAttribute("listaRoles", rolesActivos);
+        model.addAttribute("roles", rolesActivos);
         model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll());
     }
 

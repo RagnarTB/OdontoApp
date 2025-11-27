@@ -13,22 +13,17 @@ import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-
 import com.odontoapp.seguridad.CustomAuthenticationSuccessHandler;
 import com.odontoapp.seguridad.CustomAuthenticationFailureHandler;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) // ✅ Habilitar seguridad a nivel de método
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
-
-        // Inyecta tus handlers personalizados
         @Autowired
         private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
-
         @Autowired
         private CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
-
         @Autowired
         private com.odontoapp.seguridad.CustomAccessDeniedHandler customAccessDeniedHandler;
 
@@ -58,20 +53,18 @@ public class SecurityConfig {
                                                                 "/recuperar-password/**", "/api/reniec",
                                                                 "/error/**")
                                                 .permitAll()
-
                                                 // API de permisos - solo para usuarios autenticados
                                                 .requestMatchers("/api/permisos/**").authenticated()
-
                                                 // Cambiar password obligatorio - todos autenticados
                                                 .requestMatchers("/cambiar-password-obligatorio").authenticated()
-
                                                 // Selector de rol - todos autenticados
                                                 .requestMatchers("/seleccionar-rol", "/seleccionar-rol/**")
                                                 .authenticated()
-
                                                 // PACIENTE: Portal exclusivo para pacientes
                                                 // ✅ CORREGIDO: Usar formato ACCION_MODULO que coincide con
                                                 // CustomUserDetailsService
+                                                // ✅ NUEVO: API de citas para pacientes (horarios disponibles, etc.)
+                                                .requestMatchers("/paciente/citas/api/**").authenticated()
                                                 .requestMatchers("/usuarios/cambiar-password").authenticated()
                                                 .requestMatchers("/paciente/**").hasAnyAuthority(
                                                                 "VER_MIS_CITAS_PANEL_PACIENTE",
@@ -82,11 +75,9 @@ public class SecurityConfig {
                                                                 "VER_MIS_TRATAMIENTOS_PANEL_PACIENTE",
                                                                 "VER_MI_ODONTOGRAMA_PANEL_PACIENTE",
                                                                 "VER_MIS_COMPROBANTES_PANEL_PACIENTE")
-
                                                 // Dashboard general: NO permitir a PACIENTE (usan /paciente/dashboard)
                                                 .requestMatchers("/", "/home", "/dashboard")
                                                 .hasAnyRole("ADMIN", "ODONTOLOGO", "RECEPCIONISTA", "ALMACEN")
-
                                                 // Los siguientes módulos usan @PreAuthorize con permisos granulares
                                                 // Solo requieren autenticación, el control de acceso se hace en los
                                                 // controllers
@@ -102,7 +93,6 @@ public class SecurityConfig {
                                                 .requestMatchers("/insumos/**", "/categorias-insumo/**",
                                                                 "/unidades-medida/**", "/movimientos-inventario/**")
                                                 .authenticated()
-
                                                 // Cualquier otra petición requiere autenticación
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form
@@ -123,7 +113,7 @@ public class SecurityConfig {
                                 .exceptionHandling(exception -> exception
                                                 .accessDeniedHandler(customAccessDeniedHandler))
                                 .sessionManagement(session -> session
-                                                .maximumSessions(-1) // Sin límite de sesiones concurrentes
+                                                .maximumSessions(-1)
                                                 .sessionRegistry(sessionRegistry()));
                 return http.build();
         }

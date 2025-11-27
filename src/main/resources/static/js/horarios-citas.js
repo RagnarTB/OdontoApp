@@ -86,7 +86,7 @@
 
         // Hacer petición al servidor
         $.ajax({
-            url: '/citas/api/horarios-disponibles',
+            url: '/paciente/citas/api/horarios-disponibles',
             method: 'GET',
             data: {
                 odontologoId: odontologoId,
@@ -429,7 +429,7 @@
         // Hacer petición al servidor (excluir cita actual)
         const citaIdActual = $('#reprogramarCitaId').val();
         $.ajax({
-            url: '/citas/api/horarios-disponibles',
+            url: '/paciente/citas/api/horarios-disponibles',
             method: 'GET',
             data: {
                 odontologoId: odontologoIdReprogramar,
