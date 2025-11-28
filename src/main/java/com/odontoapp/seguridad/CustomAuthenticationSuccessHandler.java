@@ -147,6 +147,12 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
                     .filter(role -> role.startsWith("ROLE_"))
                     .allMatch(role -> role.equals("ROLE_PACIENTE"));
             if (soloEsPaciente) {
+                // ✅ ESTABLECER rolActivo y totalRoles en sesión para que el sidebar funcione
+                HttpSession session = request.getSession();
+                session.setAttribute("rolActivo", "PACIENTE");
+                session.setAttribute("totalRoles", 1);
+                log.info("✅ Sesión configurada para paciente: rolActivo=PACIENTE, totalRoles=1");
+
                 String targetUrl = "/paciente/dashboard";
                 log.info("Usuario con SOLO rol PACIENTE detectado. Redirigiendo directamente a: {}", targetUrl);
                 try {

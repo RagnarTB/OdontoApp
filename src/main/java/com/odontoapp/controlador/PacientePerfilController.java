@@ -138,6 +138,10 @@ public class PacientePerfilController {
         // Crear DTO con datos editables
         PacienteDTO dto = new PacienteDTO();
         dto.setId(paciente.getId());
+        dto.setTipoDocumentoId(paciente.getTipoDocumento().getId());
+        dto.setNumeroDocumento(paciente.getNumeroDocumento());
+        dto.setNombreCompleto(paciente.getNombreCompleto());
+        dto.setFechaNacimiento(paciente.getFechaNacimiento());
         dto.setEmail(paciente.getEmail());
         dto.setTelefono(paciente.getTelefono());
         dto.setDireccion(paciente.getDireccion());
