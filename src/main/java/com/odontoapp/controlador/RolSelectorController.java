@@ -151,7 +151,10 @@ public class RolSelectorController {
 
     /**
      * Actualiza las authorities del usuario en el contexto de seguridad
-     * para reflejar solo el rol seleccionado (manteniendo permisos granulares)
+     * para reflejar SOLO el rol seleccionado y sus permisos.
+     *
+     * IMPORTANTE: El usuario SOLO tendrá acceso a las funciones del rol seleccionado.
+     * Para acceder a funciones de otro rol, debe cambiar explícitamente de rol.
      */
     private void actualizarAuthoritiesConRolSeleccionado(
             Authentication currentAuth,
@@ -160,7 +163,7 @@ public class RolSelectorController {
 
         List<GrantedAuthority> authorities = new ArrayList<>();
 
-        // Agregar el rol seleccionado
+        // Agregar SOLO el rol seleccionado (sin otros roles aunque el usuario los tenga)
         authorities.add(new SimpleGrantedAuthority("ROLE_" + rolSeleccionado.getNombre()));
 
         // Agregar todos los permisos asociados al rol seleccionado
@@ -169,13 +172,6 @@ public class RolSelectorController {
                 authorities.add(new SimpleGrantedAuthority(
                         permiso.getAccion() + "_" + permiso.getModulo()));
             });
-        }
-
-        // Si el usuario también es PACIENTE, mantener ese rol
-        boolean esPaciente = usuario.getRoles().stream()
-                .anyMatch(rol -> "PACIENTE".equals(rol.getNombre()));
-        if (esPaciente) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_PACIENTE"));
         }
 
         // Crear nueva autenticación con las authorities actualizadas
