@@ -33,7 +33,8 @@
                             <h5><i class="fas fa-user-circle"></i> Bienvenido/a,
                                 <span th:text="${usuario != null ? usuario.nombreCompleto : 'Paciente'}"></span>
                             </h5>
-                            <p>Desde aquí puedes gestionar tus citas, ver tu historial clínico y actualizar tus datos
+                            <p>Desde aquí puedes gestionar tus citas, ver tu historial clínico y actualizar tus
+                                datos
                                 personales.</p>
                         </div>
                     </div>
@@ -80,7 +81,8 @@
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-success">
                             <div class="inner">
-                                <h3 th:text="${tratamientosEnCurso != null ? #lists.size(tratamientosEnCurso) : 0}">0
+                                <h3 th:text="${tratamientosEnCurso != null ? #lists.size(tratamientosEnCurso) : 0}">
+                                    0
                                 </h3>
                                 <p>Tratamientos en Curso</p>
                             </div>
@@ -147,115 +149,17 @@
                                                     <span
                                                         th:text="${#temporals.format(cita.fechaHoraInicio, 'HH:mm')}">Hora</span>
                                                 </span>
-                                                <h3 class="timeline-header">
-                                                    <span
-                                                        th:text="${cita.procedimientoNombre != null ? cita.procedimientoNombre : 'Consulta General'}">Procedimiento</span>
-                                                </h3>
-                                                <div class="timeline-body">
-                                                    <strong>Odontólogo:</strong>
-                                                    <span th:text="${cita.odontologo.nombreCompleto}">Doctor</span><br>
-                                                    <strong>Estado:</strong>
-                                                    <span class="badge"
-                                                        th:classappend="${cita.estadoCita.nombre == 'CONFIRMADA' ? 'badge-success' : 'badge-warning'}"
-                                                        th:text="${cita.estadoCita.descripcion}">Estado</span>
-                                                    <br
-                                                        th:if="${cita.motivoConsulta != null && !cita.motivoConsulta.isEmpty()}">
-                                                    <strong
-                                                        th:if="${cita.motivoConsulta != null && !cita.motivoConsulta.isEmpty()}">Motivo:</strong>
-                                                    <span th:if="${cita.motivoConsulta != null}"
-                                                        th:text="${cita.motivoConsulta}">Motivo</span>
-                                                </div>
+                                                <strong
+                                                    th:if="${cita.motivoConsulta != null && !cita.motivoConsulta.isEmpty()}">Motivo:</strong>
+                                                <span th:if="${cita.motivoConsulta != null}"
+                                                    th:text="${cita.motivoConsulta}">Motivo</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="text-center mt-3">
-                                        <a th:href="@{/paciente/citas}" class="btn btn-sm btn-outline-primary">
-                                            Ver todas las citas <i class="fas fa-arrow-right"></i>
-                                        </a>
-                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Última Cita y Tratamientos -->
-                    <div class="col-md-6">
-                        <!-- Última Cita Realizada -->
-                        <div class="card card-success">
-                            <div class="card-header">
-                                <h3 class="card-title"><i class="fas fa-check-circle"></i> Última Cita Realizada</h3>
-                            </div>
-                            <div class="card-body">
-                                <div th:if="${ultimaCita == null}">
-                                    <p class="text-muted text-center">
-                                        <i class="fas fa-calendar-times fa-2x"></i><br>
-                                        No se encontraron citas realizadas
-                                    </p>
-                                </div>
-
-                                <div th:if="${ultimaCita != null}">
-                                    <dl class="row">
-                                        <dt class="col-sm-4">Fecha:</dt>
-                                        <dd class="col-sm-8"
-                                            th:text="${#temporals.format(ultimaCita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}">
-                                            Fecha</dd>
-
-                                        <dt class="col-sm-4">Procedimiento:</dt>
-                                        <dd class="col-sm-8"
-                                            th:text="${ultimaCita.procedimiento != null ? ultimaCita.procedimiento.nombre : 'Consulta General'}">
-                                            Procedimiento
-                                        </dd>
-
-                                        <dt class="col-sm-4">Odontólogo:</dt>
-                                        <dd class="col-sm-8" th:text="${ultimaCita.odontologo.nombreCompleto}">Doctor
-                                        </dd>
-                                    </dl>
-                                    <div class="text-center mt-2">
-                                        <a th:href="@{/paciente/perfil?tab=citas}"
-                                            class="btn btn-sm btn-outline-success">
-                                            Ver historial completo <i class="fas fa-arrow-right"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tratamientos en Curso -->
-                        <div class="card card-warning"
-                            th:if="${tratamientosEnCurso != null && !#lists.isEmpty(tratamientosEnCurso)}">
-                            <div class="card-header">
-                                <h3 class="card-title"><i class="fas fa-tooth"></i> Tratamientos en Curso</h3>
-                            </div>
-                            <div class="card-body p-0">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Tratamiento</th>
-                                            <th>Estado</th>
-                                            <th>Inicio</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr th:each="tratamiento : ${tratamientosEnCurso}">
-                                            <td
-                                                th:text="${tratamiento.procedimiento != null ? tratamiento.procedimiento.nombre : 'N/A'}">
-                                                Tratamiento</td>
-                                            <td>
-                                                <span class="badge badge-warning"
-                                                    th:if="${tratamiento.estado == 'PLANIFICADO'}">PLANIFICADO</span>
-                                                <span class="badge badge-info"
-                                                    th:if="${tratamiento.estado == 'EN_CURSO'}">EN CURSO</span>
-                                            </td>
-                                            <td
-                                                th:text="${tratamiento.fechaPlanificada != null ? #temporals.format(tratamiento.fechaPlanificada, 'dd/MM/yyyy') : 'N/A'}">
-                                                Fecha</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div class="card-footer text-center">
-                                    <a th:href="@{/paciente/perfil?tab=tratamientos}"
-                                        class="btn btn-sm btn-outline-warning">
-                                        Ver todos los tratamientos <i class="fas fa-arrow-right"></i>
+                                <div class="text-center mt-3">
+                                    <a th:href="@{/paciente/citas}" class="btn btn-sm btn-outline-primary">
+                                        Ver todas las citas <i class="fas fa-arrow-right"></i>
                                     </a>
                                 </div>
                             </div>
@@ -263,60 +167,145 @@
                     </div>
                 </div>
 
-                <!-- Accesos Rápidos -->
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card card-outline card-primary">
-                            <div class="card-header">
-                                <h3 class="card-title"><i class="fas fa-link"></i> Accesos Rápidos</h3>
+                <!-- Última Cita y Tratamientos -->
+                <div class="col-md-6">
+                    <!-- Última Cita Realizada -->
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-check-circle"></i> Última Cita Realizada
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div th:if="${ultimaCita == null}">
+                                <p class="text-muted text-center">
+                                    <i class="fas fa-calendar-times fa-2x"></i><br>
+                                    No se encontraron citas realizadas
+                                </p>
                             </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-3 col-sm-6 col-12">
-                                        <a th:href="@{/paciente/citas}" class="info-box bg-info">
-                                            <span class="info-box-icon"><i class="fas fa-calendar-plus"></i></span>
-                                            <div class="info-box-content">
-                                                <span class="info-box-text">Agendar</span>
-                                                <span class="info-box-number">Nueva Cita</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-md-3 col-sm-6 col-12">
-                                        <a th:href="@{/paciente/perfil}" class="info-box bg-success">
-                                            <span class="info-box-icon"><i class="fas fa-user-circle"></i></span>
-                                            <div class="info-box-content">
-                                                <span class="info-box-text">Ver</span>
-                                                <span class="info-box-number">Mi Perfil</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-md-3 col-sm-6 col-12">
-                                        <a th:href="@{/paciente/perfil/editar}" class="info-box bg-warning">
-                                            <span class="info-box-icon"><i class="fas fa-edit"></i></span>
-                                            <div class="info-box-content">
-                                                <span class="info-box-text">Actualizar</span>
-                                                <span class="info-box-number">Mis Datos</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-md-3 col-sm-6 col-12">
-                                        <a th:href="@{/paciente/perfil?tab=comprobantes}" class="info-box bg-danger">
-                                            <span class="info-box-icon"><i class="fas fa-file-invoice"></i></span>
-                                            <div class="info-box-content">
-                                                <span class="info-box-text">Ver</span>
-                                                <span class="info-box-number">Comprobantes</span>
-                                            </div>
-                                        </a>
-                                    </div>
+
+                            <div th:if="${ultimaCita != null}">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Fecha:</dt>
+                                    <dd class="col-sm-8"
+                                        th:text="${#temporals.format(ultimaCita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}">
+                                        Fecha</dd>
+
+                                    <dt class="col-sm-4">Procedimiento:</dt>
+                                    <dd class="col-sm-8"
+                                        th:text="${ultimaCita.procedimiento != null ? ultimaCita.procedimiento.nombre : 'Consulta General'}">
+                                        Procedimiento
+                                    </dd>
+
+                                    <dt class="col-sm-4">Odontólogo:</dt>
+                                    <dd class="col-sm-8" th:text="${ultimaCita.odontologo.nombreCompleto}">
+                                        Doctor
+                                    </dd>
+                                </dl>
+                                <div class="text-center mt-2">
+                                    <a th:href="@{/paciente/perfil?tab=citas}" class="btn btn-sm btn-outline-success">
+                                        Ver historial completo <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tratamientos en Curso -->
+                    <div class="card card-warning"
+                        th:if="${tratamientosEnCurso != null && !#lists.isEmpty(tratamientosEnCurso)}">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-tooth"></i> Tratamientos en Curso</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Tratamiento</th>
+                                        <th>Estado</th>
+                                        <th>Inicio</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="tratamiento : ${tratamientosEnCurso}">
+                                        <td
+                                            th:text="${tratamiento.procedimiento != null ? tratamiento.procedimiento.nombre : 'N/A'}">
+                                            Tratamiento</td>
+                                        <td>
+                                            <span class="badge badge-warning"
+                                                th:if="${tratamiento.estado == 'PLANIFICADO'}">PLANIFICADO</span>
+                                            <span class="badge badge-info"
+                                                th:if="${tratamiento.estado == 'EN_CURSO'}">EN CURSO</span>
+                                        </td>
+                                        <td
+                                            th:text="${tratamiento.fechaPlanificada != null ? #temporals.format(tratamiento.fechaPlanificada, 'dd/MM/yyyy') : 'N/A'}">
+                                            Fecha</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="card-footer text-center">
+                                <a th:href="@{/paciente/perfil?tab=tratamientos}"
+                                    class="btn btn-sm btn-outline-warning">
+                                    Ver todos los tratamientos <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accesos Rápidos -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-outline card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-link"></i> Accesos Rápidos</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3 col-sm-6 col-12">
+                                    <a th:href="@{/paciente/citas}" class="info-box bg-info">
+                                        <span class="info-box-icon"><i class="fas fa-calendar-plus"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Agendar</span>
+                                            <span class="info-box-number">Nueva Cita</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-3 col-sm-6 col-12">
+                                    <a th:href="@{/paciente/perfil}" class="info-box bg-success">
+                                        <span class="info-box-icon"><i class="fas fa-user-circle"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Ver</span>
+                                            <span class="info-box-number">Mi Perfil</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-3 col-sm-6 col-12">
+                                    <a th:href="@{/paciente/perfil/editar}" class="info-box bg-warning">
+                                        <span class="info-box-icon"><i class="fas fa-edit"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Actualizar</span>
+                                            <span class="info-box-number">Mis Datos</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-3 col-sm-6 col-12">
+                                    <a th:href="@{/paciente/perfil?tab=comprobantes}" class="info-box bg-danger">
+                                        <span class="info-box-icon"><i class="fas fa-file-invoice"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Ver</span>
+                                            <span class="info-box-number">Comprobantes</span>
+                                        </div>
+                                    </a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
-        </section>
+
     </div>
-</body>
+    </section>
+    </div>
 
 </html>

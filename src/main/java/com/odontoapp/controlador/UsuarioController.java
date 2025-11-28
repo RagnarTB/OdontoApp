@@ -655,7 +655,7 @@ public class UsuarioController {
                 .filter(Rol::isEstaActivo)
                 .filter(rol -> !"PACIENTE".equals(rol.getNombre())) // ✅ Filtrar PACIENTE del listado
                 .collect(Collectors.toList());
-        model.addAttribute("listaRoles", rolesActivos);
+        model.addAttribute("roles", rolesActivos);
         model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll());
     }
 

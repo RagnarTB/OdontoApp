@@ -13,9 +13,10 @@
                         <p class="text-muted">Consulta todas tus citas pasadas y futuras</p>
                     </div>
                     <div class="col-sm-6">
-                        <a th:href="@{/paciente/citas}" class="btn btn-primary float-sm-right">
-                            <i class="fas fa-calendar"></i> Ver Calendario
-                        </a>
+                        <button type="button" class="btn btn-success float-sm-right ml-2" data-toggle="modal"
+                            data-target="#modalAgendarCita">
+                            <i class="fas fa-plus-circle"></i> Agendar Nueva Cita
+                        </button>
                     </div>
                 </div>
             </div>
@@ -29,7 +30,7 @@
                         <h3 class="card-title"><i class="fas fa-filter"></i> Filtros de Búsqueda</h3>
                     </div>
                     <div class="card-body">
-                        <form th:action="@{/paciente/citas/lista}" method="get">
+                        <form th:action="@{/paciente/citas}" method="get">
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
@@ -70,7 +71,7 @@
                             </div>
                             <div class="row">
                                 <div class="col-12">
-                                    <a th:href="@{/paciente/citas/lista}" class="btn btn-sm btn-secondary">
+                                    <a th:href="@{/paciente/citas}" class="btn btn-sm btn-secondary">
                                         <i class="fas fa-times"></i> Limpiar Filtros
                                     </a>
                                 </div>
@@ -120,7 +121,7 @@
                                     <td>
                                         <span th:text="${#temporals.format(cita.fechaHoraInicio, 'HH:mm')}">Hora</span>
                                     </td>
-                                    <td th:text="${cita.odontologo.nombreCompleto}">Doctor</td>
+                                    <td th:text="${cita.odontologoNombre}">Doctor</td>
                                     <td
                                         th:text="${cita.procedimientoNombre != null ? cita.procedimientoNombre : 'Consulta General'}">
                                         Procedimiento</td>
@@ -133,41 +134,41 @@
                                     </td>
                                     <td>
                                         <span class="badge" th:classappend="${
-                                              cita.estadoCita.nombre == 'PENDIENTE' ? 'badge-warning' :
-                                              cita.estadoCita.nombre == 'CONFIRMADA' ? 'badge-info' :
-                                              cita.estadoCita.nombre == 'ASISTIO' ? 'badge-success' :
-                                              cita.estadoCita.nombre == 'NO_ASISTIO' ? 'badge-danger' :
-                                              cita.estadoCita.nombre == 'REPROGRAMADA' ? 'badge-orange' :
-                                              'badge-secondary'
-                                          }" th:text="${cita.estadoCita.descripcion}">Estado</span>
+      cita.estadoCitaNombre == 'PENDIENTE' ? 'badge-warning' :
+      cita.estadoCitaNombre == 'CONFIRMADA' ? 'badge-info' :
+      cita.estadoCitaNombre == 'ASISTIO' ? 'badge-success' :
+      cita.estadoCitaNombre == 'NO_ASISTIO' ? 'badge-danger' :
+      cita.estadoCitaNombre == 'REPROGRAMADA' ? 'badge-orange' :
+      'badge-secondary'
+   }" th:text="${cita.estadoCitaNombre}">Estado</span>
                                     </td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-info btn-ver-detalle" th:data-cita-id="${cita.id}"
                                             th:data-fecha="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}"
-                                            th:data-odontologo="${cita.odontologo.nombreCompleto}"
-                                            th:data-procedimiento="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}"
-                                            th:data-duracion="${cita.procedimiento != null ? cita.procedimiento.duracionEstimada : 30}"
-                                            th:data-estado="${cita.estadoCita.descripcion}"
-                                            th:data-estado-nombre="${cita.estadoCita.nombre}"
+                                            th:data-odontologo="${cita.odontologoNombre}"
+                                            th:data-procedimiento="${cita.procedimientoNombre != null ? cita.procedimientoNombre : 'Consulta General'}"
+                                            th:data-duracion="${cita.duracionEstimadaMinutos != null ? cita.duracionEstimadaMinutos : 30}"
+                                            th:data-estado-nombre="${cita.estadoCitaNombre}"
+                                            th:data-estado="${cita.estadoCitaDescripcion}"
                                             th:data-motivo="${cita.motivoConsulta}" title="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
 
                                         <!-- Botones solo para citas modificables -->
                                         <th:block
-                                            th:if="${cita.estadoCita.nombre == 'PENDIENTE' || cita.estadoCita.nombre == 'CONFIRMADA'}">
+                                            th:if="${cita.estadoCitaNombre == 'PENDIENTE' || cita.estadoCitaNombre == 'CONFIRMADA'}">
                                             <button class="btn btn-sm btn-warning btn-reprogramar"
                                                 th:data-cita-id="${cita.id}"
-                                                th:data-odontologo-id="${cita.odontologo.id}"
+                                                th:data-odontologo-id="${cita.odontologoUsuarioId}"
                                                 th:data-fecha="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}"
-                                                th:data-procedimiento="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}"
+                                                th:data-procedimiento="${cita.procedimientoNombre != null ? cita.procedimientoNombre : 'Consulta General'}"
                                                 title="Reprogramar">
                                                 <i class="fas fa-calendar"></i>
                                             </button>
                                             <button class="btn btn-sm btn-danger btn-cancelar"
                                                 th:data-cita-id="${cita.id}"
                                                 th:data-fecha="${#temporals.format(cita.fechaHoraInicio, 'dd/MM/yyyy HH:mm')}"
-                                                th:data-procedimiento="${cita.procedimiento != null ? cita.procedimiento.nombre : 'Consulta General'}"
+                                                th:data-procedimiento="${cita.procedimientoNombre != null ? cita.procedimientoNombre : 'Consulta General'}"
                                                 title="Cancelar">
                                                 <i class="fas fa-ban"></i>
                                             </button>
@@ -195,7 +196,7 @@
                                     <!-- Primera página -->
                                     <li class="page-item" th:classappend="${paginaCitas.first ? 'disabled' : ''}">
                                         <a class="page-link"
-                                            th:href="@{/paciente/citas/lista(page=0, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                            th:href="@{/paciente/citas(page=0, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
                                             &laquo;
                                         </a>
                                     </li>
@@ -204,7 +205,7 @@
                                     <li class="page-item"
                                         th:classappend="${!paginaCitas.hasPrevious() ? 'disabled' : ''}">
                                         <a class="page-link"
-                                            th:href="@{/paciente/citas/lista(page=${paginaCitas.number - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                            th:href="@{/paciente/citas(page=${paginaCitas.number - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
                                             &lsaquo;
                                         </a>
                                     </li>
@@ -215,14 +216,14 @@
                                         th:if="${pageNum >= (paginaCitas.number - 2) && pageNum <= (paginaCitas.number + 2)}"
                                         th:classappend="${pageNum == paginaCitas.number ? 'active' : ''}">
                                         <a class="page-link"
-                                            th:href="@{/paciente/citas/lista(page=${pageNum}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}"
+                                            th:href="@{/paciente/citas(page=${pageNum}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}"
                                             th:text="${pageNum + 1}">1</a>
                                     </li>
 
                                     <!-- Página siguiente -->
                                     <li class="page-item" th:classappend="${!paginaCitas.hasNext() ? 'disabled' : ''}">
                                         <a class="page-link"
-                                            th:href="@{/paciente/citas/lista(page=${paginaCitas.number + 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                            th:href="@{/paciente/citas(page=${paginaCitas.number + 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
                                             &rsaquo;
                                         </a>
                                     </li>
@@ -230,7 +231,7 @@
                                     <!-- Última página -->
                                     <li class="page-item" th:classappend="${paginaCitas.last ? 'disabled' : ''}">
                                         <a class="page-link"
-                                            th:href="@{/paciente/citas/lista(page=${paginaCitas.totalPages - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                            th:href="@{/paciente/citas(page=${paginaCitas.totalPages - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
                                             &raquo;
                                         </a>
                                     </li>
@@ -242,6 +243,7 @@
 
             </div>
         </section>
+        <div th:replace="~{paciente/citas/fragmentos :: modalAgendarCita}"></div>
 
         <!-- MODAL: Detalle de Cita -->
         <div class="modal fade" id="modalDetalle" tabindex="-1" role="dialog">
@@ -296,42 +298,72 @@
                                 <i class="fas fa-exclamation-triangle"></i>
                                 La cita reprogramada deberá ser confirmada nuevamente por el personal de la clínica.
                             </div>
-
                             <input type="hidden" name="citaId" id="reprogramarCitaId">
-                            <input type="hidden" name="odontologoUsuarioId" id="reprogramarOdontologoId">
-
+                            <!-- Cita Actual -->
                             <div class="form-group">
-                                <label>Cita Actual:</label>
+                                <label>Cita Actual</label>
                                 <p id="reprogramarCitaActual" class="form-control-plaintext font-weight-bold"></p>
                             </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="reprogramarFecha">Nueva Fecha <span
-                                                class="text-danger">*</span></label>
-                                        <input type="date" name="fecha" id="reprogramarFecha" class="form-control"
-                                            required>
-                                    </div>
+                            <!-- Selector de Odontólogo -->
+                            <div class="form-group">
+                                <label for="reprogramarOdontologoId">Odontólogo <span
+                                        class="text-danger">*</span></label>
+                                <select name="odontologoUsuarioId" id="reprogramarOdontologoId"
+                                    class="form-control select2" required>
+                                    <option value="">Seleccione un odontólogo</option>
+                                    <option th:each="odontologo : ${listaOdontologos}" th:value="${odontologo.id}"
+                                        th:text="${odontologo.nombreCompleto}">
+                                        Odontólogo
+                                    </option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> Puede elegir un odontólogo diferente para la
+                                    reprogramación
+                                </small>
+                            </div>
+                            <!-- Nueva Fecha -->
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h5 class="card-title mb-0">Nueva Fecha</h5>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="card-body">
+                                    <!-- Selector de Fecha -->
                                     <div class="form-group">
-                                        <label for="reprogramarHora">Nueva Hora <span
-                                                class="text-danger">*</span></label>
-                                        <select name="hora" id="reprogramarHora" class="form-control" required disabled>
-                                            <option value="">Seleccione fecha primero</option>
-                                        </select>
+                                        <label for="reprogramarFecha">Fecha <span class="text-danger">*</span></label>
+                                        <input type="date" id="reprogramarFecha" name="fecha" class="form-control"
+                                            required>
+                                        <small class="form-text text-muted">
+                                            <i class="fas fa-calendar"></i> Seleccione para ver horarios (no se
+                                            permiten
+                                            fechas pasadas)
+                                        </small>
                                     </div>
+                                    <!-- Motivo -->
+                                    <div class="form-group">
+                                        <label for="reprogramarMotivo">Motivo (Opcional)</label>
+                                        <textarea id="reprogramarMotivo" name="motivo" class="form-control" rows="2"
+                                            placeholder="Indique el motivo"></textarea>
+                                    </div>
+                                    <!-- Horarios Disponibles -->
+                                    <div class="form-group">
+                                        <label>Horarios Disponibles</label>
+                                        <div id="reprogramarSelectorHorarios"
+                                            class="text-center text-muted p-3 border rounded">
+                                            <i class="fas fa-calendar-day fa-2x mb-2"></i>
+                                            <p>Seleccione una fecha para ver los horarios</p>
+                                        </div>
+                                    </div>
+                                    <!-- Campos ocultos -->
+                                    <input type="hidden" id="reprogramarHoraSeleccionada" name="hora">
+                                    <input type="hidden" id="reprogramarNuevaFechaHora" name="nuevaFechaHoraInicio">
                                 </div>
                             </div>
-
-                            <input type="hidden" name="nuevaFechaHoraInicio" id="reprogramarNuevaFechaHora">
-                            <input type="hidden" name="motivo" value="Reprogramado por el paciente">
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-warning"><i class="fas fa-save"></i>
-                                Reprogramar</button>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> Reprogramar
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -384,6 +416,9 @@
             }
         </style>
 
+    </div>
+
+    <div id="lista-scripts">
         <script th:inline="javascript">
             $(document).ready(function () {
                 // Event Listeners
@@ -414,7 +449,7 @@
                     $('#modalCancelar').modal('show');
                 });
 
-                // Cargar horarios disponibles al cambiar fecha
+                // Reprogramar: Cargar horarios cuando se selecciona fecha
                 $('#reprogramarFecha').on('change', function () {
                     const fecha = $(this).val();
                     const odontologoId = $('#reprogramarOdontologoId').val();
@@ -422,30 +457,50 @@
 
                     if (!fecha || !odontologoId) return;
 
-                    fetch('/paciente/citas/api/horarios-disponibles?' + new URLSearchParams({
-                        odontologoId: odontologoId,
-                        fecha: fecha,
-                        duracion: 30,
-                        citaIdExcluir: citaId
-                    }))
+                    // Mostrar loading
+                    $('#reprogramarSelectorHorarios').html('<p class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando horarios...</p>').show();
+
+                    // Cargar horarios disponibles
+                    fetch(`/paciente/citas/api/horarios-disponibles?odontologoId=${odontologoId}&fecha=${fecha}&duracion=30&citaIdExcluir=${citaId}`)
                         .then(response => response.json())
                         .then(data => {
-                            const select = $('#reprogramarHora');
-                            select.empty();
-
                             if (!data.disponible || !data.horariosDisponibles || data.horariosDisponibles.length === 0) {
-                                select.append('<option value="">No hay horarios disponibles</option>');
-                                select.prop('disabled', true);
+                                $('#reprogramarSelectorHorarios').html('<p class="text-danger">No hay horarios disponibles para esta fecha</p>');
                                 return;
                             }
 
-                            select.append('<option value="">Seleccione un horario...</option>');
+                            // Generar grilla de horarios
+                            let html = '<div class="horarios-grid">';
                             data.horariosDisponibles.forEach(slot => {
-                                if (slot.disponible) {
-                                    select.append(`<option value="${slot.inicio}">${slot.inicio} - ${slot.fin}</option>`);
-                                }
+                                const disponibleClass = slot.disponible ? 'disponible' : 'ocupado';
+                                const disabled = slot.disponible ? '' : 'disabled';
+                                html += `
+                    <button type="button" 
+                            class="horario-slot ${disponibleClass}" 
+                            data-hora="${slot.inicio}"
+                            ${disabled}>
+                        ${slot.inicio}
+                    </button>
+                `;
                             });
-                            select.prop('disabled', false);
+                            html += '</div>';
+
+                            $('#reprogramarHorariosGrid').html(html);
+                            $('#reprogramarSelectorHorarios').show();
+
+                            // Event listener para seleccionar hora
+                            $('.horario-slot.disponible').on('click', function () {
+                                $('.horario-slot').removeClass('seleccionado');
+                                $(this).addClass('seleccionado');
+
+                                const horaSeleccionada = $(this).data('hora');
+                                $('#reprogramarHoraSeleccionada').val(horaSeleccionada);
+                                $('#reprogramarNuevaFechaHora').val(fecha + 'T' + horaSeleccionada);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error al cargar horarios:', error);
+                            $('#reprogramarSelectorHorarios').html('<p class="text-danger">Error al cargar horarios</p>');
                         });
                 });
 
@@ -474,8 +529,6 @@
             });
         </script>
 
-    </div>
-    <div id="lista-scripts">
         <script>
             // Activar tooltips de Bootstrap
             $(function () {

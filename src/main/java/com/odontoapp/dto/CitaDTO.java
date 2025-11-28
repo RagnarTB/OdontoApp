@@ -56,4 +56,6 @@ public class CitaDTO {
     private String motivoCancelacion;
 
     private BigDecimal precioBase;
+
+    private String estadoCitaDescripcion;
 }
