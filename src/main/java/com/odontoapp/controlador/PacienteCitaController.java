@@ -106,12 +106,24 @@ public class PacienteCitaController {
             // Cargar listas para los filtros
             var listaEstados = estadoCitaRepository.findAll();
 
+            // Cargar datos para el modal de agendar cita
+            var todosOdontologos = usuarioRepository.findActiveByRolesNombre("ODONTOLOGO");
+            var listaOdontologos = todosOdontologos.stream()
+                    .filter(odontologo -> !odontologo.getId().equals(usuario.getId()))
+                    .collect(Collectors.toList());
+            var listaProcedimientos = procedimientoRepository.findAllWithRelations();
+
             // Añadir al modelo
-            model.addAttribute("paginaCitas", paginaCitasDTO); // ← Ahora es CitaDTO
+            model.addAttribute("paginaCitas", paginaCitasDTO);
             model.addAttribute("listaEstados", listaEstados);
             model.addAttribute("estadoIdFiltro", estadoId);
             model.addAttribute("fechaDesdeFiltro", fechaDesde);
             model.addAttribute("fechaHastaFiltro", fechaHasta);
+
+            // Datos para modal de agendar
+            model.addAttribute("listaOdontologos", listaOdontologos);
+            model.addAttribute("listaProcedimientos", listaProcedimientos);
+            model.addAttribute("citaDTO", new CitaDTO());
 
             return "paciente/citas/lista";
 
@@ -121,58 +133,11 @@ public class PacienteCitaController {
 
             model.addAttribute("paginaCitas", Page.empty());
             model.addAttribute("listaEstados", List.of());
+            model.addAttribute("listaOdontologos", List.of());
+            model.addAttribute("listaProcedimientos", List.of());
             model.addAttribute("error", "Error al cargar las citas. Por favor, intente nuevamente.");
 
             return "paciente/citas/lista";
-        }
-    }
-
-    /**
-     * Vista secundaria: Calendario de citas del paciente
-     * URL: /paciente/citas/calendario
-     */
-    @GetMapping("/calendario")
-    public String verCalendario(Model model) {
-        try {
-            // Obtener usuario autenticado
-            Usuario usuarioActual = obtenerUsuarioAutenticado();
-            System.out.println("🔍 DEBUG - Cargando calendario del paciente:");
-            System.out.println("   - Usuario ID: " + usuarioActual.getId());
-            // Buscar usuarios ACTIVOS con rol ODONTOLOGO
-            var todosOdontologos = usuarioRepository.findActiveByRolesNombre("ODONTOLOGO");
-            // FILTRAR: Excluir al usuario actual si tiene rol ODONTOLOGO
-            // Un odontólogo no debe poder agendarse citas a sí mismo como paciente
-            var listaOdontologos = todosOdontologos.stream()
-                    .filter(odontologo -> !odontologo.getId().equals(usuarioActual.getId()))
-                    .collect(Collectors.toList());
-            System.out.println("   - Total odontólogos: " + todosOdontologos.size());
-            System.out.println("   - Odontólogos disponibles: " + listaOdontologos.size());
-            // Buscar procedimientos con relaciones cargadas
-            var listaProcedimientos = procedimientoRepository.findAllWithRelations();
-
-            // Buscar todos los estados de cita (para mostrar la leyenda)
-            var listaEstadosCita = estadoCitaRepository.findAll();
-
-            // Añadir al modelo
-            model.addAttribute("listaOdontologos", listaOdontologos);
-            model.addAttribute("listaProcedimientos", listaProcedimientos);
-            model.addAttribute("listaEstadosCita", listaEstadosCita);
-            model.addAttribute("citaDTO", new CitaDTO());
-
-            return "paciente/citas/calendario";
-
-        } catch (Exception e) {
-            System.err.println("❌ Error al cargar calendario: " + e.getMessage());
-            e.printStackTrace();
-
-            // Inicializar listas vacías para evitar errores en la vista
-            model.addAttribute("listaOdontologos", List.of());
-            model.addAttribute("listaProcedimientos", List.of());
-            model.addAttribute("listaEstadosCita", List.of());
-            model.addAttribute("citaDTO", new CitaDTO());
-            model.addAttribute("error", "Error al cargar el calendario.");
-
-            return "paciente/citas/calendario";
         }
     }
 

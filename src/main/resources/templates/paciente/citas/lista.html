@@ -17,9 +17,6 @@
                             data-target="#modalAgendarCita">
                             <i class="fas fa-plus-circle"></i> Agendar Nueva Cita
                         </button>
-                        <a th:href="@{/paciente/citas/calendario}" class="btn btn-primary float-sm-right">
-                            <i class="fas fa-calendar"></i> Ver Calendario
-                        </a>
                     </div>
 
 
@@ -35,7 +32,7 @@
                         <h3 class="card-title"><i class="fas fa-filter"></i> Filtros de Búsqueda</h3>
                     </div>
                     <div class="card-body">
-                        <form th:action="@{/paciente/citas/lista}" method="get">
+                        <form th:action="@{/paciente/citas}" method="get">
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
@@ -76,7 +73,7 @@
                             </div>
                             <div class="row">
                                 <div class="col-12">
-                                    <a th:href="@{/paciente/citas/lista}" class="btn btn-sm btn-secondary">
+                                    <a th:href="@{/paciente/citas}" class="btn btn-sm btn-secondary">
                                         <i class="fas fa-times"></i> Limpiar Filtros
                                     </a>
                                 </div>
@@ -200,7 +197,7 @@
                                     <!-- Primera página -->
                                     <li class="page-item" th:classappend="${paginaCitas.first ? 'disabled' : ''}">
                                         <a class="page-link"
-                                            th:href="@{/paciente/citas/lista(page=0, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                            th:href="@{/paciente/citas(page=0, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
                                             &laquo;
                                         </a>
                                     </li>
@@ -209,7 +206,7 @@
                                     <li class="page-item"
                                         th:classappend="${!paginaCitas.hasPrevious() ? 'disabled' : ''}">
                                         <a class="page-link"
-                                            th:href="@{/paciente/citas/lista(page=${paginaCitas.number - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                            th:href="@{/paciente/citas(page=${paginaCitas.number - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
                                             &lsaquo;
                                         </a>
                                     </li>
@@ -220,14 +217,14 @@
                                         th:if="${pageNum >= (paginaCitas.number - 2) && pageNum <= (paginaCitas.number + 2)}"
                                         th:classappend="${pageNum == paginaCitas.number ? 'active' : ''}">
                                         <a class="page-link"
-                                            th:href="@{/paciente/citas/lista(page=${pageNum}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}"
+                                            th:href="@{/paciente/citas(page=${pageNum}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}"
                                             th:text="${pageNum + 1}">1</a>
                                     </li>
 
                                     <!-- Página siguiente -->
                                     <li class="page-item" th:classappend="${!paginaCitas.hasNext() ? 'disabled' : ''}">
                                         <a class="page-link"
-                                            th:href="@{/paciente/citas/lista(page=${paginaCitas.number + 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                            th:href="@{/paciente/citas(page=${paginaCitas.number + 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
                                             &rsaquo;
                                         </a>
                                     </li>
@@ -235,7 +232,7 @@
                                     <!-- Última página -->
                                     <li class="page-item" th:classappend="${paginaCitas.last ? 'disabled' : ''}">
                                         <a class="page-link"
-                                            th:href="@{/paciente/citas/lista(page=${paginaCitas.totalPages - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
+                                            th:href="@{/paciente/citas(page=${paginaCitas.totalPages - 1}, size=${paginaCitas.size}, estadoId=${estadoIdFiltro}, fechaDesde=${fechaDesdeFiltro}, fechaHasta=${fechaHastaFiltro})}">
                                             &raquo;
                                         </a>
                                     </li>
@@ -247,6 +244,7 @@
 
             </div>
         </section>
+        <div th:replace="~{paciente/citas/fragmentos :: modalAgendarCita}"></div>
 
         <!-- MODAL: Detalle de Cita -->
         <div class="modal fade" id="modalDetalle" tabindex="-1" role="dialog">
