@@ -152,7 +152,11 @@
                     <p class="text-muted">Paciente: <strong th:text="${paciente.nombreCompleto}">Juan Pérez</strong></p>
                 </div>
                 <div class="col-sm-6">
-                    <a th:href="@{/pacientes/historial/{id}(id=${pacienteId})}" class="btn btn-secondary float-right ml-2">
+                    <!-- Botón condicional: si es solo lectura (paciente), volver a su perfil; si no, volver al historial -->
+                    <a th:if="${soloLectura}" th:href="@{/paciente/perfil?tab=odontograma}" class="btn btn-secondary float-right ml-2">
+                        <i class="fas fa-arrow-left mr-2"></i>Volver a Mi Perfil
+                    </a>
+                    <a th:unless="${soloLectura}" th:href="@{/pacientes/historial/{id}(id=${pacienteId})}" class="btn btn-secondary float-right ml-2">
                         <i class="fas fa-arrow-left mr-2"></i>Volver al Historial
                     </a>
                 </div>
@@ -162,6 +166,13 @@
 
     <section class="content">
         <div class="container-fluid">
+
+            <!-- Mensaje de modo solo lectura para pacientes -->
+            <div th:if="${soloLectura}" class="alert alert-info alert-dismissible fade show">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <h5><i class="icon fas fa-info"></i> Modo Solo Lectura</h5>
+                Estás visualizando tu odontograma. Solo el personal clínico puede realizar modificaciones.
+            </div>
 
             <!-- Estadísticas -->
             <div class="row">
@@ -414,6 +425,7 @@
 
         const pacienteId = /*[[${pacienteId}]]*/ 0;
         let dientesData = /*[[${dientes}]]*/ [];
+        const soloLectura = /*[[${soloLectura}]]*/ false; // ✅ Modo solo lectura para pacientes
 
         const NOMBRES_DIENTES = {
             '1': 'Incisivo Central',
@@ -480,7 +492,13 @@
             div.className = 'diente';
             div.setAttribute('data-estado', diente.estado);
             div.setAttribute('data-numero', diente.numeroDiente);
-            div.onclick = () => abrirModalEdicion(diente);
+
+            // Solo permitir edición si NO es modo solo lectura
+            if (!soloLectura) {
+                div.onclick = () => abrirModalEdicion(diente);
+            } else {
+                div.style.cursor = 'default'; // Cambiar cursor para indicar que no es clickeable
+            }
 
             const numero = document.createElement('div');
             numero.className = 'numero';

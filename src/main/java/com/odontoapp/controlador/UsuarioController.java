@@ -254,7 +254,7 @@ public class UsuarioController {
             }
 
             model.addAttribute("usuario", usuarioDTO);
-            cargarRolesYTiposDoc(model);
+            cargarRolesYTiposDoc(model, true); // ✅ Incluir PACIENTE en edición
             model.addAttribute("diasSemana", DIAS_SEMANA_ORDENADOS); // <-- Añadir lista al modelo
             model.addAttribute("localeEs", new Locale("es", "ES")); // <-- Locale para nombres de días
             return "modulos/usuarios/formulario";
@@ -649,14 +649,28 @@ public class UsuarioController {
     }
 
     // --- MÉTODO HELPER REFACTORIZADO ---
-    private void cargarRolesYTiposDoc(Model model) {
+    /**
+     * Carga los roles activos y tipos de documento al modelo.
+     * @param model El modelo de Spring MVC
+     * @param incluirPaciente Si es true, incluye el rol PACIENTE en la lista (para editar).
+     *                        Si es false, lo excluye (para crear nuevo usuario).
+     */
+    private void cargarRolesYTiposDoc(Model model, boolean incluirPaciente) {
         List<Rol> rolesActivos = rolRepository.findAll()
                 .stream()
                 .filter(Rol::isEstaActivo)
-                .filter(rol -> !"PACIENTE".equals(rol.getNombre())) // ✅ Filtrar PACIENTE del listado
+                .filter(rol -> incluirPaciente || !"PACIENTE".equals(rol.getNombre())) // Filtrar PACIENTE solo si incluirPaciente es false
                 .collect(Collectors.toList());
         model.addAttribute("roles", rolesActivos);
         model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll());
+    }
+
+    /**
+     * Versión sin parámetro para mantener compatibilidad.
+     * Por defecto NO incluye PACIENTE (comportamiento para crear nuevo).
+     */
+    private void cargarRolesYTiposDoc(Model model) {
+        cargarRolesYTiposDoc(model, false);
     }
 
     @GetMapping("/api/pacientes-activos")
