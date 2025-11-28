@@ -12,6 +12,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.odontoapp.entidad.Usuario;
 import com.odontoapp.repositorio.UsuarioRepository;
 import com.odontoapp.util.PasswordUtil;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/usuarios/cambiar-password")
@@ -39,6 +40,7 @@ public class CambioPasswordVoluntarioController {
             @RequestParam("passwordActual") String passwordActual,
             @RequestParam("nuevaPassword") String nuevaPassword,
             @RequestParam("confirmarPassword") String confirmarPassword,
+            HttpSession session,
             RedirectAttributes redirectAttributes,
             Model model) {
         String username = authentication.getName();
@@ -78,7 +80,17 @@ public class CambioPasswordVoluntarioController {
         redirectAttributes.addFlashAttribute("success", "¡Contraseña actualizada correctamente!");
 
         // Redirigir según el rol activo
-        String rolActivo = (String) authentication.getPrincipal();
+        // Primero verificar si hay un rol activo en sesión (usuarios con múltiples roles)
+        String rolActivo = (String) session.getAttribute("rolActivo");
+
+        // Si no hay rol en sesión, verificar las authorities del usuario
+        if (rolActivo == null) {
+            boolean esPaciente = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_PACIENTE"));
+            rolActivo = esPaciente ? "PACIENTE" : null;
+        }
+
+        // Redirigir según el rol
         if ("PACIENTE".equals(rolActivo)) {
             return "redirect:/paciente/perfil";
         }
