@@ -18,8 +18,6 @@
                             <i class="fas fa-plus-circle"></i> Agendar Nueva Cita
                         </button>
                     </div>
-
-
                 </div>
             </div>
         </section>
@@ -151,6 +149,7 @@
                                             th:data-procedimiento="${cita.procedimientoNombre != null ? cita.procedimientoNombre : 'Consulta General'}"
                                             th:data-duracion="${cita.duracionEstimadaMinutos != null ? cita.duracionEstimadaMinutos : 30}"
                                             th:data-estado-nombre="${cita.estadoCitaNombre}"
+                                            th:data-estado="${cita.estadoCitaDescripcion}"
                                             th:data-motivo="${cita.motivoConsulta}" title="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
@@ -299,43 +298,56 @@
                                 <i class="fas fa-exclamation-triangle"></i>
                                 La cita reprogramada deberá ser confirmada nuevamente por el personal de la clínica.
                             </div>
-
                             <input type="hidden" name="citaId" id="reprogramarCitaId">
-                            <input type="hidden" name="odontologoUsuarioId" id="reprogramarOdontologoId">
-
+                            <!-- Cita Actual -->
                             <div class="form-group">
-                                <label>Cita Actual:</label>
+                                <label>Cita Actual</label>
                                 <p id="reprogramarCitaActual" class="form-control-plaintext font-weight-bold"></p>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="reprogramarFecha">Nueva Fecha <span
-                                                class="text-danger">*</span></label>
-                                        <input type="date" name="fecha" id="reprogramarFecha" class="form-control"
-                                            required>
+                                <!-- Nueva Fecha -->
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="card-title mb-0">Nueva Fecha</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Selector de Fecha -->
+                                        <div class="form-group">
+                                            <label for="reprogramarFecha">Fecha <span
+                                                    class="text-danger">*</span></label>
+                                            <input type="date" id="reprogramarFecha" name="fecha" class="form-control"
+                                                required>
+                                            <small class="form-text text-muted">
+                                                <i class="fas fa-calendar"></i> Seleccione para ver horarios (no se
+                                                permiten
+                                                fechas pasadas)
+                                            </small>
+                                        </div>
+                                        <!-- Motivo -->
+                                        <div class="form-group">
+                                            <label for="reprogramarMotivo">Motivo (Opcional)</label>
+                                            <textarea id="reprogramarMotivo" name="motivo" class="form-control" rows="2"
+                                                placeholder="Indique el motivo"></textarea>
+                                        </div>
+                                        <!-- Horarios Disponibles -->
+                                        <div class="form-group">
+                                            <label>Horarios Disponibles</label>
+                                            <div id="reprogramarSelectorHorarios"
+                                                class="text-center text-muted p-3 border rounded">
+                                                <i class="fas fa-calendar-day fa-2x mb-2"></i>
+                                                <p>Seleccione una fecha para ver los horarios</p>
+                                            </div>
+                                        </div>
+                                        <!-- Campos ocultos -->
+                                        <input type="hidden" id="reprogramarHoraSeleccionada" name="hora">
+                                        <input type="hidden" id="reprogramarNuevaFechaHora" name="nuevaFechaHoraInicio">
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="reprogramarHora">Nueva Hora <span
-                                                class="text-danger">*</span></label>
-                                        <select name="hora" id="reprogramarHora" class="form-control" required disabled>
-                                            <option value="">Seleccione fecha primero</option>
-                                        </select>
-                                    </div>
-                                </div>
                             </div>
-
-                            <input type="hidden" name="nuevaFechaHoraInicio" id="reprogramarNuevaFechaHora">
-                            <input type="hidden" name="motivo" value="Reprogramado por el paciente">
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-warning"><i class="fas fa-save"></i>
-                                Reprogramar</button>
-                        </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save"></i> Reprogramar
+                                </button>
+                            </div>
                     </form>
                 </div>
             </div>
@@ -387,6 +399,9 @@
             }
         </style>
 
+    </div>
+
+    <div id="lista-scripts">
         <script th:inline="javascript">
             $(document).ready(function () {
                 // Event Listeners
@@ -417,7 +432,7 @@
                     $('#modalCancelar').modal('show');
                 });
 
-                // Cargar horarios disponibles al cambiar fecha
+                // Reprogramar: Cargar horarios cuando se selecciona fecha
                 $('#reprogramarFecha').on('change', function () {
                     const fecha = $(this).val();
                     const odontologoId = $('#reprogramarOdontologoId').val();
@@ -425,30 +440,50 @@
 
                     if (!fecha || !odontologoId) return;
 
-                    fetch('/paciente/citas/api/horarios-disponibles?' + new URLSearchParams({
-                        odontologoId: odontologoId,
-                        fecha: fecha,
-                        duracion: 30,
-                        citaIdExcluir: citaId
-                    }))
+                    // Mostrar loading
+                    $('#reprogramarSelectorHorarios').html('<p class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando horarios...</p>').show();
+
+                    // Cargar horarios disponibles
+                    fetch(`/paciente/citas/api/horarios-disponibles?odontologoId=${odontologoId}&fecha=${fecha}&duracion=30&citaIdExcluir=${citaId}`)
                         .then(response => response.json())
                         .then(data => {
-                            const select = $('#reprogramarHora');
-                            select.empty();
-
                             if (!data.disponible || !data.horariosDisponibles || data.horariosDisponibles.length === 0) {
-                                select.append('<option value="">No hay horarios disponibles</option>');
-                                select.prop('disabled', true);
+                                $('#reprogramarSelectorHorarios').html('<p class="text-danger">No hay horarios disponibles para esta fecha</p>');
                                 return;
                             }
 
-                            select.append('<option value="">Seleccione un horario...</option>');
+                            // Generar grilla de horarios
+                            let html = '<div class="horarios-grid">';
                             data.horariosDisponibles.forEach(slot => {
-                                if (slot.disponible) {
-                                    select.append(`<option value="${slot.inicio}">${slot.inicio} - ${slot.fin}</option>`);
-                                }
+                                const disponibleClass = slot.disponible ? 'disponible' : 'ocupado';
+                                const disabled = slot.disponible ? '' : 'disabled';
+                                html += `
+                    <button type="button" 
+                            class="horario-slot ${disponibleClass}" 
+                            data-hora="${slot.inicio}"
+                            ${disabled}>
+                        ${slot.inicio}
+                    </button>
+                `;
                             });
-                            select.prop('disabled', false);
+                            html += '</div>';
+
+                            $('#reprogramarHorariosGrid').html(html);
+                            $('#reprogramarSelectorHorarios').show();
+
+                            // Event listener para seleccionar hora
+                            $('.horario-slot.disponible').on('click', function () {
+                                $('.horario-slot').removeClass('seleccionado');
+                                $(this).addClass('seleccionado');
+
+                                const horaSeleccionada = $(this).data('hora');
+                                $('#reprogramarHoraSeleccionada').val(horaSeleccionada);
+                                $('#reprogramarNuevaFechaHora').val(fecha + 'T' + horaSeleccionada);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error al cargar horarios:', error);
+                            $('#reprogramarSelectorHorarios').html('<p class="text-danger">Error al cargar horarios</p>');
                         });
                 });
 
@@ -477,8 +512,6 @@
             });
         </script>
 
-    </div>
-    <div id="lista-scripts">
         <script>
             // Activar tooltips de Bootstrap
             $(function () {

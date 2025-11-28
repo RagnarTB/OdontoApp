@@ -311,9 +311,9 @@
                                                             <td th:text="${cita.odontologo.nombreCompleto}">Dr. García
                                                             </td>
                                                             <td>
-                                                                <span th:if="${cita.procedimientoNombre != null}"
-                                                                    th:text="${cita.procedimientoNombre}">Limpieza</span>
-                                                                <span th:if="${cita.procedimientoNombre == null}"
+                                                                <span th:if="${cita.procedimiento != null}"
+                                                                    th:text="${cita.procedimiento.nombre}">Limpieza</span>
+                                                                <span th:if="${cita.procedimiento == null}"
                                                                     class="text-muted">Sin procedimiento</span>
                                                             </td>
                                                             <td>
