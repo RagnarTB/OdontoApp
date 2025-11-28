@@ -303,51 +303,68 @@
                             <div class="form-group">
                                 <label>Cita Actual</label>
                                 <p id="reprogramarCitaActual" class="form-control-plaintext font-weight-bold"></p>
-                                <!-- Nueva Fecha -->
-                                <div class="card">
-                                    <div class="card-header bg-light">
-                                        <h5 class="card-title mb-0">Nueva Fecha</h5>
+                            </div>
+                            <!-- Selector de Odontólogo -->
+                            <div class="form-group">
+                                <label for="reprogramarOdontologoId">Odontólogo <span
+                                        class="text-danger">*</span></label>
+                                <select name="odontologoUsuarioId" id="reprogramarOdontologoId"
+                                    class="form-control select2" required>
+                                    <option value="">Seleccione un odontólogo</option>
+                                    <option th:each="odontologo : ${listaOdontologos}" th:value="${odontologo.id}"
+                                        th:text="${odontologo.nombreCompleto}">
+                                        Odontólogo
+                                    </option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> Puede elegir un odontólogo diferente para la
+                                    reprogramación
+                                </small>
+                            </div>
+                            <!-- Nueva Fecha -->
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h5 class="card-title mb-0">Nueva Fecha</h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Selector de Fecha -->
+                                    <div class="form-group">
+                                        <label for="reprogramarFecha">Fecha <span class="text-danger">*</span></label>
+                                        <input type="date" id="reprogramarFecha" name="fecha" class="form-control"
+                                            required>
+                                        <small class="form-text text-muted">
+                                            <i class="fas fa-calendar"></i> Seleccione para ver horarios (no se
+                                            permiten
+                                            fechas pasadas)
+                                        </small>
                                     </div>
-                                    <div class="card-body">
-                                        <!-- Selector de Fecha -->
-                                        <div class="form-group">
-                                            <label for="reprogramarFecha">Fecha <span
-                                                    class="text-danger">*</span></label>
-                                            <input type="date" id="reprogramarFecha" name="fecha" class="form-control"
-                                                required>
-                                            <small class="form-text text-muted">
-                                                <i class="fas fa-calendar"></i> Seleccione para ver horarios (no se
-                                                permiten
-                                                fechas pasadas)
-                                            </small>
-                                        </div>
-                                        <!-- Motivo -->
-                                        <div class="form-group">
-                                            <label for="reprogramarMotivo">Motivo (Opcional)</label>
-                                            <textarea id="reprogramarMotivo" name="motivo" class="form-control" rows="2"
-                                                placeholder="Indique el motivo"></textarea>
-                                        </div>
-                                        <!-- Horarios Disponibles -->
-                                        <div class="form-group">
-                                            <label>Horarios Disponibles</label>
-                                            <div id="reprogramarSelectorHorarios"
-                                                class="text-center text-muted p-3 border rounded">
-                                                <i class="fas fa-calendar-day fa-2x mb-2"></i>
-                                                <p>Seleccione una fecha para ver los horarios</p>
-                                            </div>
-                                        </div>
-                                        <!-- Campos ocultos -->
-                                        <input type="hidden" id="reprogramarHoraSeleccionada" name="hora">
-                                        <input type="hidden" id="reprogramarNuevaFechaHora" name="nuevaFechaHoraInicio">
+                                    <!-- Motivo -->
+                                    <div class="form-group">
+                                        <label for="reprogramarMotivo">Motivo (Opcional)</label>
+                                        <textarea id="reprogramarMotivo" name="motivo" class="form-control" rows="2"
+                                            placeholder="Indique el motivo"></textarea>
                                     </div>
+                                    <!-- Horarios Disponibles -->
+                                    <div class="form-group">
+                                        <label>Horarios Disponibles</label>
+                                        <div id="reprogramarSelectorHorarios"
+                                            class="text-center text-muted p-3 border rounded">
+                                            <i class="fas fa-calendar-day fa-2x mb-2"></i>
+                                            <p>Seleccione una fecha para ver los horarios</p>
+                                        </div>
+                                    </div>
+                                    <!-- Campos ocultos -->
+                                    <input type="hidden" id="reprogramarHoraSeleccionada" name="hora">
+                                    <input type="hidden" id="reprogramarNuevaFechaHora" name="nuevaFechaHoraInicio">
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                                <button type="submit" class="btn btn-warning">
-                                    <i class="fas fa-save"></i> Reprogramar
-                                </button>
-                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> Reprogramar
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
