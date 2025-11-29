@@ -342,6 +342,24 @@ public class TratamientoController {
             tratamientoRealizadoRepository.save(tratamiento);
             System.out.println("✅ TratamientoRealizado guardado con ID: " + tratamiento.getId());
 
+            // **MARCAR CITA ORIGINAL COMO ASISTIO**
+            // Si se registra un tratamiento, el paciente claramente asistió a la cita
+            String estadoActualCita = cita.getEstadoCita().getNombre();
+            if (!estadoActualCita.equals("ASISTIO") && !estadoActualCita.equals("COMPLETADA")) {
+                try {
+                    EstadoCita estadoAsistio = estadoCitaRepository.findByNombre("ASISTIO")
+                        .orElseThrow(() -> new RuntimeException("Estado ASISTIO no encontrado"));
+                    cita.setEstadoCita(estadoAsistio);
+                    citaRepository.save(cita);
+                    System.out.println("✅ Cita #" + cita.getId() + " marcada automáticamente como ASISTIO (estado anterior: " + estadoActualCita + ")");
+                } catch (Exception e) {
+                    System.err.println("⚠️ Error al marcar cita como ASISTIO: " + e.getMessage());
+                    // No fallar el tratamiento por este error
+                }
+            } else {
+                System.out.println("ℹ️ Cita #" + cita.getId() + " ya estaba en estado " + estadoActualCita);
+            }
+
             // **ACTUALIZAR ODONTOGRAMA AUTOMÁTICAMENTE**
             try {
                 odontogramaService.actualizarDesdeTratamiento(tratamiento.getId());
