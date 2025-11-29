@@ -78,19 +78,9 @@ public class UsuarioServiceImpl implements UsuarioService {
                 usuarioDTO.getId());
 
         // --- 3. VALIDACIÓN PREVIA DE EMAIL ---
-        Optional<Usuario> existenteConEmailOpt = usuarioRepository.findByEmailIgnorandoSoftDelete(emailNuevo);
+        validarUnicidadEmail(emailNuevo, usuarioDTO.getId(), esNuevo);
 
         if (esNuevo) {
-            if (existenteConEmailOpt.isPresent()) {
-                Usuario usuarioExistente = existenteConEmailOpt.get();
-                if (usuarioExistente.isEliminado()) {
-                    throw new DataIntegrityViolationException(
-                            "EMAIL_ELIMINADO:" + usuarioExistente.getId() + ":" + emailNuevo);
-                } else {
-                    throw new DataIntegrityViolationException(
-                            "El email '" + emailNuevo + "' ya estÃ¡ en uso por otro usuario activo.");
-                }
-            }
             usuario = new Usuario();
             // Aseguramos inicialización de colecciones para evitar NullPointerException
             usuario.setHorarioRegular(new java.util.HashMap<>()); // Usar HashMap aquí, JPA lo mapeará bien
@@ -110,16 +100,6 @@ public class UsuarioServiceImpl implements UsuarioService {
             emailOriginal = usuario.getEmail();
 
             if (!emailNuevo.equals(emailOriginal)) {
-                if (existenteConEmailOpt.isPresent()) {
-                    Usuario usuarioConNuevoEmail = existenteConEmailOpt.get();
-                    if (usuarioConNuevoEmail.isEliminado()) {
-                        throw new DataIntegrityViolationException(
-                                "EMAIL_ELIMINADO:" + usuarioConNuevoEmail.getId() + ":" + emailNuevo);
-                    } else {
-                        throw new DataIntegrityViolationException(
-                                "El email '" + emailNuevo + "' ya estÃ¡ en uso por otro usuario activo.");
-                    }
-                }
                 // Validar si se intenta cambiar email del admin principal (si aplica)
                 if ("admin@odontoapp.com".equals(emailOriginal)) {
                     throw new IllegalArgumentException("No se puede cambiar el email del administrador principal.");
@@ -215,8 +195,33 @@ public class UsuarioServiceImpl implements UsuarioService {
             // Crear o actualizar Paciente
             Paciente paciente = usuario.getPaciente();
             if (paciente == null) {
-                paciente = new Paciente();
-                paciente.setUsuario(usuario);
+                // ⚠️ IMPORTANTE: Verificar si ya existe un paciente con este documento
+                // (puede ser un paciente eliminado o standalone sin usuario)
+                Optional<Paciente> pacienteExistente = pacienteRepository
+                        .findByNumeroTipoDocumentoIgnorandoSoftDelete(
+                                usuario.getNumeroDocumento(),
+                                usuario.getTipoDocumento().getId());
+
+                if (pacienteExistente.isPresent()) {
+                    // Ya existe un paciente con este documento, vincular al usuario
+                    paciente = pacienteExistente.get();
+                    paciente.setUsuario(usuario);
+
+                    // Restaurar si estaba eliminado
+                    if (paciente.isEliminado()) {
+                        paciente.setEliminado(false);
+                    }
+
+                    System.out.println("✅ Vinculando usuario ID " + usuario.getId() +
+                            " con paciente existente ID " + paciente.getId());
+                } else {
+                    // No existe, crear nuevo paciente
+                    paciente = new Paciente();
+                    paciente.setUsuario(usuario);
+                    System.out.println("✅ Creando nuevo registro de paciente para usuario ID " + usuario.getId());
+                }
+
+                // Actualizar datos del paciente con los del usuario
                 paciente.setTipoDocumento(usuario.getTipoDocumento());
                 paciente.setNumeroDocumento(usuario.getNumeroDocumento());
                 paciente.setNombreCompleto(usuario.getNombreCompleto());
@@ -237,21 +242,29 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         // --- VALIDAR Y ESTABLECER FECHA DE VIGENCIA ---
         boolean tieneRolAdmin = rolesSeleccionados.stream().anyMatch(r -> "ADMIN".equals(r.getNombre()));
+        boolean soloTieneRolPaciente = rolesSeleccionados.size() == 1 && tieneRolPaciente;
 
-        if (tieneRolAdmin) {
-            // Si tiene rol ADMIN, la fecha de vigencia no es requerida (puede ser null o
-            // infinita)
+        if (tieneRolAdmin || soloTieneRolPaciente) {
+            // Si tiene rol ADMIN o SOLO tiene rol PACIENTE, la fecha de vigencia no es requerida
+            // Los pacientes no necesitan fecha de vigencia (no son personal)
             usuario.setFechaVigencia(usuarioDTO.getFechaVigencia()); // Puede ser null
         } else {
-            // Para cualquier otro rol, fecha de vigencia ES OBLIGATORIA
+            // Para personal (roles distintos a ADMIN y PACIENTE), fecha de vigencia ES OBLIGATORIA
             if (usuarioDTO.getFechaVigencia() == null) {
-                throw new IllegalArgumentException("La fecha de vigencia es obligatoria para usuarios sin rol ADMIN.");
+                throw new IllegalArgumentException("La fecha de vigencia es obligatoria para usuarios de personal sin rol ADMIN.");
             }
             // Validar que no sea pasada
             if (usuarioDTO.getFechaVigencia().isBefore(java.time.LocalDate.now())) {
                 throw new IllegalArgumentException("La fecha de vigencia no puede ser pasada.");
             }
             usuario.setFechaVigencia(usuarioDTO.getFechaVigencia());
+        }
+
+        // ⚠️ VALIDACIÓN: Prevenir que un usuario ACTIVO quede solo con rol PACIENTE
+        // Si estamos editando (no es nuevo) y solo tiene rol PACIENTE, mostrar advertencia
+        if (!esNuevo && soloTieneRolPaciente) {
+            System.out.println("⚠️ ADVERTENCIA: Usuario ID " + usuario.getId() + " (" + usuario.getEmail() +
+                    ") ahora solo tiene el rol PACIENTE. Ya no aparecerá en la lista de usuarios de personal.");
         }
 
         // --- 5. ACTUALIZAR HORARIOS (SI APLICA) ---
@@ -544,20 +557,28 @@ public class UsuarioServiceImpl implements UsuarioService {
                     "Todos los roles asignados al usuario estÃ¡n inactivos o eliminados. Actualice los roles del usuario antes de restablecer la cuenta.");
         }
 
-        // Restablecer estado
+        // Restablecer estado del usuario
         usuario.setEliminado(false);
         usuario.setFechaEliminacion(null);
         usuario.setEstaActivo(true);
         usuario.setIntentosFallidos(0);
         usuario.setFechaBloqueo(null);
 
-        // Generar nueva contraseÃ±a temporal y forzar cambio
+        // Generar nueva contraseña temporal y forzar cambio
         String passwordTemporal = PasswordUtil.generarPasswordAleatoria(); // Usar tu utilidad
         usuario.setPasswordTemporal(passwordTemporal);
         usuario.setPassword(passwordEncoder.encode(passwordTemporal));
         usuario.setDebeActualizarPassword(true);
 
         usuarioRepository.save(usuario);
+
+        // ✅ RESTAURAR PACIENTE ASOCIADO (si existe y está eliminado)
+        if (usuario.getPaciente() != null && usuario.getPaciente().isEliminado()) {
+            Paciente paciente = usuario.getPaciente();
+            paciente.setEliminado(false);
+            pacienteRepository.save(paciente);
+            System.out.println("✅ Paciente asociado ID " + paciente.getId() + " restaurado junto con usuario ID " + usuario.getId());
+        }
 
         // Enviar email
         try {
@@ -574,11 +595,64 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
     }
 
-    // Método de validación de documento
+    // Método de validación de email único - VALIDACIÓN CRUZADA USUARIOS Y PACIENTES
+    private void validarUnicidadEmail(String email, Long idUsuarioExcluir, boolean esNuevo) {
+        if (!StringUtils.hasText(email)) {
+            return; // No validar si está vacío
+        }
+
+        // 1️⃣ Validar en tabla USUARIOS
+        Optional<Usuario> existenteConEmailOpt = usuarioRepository.findByEmailIgnorandoSoftDelete(email);
+
+        if (existenteConEmailOpt.isPresent()) {
+            Usuario usuarioExistente = existenteConEmailOpt.get();
+
+            // Si es edición, verificar que no sea el mismo usuario
+            if (!esNuevo && idUsuarioExcluir != null && usuarioExistente.getId().equals(idUsuarioExcluir)) {
+                // Es el mismo usuario, no hay conflicto
+                return;
+            }
+
+            if (usuarioExistente.isEliminado()) {
+                throw new DataIntegrityViolationException(
+                        "EMAIL_ELIMINADO:" + usuarioExistente.getId() + ":" + email);
+            } else {
+                throw new DataIntegrityViolationException(
+                        "El email '" + email + "' ya está en uso por otro usuario activo.");
+            }
+        }
+
+        // 2️⃣ Validar en tabla PACIENTES (NUEVO)
+        Optional<Paciente> existentePorEmailPaciente = pacienteRepository.findByEmailIgnorandoSoftDelete(email);
+
+        if (existentePorEmailPaciente.isPresent()) {
+            Paciente pacienteConEmail = existentePorEmailPaciente.get();
+            boolean perteneceAlUsuarioActual = false;
+
+            // Si estamos editando, verificar si el paciente encontrado pertenece al usuario actual
+            if (idUsuarioExcluir != null) {
+                Optional<Usuario> usuarioActualOpt = usuarioRepository.findById(idUsuarioExcluir);
+                if (usuarioActualOpt.isPresent() && usuarioActualOpt.get().getPaciente() != null) {
+                    perteneceAlUsuarioActual = usuarioActualOpt.get().getPaciente().getId()
+                            .equals(pacienteConEmail.getId());
+                }
+            }
+
+            // Si el email existe en Pacientes y NO pertenece al usuario que estamos guardando/editando
+            if (!perteneceAlUsuarioActual) {
+                throw new DataIntegrityViolationException(
+                        "El email '" + email + "' ya está registrado para otro paciente del sistema.");
+            }
+        }
+    }
+
+    // Método de validación de documento - VALIDACIÓN CRUZADA USUARIOS Y PACIENTES
     private void validarUnicidadDocumentoUsuario(String numeroDocumento, Long tipoDocumentoId, Long idUsuarioExcluir) {
         if (!StringUtils.hasText(numeroDocumento) || tipoDocumentoId == null) {
             return; // No validar si falta alguno
         }
+
+        // 1️⃣ Validar en tabla USUARIOS
         Optional<Usuario> existentePorDoc = usuarioRepository
                 .findByNumeroDocumentoAndTipoDocumentoIdIgnorandoSoftDelete(numeroDocumento, tipoDocumentoId);
 
@@ -589,13 +663,41 @@ public class UsuarioServiceImpl implements UsuarioService {
                     "El documento '" + tipoDoc.getCodigo() + " " + numeroDocumento
                             + "' ya está registrado para otro usuario.");
         }
+
+        // 2️⃣ Validar en tabla PACIENTES (NUEVO)
+        Optional<Paciente> existentePorDocPaciente = pacienteRepository
+                .findByNumeroTipoDocumentoIgnorandoSoftDelete(numeroDocumento, tipoDocumentoId);
+
+        if (existentePorDocPaciente.isPresent()) {
+            Paciente pacienteConDoc = existentePorDocPaciente.get();
+            boolean perteneceAlUsuarioActual = false;
+
+            // Si estamos editando, verificar si el paciente encontrado pertenece al usuario actual
+            if (idUsuarioExcluir != null) {
+                Optional<Usuario> usuarioActualOpt = usuarioRepository.findById(idUsuarioExcluir);
+                if (usuarioActualOpt.isPresent() && usuarioActualOpt.get().getPaciente() != null) {
+                    perteneceAlUsuarioActual = usuarioActualOpt.get().getPaciente().getId()
+                            .equals(pacienteConDoc.getId());
+                }
+            }
+
+            // Si el documento existe en Pacientes y NO pertenece al usuario que estamos guardando/editando
+            if (!perteneceAlUsuarioActual) {
+                TipoDocumento tipoDoc = tipoDocumentoRepository.findById(tipoDocumentoId).orElse(new TipoDocumento());
+                throw new DataIntegrityViolationException(
+                        "El documento '" + tipoDoc.getCodigo() + " " + numeroDocumento
+                                + "' ya está registrado para otro paciente del sistema.");
+            }
+        }
     }
 
-    // Método de validación de teléfono único
+    // Método de validación de teléfono único - VALIDACIÓN CRUZADA USUARIOS Y PACIENTES
     private void validarUnicidadTelefono(String telefono, Long idUsuarioExcluir) {
         if (!StringUtils.hasText(telefono)) {
             return; // No validar si está vacío (campo opcional)
         }
+
+        // 1️⃣ Validar en tabla USUARIOS
         Optional<Usuario> existentePorTelefono = usuarioRepository
                 .findByTelefonoIgnorandoSoftDelete(telefono);
 
@@ -603,6 +705,30 @@ public class UsuarioServiceImpl implements UsuarioService {
                 && (idUsuarioExcluir == null || !existentePorTelefono.get().getId().equals(idUsuarioExcluir))) {
             throw new DataIntegrityViolationException(
                     "El teléfono '" + telefono + "' ya está registrado para otro usuario.");
+        }
+
+        // 2️⃣ Validar en tabla PACIENTES (NUEVO)
+        Optional<Paciente> existentePorTelefonoPaciente = pacienteRepository
+                .findByTelefonoIgnorandoSoftDelete(telefono);
+
+        if (existentePorTelefonoPaciente.isPresent()) {
+            Paciente pacienteConTelefono = existentePorTelefonoPaciente.get();
+            boolean perteneceAlUsuarioActual = false;
+
+            // Si estamos editando, verificar si el paciente encontrado pertenece al usuario actual
+            if (idUsuarioExcluir != null) {
+                Optional<Usuario> usuarioActualOpt = usuarioRepository.findById(idUsuarioExcluir);
+                if (usuarioActualOpt.isPresent() && usuarioActualOpt.get().getPaciente() != null) {
+                    perteneceAlUsuarioActual = usuarioActualOpt.get().getPaciente().getId()
+                            .equals(pacienteConTelefono.getId());
+                }
+            }
+
+            // Si el teléfono existe en Pacientes y NO pertenece al usuario que estamos guardando/editando
+            if (!perteneceAlUsuarioActual) {
+                throw new DataIntegrityViolationException(
+                        "El teléfono '" + telefono + "' ya está registrado para otro paciente del sistema.");
+            }
         }
     }
 

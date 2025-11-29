@@ -222,12 +222,29 @@
      * Validar antes de enviar el formulario
      */
     function validarFormularioCita() {
-        if (!horarioSeleccionado) {
-            mostrarAdvertencia('Por favor seleccione un horario disponible');
+        // ⚠️ VALIDACIÓN CRÍTICA: Verificar que se haya seleccionado un horario
+        const fechaHoraInicio = $('#fechaHoraInicioAgendar').val();
+        if (!fechaHoraInicio || fechaHoraInicio.trim() === '') {
+            mostrarAdvertencia('Por favor seleccione un horario disponible antes de agendar la cita');
+            // Regresar al paso 2 (selección de horario) si está en otro paso
+            if (pasoActual !== 2) {
+                cambiarPaso(2);
+            }
             return false;
         }
         if (!$('#odontologoIdAgendar').val()) {
             mostrarAdvertencia('Por favor seleccione un odontólogo');
+            // Regresar al paso 1 si es necesario
+            if (pasoActual !== 1) {
+                cambiarPaso(1);
+            }
+            return false;
+        }
+        if (!$('#fechaCitaAgendar').val()) {
+            mostrarAdvertencia('Por favor seleccione una fecha');
+            if (pasoActual !== 1) {
+                cambiarPaso(1);
+            }
             return false;
         }
         // NOTA: NO validamos pacienteIdAgendar porque en el panel de paciente
