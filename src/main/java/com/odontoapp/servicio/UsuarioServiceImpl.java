@@ -192,46 +192,68 @@ public class UsuarioServiceImpl implements UsuarioService {
         boolean tieneRolPaciente = rolesSeleccionados.stream()
                 .anyMatch(r -> "PACIENTE".equals(r.getNombre()));
         if (tieneRolPaciente) {
-            // Crear o actualizar Paciente
-            Paciente paciente = usuario.getPaciente();
+            // ⚠️ LÓGICA COMPLETA DE CREACIÓN/VINCULACIÓN/RESTAURACIÓN DE PACIENTE
+            Paciente paciente = null;
+
+            // PASO 1: Buscar paciente asociado al usuario (puede estar eliminado)
+            if (!esNuevo && usuario.getId() != null) {
+                Optional<Paciente> pacienteDelUsuario = pacienteRepository.findByUsuario(usuario);
+                if (pacienteDelUsuario.isPresent()) {
+                    paciente = pacienteDelUsuario.get();
+
+                    // Si estaba eliminado, restaurarlo
+                    if (paciente.isEliminado()) {
+                        paciente.setEliminado(false);
+                        System.out.println("✅ Restaurando paciente ID " + paciente.getId() +
+                                " (estaba eliminado) para usuario ID " + usuario.getId());
+                    } else {
+                        System.out.println("✅ Actualizando paciente existente ID " + paciente.getId() +
+                                " para usuario ID " + usuario.getId());
+                    }
+                }
+            }
+
+            // PASO 2: Si no tiene paciente asociado, buscar por documento (puede ser standalone)
             if (paciente == null) {
-                // ⚠️ IMPORTANTE: Verificar si ya existe un paciente con este documento
-                // (puede ser un paciente eliminado o standalone sin usuario)
                 Optional<Paciente> pacienteExistente = pacienteRepository
                         .findByNumeroTipoDocumentoIgnorandoSoftDelete(
                                 usuario.getNumeroDocumento(),
                                 usuario.getTipoDocumento().getId());
 
                 if (pacienteExistente.isPresent()) {
-                    // Ya existe un paciente con este documento, vincular al usuario
+                    // Ya existe un paciente con este documento, vincularlo
                     paciente = pacienteExistente.get();
                     paciente.setUsuario(usuario);
 
                     // Restaurar si estaba eliminado
                     if (paciente.isEliminado()) {
                         paciente.setEliminado(false);
+                        System.out.println("✅ Vinculando y restaurando paciente standalone ID " + paciente.getId() +
+                                " para usuario ID " + usuario.getId());
+                    } else {
+                        System.out.println("✅ Vinculando paciente standalone ID " + paciente.getId() +
+                                " para usuario ID " + usuario.getId());
                     }
-
-                    System.out.println("✅ Vinculando usuario ID " + usuario.getId() +
-                            " con paciente existente ID " + paciente.getId());
-                } else {
-                    // No existe, crear nuevo paciente
-                    paciente = new Paciente();
-                    paciente.setUsuario(usuario);
-                    System.out.println("✅ Creando nuevo registro de paciente para usuario ID " + usuario.getId());
                 }
-
-                // Actualizar datos del paciente con los del usuario
-                paciente.setTipoDocumento(usuario.getTipoDocumento());
-                paciente.setNumeroDocumento(usuario.getNumeroDocumento());
-                paciente.setNombreCompleto(usuario.getNombreCompleto());
-                paciente.setEmail(usuario.getEmail());
-                paciente.setTelefono(usuario.getTelefono());
-                paciente.setFechaNacimiento(usuario.getFechaNacimiento());
-                paciente.setDireccion(usuario.getDireccion());
             }
 
-            // Actualizar campos específicos de paciente (opcionales)
+            // PASO 3: Si aún no hay paciente, crear uno nuevo
+            if (paciente == null) {
+                paciente = new Paciente();
+                paciente.setUsuario(usuario);
+                System.out.println("✅ Creando nuevo registro de paciente para usuario ID " + usuario.getId());
+            }
+
+            // PASO 4: Siempre actualizar datos del paciente con los del usuario
+            paciente.setTipoDocumento(usuario.getTipoDocumento());
+            paciente.setNumeroDocumento(usuario.getNumeroDocumento());
+            paciente.setNombreCompleto(usuario.getNombreCompleto());
+            paciente.setEmail(usuario.getEmail());
+            paciente.setTelefono(usuario.getTelefono());
+            paciente.setFechaNacimiento(usuario.getFechaNacimiento());
+            paciente.setDireccion(usuario.getDireccion());
+
+            // PASO 5: Actualizar campos específicos de paciente (opcionales)
             paciente.setAlergias(usuarioDTO.getAlergias());
             paciente.setAntecedentesMedicos(usuarioDTO.getAntecedentesMedicos());
             paciente.setTratamientosActuales(usuarioDTO.getTratamientosActuales());
