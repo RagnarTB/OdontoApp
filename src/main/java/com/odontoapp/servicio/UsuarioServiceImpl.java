@@ -187,6 +187,10 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         // Obtener los roles seleccionados desde la base de datos
         List<Rol> rolesSeleccionados = rolRepository.findAllById(usuarioDTO.getRoles());
+
+        // ⚠️ VALIDACIÓN DE EDAD PARA ROLES ADMINISTRATIVOS
+        validarEdadParaRolesAdministrativos(usuarioDTO.getFechaNacimiento(), rolesSeleccionados);
+
         usuario.setRoles(new HashSet<>(rolesSeleccionados));
 
         boolean tieneRolPaciente = rolesSeleccionados.stream()
@@ -406,6 +410,18 @@ public class UsuarioServiceImpl implements UsuarioService {
         // Proteger al super-administrador
         if (usuario.isEsSuperAdmin()) {
             throw new UnsupportedOperationException("No se puede eliminar al super-administrador del sistema.");
+        }
+
+        // ⚠️ VALIDACIÓN: Solo permitir eliminar usuarios con UN SOLO rol
+        if (usuario.getRoles() != null && usuario.getRoles().size() > 1) {
+            List<String> nombresRoles = usuario.getRoles().stream()
+                    .map(Rol::getNombre)
+                    .collect(Collectors.toList());
+            throw new IllegalStateException(
+                    "No se puede eliminar un usuario con múltiples roles. " +
+                    "El usuario tiene " + usuario.getRoles().size() + " roles asignados: " +
+                    String.join(", ", nombresRoles) + ". " +
+                    "Por favor, edite el usuario y deje solo un rol antes de eliminarlo.");
         }
 
         // Validar que el usuario odontólogo no tenga citas activas
@@ -713,11 +729,79 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
     }
 
+    /**
+     * Valida que el usuario tenga al menos 18 años para roles administrativos
+     * Solo permite menores de edad si ÚNICAMENTE tienen el rol PACIENTE
+     */
+    private void validarEdadParaRolesAdministrativos(LocalDate fechaNacimiento, List<Rol> rolesSeleccionados) {
+        if (fechaNacimiento == null) {
+            return; // Sin fecha de nacimiento, no podemos validar
+        }
+
+        // Calcular edad del usuario
+        int edad = java.time.Period.between(fechaNacimiento, LocalDate.now()).getYears();
+
+        // Verificar si tiene roles administrativos (cualquier rol que NO sea PACIENTE)
+        boolean tieneRolesAdministrativos = rolesSeleccionados.stream()
+                .anyMatch(rol -> !"PACIENTE".equals(rol.getNombre()));
+
+        // Si es menor de 18 años y tiene roles administrativos, rechazar
+        if (edad < 18 && tieneRolesAdministrativos) {
+            throw new IllegalArgumentException(
+                    "No se pueden asignar roles administrativos a menores de edad. " +
+                    "El usuario tiene " + edad + " años y debe tener al menos 18 años para roles de personal.");
+        }
+    }
+
+    /**
+     * Valida el formato del teléfono para números celulares peruanos
+     * - Debe tener exactamente 9 dígitos
+     * - Debe empezar con 9
+     * - No puede ser un número repetido (ej: 999999999)
+     * - No puede ser una secuencia ascendente/descendente (ej: 123456789, 987654321)
+     */
+    private void validarFormatoTelefono(String telefono) {
+        if (!StringUtils.hasText(telefono)) {
+            return; // Campo opcional
+        }
+
+        // Remover espacios y guiones
+        String telefonoLimpio = telefono.replaceAll("[\\s\\-]", "");
+
+        // Validar que solo contenga dígitos
+        if (!telefonoLimpio.matches("\\d+")) {
+            throw new IllegalArgumentException("El teléfono solo debe contener números.");
+        }
+
+        // Validar longitud (9 dígitos para celulares peruanos)
+        if (telefonoLimpio.length() != 9) {
+            throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos.");
+        }
+
+        // Validar que empiece con 9 (celulares peruanos)
+        if (!telefonoLimpio.startsWith("9")) {
+            throw new IllegalArgumentException("El número celular debe empezar con 9.");
+        }
+
+        // Validar que no sea un número repetido (ej: 999999999, 111111111)
+        if (telefonoLimpio.matches("(\\d)\\1{8}")) {
+            throw new IllegalArgumentException("El teléfono no puede tener todos los dígitos iguales.");
+        }
+
+        // Validar que no sea una secuencia ascendente (123456789) o descendente (987654321)
+        if (telefonoLimpio.equals("123456789") || telefonoLimpio.equals("987654321")) {
+            throw new IllegalArgumentException("El teléfono no puede ser una secuencia numérica simple.");
+        }
+    }
+
     // Método de validación de teléfono único - VALIDACIÓN CRUZADA USUARIOS Y PACIENTES
     private void validarUnicidadTelefono(String telefono, Long idUsuarioExcluir) {
         if (!StringUtils.hasText(telefono)) {
             return; // No validar si está vacío (campo opcional)
         }
+
+        // Primero validar formato
+        validarFormatoTelefono(telefono);
 
         // 1️⃣ Validar en tabla USUARIOS
         Optional<Usuario> existentePorTelefono = usuarioRepository
