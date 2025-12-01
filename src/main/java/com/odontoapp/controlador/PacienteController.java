@@ -211,7 +211,7 @@ public class PacienteController {
      * Con paginación para citas y comprobantes
      */
     @GetMapping("/historial/{id}")
-    @PreAuthorize("hasAnyAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_PACIENTES, T(com.odontoapp.util.Permisos).VER_LISTA_PACIENTES, T(com.odontoapp.util.Permisos).VER_LISTA_USUARIOS)")
+    @PreAuthorize("hasAnyAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_PACIENTES, T(com.odontoapp.util.Permisos).VER_LISTA_PACIENTES, T(com.odontoapp.util.Permisos).VER_LISTA_USUARIOS, T(com.odontoapp.util.Permisos).VER_DETALLE_USUARIOS)")
     public String verHistorial(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int citasPageNum,

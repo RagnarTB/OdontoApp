@@ -172,7 +172,7 @@
                                         <a th:if="${usuario.getRoles().![nombre].contains('PACIENTE') && usuario.getPaciente() != null}"
                                             th:href="@{/pacientes/historial/{id}(id=${usuario.getPaciente().id})}"
                                             class="btn btn-sm btn-outline-primary" title="Ver Detalle del Paciente"
-                                            data-permiso="VER_PACIENTES"
+                                            data-permiso="VER_LISTA_USUARIOS"
                                             data-accion-descripcion="ver detalle del paciente">
                                             <i class="fas fa-user-injured"></i>
                                         </a>

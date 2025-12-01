@@ -412,85 +412,55 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new UnsupportedOperationException("No se puede eliminar al super-administrador del sistema.");
         }
 
-        // ⚠️ NUEVA LÓGICA: Verificar si tiene rol PACIENTE
-        boolean tieneRolPaciente = usuario.getRoles().stream()
-                .anyMatch(rol -> "PACIENTE".equals(rol.getNombre()));
+        // ⚠️ VALIDACIÓN: Solo permitir eliminar usuarios con UN SOLO rol
+        if (usuario.getRoles() != null && usuario.getRoles().size() > 1) {
+            List<String> nombresRoles = usuario.getRoles().stream()
+                    .map(Rol::getNombre)
+                    .collect(Collectors.toList());
+            throw new IllegalStateException(
+                    "No se puede eliminar un usuario con múltiples roles. " +
+                    "El usuario tiene " + usuario.getRoles().size() + " roles asignados: " +
+                    String.join(", ", nombresRoles) + ". " +
+                    "Por favor, edite el usuario y deje solo un rol antes de eliminarlo.");
+        }
 
-        if (tieneRolPaciente) {
-            // ✅ CASO 1: Usuario con rol PACIENTE (solo o con otros roles)
-            System.out.println(">>> Usuario " + usuario.getEmail() + " tiene rol PACIENTE. Aplicando lógica especial de eliminación.");
+        // Validar que el usuario odontólogo no tenga citas activas
+        boolean esOdontologo = usuario.getRoles().stream()
+                .anyMatch(rol -> "ODONTOLOGO".equals(rol.getNombre()));
 
-            // Validar que el paciente asociado no tenga citas activas
-            if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
-                long citasActivas = citaRepository.countCitasActivas(usuario.getPaciente().getId());
-                if (citasActivas > 0) {
-                    throw new IllegalStateException(
-                            "No se puede eliminar el usuario porque tiene " + citasActivas +
-                                    " cita(s) activa(s) como paciente. Debe cancelar o completar las citas primero.");
-                }
-            }
-
-            // Verificar si también es odontólogo y tiene citas activas como odontólogo
-            boolean esOdontologo = usuario.getRoles().stream()
-                    .anyMatch(rol -> "ODONTOLOGO".equals(rol.getNombre()));
-
-            if (esOdontologo) {
-                long citasActivas = citaRepository.countCitasActivasByOdontologo(id);
-                if (citasActivas > 0) {
-                    throw new IllegalStateException(
-                            "No se puede eliminar el usuario porque tiene " + citasActivas +
-                                    " cita(s) activa(s) como odontólogo. Debe cancelar o completar las citas primero.");
-                }
-            }
-
-            // Soft delete del Paciente asociado (si existe y no está eliminado)
-            if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
-                Paciente paciente = usuario.getPaciente();
-                try {
-                    paciente.setEliminado(true);
-                    pacienteRepository.save(paciente); // Soft delete manual
-                    System.out.println(
-                            ">>> Paciente asociado " + paciente.getId()
-                                    + " eliminado (soft delete) junto con usuario.");
-                } catch (Exception e) {
-                    System.err.println(
-                            "Error Crítico: No se pudo eliminar (soft delete) el paciente asociado " + paciente.getId()
-                                    + ". Cancelando eliminación del usuario. Error: " + e.getMessage());
-                    throw new RuntimeException("No se pudo eliminar el paciente asociado. Operación cancelada.", e);
-                }
-            }
-
-            // Quitar TODOS los roles (para usuarios con PACIENTE + otros roles)
-            usuario.getRoles().clear();
-            System.out.println(">>> Todos los roles removidos del usuario " + usuario.getEmail());
-
-        } else {
-            // ✅ CASO 2: Usuario SIN rol PACIENTE (personal administrativo, odontólogo, etc.)
-            System.out.println(">>> Usuario " + usuario.getEmail() + " NO tiene rol PACIENTE. Aplicando lógica estándar.");
-
-            // Validar que no tenga múltiples roles
-            if (usuario.getRoles() != null && usuario.getRoles().size() > 1) {
-                List<String> nombresRoles = usuario.getRoles().stream()
-                        .map(Rol::getNombre)
-                        .collect(Collectors.toList());
+        if (esOdontologo) {
+            long citasActivas = citaRepository.countCitasActivasByOdontologo(id);
+            if (citasActivas > 0) {
                 throw new IllegalStateException(
-                        "No se puede eliminar un usuario con múltiples roles. " +
-                        "El usuario tiene " + usuario.getRoles().size() + " roles asignados: " +
-                        String.join(", ", nombresRoles) + ". " +
-                        "Por favor, edite el usuario y deje solo un rol antes de eliminarlo.");
+                        "No se puede eliminar el odontólogo porque tiene " + citasActivas +
+                                " cita(s) activa(s). Debe cancelar o completar las citas primero.");
             }
+        }
 
-            // Validar que el usuario odontólogo no tenga citas activas
-            boolean esOdontologo = usuario.getRoles().stream()
-                    .anyMatch(rol -> "ODONTOLOGO".equals(rol.getNombre()));
+        // Validar que el paciente asociado no tenga citas activas
+        if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
+            long citasActivas = citaRepository.countCitasActivas(usuario.getPaciente().getId());
+            if (citasActivas > 0) {
+                throw new IllegalStateException(
+                        "No se puede eliminar el usuario porque su perfil de paciente tiene " + citasActivas +
+                                " cita(s) activa(s). Debe cancelar o completar las citas primero.");
+            }
+        }
 
-            if (esOdontologo) {
-                long citasActivas = citaRepository.countCitasActivasByOdontologo(id);
-                if (citasActivas > 0) {
-                    throw new IllegalStateException(
-                            "No se puede eliminar el odontólogo porque tiene " + citasActivas +
-                                    " cita(s) activa(s). Debe cancelar o completar las citas primero.");
-                }
+        // Soft delete del Paciente asociado (si existe y no está eliminado)
+        if (usuario.getPaciente() != null && !usuario.getPaciente().isEliminado()) {
+            Paciente paciente = usuario.getPaciente();
+            try {
+                paciente.setEliminado(true);
+                pacienteRepository.save(paciente); // Soft delete manual
+                System.out.println(
+                        ">>> Paciente asociado " + paciente.getId()
+                                + " eliminado (soft delete) por cascada desde usuario.");
+            } catch (Exception e) {
+                System.err.println(
+                        "Error Crítico: No se pudo eliminar (soft delete) el paciente asociado " + paciente.getId()
+                                + ". Cancelando eliminación del usuario. Error: " + e.getMessage());
+                throw new RuntimeException("No se pudo eliminar el paciente asociado. Operación cancelada.", e);
             }
         }
 
