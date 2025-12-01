@@ -370,7 +370,9 @@ public class PacienteServiceImpl implements PacienteService {
         if (keyword != null && !keyword.isEmpty()) {
             return pacienteRepository.findByKeyword(keyword, pageable);
         }
-        return pacienteRepository.findAll(pageable);
+        // ⚠️ IMPORTANTE: Solo mostrar pacientes con rol PACIENTE únicamente
+        // Los usuarios con PACIENTE + otros roles aparecen en /usuarios
+        return pacienteRepository.findPacientesConSoloRolPaciente(pageable);
     }
 
     @Override

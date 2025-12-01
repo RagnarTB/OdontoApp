@@ -17,7 +17,50 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
 
     Optional<Paciente> findByEmail(String email);
 
-    @Query("SELECT p FROM Paciente p WHERE p.nombreCompleto LIKE %:keyword% OR p.numeroDocumento LIKE %:keyword% OR p.email LIKE %:keyword%")
+    // ⚠️ FILTRO IMPORTANTE: Solo mostrar pacientes que tienen ÚNICAMENTE el rol PACIENTE
+    // Excluye usuarios con PACIENTE + otros roles (que deben aparecer en /usuarios)
+    @Query(value = "SELECT p.* FROM pacientes p " +
+            "INNER JOIN usuarios u ON p.usuario_id = u.id " +
+            "WHERE p.eliminado = false " +
+            "AND u.eliminado = false " +
+            "AND (SELECT COUNT(DISTINCT ur.rol_id) FROM usuarios_roles ur WHERE ur.usuario_id = u.id) = 1 " +
+            "AND EXISTS (SELECT 1 FROM usuarios_roles ur2 " +
+            "            INNER JOIN roles r ON ur2.rol_id = r.id " +
+            "            WHERE ur2.usuario_id = u.id AND r.nombre = 'PACIENTE')",
+            countQuery = "SELECT COUNT(*) FROM pacientes p " +
+                    "INNER JOIN usuarios u ON p.usuario_id = u.id " +
+                    "WHERE p.eliminado = false " +
+                    "AND u.eliminado = false " +
+                    "AND (SELECT COUNT(DISTINCT ur.rol_id) FROM usuarios_roles ur WHERE ur.usuario_id = u.id) = 1 " +
+                    "AND EXISTS (SELECT 1 FROM usuarios_roles ur2 " +
+                    "            INNER JOIN roles r ON ur2.rol_id = r.id " +
+                    "            WHERE ur2.usuario_id = u.id AND r.nombre = 'PACIENTE')",
+            nativeQuery = true)
+    Page<Paciente> findPacientesConSoloRolPaciente(Pageable pageable);
+
+    @Query(value = "SELECT p.* FROM pacientes p " +
+            "INNER JOIN usuarios u ON p.usuario_id = u.id " +
+            "WHERE p.eliminado = false " +
+            "AND u.eliminado = false " +
+            "AND (SELECT COUNT(DISTINCT ur.rol_id) FROM usuarios_roles ur WHERE ur.usuario_id = u.id) = 1 " +
+            "AND EXISTS (SELECT 1 FROM usuarios_roles ur2 " +
+            "            INNER JOIN roles r ON ur2.rol_id = r.id " +
+            "            WHERE ur2.usuario_id = u.id AND r.nombre = 'PACIENTE') " +
+            "AND (p.nombre_completo LIKE CONCAT('%', :keyword, '%') " +
+            "     OR p.numero_documento LIKE CONCAT('%', :keyword, '%') " +
+            "     OR p.email LIKE CONCAT('%', :keyword, '%'))",
+            countQuery = "SELECT COUNT(*) FROM pacientes p " +
+                    "INNER JOIN usuarios u ON p.usuario_id = u.id " +
+                    "WHERE p.eliminado = false " +
+                    "AND u.eliminado = false " +
+                    "AND (SELECT COUNT(DISTINCT ur.rol_id) FROM usuarios_roles ur WHERE ur.usuario_id = u.id) = 1 " +
+                    "AND EXISTS (SELECT 1 FROM usuarios_roles ur2 " +
+                    "            INNER JOIN roles r ON ur2.rol_id = r.id " +
+                    "            WHERE ur2.usuario_id = u.id AND r.nombre = 'PACIENTE') " +
+                    "AND (p.nombre_completo LIKE CONCAT('%', :keyword, '%') " +
+                    "     OR p.numero_documento LIKE CONCAT('%', :keyword, '%') " +
+                    "     OR p.email LIKE CONCAT('%', :keyword, '%'))",
+            nativeQuery = true)
     Page<Paciente> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     // --- Consultas que IGNORAN el soft delete (para validaciones) ---

@@ -422,8 +422,8 @@
                         $('#tratamientoProcedimientoId').trigger('change');
                     }
 
-                    // Mostrar/ocultar botones según el estado
-                    mostrarBotonesSegunEstado(props.estadoNombre);
+                    // Mostrar/ocultar botones según el estado y fecha de la cita
+                    mostrarBotonesSegunEstado(props.estadoNombre, evento.start);
 
                     // Verificar cadena de citas (si ya generó otra cita)
                     verificarCadenaDeCitas(evento.id);
@@ -468,7 +468,7 @@
                             field.value = evento.id;
                         });
 
-                        mostrarBotonesSegunEstado(props.estadoNombre);
+                        mostrarBotonesSegunEstado(props.estadoNombre, evento.start);
 
                         // Verificar cadena de citas (si ya generó otra cita)
                         verificarCadenaDeCitas(evento.id);
@@ -488,7 +488,7 @@
         });
 
         // Función para mostrar/ocultar botones según el estado de la cita
-        function mostrarBotonesSegunEstado(estado) {
+        function mostrarBotonesSegunEstado(estado, fechaHoraInicio) {
             var btnConfirmar = document.getElementById('btnConfirmarCita');
             var btnAsistencia = document.getElementById('divAsistencia');
             var btnReprogramar = document.getElementById('btnReprogramar');
@@ -502,12 +502,21 @@
             btnCancelar.style.display = 'inline-block';
             btnRegistrarTratamiento.style.display = 'none';
 
+            // ⚠️ VALIDACIÓN: Verificar si la cita es futura
+            var esCitaFutura = fechaHoraInicio && moment(fechaHoraInicio).isAfter(moment());
+
             switch(estado) {
                 case 'PENDIENTE':
                     btnConfirmar.style.display = 'inline-block';
                     break;
                 case 'CONFIRMADA':
-                    btnAsistencia.style.display = 'block';
+                    // ⚠️ IMPORTANTE: Solo mostrar botones de asistencia si la cita NO es futura
+                    if (!esCitaFutura) {
+                        btnAsistencia.style.display = 'block';
+                    } else {
+                        // Cita futura: Solo permitir reprogramar o cancelar
+                        console.log('⚠️ Cita futura detectada. Ocultando botones de asistencia.');
+                    }
                     break;
                 case 'ASISTIO':
                     btnReprogramar.style.display = 'none';
@@ -803,8 +812,8 @@
             $('#cancelarCitaId').val(cita.id);
             $('#tratamientoCitaId').val(cita.id);
 
-            // Mostrar/ocultar botones según estado
-            mostrarBotonesSegunEstado(cita.estadoNombre);
+            // Mostrar/ocultar botones según estado y fecha de la cita
+            mostrarBotonesSegunEstado(cita.estadoNombre, inicio);
 
             // Cargar tratamiento planificado asociado
             cargarTratamientoPlanificado(cita.id);
