@@ -873,6 +873,17 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (!usuario.isEstaActivo()) {
             throw new IllegalStateException("No se puede promocionar un usuario inactivo");
         }
+
+        // ⚠️ VALIDACIÓN: Verificar que el paciente sea mayor de edad para promoción a personal
+        if (paciente.getFechaNacimiento() != null) {
+            int edad = java.time.Period.between(paciente.getFechaNacimiento(), LocalDate.now()).getYears();
+            if (edad < 18) {
+                throw new IllegalArgumentException(
+                        "No se puede promocionar a personal a un paciente menor de edad. " +
+                        "El paciente tiene " + edad + " años y debe tener al menos 18 años para ser parte del personal.");
+            }
+        }
+
         // ✅ SINCRONIZAR datos del paciente al usuario
         // Esto asegura que el usuario tenga todos los datos necesarios para el
         // formulario de edición
