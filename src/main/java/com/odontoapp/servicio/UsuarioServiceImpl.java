@@ -199,9 +199,10 @@ public class UsuarioServiceImpl implements UsuarioService {
             // ⚠️ LÓGICA COMPLETA DE CREACIÓN/VINCULACIÓN/RESTAURACIÓN DE PACIENTE
             Paciente paciente = null;
 
-            // PASO 1: Buscar paciente asociado al usuario (puede estar eliminado)
+            // PASO 1: Buscar paciente asociado al usuario (INCLUYENDO eliminados)
             if (!esNuevo && usuario.getId() != null) {
-                Optional<Paciente> pacienteDelUsuario = pacienteRepository.findByUsuario(usuario);
+                Optional<Paciente> pacienteDelUsuario = pacienteRepository
+                        .findByUsuarioIdIgnorandoSoftDelete(usuario.getId());
                 if (pacienteDelUsuario.isPresent()) {
                     paciente = pacienteDelUsuario.get();
 
@@ -217,7 +218,8 @@ public class UsuarioServiceImpl implements UsuarioService {
                 }
             }
 
-            // PASO 2: Si no tiene paciente asociado, buscar por documento (puede ser standalone)
+            // PASO 2: Si no tiene paciente asociado, buscar por documento (puede ser
+            // standalone)
             if (paciente == null) {
                 Optional<Paciente> pacienteExistente = pacienteRepository
                         .findByNumeroTipoDocumentoIgnorandoSoftDelete(
@@ -271,13 +273,16 @@ public class UsuarioServiceImpl implements UsuarioService {
         boolean soloTieneRolPaciente = rolesSeleccionados.size() == 1 && tieneRolPaciente;
 
         if (tieneRolAdmin || soloTieneRolPaciente) {
-            // Si tiene rol ADMIN o SOLO tiene rol PACIENTE, la fecha de vigencia no es requerida
+            // Si tiene rol ADMIN o SOLO tiene rol PACIENTE, la fecha de vigencia no es
+            // requerida
             // Los pacientes no necesitan fecha de vigencia (no son personal)
             usuario.setFechaVigencia(usuarioDTO.getFechaVigencia()); // Puede ser null
         } else {
-            // Para personal (roles distintos a ADMIN y PACIENTE), fecha de vigencia ES OBLIGATORIA
+            // Para personal (roles distintos a ADMIN y PACIENTE), fecha de vigencia ES
+            // OBLIGATORIA
             if (usuarioDTO.getFechaVigencia() == null) {
-                throw new IllegalArgumentException("La fecha de vigencia es obligatoria para usuarios de personal sin rol ADMIN.");
+                throw new IllegalArgumentException(
+                        "La fecha de vigencia es obligatoria para usuarios de personal sin rol ADMIN.");
             }
             // Validar que no sea pasada
             if (usuarioDTO.getFechaVigencia().isBefore(java.time.LocalDate.now())) {
@@ -287,7 +292,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         // ⚠️ VALIDACIÓN: Prevenir que un usuario ACTIVO quede solo con rol PACIENTE
-        // Si estamos editando (no es nuevo) y solo tiene rol PACIENTE, mostrar advertencia
+        // Si estamos editando (no es nuevo) y solo tiene rol PACIENTE, mostrar
+        // advertencia
         if (!esNuevo && soloTieneRolPaciente) {
             System.out.println("⚠️ ADVERTENCIA: Usuario ID " + usuario.getId() + " (" + usuario.getEmail() +
                     ") ahora solo tiene el rol PACIENTE. Ya no aparecerá en la lista de usuarios de personal.");
@@ -419,9 +425,9 @@ public class UsuarioServiceImpl implements UsuarioService {
                     .collect(Collectors.toList());
             throw new IllegalStateException(
                     "No se puede eliminar un usuario con múltiples roles. " +
-                    "El usuario tiene " + usuario.getRoles().size() + " roles asignados: " +
-                    String.join(", ", nombresRoles) + ". " +
-                    "Por favor, edite el usuario y deje solo un rol antes de eliminarlo.");
+                            "El usuario tiene " + usuario.getRoles().size() + " roles asignados: " +
+                            String.join(", ", nombresRoles) + ". " +
+                            "Por favor, edite el usuario y deje solo un rol antes de eliminarlo.");
         }
 
         // Validar que el usuario odontólogo no tenga citas activas
@@ -475,7 +481,12 @@ public class UsuarioServiceImpl implements UsuarioService {
         } catch (Exception e) {
             System.err.println(
                     "Error Crítico al intentar soft delete del usuario " + usuario.getEmail() + ": " + e.getMessage());
-            throw new RuntimeException("Error al marcar el usuario como eliminado.", e);
+            e.printStackTrace();
+            throw new RuntimeException(
+                    "No se pudo eliminar el usuario '" + usuario.getNombreCompleto() + "'. " +
+                            "Verifique que el usuario tenga solo un rol y no tenga citas activas. Error: "
+                            + e.getMessage(),
+                    e);
         }
     }
 
@@ -613,7 +624,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             Paciente paciente = usuario.getPaciente();
             paciente.setEliminado(false);
             pacienteRepository.save(paciente);
-            System.out.println("✅ Paciente asociado ID " + paciente.getId() + " restaurado junto con usuario ID " + usuario.getId());
+            System.out.println("✅ Paciente asociado ID " + paciente.getId() + " restaurado junto con usuario ID "
+                    + usuario.getId());
         }
 
         // Enviar email
@@ -665,7 +677,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             Paciente pacienteConEmail = existentePorEmailPaciente.get();
             boolean perteneceAlUsuarioActual = false;
 
-            // Si estamos editando, verificar si el paciente encontrado pertenece al usuario actual
+            // Si estamos editando, verificar si el paciente encontrado pertenece al usuario
+            // actual
             if (idUsuarioExcluir != null) {
                 Optional<Usuario> usuarioActualOpt = usuarioRepository.findById(idUsuarioExcluir);
                 if (usuarioActualOpt.isPresent() && usuarioActualOpt.get().getPaciente() != null) {
@@ -674,7 +687,8 @@ public class UsuarioServiceImpl implements UsuarioService {
                 }
             }
 
-            // Si el email existe en Pacientes y NO pertenece al usuario que estamos guardando/editando
+            // Si el email existe en Pacientes y NO pertenece al usuario que estamos
+            // guardando/editando
             if (!perteneceAlUsuarioActual) {
                 throw new DataIntegrityViolationException(
                         "El email '" + email + "' ya está registrado para otro paciente del sistema.");
@@ -708,7 +722,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             Paciente pacienteConDoc = existentePorDocPaciente.get();
             boolean perteneceAlUsuarioActual = false;
 
-            // Si estamos editando, verificar si el paciente encontrado pertenece al usuario actual
+            // Si estamos editando, verificar si el paciente encontrado pertenece al usuario
+            // actual
             if (idUsuarioExcluir != null) {
                 Optional<Usuario> usuarioActualOpt = usuarioRepository.findById(idUsuarioExcluir);
                 if (usuarioActualOpt.isPresent() && usuarioActualOpt.get().getPaciente() != null) {
@@ -717,7 +732,8 @@ public class UsuarioServiceImpl implements UsuarioService {
                 }
             }
 
-            // Si el documento existe en Pacientes y NO pertenece al usuario que estamos guardando/editando
+            // Si el documento existe en Pacientes y NO pertenece al usuario que estamos
+            // guardando/editando
             if (!perteneceAlUsuarioActual) {
                 TipoDocumento tipoDoc = tipoDocumentoRepository.findById(tipoDocumentoId).orElse(new TipoDocumento());
                 throw new DataIntegrityViolationException(
@@ -747,7 +763,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (edad < 18 && tieneRolesAdministrativos) {
             throw new IllegalArgumentException(
                     "No se pueden asignar roles administrativos a menores de edad. " +
-                    "El usuario tiene " + edad + " años y debe tener al menos 18 años para roles de personal.");
+                            "El usuario tiene " + edad + " años y debe tener al menos 18 años para roles de personal.");
         }
     }
 
@@ -756,7 +772,8 @@ public class UsuarioServiceImpl implements UsuarioService {
      * - Debe tener exactamente 9 dígitos
      * - Debe empezar con 9
      * - No puede ser un número repetido (ej: 999999999)
-     * - No puede ser una secuencia ascendente/descendente (ej: 123456789, 987654321)
+     * - No puede ser una secuencia ascendente/descendente (ej: 123456789,
+     * 987654321)
      */
     private void validarFormatoTelefono(String telefono) {
         if (!StringUtils.hasText(telefono)) {
@@ -786,13 +803,15 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new IllegalArgumentException("El teléfono no puede tener todos los dígitos iguales.");
         }
 
-        // Validar que no sea una secuencia ascendente (123456789) o descendente (987654321)
+        // Validar que no sea una secuencia ascendente (123456789) o descendente
+        // (987654321)
         if (telefonoLimpio.equals("123456789") || telefonoLimpio.equals("987654321")) {
             throw new IllegalArgumentException("El teléfono no puede ser una secuencia numérica simple.");
         }
     }
 
-    // Método de validación de teléfono único - VALIDACIÓN CRUZADA USUARIOS Y PACIENTES
+    // Método de validación de teléfono único - VALIDACIÓN CRUZADA USUARIOS Y
+    // PACIENTES
     private void validarUnicidadTelefono(String telefono, Long idUsuarioExcluir) {
         if (!StringUtils.hasText(telefono)) {
             return; // No validar si está vacío (campo opcional)
@@ -819,7 +838,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             Paciente pacienteConTelefono = existentePorTelefonoPaciente.get();
             boolean perteneceAlUsuarioActual = false;
 
-            // Si estamos editando, verificar si el paciente encontrado pertenece al usuario actual
+            // Si estamos editando, verificar si el paciente encontrado pertenece al usuario
+            // actual
             if (idUsuarioExcluir != null) {
                 Optional<Usuario> usuarioActualOpt = usuarioRepository.findById(idUsuarioExcluir);
                 if (usuarioActualOpt.isPresent() && usuarioActualOpt.get().getPaciente() != null) {
@@ -828,7 +848,8 @@ public class UsuarioServiceImpl implements UsuarioService {
                 }
             }
 
-            // Si el teléfono existe en Pacientes y NO pertenece al usuario que estamos guardando/editando
+            // Si el teléfono existe en Pacientes y NO pertenece al usuario que estamos
+            // guardando/editando
             if (!perteneceAlUsuarioActual) {
                 throw new DataIntegrityViolationException(
                         "El teléfono '" + telefono + "' ya está registrado para otro paciente del sistema.");
@@ -872,13 +893,15 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new IllegalStateException("No se puede promocionar un usuario inactivo");
         }
 
-        // ⚠️ VALIDACIÓN: Verificar que el paciente sea mayor de edad para promoción a personal
+        // ⚠️ VALIDACIÓN: Verificar que el paciente sea mayor de edad para promoción a
+        // personal
         if (paciente.getFechaNacimiento() != null) {
             int edad = java.time.Period.between(paciente.getFechaNacimiento(), LocalDate.now()).getYears();
             if (edad < 18) {
                 throw new IllegalArgumentException(
                         "No se puede promocionar a personal a un paciente menor de edad. " +
-                        "El paciente tiene " + edad + " años y debe tener al menos 18 años para ser parte del personal.");
+                                "El paciente tiene " + edad
+                                + " años y debe tener al menos 18 años para ser parte del personal.");
             }
         }
 

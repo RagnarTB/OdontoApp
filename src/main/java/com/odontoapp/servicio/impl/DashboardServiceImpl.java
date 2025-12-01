@@ -28,6 +28,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final ComprobanteRepository comprobanteRepository;
     private final InsumoRepository insumoRepository;
     private final EstadoPagoRepository estadoPagoRepository;
+    private final PagoRepository pagoRepository;
 
     @Override
     public Map<String, Object> obtenerEstadisticasGenerales() {
@@ -93,24 +94,8 @@ public class DashboardServiceImpl implements DashboardService {
         LocalDateTime inicioDateTime = inicioDelMes.atStartOfDay();
         LocalDateTime finDateTime = finDelMes.atTime(LocalTime.MAX);
 
-        // Obtener el estado "Pagado"
-        EstadoPago estadoPagado = estadoPagoRepository.findByNombre("Pagado")
-                .orElse(null);
-
-        if (estadoPagado == null) {
-            return BigDecimal.ZERO;
-        }
-
-        // Obtener comprobantes pagados del mes
-        List<Comprobante> comprobantesPagados = comprobanteRepository
-                .findByEstadoPagoAndFechaEmisionBetweenAndEliminadoFalse(
-                        estadoPagado,
-                        inicioDateTime,
-                        finDateTime);
-
-        return comprobantesPagados.stream()
-                .map(Comprobante::getMontoPagado)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Sumar todos los pagos realizados en el mes actual
+        return pagoRepository.sumMontoByFechaPagoBetween(inicioDateTime, finDateTime);
     }
 
     @Override

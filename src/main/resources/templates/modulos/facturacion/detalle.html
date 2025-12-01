@@ -1,377 +1,410 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: layout(titulo='Detalle de Comprobante', contenido=~{::#contenido-principal}, scripts=~{::#detalle-scripts})}">
+    th:replace="~{layout/base :: layout(titulo='Detalle de Comprobante', contenido=~{::#contenido-principal}, scripts=~{::#detalle-scripts})}">
 
 <body>
-<div id="contenido-principal">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Detalle de Comprobante</h1>
-                    <p class="text-muted">Información completa del comprobante y pagos realizados</p>
+    <div id="contenido-principal">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Detalle de Comprobante</h1>
+                        <p class="text-muted">Información completa del comprobante y pagos realizados</p>
+                    </div>
+                    <div class="col-sm-6">
+                        <a th:href="@{/facturacion}" class="btn btn-outline-secondary float-sm-right">
+                            <i class="fas fa-arrow-left mr-2"></i> Volver al Listado
+                        </a>
+                    </div>
                 </div>
-                <div class="col-sm-6">
-                    <a th:href="@{/facturacion}" class="btn btn-outline-secondary float-sm-right">
-                        <i class="fas fa-arrow-left mr-2"></i> Volver al Listado
-                    </a>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+
+                <!-- Mensajes flash -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span th:text="${success}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-            </div>
-        </div>
-    </section>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
 
-    <section class="content">
-        <div class="container-fluid">
+                <div class="row">
+                    <!-- Columna Izquierda: Información del Comprobante -->
+                    <div class="col-md-8">
 
-            <!-- Mensajes flash -->
-            <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle mr-2"></i>
-                <span th:text="${success}"></span>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle mr-2"></i>
-                <span th:text="${error}"></span>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-
-            <div class="row">
-                <!-- Columna Izquierda: Información del Comprobante -->
-                <div class="col-md-8">
-
-                    <!-- Información General -->
-                    <div class="card card-primary">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-file-invoice mr-2"></i>Información del Comprobante
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p><strong>Número:</strong> <span th:text="${comprobante.numeroComprobante}">B001-0000001</span></p>
-                                    <p><strong>Tipo:</strong> <span class="badge badge-info" th:text="${comprobante.tipoComprobante}">CITA</span></p>
-                                    <p><strong>Paciente:</strong> <span th:text="${comprobante.paciente.nombreCompleto}">Juan Pérez</span></p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p><strong>Fecha Emisión:</strong>
-                                        <span th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy')}">01/11/2025</span>
-                                        <small class="text-muted ml-1" th:text="'a las ' + ${#temporals.format(comprobante.fechaEmision, 'HH:mm')}">a las 14:30</small>
-                                    </p>
-                                    <p><strong>Estado:</strong>
-                                        <span class="badge"
-                                              th:classappend="${comprobante.estadoPago.nombre == 'PENDIENTE'} ? 'badge-warning' :
+                        <!-- Información General -->
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-file-invoice mr-2"></i>Información del Comprobante
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Número:</strong> <span
+                                                th:text="${comprobante.numeroComprobante}">B001-0000001</span></p>
+                                        <p><strong>Tipo:</strong> <span class="badge badge-info"
+                                                th:text="${comprobante.tipoComprobante}">CITA</span></p>
+                                        <p><strong>Paciente:</strong> <span
+                                                th:text="${comprobante.paciente.nombreCompleto}">Juan Pérez</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Fecha Emisión:</strong>
+                                            <span
+                                                th:text="${#temporals.format(comprobante.fechaEmision, 'dd/MM/yyyy')}">01/11/2025</span>
+                                            <small class="text-muted ml-1"
+                                                th:text="'a las ' + ${#temporals.format(comprobante.fechaEmision, 'HH:mm')}">a
+                                                las 14:30</small>
+                                        </p>
+                                        <p><strong>Estado:</strong>
+                                            <span class="badge"
+                                                th:classappend="${comprobante.estadoPago.nombre == 'PENDIENTE'} ? 'badge-warning' :
                                                               (${comprobante.estadoPago.nombre == 'PAGADO_PARCIAL'} ? 'badge-info' :
                                                               (${comprobante.estadoPago.nombre == 'PAGADO_TOTAL'} ? 'badge-success' :
                                                               (${comprobante.estadoPago.nombre == 'ANULADO'} ? 'badge-danger' : 'badge-secondary')))"
-                                              th:text="${comprobante.estadoPago.nombre}">
-                                            PENDIENTE
-                                        </span>
-                                    </p>
-                                    <p th:if="${comprobante.cita != null}">
-                                        <strong>Cita ID:</strong> <span th:text="${comprobante.cita.id}">123</span>
-                                    </p>
+                                                th:text="${comprobante.estadoPago.nombre}">
+                                                PENDIENTE
+                                            </span>
+                                        </p>
+                                        <p th:if="${comprobante.cita != null}">
+                                            <strong>Cita ID:</strong> <span th:text="${comprobante.cita.id}">123</span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div th:if="${comprobante.descripcion}" class="mt-3">
+                                    <p><strong>Descripción:</strong></p>
+                                    <p class="text-muted" th:text="${comprobante.descripcion}">Comprobante generado
+                                        desde cita</p>
                                 </div>
                             </div>
+                        </div>
 
-                            <div th:if="${comprobante.descripcion}" class="mt-3">
-                                <p><strong>Descripción:</strong></p>
-                                <p class="text-muted" th:text="${comprobante.descripcion}">Comprobante generado desde cita</p>
+                        <!-- Detalles del Comprobante -->
+                        <div class="card card-secondary">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-list mr-2"></i>Detalles del Comprobante
+                                </h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Tipo</th>
+                                            <th>Descripción</th>
+                                            <th class="text-center">Cantidad</th>
+                                            <th class="text-right">P. Unitario</th>
+                                            <th class="text-right">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:if="${comprobante.detalles == null || comprobante.detalles.empty}">
+                                            <td colspan="5" class="text-center text-muted py-3">
+                                                No hay detalles registrados.
+                                            </td>
+                                        </tr>
+                                        <tr th:each="detalle : ${comprobante.detalles}" class="detalle-row"
+                                            th:data-tipo="${detalle.tipoItem}" th:data-item-id="${detalle.itemId}">
+                                            <td>
+                                                <span class="badge"
+                                                    th:classappend="${detalle.tipoItem == 'PROCEDIMIENTO'} ? 'badge-primary' : 'badge-warning'"
+                                                    th:text="${detalle.tipoItem}">PROCEDIMIENTO</span>
+                                            </td>
+                                            <td class="detalle-descripcion" th:text="${detalle.descripcionItem}">
+                                                Limpieza Dental</td>
+                                            <td class="text-center detalle-cantidad"
+                                                th:text="${#numbers.formatDecimal(detalle.cantidad, 1, 2)}">1.00</td>
+                                            <td class="text-right">S/ <span
+                                                    th:text="${#numbers.formatDecimal(detalle.precioUnitario, 1, 2)}">80.00</span>
+                                            </td>
+                                            <td class="text-right"><strong>S/ <span
+                                                        th:text="${#numbers.formatDecimal(detalle.subtotal, 1, 2)}">80.00</span></strong>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="4" class="text-right">Total:</th>
+                                            <th class="text-right text-success">
+                                                S/ <span
+                                                    th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">150.00</span>
+                                            </th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Detalles del Comprobante -->
-                    <div class="card card-secondary">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-list mr-2"></i>Detalles del Comprobante
-                            </h3>
-                        </div>
-                        <div class="card-body p-0">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Tipo</th>
-                                        <th>Descripción</th>
-                                        <th class="text-center">Cantidad</th>
-                                        <th class="text-right">P. Unitario</th>
-                                        <th class="text-right">Subtotal</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:if="${comprobante.detalles == null || comprobante.detalles.empty}">
-                                        <td colspan="5" class="text-center text-muted py-3">
-                                            No hay detalles registrados.
-                                        </td>
-                                    </tr>
-                                    <tr th:each="detalle : ${comprobante.detalles}"
-                                        class="detalle-row"
-                                        th:data-tipo="${detalle.tipoItem}"
-                                        th:data-item-id="${detalle.itemId}">
-                                        <td>
-                                            <span class="badge"
-                                                  th:classappend="${detalle.tipoItem == 'PROCEDIMIENTO'} ? 'badge-primary' : 'badge-warning'"
-                                                  th:text="${detalle.tipoItem}">PROCEDIMIENTO</span>
-                                        </td>
-                                        <td class="detalle-descripcion" th:text="${detalle.descripcionItem}">Limpieza Dental</td>
-                                        <td class="text-center detalle-cantidad" th:text="${#numbers.formatDecimal(detalle.cantidad, 1, 2)}">1.00</td>
-                                        <td class="text-right">S/ <span th:text="${#numbers.formatDecimal(detalle.precioUnitario, 1, 2)}">80.00</span></td>
-                                        <td class="text-right"><strong>S/ <span th:text="${#numbers.formatDecimal(detalle.subtotal, 1, 2)}">80.00</span></strong></td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="4" class="text-right">Total:</th>
-                                        <th class="text-right text-success">
-                                            S/ <span th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">150.00</span>
-                                        </th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Historial de Pagos -->
-                    <div class="card card-success">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-history mr-2"></i>Historial de Pagos
-                            </h3>
-                            <div class="card-tools" th:if="${pagos != null && !pagos.empty}">
-                                <span class="badge badge-success">
-                                    <i class="fas fa-receipt mr-1"></i><span th:text="${pagos.size()}">0</span> pago(s)
-                                </span>
+                        <!-- Historial de Pagos -->
+                        <div class="card card-success">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-history mr-2"></i>Historial de Pagos
+                                </h3>
+                                <div class="card-tools" th:if="${pagos != null && !pagos.empty}">
+                                    <span class="badge badge-success">
+                                        <i class="fas fa-receipt mr-1"></i><span th:text="${pagos.size()}">0</span>
+                                        pago(s)
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Fecha</th>
-                                        <th>Método</th>
-                                        <th class="text-right">Monto</th>
-                                        <th>Notas</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:if="${pagos == null || pagos.empty}">
-                                        <td colspan="5" class="text-center text-muted py-3">
-                                            <i class="fas fa-info-circle fa-2x mb-2 d-block"></i>
-                                            No se han registrado pagos aún.
-                                        </td>
-                                    </tr>
-                                    <tr th:each="pago, iterStat : ${pagos}">
-                                        <td>
-                                            <span class="badge badge-light" th:text="${iterStat.count}">1</span>
-                                        </td>
-                                        <td>
-                                            <small th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy')}">01/11/2025</small>
-                                            <br>
-                                            <small class="text-muted" th:text="${#temporals.format(pago.fechaPago, 'HH:mm')}">14:30</small>
-                                        </td>
-                                        <td>
-                                            <span class="badge"
-                                                  th:classappend="${pago.metodoPago.nombre.contains('EFECTIVO')} ? 'badge-success' :
+                            <div class="card-body p-0">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Fecha</th>
+                                            <th>Método</th>
+                                            <th class="text-right">Monto</th>
+                                            <th>Notas</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:if="${pagos == null || pagos.empty}">
+                                            <td colspan="5" class="text-center text-muted py-3">
+                                                <i class="fas fa-info-circle fa-2x mb-2 d-block"></i>
+                                                No se han registrado pagos aún.
+                                            </td>
+                                        </tr>
+                                        <tr th:each="pago, iterStat : ${pagos}">
+                                            <td>
+                                                <span class="badge badge-light" th:text="${iterStat.count}">1</span>
+                                            </td>
+                                            <td>
+                                                <small
+                                                    th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy')}">01/11/2025</small>
+                                                <br>
+                                                <small class="text-muted"
+                                                    th:text="${#temporals.format(pago.fechaPago, 'HH:mm')}">14:30</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge"
+                                                    th:classappend="${pago.metodoPago.nombre.contains('EFECTIVO')} ? 'badge-success' :
                                                                  (${pago.metodoPago.nombre.contains('YAPE')} ? 'badge-info' :
                                                                  (${pago.metodoPago.nombre.contains('MIXTO')} ? 'badge-warning' : 'badge-primary'))"
-                                                  th:text="${pago.metodoPago.nombre}">EFECTIVO</span>
+                                                    th:text="${pago.metodoPago.nombre}">EFECTIVO</span>
 
-                                            <!-- Detalles de pago mixto -->
-                                            <div th:if="${pago.montoEfectivo != null && pago.montoYape != null}" class="small text-muted mt-1">
-                                                <i class="fas fa-money-bill-wave mr-1"></i>Efectivo: S/ <span th:text="${#numbers.formatDecimal(pago.montoEfectivo, 1, 2)}">25.00</span>
-                                                <br>
-                                                <i class="fas fa-mobile-alt mr-1"></i>Yape: S/ <span th:text="${#numbers.formatDecimal(pago.montoYape, 1, 2)}">25.00</span>
-                                            </div>
+                                                <!-- Detalles de pago mixto -->
+                                                <div th:if="${pago.montoEfectivo != null && pago.montoYape != null}"
+                                                    class="small text-muted mt-1">
+                                                    <i class="fas fa-money-bill-wave mr-1"></i>Efectivo: S/ <span
+                                                        th:text="${#numbers.formatDecimal(pago.montoEfectivo, 1, 2)}">25.00</span>
+                                                    <br>
+                                                    <i class="fas fa-mobile-alt mr-1"></i>Yape: S/ <span
+                                                        th:text="${#numbers.formatDecimal(pago.montoYape, 1, 2)}">25.00</span>
+                                                </div>
 
-                                            <!-- Referencia de Yape/Transferencia -->
-                                            <span th:if="${pago.referenciaYape}" class="text-muted small d-block mt-1">
-                                                <i class="fas fa-hashtag"></i> Ref: <span th:text="${pago.referenciaYape}">123456</span>
-                                            </span>
-                                        </td>
-                                        <td class="text-right">
-                                            <strong class="text-success">
-                                                S/ <span th:text="${#numbers.formatDecimal(pago.monto, 1, 2)}">50.00</span>
-                                            </strong>
-                                        </td>
-                                        <td>
-                                            <small th:if="${pago.notas}" th:text="${pago.notas}">Pago parcial</small>
-                                            <small th:unless="${pago.notas}" class="text-muted">-</small>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                <tfoot th:if="${pagos != null && !pagos.empty}" class="bg-light font-weight-bold">
-                                    <tr>
-                                        <td colspan="3" class="text-right">Total Pagado:</td>
-                                        <td class="text-right text-success">
-                                            S/ <span th:text="${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}">150.00</span>
-                                        </td>
-                                        <td></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                                                <!-- Referencia de Yape/Transferencia -->
+                                                <span th:if="${pago.referenciaYape}"
+                                                    class="text-muted small d-block mt-1">
+                                                    <i class="fas fa-hashtag"></i> Ref: <span
+                                                        th:text="${pago.referenciaYape}">123456</span>
+                                                </span>
+                                            </td>
+                                            <td class="text-right">
+                                                <strong class="text-success">
+                                                    S/ <span
+                                                        th:text="${#numbers.formatDecimal(pago.monto, 1, 2)}">50.00</span>
+                                                </strong>
+                                            </td>
+                                            <td>
+                                                <small th:if="${pago.notas}" th:text="${pago.notas}">Pago
+                                                    parcial</small>
+                                                <small th:unless="${pago.notas}" class="text-muted">-</small>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot th:if="${pagos != null && !pagos.empty}" class="bg-light font-weight-bold">
+                                        <tr>
+                                            <td colspan="3" class="text-right">Total Pagado:</td>
+                                            <td class="text-right text-success">
+                                                S/ <span
+                                                    th:text="${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}">150.00</span>
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
+
                     </div>
 
-                </div>
-
-                <!-- Columna Derecha: Resumen de Pagos -->
-                <div class="col-md-4">
-                    <div class="card card-success">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-calculator mr-2"></i>Resumen de Pagos
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label>Monto Total:</label>
-                                <h3 class="text-dark">S/ <span th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">150.00</span></h3>
+                    <!-- Columna Derecha: Resumen de Pagos -->
+                    <div class="col-md-4">
+                        <div class="card card-success">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-calculator mr-2"></i>Resumen de Pagos
+                                </h3>
                             </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label>Monto Total:</label>
+                                    <h3 class="text-dark">S/ <span
+                                            th:text="${#numbers.formatDecimal(comprobante.montoTotal, 1, 2)}">150.00</span>
+                                    </h3>
+                                </div>
 
-                            <div class="mb-3">
-                                <label>Monto Pagado:</label>
-                                <h3 class="text-success">S/ <span th:text="${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}">50.00</span></h3>
-                            </div>
+                                <div class="mb-3">
+                                    <label>Monto Pagado:</label>
+                                    <h3 class="text-success">S/ <span
+                                            th:text="${#numbers.formatDecimal(comprobante.montoPagado, 1, 2)}">50.00</span>
+                                    </h3>
+                                </div>
 
-                            <div class="mb-4">
-                                <label>Saldo Pendiente:</label>
-                                <h2 class="text-danger">S/ <span th:text="${#numbers.formatDecimal(comprobante.montoPendiente, 1, 2)}">100.00</span></h2>
-                            </div>
+                                <div class="mb-4">
+                                    <label>Saldo Pendiente:</label>
+                                    <h2 class="text-danger">S/ <span
+                                            th:text="${#numbers.formatDecimal(comprobante.montoPendiente, 1, 2)}">100.00</span>
+                                    </h2>
+                                </div>
 
-                            <hr>
+                                <hr>
 
-                            <!-- Botón Registrar Pago -->
-                            <button type="button" class="btn btn-success btn-lg btn-block"
-                                    data-toggle="modal"
+                                <!-- Botón Registrar Pago -->
+                                <button type="button" class="btn btn-success btn-lg btn-block" data-toggle="modal"
                                     data-target="#modalRegistrarPago"
                                     th:if="${comprobante.estadoPago.nombre != 'ANULADO' && comprobante.estadoPago.nombre != 'PAGADO_TOTAL'}"
                                     th:attr="data-comprobante-id=${comprobante.id},
                                              data-numero-comprobante=${comprobante.numeroComprobante},
-                                             data-saldo-pendiente=${#numbers.formatDecimal(comprobante.montoPendiente, 1, 'POINT', 2, 'POINT')}">
-                                <i class="fas fa-money-bill-wave mr-2"></i>Registrar Pago
-                            </button>
+                                             data-saldo-pendiente=${#numbers.formatDecimal(comprobante.montoPendiente, 1, 'NONE', 2, 'POINT')}">
+                                    <i class="fas fa-money-bill-wave mr-2"></i>Registrar Pago
+                                </button>
 
-                            <div th:if="${comprobante.estadoPago.nombre == 'PAGADO_TOTAL'}" class="alert alert-success text-center">
-                                <i class="fas fa-check-circle fa-2x mb-2"></i>
-                                <p class="mb-0"><strong>Comprobante Pagado Totalmente</strong></p>
-                            </div>
+                                <div th:if="${comprobante.estadoPago.nombre == 'PAGADO_TOTAL'}"
+                                    class="alert alert-success text-center">
+                                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                    <p class="mb-0"><strong>Comprobante Pagado Totalmente</strong></p>
+                                </div>
 
-                            <div th:if="${comprobante.estadoPago.nombre == 'ANULADO'}" class="alert alert-danger text-center">
-                                <i class="fas fa-ban fa-2x mb-2"></i>
-                                <p class="mb-0"><strong>Comprobante Anulado</strong></p>
+                                <div th:if="${comprobante.estadoPago.nombre == 'ANULADO'}"
+                                    class="alert alert-danger text-center">
+                                    <i class="fas fa-ban fa-2x mb-2"></i>
+                                    <p class="mb-0"><strong>Comprobante Anulado</strong></p>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Acciones Adicionales -->
-                    <div class="card card-warning">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-cogs mr-2"></i>Acciones
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <!-- Botón Imprimir: SOLO habilitado si está PAGADO totalmente -->
-                            <a th:href="@{/facturacion/imprimir/{id}(id=${comprobante.id})}"
-                               class="btn btn-block"
-                               th:classappend="${comprobante.estadoPago.nombre == 'PAGADO'} ? 'btn-primary' : 'btn-secondary disabled'"
-                               th:disabled="${comprobante.estadoPago.nombre != 'PAGADO'}"
-                               th:attr="aria-disabled=${comprobante.estadoPago.nombre != 'PAGADO'}"
-                               target="_blank">
-                                <i class="fas fa-print mr-2"></i>Imprimir Comprobante
-                            </a>
+                        <!-- Acciones Adicionales -->
+                        <div class="card card-warning">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-cogs mr-2"></i>Acciones
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <!-- Botón Imprimir: SOLO habilitado si está PAGADO totalmente -->
+                                <a th:href="@{/facturacion/imprimir/{id}(id=${comprobante.id})}" class="btn btn-block"
+                                    th:classappend="${comprobante.estadoPago.nombre == 'PAGADO'} ? 'btn-primary' : 'btn-secondary disabled'"
+                                    th:disabled="${comprobante.estadoPago.nombre != 'PAGADO'}"
+                                    th:attr="aria-disabled=${comprobante.estadoPago.nombre != 'PAGADO'}"
+                                    target="_blank">
+                                    <i class="fas fa-print mr-2"></i>Imprimir Comprobante
+                                </a>
 
-                            <small th:if="${comprobante.estadoPago.nombre == 'PENDIENTE' || comprobante.estadoPago.nombre == 'PAGADO_PARCIAL'}" class="text-warning d-block mt-2">
-                                <i class="fas fa-exclamation-triangle"></i> Solo se puede imprimir cuando el comprobante esté totalmente pagado
-                            </small>
-                            <small th:if="${comprobante.estadoPago.nombre == 'ANULADO'}" class="text-muted d-block mt-2">
-                                <i class="fas fa-ban"></i> No se puede imprimir comprobantes anulados
-                            </small>
-                            <small th:if="${comprobante.estadoPago.nombre == 'PAGADO'}" class="text-success d-block mt-2">
-                                <i class="fas fa-check-circle"></i> Comprobante listo para imprimir
-                            </small>
+                                <small
+                                    th:if="${comprobante.estadoPago.nombre == 'PENDIENTE' || comprobante.estadoPago.nombre == 'PAGADO_PARCIAL'}"
+                                    class="text-warning d-block mt-2">
+                                    <i class="fas fa-exclamation-triangle"></i> Solo se puede imprimir cuando el
+                                    comprobante esté totalmente pagado
+                                </small>
+                                <small th:if="${comprobante.estadoPago.nombre == 'ANULADO'}"
+                                    class="text-muted d-block mt-2">
+                                    <i class="fas fa-ban"></i> No se puede imprimir comprobantes anulados
+                                </small>
+                                <small th:if="${comprobante.estadoPago.nombre == 'PAGADO'}"
+                                    class="text-success d-block mt-2">
+                                    <i class="fas fa-check-circle"></i> Comprobante listo para imprimir
+                                </small>
 
-                            <button type="button"
-                               class="btn btn-outline-danger btn-block mt-2"
-                               th:if="${comprobante.estadoPago.nombre != 'ANULADO' && (pagos == null || pagos.empty)}"
-                               th:attr="data-comprobante-id=${comprobante.id},
+                                <button type="button" class="btn btn-outline-danger btn-block mt-2"
+                                    th:if="${comprobante.estadoPago.nombre != 'ANULADO' && (pagos == null || pagos.empty)}"
+                                    th:attr="data-comprobante-id=${comprobante.id},
                                         data-tiene-insumos=${comprobante.detalles.?[tipoItem == 'INSUMO'].size() > 0}"
-                               onclick="confirmarAnulacion(this);">
-                                <i class="fas fa-ban mr-2"></i>Anular Comprobante
-                            </button>
+                                    onclick="confirmarAnulacion(this);">
+                                    <i class="fas fa-ban mr-2"></i>Anular Comprobante
+                                </button>
 
-                            <div th:if="${comprobante.estadoPago.nombre != 'ANULADO' && pagos != null && !pagos.empty}"
-                                 class="alert alert-warning small mt-2">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                No se puede anular un comprobante con pagos registrados.
+                                <div th:if="${comprobante.estadoPago.nombre != 'ANULADO' && pagos != null && !pagos.empty}"
+                                    class="alert alert-warning small mt-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    No se puede anular un comprobante con pagos registrados.
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
             </div>
+        </section>
 
-        </div>
-    </section>
+        <!-- Incluir Modal de Registrar Pago -->
+        <div th:replace="~{modulos/facturacion/fragmentos :: modalRegistrarPago}"></div>
 
-    <!-- Incluir Modal de Registrar Pago -->
-    <div th:replace="~{modulos/facturacion/fragmentos :: modalRegistrarPago}"></div>
+    </div><!-- #contenido-principal -->
 
-</div><!-- #contenido-principal -->
+    <!-- Scripts - Se cargan DESPUÉS de jQuery -->
+    <th:block id="detalle-scripts">
+        <!-- Incluir el script del modal de pagos al final (después de jQuery) -->
+        <div th:replace="~{modulos/facturacion/fragmentos :: scriptModalPago}"></div>
 
-<!-- Scripts - Se cargan DESPUÉS de jQuery -->
-<th:block id="detalle-scripts">
-<!-- Incluir el script del modal de pagos al final (después de jQuery) -->
-<div th:replace="~{modulos/facturacion/fragmentos :: scriptModalPago}"></div>
+        <script th:inline="javascript">
+            /*<\![CDATA[*/
+            // Función auxiliar para enviar POST de anulación
+            function enviarAnulacion(comprobanteId, regresarInventario) {
+                // Crear formulario dinámico para POST
+                var form = $('<form>', {
+                    'method': 'POST',
+                    'action': '/facturacion/anular/' + comprobanteId
+                });
 
-<script th:inline="javascript">
-    /*<\![CDATA[*/
-    // Función auxiliar para enviar POST de anulación
-    function enviarAnulacion(comprobanteId, regresarInventario) {
-        // Crear formulario dinámico para POST
-        var form = $('<form>', {
-            'method': 'POST',
-            'action': '/facturacion/anular/' + comprobanteId
-        });
+                // Agregar campo regresarInventario
+                form.append($('<input>', {
+                    'type': 'hidden',
+                    'name': 'regresarInventario',
+                    'value': regresarInventario
+                }));
 
-        // Agregar campo regresarInventario
-        form.append($('<input>', {
-            'type': 'hidden',
-            'name': 'regresarInventario',
-            'value': regresarInventario
-        }));
+                // Agregar token CSRF si existe
+                var csrfToken = $('meta[name="_csrf"]').attr('content');
+                if (csrfToken) {
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_csrf',
+                        'value': csrfToken
+                    }));
+                }
 
-        // Agregar token CSRF si existe
-        var csrfToken = $('meta[name="_csrf"]').attr('content');
-        if (csrfToken) {
-            form.append($('<input>', {
-                'type': 'hidden',
-                'name': '_csrf',
-                'value': csrfToken
-            }));
-        }
+                // Agregar al body y enviar
+                $('body').append(form);
+                form.submit();
+            }
 
-        // Agregar al body y enviar
-        $('body').append(form);
-        form.submit();
-    }
+            // Función para confirmar anulación con SweetAlert2
+            function confirmarAnulacion(button) {
+                var comprobanteId = $(button).data('comprobante-id');
+                var tieneInsumos = $(button).data('tiene-insumos');
 
-    // Función para confirmar anulación con SweetAlert2
-    function confirmarAnulacion(button) {
-        var comprobanteId = $(button).data('comprobante-id');
-        var tieneInsumos = $(button).data('tiene-insumos');
-
-        // Si tiene insumos, mostrar flujo de selección
-        if (tieneInsumos) {
-            // Primera pregunta: ¿Desea devolver insumos?
-            Swal.fire({
-                title: '¿Anular este comprobante?',
-                html: `
+                // Si tiene insumos, mostrar flujo de selección
+                if (tieneInsumos) {
+                    // Primera pregunta: ¿Desea devolver insumos?
+                    Swal.fire({
+                        title: '¿Anular este comprobante?',
+                        html: `
                     <div class="text-left">
                         <p class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle mr-2"></i>
@@ -380,72 +413,72 @@
                         <p class="mt-3">¿Desea devolver insumos al inventario?</p>
                     </div>
                 `,
-                icon: 'warning',
-                showDenyButton: true,
-                showCancelButton: true,
-                confirmButtonText: '<i class="fas fa-undo mr-1"></i> Sí, seleccionar insumos',
-                denyButtonText: '<i class="fas fa-times mr-1"></i> No devolver',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#28a745',
-                denyButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                reverseButtons: true,
-                width: '550px'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Mostrar modal de selección de insumos
-                    mostrarModalSeleccionInsumos(comprobanteId);
-                } else if (result.isDenied) {
-                    // Anular sin devolver insumos
-                    enviarAnulacionSimple(comprobanteId, false);
+                        icon: 'warning',
+                        showDenyButton: true,
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-undo mr-1"></i> Sí, seleccionar insumos',
+                        denyButtonText: '<i class="fas fa-times mr-1"></i> No devolver',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#28a745',
+                        denyButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        reverseButtons: true,
+                        width: '550px'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Mostrar modal de selección de insumos
+                            mostrarModalSeleccionInsumos(comprobanteId);
+                        } else if (result.isDenied) {
+                            // Anular sin devolver insumos
+                            enviarAnulacionSimple(comprobanteId, false);
+                        }
+                    });
+                } else {
+                    // No tiene insumos, solo confirmar anulación
+                    Swal.fire({
+                        title: '¿Está seguro?',
+                        text: '¿Desea anular este comprobante? Esta acción no se puede deshacer.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, anular',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            enviarAnulacionSimple(comprobanteId, false);
+                        }
+                    });
                 }
-            });
-        } else {
-            // No tiene insumos, solo confirmar anulación
-            Swal.fire({
-                title: '¿Está seguro?',
-                text: '¿Desea anular este comprobante? Esta acción no se puede deshacer.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, anular',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    enviarAnulacionSimple(comprobanteId, false);
-                }
-            });
-        }
-    }
-
-    // Función para mostrar modal de selección de insumos
-    function mostrarModalSeleccionInsumos(comprobanteId) {
-        // Recopilar insumos de la tabla
-        var insumos = [];
-        $('.detalle-row').each(function() {
-            var tipo = $(this).data('tipo');
-            if (tipo === 'INSUMO') {
-                var itemId = $(this).data('item-id');
-                var descripcion = $(this).find('.detalle-descripcion').text().trim();
-                var cantidad = parseFloat($(this).find('.detalle-cantidad').text());
-
-                insumos.push({
-                    id: itemId,
-                    descripcion: descripcion,
-                    cantidad: cantidad
-                });
             }
-        });
 
-        if (insumos.length === 0) {
-            Swal.fire('Error', 'No se encontraron insumos en este comprobante', 'error');
-            return;
-        }
+            // Función para mostrar modal de selección de insumos
+            function mostrarModalSeleccionInsumos(comprobanteId) {
+                // Recopilar insumos de la tabla
+                var insumos = [];
+                $('.detalle-row').each(function () {
+                    var tipo = $(this).data('tipo');
+                    if (tipo === 'INSUMO') {
+                        var itemId = $(this).data('item-id');
+                        var descripcion = $(this).find('.detalle-descripcion').text().trim();
+                        var cantidad = parseFloat($(this).find('.detalle-cantidad').text());
 
-        // Construir tabla HTML para selección
-        var tablaHTML = `
+                        insumos.push({
+                            id: itemId,
+                            descripcion: descripcion,
+                            cantidad: cantidad
+                        });
+                    }
+                });
+
+                if (insumos.length === 0) {
+                    Swal.fire('Error', 'No se encontraron insumos en este comprobante', 'error');
+                    return;
+                }
+
+                // Construir tabla HTML para selección
+                var tablaHTML = `
             <div class="text-left">
                 <p class="alert alert-info mb-3">
                     <i class="fas fa-info-circle mr-2"></i>
@@ -464,8 +497,8 @@
                         <tbody>
         `;
 
-        insumos.forEach(function(insumo, index) {
-            tablaHTML += `
+                insumos.forEach(function (insumo, index) {
+                    tablaHTML += `
                 <tr>
                     <td class="text-center">
                         <input type="checkbox" class="insumo-checkbox" data-index="${index}" checked>
@@ -489,9 +522,9 @@
                     </td>
                 </tr>
             `;
-        });
+                });
 
-        tablaHTML += `
+                tablaHTML += `
                         </tbody>
                     </table>
                 </div>
@@ -502,227 +535,227 @@
             </div>
         `;
 
-        Swal.fire({
-            title: 'Seleccionar Insumos a Devolver',
-            html: tablaHTML,
-            icon: 'question',
-            width: '800px',
-            showCancelButton: true,
-            confirmButtonText: '<i class="fas fa-check mr-1"></i> Confirmar Devolución',
-            cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#28a745',
-            cancelButtonColor: '#6c757d',
-            didOpen: () => {
-                // Handler para "Seleccionar Todos"
-                $('#selectAllInsumos').on('change', function() {
-                    $('.insumo-checkbox').prop('checked', $(this).is(':checked'));
-                });
-
-                // Handler para validar cantidades en tiempo real
-                $('.insumo-cantidad').on('input', function() {
-                    var $input = $(this);
-                    var val = parseFloat($input.val());
-                    var max = parseFloat($input.data('max'));
-
-                    // Si está vacío o no es número, no validar aún
-                    if ($input.val() === '' || isNaN(val)) {
-                        $input.removeClass('is-valid is-invalid');
-                        return;
-                    }
-
-                    // Validar rango
-                    if (val < 0) {
-                        $input.val(0);
-                        $input.addClass('is-invalid');
-                        $input.removeClass('is-valid');
-                        Swal.showValidationMessage('No se permiten cantidades negativas');
-                        setTimeout(() => {
-                            $input.removeClass('is-invalid');
-                            Swal.resetValidationMessage();
-                        }, 2000);
-                    } else if (val > max) {
-                        $input.val(max);
-                        $input.addClass('is-invalid');
-                        $input.removeClass('is-valid');
-                        Swal.showValidationMessage(`Cantidad máxima: ${max}`);
-                        setTimeout(() => {
-                            $input.removeClass('is-invalid');
-                            $input.addClass('is-valid');
-                            Swal.resetValidationMessage();
-                        }, 2000);
-                    } else if (val > 0 && val <= max) {
-                        $input.removeClass('is-invalid');
-                        $input.addClass('is-valid');
-                        Swal.resetValidationMessage();
-                    } else {
-                        $input.removeClass('is-valid is-invalid');
-                    }
-                });
-
-                // Validar también al perder el foco
-                $('.insumo-cantidad').on('blur', function() {
-                    var $input = $(this);
-                    var val = parseFloat($input.val());
-                    var max = parseFloat($input.data('max'));
-
-                    // Si está vacío, poner 0
-                    if ($input.val() === '' || isNaN(val) || val < 0) {
-                        $input.val(0);
-                    }
-
-                    // Asegurar que no exceda el máximo
-                    if (val > max) {
-                        $input.val(max);
-                    }
-                });
-
-                // Deshabilitar input si checkbox desmarcado
-                $('.insumo-checkbox').on('change', function() {
-                    var index = $(this).data('index');
-                    var $input = $('.insumo-cantidad[data-index="' + index + '"]');
-                    $input.prop('disabled', !$(this).is(':checked'));
-                });
-            },
-            preConfirm: () => {
-                // Recopilar insumos seleccionados
-                var insumosSeleccionados = [];
-                var errores = [];
-
-                $('.insumo-checkbox:checked').each(function() {
-                    var index = $(this).data('index');
-                    var $row = $(this).closest('tr');
-                    var insumoId = $row.find('.insumo-id').val();
-                    var $cantidadInput = $row.find('.insumo-cantidad[data-index="' + index + '"]');
-                    var cantidad = parseFloat($cantidadInput.val()) || 0;
-                    var max = parseFloat($cantidadInput.data('max'));
-
-                    // Validación 1: ID válido
-                    if (!insumoId || insumoId === 'undefined' || insumoId === 'null') {
-                        errores.push('Hay un insumo sin ID válido. Por favor, refresque la página.');
-                        return;
-                    }
-
-                    // Validación 2: Cantidad positiva
-                    if (cantidad <= 0) {
-                        return; // Skip este insumo pero no es error
-                    }
-
-                    // Validación 3: No exceder cantidad máxima
-                    if (cantidad > max) {
-                        errores.push(`La cantidad a devolver (${cantidad}) excede la cantidad usada (${max})`);
-                        return;
-                    }
-
-                    // Validación 4: Número válido
-                    if (isNaN(cantidad)) {
-                        errores.push('Cantidad inválida detectada');
-                        return;
-                    }
-
-                    insumosSeleccionados.push({
-                        insumoId: parseInt(insumoId),
-                        cantidad: cantidad
-                    });
-                });
-
-                // Mostrar errores si hay
-                if (errores.length > 0) {
-                    Swal.showValidationMessage(errores.join('<br>'));
-                    return false;
-                }
-
-                if (insumosSeleccionados.length === 0) {
-                    Swal.showValidationMessage('Debe seleccionar al menos un insumo con cantidad mayor a 0');
-                    return false;
-                }
-
-                return insumosSeleccionados;
-            }
-        }).then((result) => {
-            if (result.isConfirmed && result.value) {
-                // Enviar anulación con lista de insumos
-                enviarAnulacionConInsumos(comprobanteId, result.value);
-            }
-        });
-    }
-
-    // Función para anulación simple (sin devolución o todos los insumos)
-    function enviarAnulacionSimple(comprobanteId, regresarInventario) {
-        // Crear formulario dinámico para POST
-        var form = $('<form>', {
-            'method': 'POST',
-            'action': '/facturacion/anular/' + comprobanteId
-        });
-
-        // Agregar campo regresarInventario
-        form.append($('<input>', {
-            'type': 'hidden',
-            'name': 'regresarInventario',
-            'value': regresarInventario
-        }));
-
-        // Agregar token CSRF si existe
-        var csrfToken = $('meta[name="_csrf"]').attr('content');
-        var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
-
-        if (csrfToken) {
-            form.append($('<input>', {
-                'type': 'hidden',
-                'name': '_csrf',
-                'value': csrfToken
-            }));
-        }
-
-        // Agregar al body y enviar
-        $('body').append(form);
-        form.submit();
-    }
-
-    // Función para anulación con lista selectiva de insumos
-    function enviarAnulacionConInsumos(comprobanteId, insumos) {
-        var csrfToken = $('meta[name="_csrf"]').attr('content');
-        var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
-
-        $.ajax({
-            url: '/facturacion/anular-con-devolucion/' + comprobanteId,
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ insumos: insumos }),
-            beforeSend: function(xhr) {
-                if (csrfToken && csrfHeader) {
-                    xhr.setRequestHeader(csrfHeader, csrfToken);
-                }
-            },
-            success: function(response) {
                 Swal.fire({
-                    icon: 'success',
-                    title: '¡Comprobante Anulado!',
-                    text: response.mensaje || 'El comprobante ha sido anulado y los insumos devueltos al inventario',
-                    confirmButtonText: 'Aceptar'
-                }).then(() => {
-                    window.location.reload();
-                });
-            },
-            error: function(xhr) {
-                var mensaje = 'Error al anular el comprobante';
-                if (xhr.responseJSON && xhr.responseJSON.mensaje) {
-                    mensaje = xhr.responseJSON.mensaje;
-                }
+                    title: 'Seleccionar Insumos a Devolver',
+                    html: tablaHTML,
+                    icon: 'question',
+                    width: '800px',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-check mr-1"></i> Confirmar Devolución',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    didOpen: () => {
+                        // Handler para "Seleccionar Todos"
+                        $('#selectAllInsumos').on('change', function () {
+                            $('.insumo-checkbox').prop('checked', $(this).is(':checked'));
+                        });
 
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: mensaje,
-                    confirmButtonText: 'Entendido'
+                        // Handler para validar cantidades en tiempo real
+                        $('.insumo-cantidad').on('input', function () {
+                            var $input = $(this);
+                            var val = parseFloat($input.val());
+                            var max = parseFloat($input.data('max'));
+
+                            // Si está vacío o no es número, no validar aún
+                            if ($input.val() === '' || isNaN(val)) {
+                                $input.removeClass('is-valid is-invalid');
+                                return;
+                            }
+
+                            // Validar rango
+                            if (val < 0) {
+                                $input.val(0);
+                                $input.addClass('is-invalid');
+                                $input.removeClass('is-valid');
+                                Swal.showValidationMessage('No se permiten cantidades negativas');
+                                setTimeout(() => {
+                                    $input.removeClass('is-invalid');
+                                    Swal.resetValidationMessage();
+                                }, 2000);
+                            } else if (val > max) {
+                                $input.val(max);
+                                $input.addClass('is-invalid');
+                                $input.removeClass('is-valid');
+                                Swal.showValidationMessage(`Cantidad máxima: ${max}`);
+                                setTimeout(() => {
+                                    $input.removeClass('is-invalid');
+                                    $input.addClass('is-valid');
+                                    Swal.resetValidationMessage();
+                                }, 2000);
+                            } else if (val > 0 && val <= max) {
+                                $input.removeClass('is-invalid');
+                                $input.addClass('is-valid');
+                                Swal.resetValidationMessage();
+                            } else {
+                                $input.removeClass('is-valid is-invalid');
+                            }
+                        });
+
+                        // Validar también al perder el foco
+                        $('.insumo-cantidad').on('blur', function () {
+                            var $input = $(this);
+                            var val = parseFloat($input.val());
+                            var max = parseFloat($input.data('max'));
+
+                            // Si está vacío, poner 0
+                            if ($input.val() === '' || isNaN(val) || val < 0) {
+                                $input.val(0);
+                            }
+
+                            // Asegurar que no exceda el máximo
+                            if (val > max) {
+                                $input.val(max);
+                            }
+                        });
+
+                        // Deshabilitar input si checkbox desmarcado
+                        $('.insumo-checkbox').on('change', function () {
+                            var index = $(this).data('index');
+                            var $input = $('.insumo-cantidad[data-index="' + index + '"]');
+                            $input.prop('disabled', !$(this).is(':checked'));
+                        });
+                    },
+                    preConfirm: () => {
+                        // Recopilar insumos seleccionados
+                        var insumosSeleccionados = [];
+                        var errores = [];
+
+                        $('.insumo-checkbox:checked').each(function () {
+                            var index = $(this).data('index');
+                            var $row = $(this).closest('tr');
+                            var insumoId = $row.find('.insumo-id').val();
+                            var $cantidadInput = $row.find('.insumo-cantidad[data-index="' + index + '"]');
+                            var cantidad = parseFloat($cantidadInput.val()) || 0;
+                            var max = parseFloat($cantidadInput.data('max'));
+
+                            // Validación 1: ID válido
+                            if (!insumoId || insumoId === 'undefined' || insumoId === 'null') {
+                                errores.push('Hay un insumo sin ID válido. Por favor, refresque la página.');
+                                return;
+                            }
+
+                            // Validación 2: Cantidad positiva
+                            if (cantidad <= 0) {
+                                return; // Skip este insumo pero no es error
+                            }
+
+                            // Validación 3: No exceder cantidad máxima
+                            if (cantidad > max) {
+                                errores.push(`La cantidad a devolver (${cantidad}) excede la cantidad usada (${max})`);
+                                return;
+                            }
+
+                            // Validación 4: Número válido
+                            if (isNaN(cantidad)) {
+                                errores.push('Cantidad inválida detectada');
+                                return;
+                            }
+
+                            insumosSeleccionados.push({
+                                insumoId: parseInt(insumoId),
+                                cantidad: cantidad
+                            });
+                        });
+
+                        // Mostrar errores si hay
+                        if (errores.length > 0) {
+                            Swal.showValidationMessage(errores.join('<br>'));
+                            return false;
+                        }
+
+                        if (insumosSeleccionados.length === 0) {
+                            Swal.showValidationMessage('Debe seleccionar al menos un insumo con cantidad mayor a 0');
+                            return false;
+                        }
+
+                        return insumosSeleccionados;
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed && result.value) {
+                        // Enviar anulación con lista de insumos
+                        enviarAnulacionConInsumos(comprobanteId, result.value);
+                    }
                 });
             }
-        });
-    }
-    /*]]>*/
-</script>
-<th:block th:replace="~{modulos/facturacion/fragmentos :: scriptModalPago}"></th:block>
-</th:block>
+
+            // Función para anulación simple (sin devolución o todos los insumos)
+            function enviarAnulacionSimple(comprobanteId, regresarInventario) {
+                // Crear formulario dinámico para POST
+                var form = $('<form>', {
+                    'method': 'POST',
+                    'action': '/facturacion/anular/' + comprobanteId
+                });
+
+                // Agregar campo regresarInventario
+                form.append($('<input>', {
+                    'type': 'hidden',
+                    'name': 'regresarInventario',
+                    'value': regresarInventario
+                }));
+
+                // Agregar token CSRF si existe
+                var csrfToken = $('meta[name="_csrf"]').attr('content');
+                var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+
+                if (csrfToken) {
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_csrf',
+                        'value': csrfToken
+                    }));
+                }
+
+                // Agregar al body y enviar
+                $('body').append(form);
+                form.submit();
+            }
+
+            // Función para anulación con lista selectiva de insumos
+            function enviarAnulacionConInsumos(comprobanteId, insumos) {
+                var csrfToken = $('meta[name="_csrf"]').attr('content');
+                var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+
+                $.ajax({
+                    url: '/facturacion/anular-con-devolucion/' + comprobanteId,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ insumos: insumos }),
+                    beforeSend: function (xhr) {
+                        if (csrfToken && csrfHeader) {
+                            xhr.setRequestHeader(csrfHeader, csrfToken);
+                        }
+                    },
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Comprobante Anulado!',
+                            text: response.mensaje || 'El comprobante ha sido anulado y los insumos devueltos al inventario',
+                            confirmButtonText: 'Aceptar'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    },
+                    error: function (xhr) {
+                        var mensaje = 'Error al anular el comprobante';
+                        if (xhr.responseJSON && xhr.responseJSON.mensaje) {
+                            mensaje = xhr.responseJSON.mensaje;
+                        }
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: mensaje,
+                            confirmButtonText: 'Entendido'
+                        });
+                    }
+                });
+            }
+            /*]]>*/
+        </script>
+        <th:block th:replace="~{modulos/facturacion/fragmentos :: scriptModalPago}"></th:block>
+    </th:block>
 
 </body>
-</html>
 
+</html>

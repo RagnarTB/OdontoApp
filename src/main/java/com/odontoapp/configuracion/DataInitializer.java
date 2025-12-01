@@ -165,6 +165,10 @@ public class DataInitializer implements CommandLineRunner {
                 crearProcedimientoSiNoExiste("CON-002", "Consulta de Emergencia", new BigDecimal("100.00"), 20,
                                 consulta);
 
+                crearProcedimientoSiNoExiste("CON-003", "Consulta de Evaluación", new BigDecimal("0.00"), 20, consulta);
+                crearProcedimientoSiNoExiste("CON-004", "Control de Tratamiento", new BigDecimal("0.00"), 15, consulta);
+                crearProcedimientoSiNoExiste("CON-005", "Emergencia Dolor Fuerte", new BigDecimal("0.00"), 30,
+                                consulta);
                 // Ortodoncia
                 crearProcedimientoSiNoExiste("ORT-001", "Instalación de Brackets Metálicos", new BigDecimal("1500.00"),
                                 90,
