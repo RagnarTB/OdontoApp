@@ -136,29 +136,51 @@ public class ReporteServiceImpl implements ReporteService {
             // Sección 1: Ingresos
             rowNum = createSectionHeader(sheet, rowNum, "INGRESOS POR MÉTODO DE PAGO", headerStyle);
             List<ReporteDTO> ingresosMetodo = obtenerIngresosPorMetodoPago(fechaInicio, fechaFin);
-            rowNum = createDataTable(sheet, rowNum, ingresosMetodo, dataStyle, numberStyle, "Método", "Monto (S/.)");
+            if (ingresosMetodo != null && !ingresosMetodo.isEmpty()) {
+                rowNum = createDataTable(sheet, rowNum, ingresosMetodo, dataStyle, numberStyle, "Método",
+                        "Monto (S/.)");
+            } else {
+                rowNum = addNoDataRow(sheet, rowNum, dataStyle);
+            }
 
             rowNum += 2;
             rowNum = createSectionHeader(sheet, rowNum, "INGRESOS POR MES", headerStyle);
             List<ReporteDTO> ingresosMes = obtenerIngresosPorMes(fechaInicio, fechaFin);
-            rowNum = createDataTable(sheet, rowNum, ingresosMes, dataStyle, numberStyle, "Mes", "Monto (S/.)");
+            if (ingresosMes != null && !ingresosMes.isEmpty()) {
+                rowNum = createDataTable(sheet, rowNum, ingresosMes, dataStyle, numberStyle, "Mes", "Monto (S/.)");
+            } else {
+                rowNum = addNoDataRow(sheet, rowNum, dataStyle);
+            }
 
             // Sección 2: Operativo
             rowNum += 2;
             rowNum = createSectionHeader(sheet, rowNum, "ESTADO DE CITAS", headerStyle);
             List<ReporteDTO> citasEstado = obtenerCitasPorEstado(fechaInicio, fechaFin, odontologoId);
-            rowNum = createDataTable(sheet, rowNum, citasEstado, dataStyle, numberStyle, "Estado", "Cantidad");
+            if (citasEstado != null && !citasEstado.isEmpty()) {
+                rowNum = createDataTable(sheet, rowNum, citasEstado, dataStyle, numberStyle, "Estado", "Cantidad");
+            } else {
+                rowNum = addNoDataRow(sheet, rowNum, dataStyle);
+            }
 
             rowNum += 2;
             rowNum = createSectionHeader(sheet, rowNum, "TOP TRATAMIENTOS", headerStyle);
             List<ReporteDTO> topTratamientos = obtenerTopTratamientos(fechaInicio, fechaFin, odontologoId);
-            rowNum = createDataTable(sheet, rowNum, topTratamientos, dataStyle, numberStyle, "Tratamiento", "Cantidad");
+            if (topTratamientos != null && !topTratamientos.isEmpty()) {
+                rowNum = createDataTable(sheet, rowNum, topTratamientos, dataStyle, numberStyle, "Tratamiento",
+                        "Cantidad");
+            } else {
+                rowNum = addNoDataRow(sheet, rowNum, dataStyle);
+            }
 
             // Sección 3: Pacientes
             rowNum += 2;
             rowNum = createSectionHeader(sheet, rowNum, "NUEVOS PACIENTES", headerStyle);
             List<ReporteDTO> nuevosPacientes = obtenerNuevosPacientesPorMes(fechaInicio, fechaFin);
-            rowNum = createDataTable(sheet, rowNum, nuevosPacientes, dataStyle, numberStyle, "Mes", "Cantidad");
+            if (nuevosPacientes != null && !nuevosPacientes.isEmpty()) {
+                rowNum = createDataTable(sheet, rowNum, nuevosPacientes, dataStyle, numberStyle, "Mes", "Cantidad");
+            } else {
+                rowNum = addNoDataRow(sheet, rowNum, dataStyle);
+            }
 
             // Autoajustar columnas
             sheet.autoSizeColumn(0);
@@ -202,6 +224,15 @@ public class ReporteServiceImpl implements ReporteService {
             c2.setCellValue(dto.getValue().doubleValue());
             c2.setCellStyle(numStyle);
         }
+        return rowNum;
+    }
+
+    private int addNoDataRow(Sheet sheet, int rowNum, CellStyle textStyle) {
+        Row row = sheet.createRow(rowNum++);
+        Cell cell = row.createCell(0);
+        cell.setCellValue("No hay datos disponibles para este período");
+        cell.setCellStyle(textStyle);
+        sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(rowNum - 1, rowNum - 1, 0, 1));
         return rowNum;
     }
 

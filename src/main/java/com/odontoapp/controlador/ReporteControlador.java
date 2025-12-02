@@ -13,6 +13,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -30,7 +31,8 @@ public class ReporteControlador {
     public String index(Model model,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
-            @RequestParam(required = false) Long odontologoId) {
+            @RequestParam(required = false) Long odontologoId,
+            RedirectAttributes redirectAttributes) {
 
         // Valores por defecto: Último mes si no se especifica
         if (fechaInicio == null) {
@@ -38,6 +40,27 @@ public class ReporteControlador {
         }
         if (fechaFin == null) {
             fechaFin = LocalDate.now();
+        }
+
+        // ===== VALIDACIONES =====
+        LocalDate hoy = LocalDate.now();
+
+        // Validar que las fechas no sean futuras
+        if (fechaInicio.isAfter(hoy)) {
+            redirectAttributes.addFlashAttribute("error", "La fecha de inicio no puede ser futura.");
+            return "redirect:/reportes";
+        }
+
+        if (fechaFin.isAfter(hoy)) {
+            redirectAttributes.addFlashAttribute("error", "La fecha de fin no puede ser futura.");
+            return "redirect:/reportes";
+        }
+
+        // Validar que fechaInicio <= fechaFin
+        if (fechaInicio.isAfter(fechaFin)) {
+            redirectAttributes.addFlashAttribute("error",
+                    "La fecha de inicio no puede ser posterior a la fecha de fin.");
+            return "redirect:/reportes";
         }
 
         model.addAttribute("fechaInicio", fechaInicio);
