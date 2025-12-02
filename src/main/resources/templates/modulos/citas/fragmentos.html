@@ -1,452 +1,643 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
 <body>
 
-<!-- ========================================== -->
-<!-- MODAL: Agendar Nueva Cita -->
-<!-- ========================================== -->
-<div th:fragment="modalAgendarCita" class="modal fade" id="modalAgendarCita" tabindex="-1" role="dialog" aria-labelledby="modalAgendarCitaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <form th:action="@{/citas/agendar}" method="post" data-auto-loading="true">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="modalAgendarCitaLabel">
-                        <i class="fas fa-calendar-plus mr-2"></i>Agendar Nueva Cita
+    <!-- ========================================== -->
+    <!-- MODAL: Agendar Nueva Cita -->
+    <!-- ========================================== -->
+    <div th:fragment="modalAgendarCita" class="modal fade" id="modalAgendarCita" tabindex="-1" role="dialog"
+        aria-labelledby="modalAgendarCitaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <form th:action="@{/citas/agendar}" method="post" data-auto-loading="true">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalAgendarCitaLabel">
+                            <i class="fas fa-calendar-plus mr-2"></i>Agendar Nueva Cita
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <!-- Indicadores de progreso del wizard -->
+                    <div class="modal-body pb-2">
+                        <div class="wizard-steps d-flex justify-content-between mb-4">
+                            <div class="wizard-step active" data-step="1">
+                                <div class="step-circle">
+                                    <span class="step-number">1</span>
+                                    <i class="fas fa-check step-check" style="display: none;"></i>
+                                </div>
+                                <div class="step-label">Información Básica</div>
+                            </div>
+                            <div class="wizard-line"></div>
+                            <div class="wizard-step" data-step="2">
+                                <div class="step-circle">
+                                    <span class="step-number">2</span>
+                                    <i class="fas fa-check step-check" style="display: none;"></i>
+                                </div>
+                                <div class="step-label">Horario</div>
+                            </div>
+                            <div class="wizard-line"></div>
+                            <div class="wizard-step" data-step="3">
+                                <div class="step-circle">
+                                    <span class="step-number">3</span>
+                                    <i class="fas fa-check step-check" style="display: none;"></i>
+                                </div>
+                                <div class="step-label">Detalles</div>
+                            </div>
+                        </div>
+
+                        <style>
+                            .wizard-steps {
+                                position: relative;
+                                padding: 0 20px;
+                            }
+
+                            .wizard-step {
+                                text-align: center;
+                                flex: 1;
+                                position: relative;
+                                z-index: 2;
+                            }
+
+                            .step-circle {
+                                width: 45px;
+                                height: 45px;
+                                border-radius: 50%;
+                                background: #e9ecef;
+                                color: #6c757d;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                margin: 0 auto 8px;
+                                font-weight: bold;
+                                border: 3px solid #e9ecef;
+                                transition: all 0.3s;
+                            }
+
+                            .wizard-step.active .step-circle {
+                                background: #007bff;
+                                color: white;
+                                border-color: #007bff;
+                                transform: scale(1.1);
+                            }
+
+                            .wizard-step.completed .step-circle {
+                                background: #28a745;
+                                color: white;
+                                border-color: #28a745;
+                            }
+
+                            .wizard-step.completed .step-number {
+                                display: none;
+                            }
+
+                            .wizard-step.completed .step-check {
+                                display: block !important;
+                            }
+
+                            .step-label {
+                                font-size: 12px;
+                                color: #6c757d;
+                                font-weight: 500;
+                            }
+
+                            .wizard-step.active .step-label {
+                                color: #007bff;
+                                font-weight: 600;
+                            }
+
+                            .wizard-step.completed .step-label {
+                                color: #28a745;
+                            }
+
+                            .wizard-line {
+                                flex: 1;
+                                height: 3px;
+                                background: #e9ecef;
+                                margin: 22px 10px 0;
+                                position: relative;
+                            }
+
+                            .wizard-content-step {
+                                display: none;
+                            }
+
+                            .wizard-content-step.active {
+                                display: block;
+                            }
+                        </style>
+                    </div>
+
+                    <div class="modal-body pt-0">
+                        <!-- Alerta de validación -->
+                        <div id="alertaValidacionCita" class="alert alert-danger d-none" role="alert">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <span id="mensajeValidacionCita"></span>
+                        </div>
+
+                        <!-- Campo hidden para enviar la fecha/hora seleccionada -->
+                        <input type="hidden" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
+
+                        <!-- PASO 1: Información Básica -->
+                        <div class="wizard-content-step active" id="wizard-step-1">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="pacienteIdAgendar">Paciente <span
+                                                class="text-danger">*</span></label>
+                                        <select class="form-control" id="pacienteIdAgendar" name="pacienteUsuarioId"
+                                            required>
+                                            <option value="">Seleccione un paciente</option>
+                                            <option th:each="paciente : ${listaPacientes}"
+                                                th:value="${paciente.usuario != null ? paciente.usuario.id : ''}"
+                                                th:text="${paciente.nombreCompleto}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="odontologoIdAgendar">Odontólogo <span
+                                                class="text-danger">*</span></label>
+                                        <select class="form-control" id="odontologoIdAgendar" name="odontologoUsuarioId"
+                                            required>
+                                            <option value="">Seleccione un odontólogo</option>
+                                            <option th:each="odontologo : ${listaOdontologos}"
+                                                th:value="${odontologo.id}" th:text="${odontologo.nombreCompleto}">
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="procedimientoIdAgendar">Procedimiento <small
+                                                class="text-muted">(Opcional)</small></label>
+                                        <select class="form-control" id="procedimientoIdAgendar" name="procedimientoId">
+                                            <option value="">Seleccione un procedimiento</option>
+                                            <option th:each="procedimiento : ${listaProcedimientos}"
+                                                th:value="${procedimiento.id}"
+                                                th:text="${procedimiento.nombre} + ' (' + ${procedimiento.duracionBaseMinutos} + ' min)'"
+                                                th:attr="data-duracion=${procedimiento.duracionBaseMinutos}"></option>
+                                        </select>
+                                        <small class="form-text text-muted">
+                                            <i class="fas fa-info-circle"></i> Influye en la duración de la cita
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="fechaCitaAgendar">Fecha de la Cita <span
+                                                class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="fechaCitaAgendar" required>
+                                        <small class="form-text text-muted">
+                                            <i class="fas fa-calendar-alt"></i> Seleccione la fecha para ver horarios
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- FIN PASO 1 -->
+
+                        <!-- PASO 2: Seleccionar Horario -->
+                        <div class="wizard-content-step" id="wizard-step-2">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="text-primary mb-0">
+                                    <i class="fas fa-clock mr-2"></i>Seleccionar Horario Disponible
+                                </h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnRefrescarHorarios"
+                                    title="Refrescar horarios disponibles">
+                                    <i class="fas fa-sync-alt"></i> Actualizar
+                                </button>
+                            </div>
+
+                            <!-- Indicador de horario seleccionado -->
+                            <div class="alert alert-info" id="horario-seleccionado-info" style="display: none;">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <strong>Horario seleccionado:</strong> <span
+                                    id="horario-seleccionado-texto">Ninguno</span>
+                            </div>
+
+                            <!-- Grilla de horarios disponibles -->
+                            <div id="grilla-horarios-disponibles" class="mb-3">
+                                <div class="alert alert-secondary text-center">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    Seleccione un odontólogo y fecha para ver los horarios disponibles
+                                </div>
+                            </div>
+                        </div>
+                        <!-- FIN PASO 2 -->
+
+                        <!-- PASO 3: Información Adicional -->
+                        <div class="wizard-content-step" id="wizard-step-3">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-notes-medical mr-2"></i>Información Adicional <small
+                                    class="text-muted">(Opcional)</small>
+                            </h6>
+
+                            <!-- Motivo de Consulta: Oculto porque se infiere del procedimiento seleccionado -->
+                            <!-- <div class="form-group">
+                        <label for="motivoConsultaAgendar">Motivo de Consulta</label>
+                        <textarea class="form-control" id="motivoConsultaAgendar" name="motivoConsulta" rows="2" placeholder="Describa el motivo de la consulta"></textarea>
+                    </div> -->
+
+                            <div class="form-group">
+                                <label for="notasInternasAgendar">Notas Internas</label>
+                                <textarea class="form-control" id="notasInternasAgendar" name="notasInternas" rows="2"
+                                    placeholder="Notas visibles solo para el personal"></textarea>
+                            </div>
+                        </div>
+                        <!-- FIN PASO 3 -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i>Cancelar
+                        </button>
+                        <div class="ml-auto">
+                            <button type="button" class="btn btn-outline-secondary" id="btnWizardAnterior"
+                                style="display: none;">
+                                <i class="fas fa-arrow-left mr-1"></i>Anterior
+                            </button>
+                            <button type="button" class="btn btn-primary" id="btnWizardSiguiente">
+                                Siguiente<i class="fas fa-arrow-right ml-1"></i>
+                            </button>
+                            <button type="submit" class="btn btn-success" id="btnWizardFinalizar" style="display: none;"
+                                data-loading-text="Agendando cita...">
+                                <i class="fas fa-check mr-1"></i>Agendar Cita
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: Detalle de Cita -->
+    <!-- ========================================== -->
+    <div th:fragment="modalDetalleCita" class="modal fade" id="modalDetalleCita" tabindex="-1" role="dialog"
+        aria-labelledby="modalDetalleCitaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="modalDetalleCitaLabel">
+                        <i class="fas fa-info-circle mr-2"></i>Detalle de Cita
                     </h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-
-                <!-- Indicadores de progreso del wizard -->
-                <div class="modal-body pb-2">
-                    <div class="wizard-steps d-flex justify-content-between mb-4">
-                        <div class="wizard-step active" data-step="1">
-                            <div class="step-circle">
-                                <span class="step-number">1</span>
-                                <i class="fas fa-check step-check" style="display: none;"></i>
-                            </div>
-                            <div class="step-label">Información Básica</div>
-                        </div>
-                        <div class="wizard-line"></div>
-                        <div class="wizard-step" data-step="2">
-                            <div class="step-circle">
-                                <span class="step-number">2</span>
-                                <i class="fas fa-check step-check" style="display: none;"></i>
-                            </div>
-                            <div class="step-label">Horario</div>
-                        </div>
-                        <div class="wizard-line"></div>
-                        <div class="wizard-step" data-step="3">
-                            <div class="step-circle">
-                                <span class="step-number">3</span>
-                                <i class="fas fa-check step-check" style="display: none;"></i>
-                            </div>
-                            <div class="step-label">Detalles</div>
-                        </div>
-                    </div>
-
-                    <style>
-                        .wizard-steps {
-                            position: relative;
-                            padding: 0 20px;
-                        }
-                        .wizard-step {
-                            text-align: center;
-                            flex: 1;
-                            position: relative;
-                            z-index: 2;
-                        }
-                        .step-circle {
-                            width: 45px;
-                            height: 45px;
-                            border-radius: 50%;
-                            background: #e9ecef;
-                            color: #6c757d;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            margin: 0 auto 8px;
-                            font-weight: bold;
-                            border: 3px solid #e9ecef;
-                            transition: all 0.3s;
-                        }
-                        .wizard-step.active .step-circle {
-                            background: #007bff;
-                            color: white;
-                            border-color: #007bff;
-                            transform: scale(1.1);
-                        }
-                        .wizard-step.completed .step-circle {
-                            background: #28a745;
-                            color: white;
-                            border-color: #28a745;
-                        }
-                        .wizard-step.completed .step-number {
-                            display: none;
-                        }
-                        .wizard-step.completed .step-check {
-                            display: block !important;
-                        }
-                        .step-label {
-                            font-size: 12px;
-                            color: #6c757d;
-                            font-weight: 500;
-                        }
-                        .wizard-step.active .step-label {
-                            color: #007bff;
-                            font-weight: 600;
-                        }
-                        .wizard-step.completed .step-label {
-                            color: #28a745;
-                        }
-                        .wizard-line {
-                            flex: 1;
-                            height: 3px;
-                            background: #e9ecef;
-                            margin: 22px 10px 0;
-                            position: relative;
-                        }
-                        .wizard-content-step {
-                            display: none;
-                        }
-                        .wizard-content-step.active {
-                            display: block;
-                        }
-                    </style>
-                </div>
-
-                <div class="modal-body pt-0">
-                    <!-- Alerta de validación -->
-                    <div id="alertaValidacionCita" class="alert alert-danger d-none" role="alert">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>
-                        <span id="mensajeValidacionCita"></span>
-                    </div>
-
-                    <!-- Campo hidden para enviar la fecha/hora seleccionada -->
-                    <input type="hidden" id="fechaHoraInicioAgendar" name="fechaHoraInicio" required>
-
-                    <!-- PASO 1: Información Básica -->
-                    <div class="wizard-content-step active" id="wizard-step-1">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="pacienteIdAgendar">Paciente <span class="text-danger">*</span></label>
-                                <select class="form-control" id="pacienteIdAgendar" name="pacienteUsuarioId" required>
-                                    <option value="">Seleccione un paciente</option>
-                                    <option th:each="paciente : ${listaPacientes}"
-                                            th:value="${paciente.usuario != null ? paciente.usuario.id : ''}"
-                                            th:text="${paciente.nombreCompleto}"></option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="odontologoIdAgendar">Odontólogo <span class="text-danger">*</span></label>
-                                <select class="form-control" id="odontologoIdAgendar" name="odontologoUsuarioId" required>
-                                    <option value="">Seleccione un odontólogo</option>
-                                    <option th:each="odontologo : ${listaOdontologos}"
-                                            th:value="${odontologo.id}"
-                                            th:text="${odontologo.nombreCompleto}"></option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                <div class="modal-body">
+                    <input type="hidden" id="detalleCitaId" class="citaIdField">
+                    <input type="hidden" id="detallePacienteId">
+                    <input type="hidden" id="detalleOdontologoId">
+                    <input type="hidden" id="detalleProcedimientoId">
+                    <input type="hidden" id="detalleFecha">
+                    <input type="hidden" id="detalleHora">
 
                     <div class="row">
                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="procedimientoIdAgendar">Procedimiento <small class="text-muted">(Opcional)</small></label>
-                                <select class="form-control" id="procedimientoIdAgendar" name="procedimientoId">
-                                    <option value="">Seleccione un procedimiento</option>
-                                    <option th:each="procedimiento : ${listaProcedimientos}"
-                                            th:value="${procedimiento.id}"
-                                            th:text="${procedimiento.nombre} + ' (' + ${procedimiento.duracionBaseMinutos} + ' min)'"
-                                            th:attr="data-duracion=${procedimiento.duracionBaseMinutos}"></option>
-                                </select>
-                                <small class="form-text text-muted">
-                                    <i class="fas fa-info-circle"></i> Influye en la duración de la cita
-                                </small>
-                            </div>
+                            <p><strong>Paciente:</strong> <span id="detallePaciente"></span></p>
+                            <p><strong>Odontólogo:</strong> <span id="detalleOdontologo"></span></p>
+                            <p><strong>Procedimiento:</strong> <span id="detalleProcedimiento"></span></p>
                         </div>
                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="fechaCitaAgendar">Fecha de la Cita <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="fechaCitaAgendar" required>
-                                <small class="form-text text-muted">
-                                    <i class="fas fa-calendar-alt"></i> Seleccione la fecha para ver horarios
-                                </small>
-                            </div>
+                            <p><strong>Estado:</strong> <span id="detalleEstado" class="badge"></span></p>
+                            <p><strong>Fecha Inicio:</strong> <span id="detalleFechaHoraInicio"></span></p>
+                            <p><strong>Fecha Fin:</strong> <span id="detalleFechaHoraFin"></span></p>
                         </div>
                     </div>
-                    </div>
-                    <!-- FIN PASO 1 -->
 
-                    <!-- PASO 2: Seleccionar Horario -->
-                    <div class="wizard-content-step" id="wizard-step-2">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="text-primary mb-0">
-                            <i class="fas fa-clock mr-2"></i>Seleccionar Horario Disponible
-                        </h6>
-                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnRefrescarHorarios" title="Refrescar horarios disponibles">
-                            <i class="fas fa-sync-alt"></i> Actualizar
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <p><strong>Motivo de Consulta:</strong></p>
+                            <p class="text-muted" id="detalleMotivoConsulta"></p>
+                        </div>
+                        <div class="col-12">
+                            <p><strong>Notas Internas:</strong></p>
+                            <p class="text-muted" id="detalleNotasInternas"></p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Sección de Tratamiento Planificado Asociado -->
+                    <div id="seccionTratamientoPlanificado" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6 class="mb-2"><i class="fas fa-calendar-check mr-2"></i>Tratamiento Planificado Asociado
+                            </h6>
+                            <div id="infoTratamientoPlanificado"></div>
+                            <small class="text-muted">Este tratamiento se marcará como realizado al confirmar
+                                asistencia</small>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Botones de Acción -->
+                    <div class="text-center">
+                        <!-- Botón Confirmar Cita -->
+                        <form th:action="@{/citas/confirmar}" method="post" style="display: inline-block;"
+                            id="btnConfirmarCita" data-auto-loading="true">
+                            <input type="hidden" name="citaId" class="citaIdField">
+                            <button type="submit" class="btn btn-success" data-loading-text="Confirmando cita...">
+                                <i class="fas fa-check-circle mr-1"></i>Confirmar Cita
+                            </button>
+                        </form>
+
+                        <!-- Botones Marcar Asistencia -->
+                        <div id="divAsistencia" style="display: none;"
+                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
+                            <form th:action="@{/citas/marcar-asistencia}" method="post" style="display: inline-block;"
+                                data-auto-loading="true">
+                                <input type="hidden" name="citaId" class="citaIdField">
+                                <input type="hidden" name="asistio" value="true">
+                                <button type="submit" class="btn btn-success"
+                                    data-loading-text="Registrando asistencia...">
+                                    <i class="fas fa-user-check mr-1"></i>Asistió
+                                </button>
+                            </form>
+                            <form th:action="@{/citas/marcar-asistencia}" method="post" style="display: inline-block;"
+                                data-auto-loading="true">
+                                <input type="hidden" name="citaId" class="citaIdField">
+                                <input type="hidden" name="asistio" value="false">
+                                <button type="submit" class="btn btn-danger"
+                                    data-loading-text="Registrando inasistencia...">
+                                    <i class="fas fa-user-times mr-1"></i>No Asistió
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Botón Reprogramar -->
+                        <button type="button" class="btn btn-warning" id="btnReprogramar"
+                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
+                            <i class="fas fa-calendar-alt mr-1"></i>Reprogramar
+                        </button>
+
+                        <!-- Botón Cancelar -->
+                        <button type="button" class="btn btn-danger" id="btnCancelar"
+                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ELIMINAR_CITAS', 'ADMIN')">
+                            <i class="fas fa-ban mr-1"></i>Cancelar
+                        </button>
+
+                        <!-- Botón Registrar Tratamiento Realizado -->
+                        <button type="button" class="btn btn-primary" id="btnRegistrarTratamiento"
+                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
+                            <i class="fas fa-notes-medical mr-1"></i>Registrar Tratamiento Realizado
                         </button>
                     </div>
 
-                    <!-- Indicador de horario seleccionado -->
-                    <div class="alert alert-info" id="horario-seleccionado-info" style="display: none;">
-                        <i class="fas fa-check-circle mr-2"></i>
-                        <strong>Horario seleccionado:</strong> <span id="horario-seleccionado-texto">Ninguno</span>
+                    <!-- Mensaje: Cita ya generó tratamiento en otra cita -->
+                    <div id="mensajeCitaGenerada" class="alert alert-info mt-3" style="display:none;">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Este tratamiento fue registrado en otra cita.
+                        <a href="#" id="linkCitaGenerada" class="alert-link font-weight-bold">Ver cita generada →</a>
                     </div>
-
-                    <!-- Grilla de horarios disponibles -->
-                    <div id="grilla-horarios-disponibles" class="mb-3">
-                        <div class="alert alert-secondary text-center">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            Seleccione un odontólogo y fecha para ver los horarios disponibles
-                        </div>
-                    </div>
-                    </div>
-                    <!-- FIN PASO 2 -->
-
-                    <!-- PASO 3: Información Adicional -->
-                    <div class="wizard-content-step" id="wizard-step-3">
-                    <h6 class="text-primary mb-3">
-                        <i class="fas fa-notes-medical mr-2"></i>Información Adicional <small class="text-muted">(Opcional)</small>
-                    </h6>
-
-                    <!-- Motivo de Consulta: Oculto porque se infiere del procedimiento seleccionado -->
-                    <!-- <div class="form-group">
-                        <label for="motivoConsultaAgendar">Motivo de Consulta</label>
-                        <textarea class="form-control" id="motivoConsultaAgendar" name="motivoConsulta" rows="2" placeholder="Describa el motivo de la consulta"></textarea>
-                    </div> -->
-
-                    <div class="form-group">
-                        <label for="notasInternasAgendar">Notas Internas</label>
-                        <textarea class="form-control" id="notasInternasAgendar" name="notasInternas" rows="2" placeholder="Notas visibles solo para el personal"></textarea>
-                    </div>
-                    </div>
-                    <!-- FIN PASO 3 -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        <i class="fas fa-times mr-1"></i>Cancelar
-                    </button>
-                    <div class="ml-auto">
-                        <button type="button" class="btn btn-outline-secondary" id="btnWizardAnterior" style="display: none;">
-                            <i class="fas fa-arrow-left mr-1"></i>Anterior
-                        </button>
-                        <button type="button" class="btn btn-primary" id="btnWizardSiguiente">
-                            Siguiente<i class="fas fa-arrow-right ml-1"></i>
-                        </button>
-                        <button type="submit" class="btn btn-success" id="btnWizardFinalizar" style="display: none;" data-loading-text="Agendando cita...">
-                            <i class="fas fa-check mr-1"></i>Agendar Cita
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- ========================================== -->
-<!-- MODAL: Detalle de Cita -->
-<!-- ========================================== -->
-<div th:fragment="modalDetalleCita" class="modal fade" id="modalDetalleCita" tabindex="-1" role="dialog" aria-labelledby="modalDetalleCitaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="modalDetalleCitaLabel">
-                    <i class="fas fa-info-circle mr-2"></i>Detalle de Cita
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="detalleCitaId" class="citaIdField">
-                <input type="hidden" id="detallePacienteId">
-                <input type="hidden" id="detalleOdontologoId">
-                <input type="hidden" id="detalleProcedimientoId">
-                <input type="hidden" id="detalleFecha">
-                <input type="hidden" id="detalleHora">
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Paciente:</strong> <span id="detallePaciente"></span></p>
-                        <p><strong>Odontólogo:</strong> <span id="detalleOdontologo"></span></p>
-                        <p><strong>Procedimiento:</strong> <span id="detalleProcedimiento"></span></p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Estado:</strong> <span id="detalleEstado" class="badge"></span></p>
-                        <p><strong>Fecha Inicio:</strong> <span id="detalleFechaHoraInicio"></span></p>
-                        <p><strong>Fecha Fin:</strong> <span id="detalleFechaHoraFin"></span></p>
-                    </div>
-                </div>
-
-                <hr>
-
-                <div class="row">
-                    <div class="col-12">
-                        <p><strong>Motivo de Consulta:</strong></p>
-                        <p class="text-muted" id="detalleMotivoConsulta"></p>
-                    </div>
-                    <div class="col-12">
-                        <p><strong>Notas Internas:</strong></p>
-                        <p class="text-muted" id="detalleNotasInternas"></p>
-                    </div>
-                </div>
-
-                <hr>
-
-                <!-- Sección de Tratamiento Planificado Asociado -->
-                <div id="seccionTratamientoPlanificado" style="display: none;">
-                    <div class="alert alert-info">
-                        <h6 class="mb-2"><i class="fas fa-calendar-check mr-2"></i>Tratamiento Planificado Asociado</h6>
-                        <div id="infoTratamientoPlanificado"></div>
-                        <small class="text-muted">Este tratamiento se marcará como realizado al confirmar asistencia</small>
-                    </div>
-                </div>
-
-                <hr>
-
-                <!-- Botones de Acción -->
-                <div class="text-center">
-                    <!-- Botón Confirmar Cita -->
-                    <form th:action="@{/citas/confirmar}" method="post" style="display: inline-block;" id="btnConfirmarCita" data-auto-loading="true">
-                        <input type="hidden" name="citaId" class="citaIdField">
-                        <button type="submit" class="btn btn-success" data-loading-text="Confirmando cita...">
-                            <i class="fas fa-check-circle mr-1"></i>Confirmar Cita
-                        </button>
-                    </form>
-
-                    <!-- Botones Marcar Asistencia -->
-                    <div id="divAsistencia" style="display: none;" sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
-                        <form th:action="@{/citas/marcar-asistencia}" method="post" style="display: inline-block;" data-auto-loading="true">
-                            <input type="hidden" name="citaId" class="citaIdField">
-                            <input type="hidden" name="asistio" value="true">
-                            <button type="submit" class="btn btn-success" data-loading-text="Registrando asistencia...">
-                                <i class="fas fa-user-check mr-1"></i>Asistió
-                            </button>
-                        </form>
-                        <form th:action="@{/citas/marcar-asistencia}" method="post" style="display: inline-block;" data-auto-loading="true">
-                            <input type="hidden" name="citaId" class="citaIdField">
-                            <input type="hidden" name="asistio" value="false">
-                            <button type="submit" class="btn btn-danger" data-loading-text="Registrando inasistencia...">
-                                <i class="fas fa-user-times mr-1"></i>No Asistió
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Botón Reprogramar -->
-                    <button type="button" class="btn btn-warning" id="btnReprogramar"
-                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
-                        <i class="fas fa-calendar-alt mr-1"></i>Reprogramar
-                    </button>
-
-                    <!-- Botón Cancelar -->
-                    <button type="button" class="btn btn-danger" id="btnCancelar"
-                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ELIMINAR_CITAS', 'ADMIN')">
-                        <i class="fas fa-ban mr-1"></i>Cancelar
-                    </button>
-
-                    <!-- Botón Registrar Tratamiento Realizado -->
-                    <button type="button" class="btn btn-primary" id="btnRegistrarTratamiento"
-                            sec:authorize="hasAnyAuthority('EDITAR_CITAS', 'ADMIN')">
-                        <i class="fas fa-notes-medical mr-1"></i>Registrar Tratamiento Realizado
+                        <i class="fas fa-times mr-1"></i>Cerrar
                     </button>
                 </div>
-
-                <!-- Mensaje: Cita ya generó tratamiento en otra cita -->
-                <div id="mensajeCitaGenerada" class="alert alert-info mt-3" style="display:none;">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    Este tratamiento fue registrado en otra cita.
-                    <a href="#" id="linkCitaGenerada" class="alert-link font-weight-bold">Ver cita generada →</a>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times mr-1"></i>Cerrar
-                </button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- ========================================== -->
-<!-- MODAL: Reprogramar Cita -->
-<!-- ========================================== -->
-<div th:fragment="modalReprogramarCita" class="modal fade" id="modalReprogramarCita" tabindex="-1" role="dialog" aria-labelledby="modalReprogramarCitaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document" style="max-width: 850px;">
-        <div class="modal-content">
-            <form th:action="@{/citas/reprogramar}" method="post" data-auto-loading="true">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title" id="modalReprogramarCitaLabel">
-                        <i class="fas fa-calendar-alt mr-2"></i>Reprogramar Cita
+    <!-- ========================================== -->
+    <!-- MODAL: Reprogramar Cita -->
+    <!-- ========================================== -->
+    <div th:fragment="modalReprogramarCita" class="modal fade" id="modalReprogramarCita" tabindex="-1" role="dialog"
+        aria-labelledby="modalReprogramarCitaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document" style="max-width: 850px;">
+            <div class="modal-content">
+                <form th:action="@{/citas/reprogramar}" method="post" data-auto-loading="true">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title" id="modalReprogramarCitaLabel">
+                            <i class="fas fa-calendar-alt mr-2"></i>Reprogramar Cita
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="reprogramarCitaId" name="citaId">
+                        <input type="hidden" id="reprogramarOdontologoId" name="odontologoUsuarioId">
+                        <input type="hidden" id="nuevaFechaHoraInicioReprogramar" name="nuevaFechaHoraInicio">
+
+                        <!-- Información de la cita actual -->
+                        <div class="alert alert-info mb-3">
+                            <h6><i class="fas fa-info-circle mr-2"></i>Cita Actual</h6>
+                            <p class="mb-1"><strong>Paciente:</strong> <span id="reprogramarPaciente"></span></p>
+                            <p class="mb-0"><strong>Fecha/Hora:</strong> <span id="reprogramarFechaActual"></span></p>
+                        </div>
+
+                        <!-- Selector de Odontólogo -->
+                        <div class="form-group">
+                            <label for="reprogramarOdontologoIdSelect" class="font-weight-bold">
+                                <i class="fas fa-user-md mr-1"></i>Odontólogo <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-control" id="reprogramarOdontologoIdSelect">
+                                <option value="">Seleccione un odontólogo...</option>
+                                <option th:each="odontologo : ${listaOdontologos}" th:value="${odontologo.id}"
+                                    th:text="${odontologo.nombreCompleto}"></option>
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> Puede elegir un odontólogo diferente para la
+                                reprogramación
+                            </small>
+                        </div>
+
+                        <!-- Layout horizontal: 2 columnas -->
+                        <div class="row">
+                            <!-- Columna Izquierda: Selección de Fecha y Motivo -->
+                            <div class="col-md-5">
+                                <!-- Seleccionar Nueva Fecha -->
+                                <h6 class="text-primary mb-3 border-bottom pb-2">
+                                    <i class="fas fa-calendar-alt mr-2"></i>Nueva Fecha
+                                </h6>
+                                <div class="form-group">
+                                    <label for="fechaCitaReprogramar">Fecha <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="fechaCitaReprogramar">
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios (no se permiten
+                                        fechas pasadas)
+                                    </small>
+                                </div>
+
+                                <!-- Indicador de horario seleccionado -->
+                                <div class="alert alert-success" id="horario-seleccionado-info-reprogramar"
+                                    style="display: none;">
+                                    <i class="fas fa-check-circle mr-2"></i>
+                                    <strong>Horario:</strong> <span
+                                        id="horario-seleccionado-texto-reprogramar">Ninguno</span>
+                                </div>
+
+                                <hr class="my-3">
+
+                                <!-- Motivo -->
+                                <h6 class="text-primary mb-3 border-bottom pb-2">
+                                    <i class="fas fa-comment mr-2"></i>Motivo
+                                </h6>
+                                <div class="form-group">
+                                    <label for="motivoReprogramacion">Motivo <small
+                                            class="text-muted">(Opcional)</small></label>
+                                    <textarea class="form-control" id="motivoReprogramacion" name="motivo" rows="3"
+                                        placeholder="Indique el motivo"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Columna Derecha: Horarios Disponibles -->
+                            <div class="col-md-7">
+                                <h6 class="text-primary mb-3 border-bottom pb-2">
+                                    <i class="fas fa-clock mr-2"></i>Horarios Disponibles
+                                </h6>
+                                <!-- Grilla de horarios disponibles con scroll -->
+                                <div id="grilla-horarios-disponibles-reprogramar" class="mb-3"
+                                    style="max-height: 320px; overflow-y: auto;">
+                                    <div class="alert alert-secondary text-center">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        Seleccione una fecha para ver los horarios
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i>Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-warning" id="btnConfirmarReprogramar"
+                            data-loading-text="Reprogramando cita...">
+                            <i class="fas fa-check mr-1"></i>Reprogramar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: Cancelar Cita -->
+    <!-- ========================================== -->
+    <div th:fragment="modalCancelarCita" class="modal fade" id="modalCancelarCita" tabindex="-1" role="dialog"
+        aria-labelledby="modalCancelarCitaLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form th:action="@{/citas/cancelar}" method="post" data-auto-loading="true">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="modalCancelarCitaLabel">
+                            <i class="fas fa-ban mr-2"></i>Cancelar Cita
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="cancelarCitaId" name="citaId">
+
+                        <div class="alert alert-warning" role="alert">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            ¿Está seguro de que desea cancelar esta cita?
+                        </div>
+
+                        <div class="form-group">
+                            <label for="motivoCancelacion">Motivo de la Cancelación <span
+                                    class="text-danger">*</span></label>
+                            <textarea class="form-control" id="motivoCancelacion" name="motivo" rows="3"
+                                placeholder="Indique el motivo de la cancelación" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i>No, volver
+                        </button>
+                        <button type="submit" class="btn btn-danger" data-loading-text="Cancelando cita...">
+                            <i class="fas fa-ban mr-1"></i>Sí, cancelar cita
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: Planificar Tratamiento para Después -->
+    <!-- ========================================== -->
+    <div th:fragment="modalPlanificarTratamiento" class="modal fade" id="modalPlanificarTratamiento" tabindex="-1"
+        role="dialog" aria-labelledby="modalPlanificarTratamientoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document" style="max-width: 850px;">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="modalPlanificarTratamientoLabel">
+                        <i class="fas fa-calendar-plus mr-2"></i>Planificar Tratamiento para Después
                     </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" id="reprogramarCitaId" name="citaId">
-                    <input type="hidden" id="reprogramarOdontologoId" name="odontologoUsuarioId">
-                    <input type="hidden" id="nuevaFechaHoraInicioReprogramar" name="nuevaFechaHoraInicio">
+                    <!-- Campos hidden para datos del tratamiento -->
+                    <input type="hidden" id="planificarCitaId">
+                    <input type="hidden" id="planificarProcedimientoId">
+                    <input type="hidden" id="planificarPacienteId">
+                    <input type="hidden" id="planificarOdontologoId">
+                    <input type="hidden" id="planificarPiezasDentales">
+                    <input type="hidden" id="planificarDescripcion">
+                    <input type="hidden" id="planificarCamposDinamicos">
+                    <input type="hidden" id="planificarInsumosAdicionales">
+                    <input type="hidden" id="nuevaFechaHoraInicioPlanificar">
 
-                    <!-- Información de la cita actual -->
+                    <!-- Información del tratamiento -->
                     <div class="alert alert-info mb-3">
-                        <h6><i class="fas fa-info-circle mr-2"></i>Cita Actual</h6>
-                        <p class="mb-1"><strong>Paciente:</strong> <span id="reprogramarPaciente"></span></p>
-                        <p class="mb-0"><strong>Fecha/Hora:</strong> <span id="reprogramarFechaActual"></span></p>
+                        <h6><i class="fas fa-info-circle mr-2"></i>Tratamiento a Planificar</h6>
+                        <p class="mb-1"><strong>Paciente:</strong> <span id="planificarPacienteNombre"></span></p>
+                        <p class="mb-0"><strong>Procedimiento:</strong> <span id="planificarProcedimientoNombre"></span>
+                        </p>
                     </div>
 
                     <!-- Selector de Odontólogo -->
                     <div class="form-group">
-                        <label for="reprogramarOdontologoIdSelect" class="font-weight-bold">
+                        <label for="planificarOdontologoIdSelect" class="font-weight-bold">
                             <i class="fas fa-user-md mr-1"></i>Odontólogo <span class="text-danger">*</span>
                         </label>
-                        <select class="form-control" id="reprogramarOdontologoIdSelect">
+                        <select class="form-control" id="planificarOdontologoIdSelect" required>
                             <option value="">Seleccione un odontólogo...</option>
-                            <option th:each="odontologo : ${listaOdontologos}"
-                                    th:value="${odontologo.id}"
-                                    th:text="${odontologo.nombreCompleto}"></option>
+                            <option th:each="odontologo : ${listaOdontologos}" th:value="${odontologo.id}"
+                                th:text="${odontologo.nombreCompleto}"></option>
                         </select>
                         <small class="form-text text-muted">
-                            <i class="fas fa-info-circle"></i> Puede elegir un odontólogo diferente para la reprogramación
+                            <i class="fas fa-info-circle"></i> Puede elegir un odontólogo diferente al de la cita
+                            original
                         </small>
                     </div>
 
-                    <!-- Layout horizontal: 2 columnas -->
+                    <!-- Layout: 2 columnas -->
                     <div class="row">
-                        <!-- Columna Izquierda: Selección de Fecha y Motivo -->
+                        <!-- Columna Izquierda: Selección de Fecha -->
                         <div class="col-md-5">
-                            <!-- Seleccionar Nueva Fecha -->
                             <h6 class="text-primary mb-3 border-bottom pb-2">
-                                <i class="fas fa-calendar-alt mr-2"></i>Nueva Fecha
+                                <i class="fas fa-calendar-alt mr-2"></i>Seleccionar Fecha
                             </h6>
                             <div class="form-group">
-                                <label for="fechaCitaReprogramar">Fecha <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="fechaCitaReprogramar">
+                                <label for="fechaCitaPlanificar">Fecha <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="fechaCitaPlanificar" required>
                                 <small class="form-text text-muted">
-                                    <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios (no se permiten fechas pasadas)
+                                    <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios (no se permiten
+                                    fechas pasadas)
                                 </small>
                             </div>
 
                             <!-- Indicador de horario seleccionado -->
-                            <div class="alert alert-success" id="horario-seleccionado-info-reprogramar" style="display: none;">
+                            <div class="alert alert-success" id="horario-seleccionado-info-planificar"
+                                style="display: none;">
                                 <i class="fas fa-check-circle mr-2"></i>
-                                <strong>Horario:</strong> <span id="horario-seleccionado-texto-reprogramar">Ninguno</span>
-                            </div>
-
-                            <hr class="my-3">
-
-                            <!-- Motivo -->
-                            <h6 class="text-primary mb-3 border-bottom pb-2">
-                                <i class="fas fa-comment mr-2"></i>Motivo
-                            </h6>
-                            <div class="form-group">
-                                <label for="motivoReprogramacion">Motivo <small class="text-muted">(Opcional)</small></label>
-                                <textarea class="form-control" id="motivoReprogramacion" name="motivo" rows="3" placeholder="Indique el motivo"></textarea>
+                                <strong>Horario:</strong> <span
+                                    id="horario-seleccionado-texto-planificar">Ninguno</span>
                             </div>
                         </div>
 
@@ -456,7 +647,8 @@
                                 <i class="fas fa-clock mr-2"></i>Horarios Disponibles
                             </h6>
                             <!-- Grilla de horarios disponibles con scroll -->
-                            <div id="grilla-horarios-disponibles-reprogramar" class="mb-3" style="max-height: 320px; overflow-y: auto;">
+                            <div id="grilla-horarios-disponibles-planificar" class="mb-3"
+                                style="max-height: 320px; overflow-y: auto;">
                                 <div class="alert alert-secondary text-center">
                                     <i class="fas fa-info-circle mr-2"></i>
                                     Seleccione una fecha para ver los horarios
@@ -469,486 +661,347 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i>Cancelar
                     </button>
-                    <button type="submit" class="btn btn-warning" id="btnConfirmarReprogramar" data-loading-text="Reprogramando cita...">
-                        <i class="fas fa-check mr-1"></i>Reprogramar
+                    <button type="button" class="btn btn-info" id="btnConfirmarPlanificar"
+                        data-loading-text="Planificando tratamiento...">
+                        <i class="fas fa-check mr-1"></i>Confirmar Planificación
                     </button>
                 </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- ========================================== -->
-<!-- MODAL: Cancelar Cita -->
-<!-- ========================================== -->
-<div th:fragment="modalCancelarCita" class="modal fade" id="modalCancelarCita" tabindex="-1" role="dialog" aria-labelledby="modalCancelarCitaLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <form th:action="@{/citas/cancelar}" method="post" data-auto-loading="true">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="modalCancelarCitaLabel">
-                        <i class="fas fa-ban mr-2"></i>Cancelar Cita
-                    </h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="cancelarCitaId" name="citaId">
-
-                    <div class="alert alert-warning" role="alert">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>
-                        ¿Está seguro de que desea cancelar esta cita?
-                    </div>
-
-                    <div class="form-group">
-                        <label for="motivoCancelacion">Motivo de la Cancelación <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="motivoCancelacion" name="motivo" rows="3" placeholder="Indique el motivo de la cancelación" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        <i class="fas fa-times mr-1"></i>No, volver
-                    </button>
-                    <button type="submit" class="btn btn-danger" data-loading-text="Cancelando cita...">
-                        <i class="fas fa-ban mr-1"></i>Sí, cancelar cita
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- ========================================== -->
-<!-- MODAL: Planificar Tratamiento para Después -->
-<!-- ========================================== -->
-<div th:fragment="modalPlanificarTratamiento" class="modal fade" id="modalPlanificarTratamiento" tabindex="-1" role="dialog" aria-labelledby="modalPlanificarTratamientoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document" style="max-width: 850px;">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="modalPlanificarTratamientoLabel">
-                    <i class="fas fa-calendar-plus mr-2"></i>Planificar Tratamiento para Después
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <!-- Campos hidden para datos del tratamiento -->
-                <input type="hidden" id="planificarCitaId">
-                <input type="hidden" id="planificarProcedimientoId">
-                <input type="hidden" id="planificarPacienteId">
-                <input type="hidden" id="planificarOdontologoId">
-                <input type="hidden" id="planificarPiezasDentales">
-                <input type="hidden" id="planificarDescripcion">
-                <input type="hidden" id="planificarCamposDinamicos">
-                <input type="hidden" id="planificarInsumosAdicionales">
-                <input type="hidden" id="nuevaFechaHoraInicioPlanificar">
-
-                <!-- Información del tratamiento -->
-                <div class="alert alert-info mb-3">
-                    <h6><i class="fas fa-info-circle mr-2"></i>Tratamiento a Planificar</h6>
-                    <p class="mb-1"><strong>Paciente:</strong> <span id="planificarPacienteNombre"></span></p>
-                    <p class="mb-0"><strong>Procedimiento:</strong> <span id="planificarProcedimientoNombre"></span></p>
-                </div>
-
-                <!-- Selector de Odontólogo -->
-                <div class="form-group">
-                    <label for="planificarOdontologoIdSelect" class="font-weight-bold">
-                        <i class="fas fa-user-md mr-1"></i>Odontólogo <span class="text-danger">*</span>
-                    </label>
-                    <select class="form-control" id="planificarOdontologoIdSelect" required>
-                        <option value="">Seleccione un odontólogo...</option>
-                        <option th:each="odontologo : ${listaOdontologos}"
-                                th:value="${odontologo.id}"
-                                th:text="${odontologo.nombreCompleto}"></option>
-                    </select>
-                    <small class="form-text text-muted">
-                        <i class="fas fa-info-circle"></i> Puede elegir un odontólogo diferente al de la cita original
-                    </small>
-                </div>
-
-                <!-- Layout: 2 columnas -->
-                <div class="row">
-                    <!-- Columna Izquierda: Selección de Fecha -->
-                    <div class="col-md-5">
-                        <h6 class="text-primary mb-3 border-bottom pb-2">
-                            <i class="fas fa-calendar-alt mr-2"></i>Seleccionar Fecha
-                        </h6>
-                        <div class="form-group">
-                            <label for="fechaCitaPlanificar">Fecha <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="fechaCitaPlanificar" required>
-                            <small class="form-text text-muted">
-                                <i class="fas fa-calendar-alt"></i> Seleccione para ver horarios (no se permiten fechas pasadas)
-                            </small>
-                        </div>
-
-                        <!-- Indicador de horario seleccionado -->
-                        <div class="alert alert-success" id="horario-seleccionado-info-planificar" style="display: none;">
-                            <i class="fas fa-check-circle mr-2"></i>
-                            <strong>Horario:</strong> <span id="horario-seleccionado-texto-planificar">Ninguno</span>
-                        </div>
-                    </div>
-
-                    <!-- Columna Derecha: Horarios Disponibles -->
-                    <div class="col-md-7">
-                        <h6 class="text-primary mb-3 border-bottom pb-2">
-                            <i class="fas fa-clock mr-2"></i>Horarios Disponibles
-                        </h6>
-                        <!-- Grilla de horarios disponibles con scroll -->
-                        <div id="grilla-horarios-disponibles-planificar" class="mb-3" style="max-height: 320px; overflow-y: auto;">
-                            <div class="alert alert-secondary text-center">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                Seleccione una fecha para ver los horarios
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times mr-1"></i>Cancelar
-                </button>
-                <button type="button" class="btn btn-info" id="btnConfirmarPlanificar" data-loading-text="Planificando tratamiento...">
-                    <i class="fas fa-check mr-1"></i>Confirmar Planificación
-                </button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- ========================================== -->
-<!-- MODAL: Registrar Tratamiento -->
-<!-- ========================================== -->
-<th:block th:fragment="modalRegistrarTratamiento">
-    <div th:replace="~{modulos/citas/modal-tratamiento-avanzado :: modalRegistrarTratamiento}"></div>
-    <!-- Incluir el script del modal -->
-    <th:block th:replace="~{modulos/citas/modal-tratamiento-avanzado :: scriptModalTratamiento}"></th:block>
-</th:block>
+    <!-- ========================================== -->
+    <!-- MODAL: Registrar Tratamiento -->
+    <!-- ========================================== -->
+    <th:block th:fragment="modalRegistrarTratamiento">
+        <div th:replace="~{modulos/citas/modal-tratamiento-avanzado :: modalRegistrarTratamiento}"></div>
+        <!-- Incluir el script del modal -->
+        <th:block th:replace="~{modulos/citas/modal-tratamiento-avanzado :: scriptModalTratamiento}"></th:block>
+    </th:block>
 
-<!-- Script de validaciones inline para modal de citas -->
-<script th:fragment="scriptValidacionesCita">
-$(document).ready(function() {
-    // Inicializar Select2 para buscador de pacientes
-    $('#pacienteIdAgendar').select2({
-        dropdownParent: $('#modalAgendarCita'),
-        placeholder: 'Busque y seleccione un paciente',
-        allowClear: true,
-        width: '100%',
-        language: {
-            noResults: function() {
-                return "No se encontraron pacientes";
-            },
-            searching: function() {
-                return "Buscando...";
+    <!-- Script de validaciones inline para modal de citas -->
+    <script th:fragment="scriptValidacionesCita">
+        $(document).ready(function () {
+            // Inicializar Select2 para buscador de pacientes
+            $('#pacienteIdAgendar').select2({
+                dropdownParent: $('#modalAgendarCita'),
+                placeholder: 'Busque y seleccione un paciente',
+                allowClear: true,
+                width: '100%',
+                language: {
+                    noResults: function () {
+                        return "No se encontraron pacientes";
+                    },
+                    searching: function () {
+                        return "Buscando...";
+                    }
+                }
+            });
+
+            // Referencias a elementos del formulario
+            const formAgendar = $('#modalAgendarCita form');
+            const fechaInput = $('#fechaHoraInicioAgendar');
+            const pacienteSelect = $('#pacienteIdAgendar');
+            const odontologoSelect = $('#odontologoIdAgendar');
+            const alertaValidacion = $('#alertaValidacionCita');
+            const mensajeValidacion = $('#mensajeValidacionCita');
+
+            // Función para validar fecha (no puede ser pasada)
+            function validarFecha() {
+                const fechaSeleccionada = new Date(fechaInput.val());
+                const ahora = new Date();
+
+                if (fechaInput.val() && fechaSeleccionada < ahora) {
+                    fechaInput.addClass('is-invalid');
+                    return false;
+                } else {
+                    fechaInput.removeClass('is-invalid');
+                    return true;
+                }
             }
-        }
-    });
 
-    // Referencias a elementos del formulario
-    const formAgendar = $('#modalAgendarCita form');
-    const fechaInput = $('#fechaHoraInicioAgendar');
-    const pacienteSelect = $('#pacienteIdAgendar');
-    const odontologoSelect = $('#odontologoIdAgendar');
-    const alertaValidacion = $('#alertaValidacionCita');
-    const mensajeValidacion = $('#mensajeValidacionCita');
-
-    // Función para validar fecha (no puede ser pasada)
-    function validarFecha() {
-        const fechaSeleccionada = new Date(fechaInput.val());
-        const ahora = new Date();
-
-        if (fechaInput.val() && fechaSeleccionada < ahora) {
-            fechaInput.addClass('is-invalid');
-            return false;
-        } else {
-            fechaInput.removeClass('is-invalid');
-            return true;
-        }
-    }
-
-    // Función para validar select
-    function validarSelect(selectElement) {
-        if (!selectElement.val() || selectElement.val() === '') {
-            selectElement.addClass('is-invalid');
-            return false;
-        } else {
-            selectElement.removeClass('is-invalid');
-            return true;
-        }
-    }
-
-    // Validación en tiempo real al cambiar fecha
-    fechaInput.on('change', function() {
-        validarFecha();
-        ocultarAlerta();
-    });
-
-    // Validación en tiempo real al cambiar selects
-    pacienteSelect.on('change', function() {
-        validarSelect($(this));
-        ocultarAlerta();
-    });
-
-    odontologoSelect.on('change', function() {
-        validarSelect($(this));
-        ocultarAlerta();
-    });
-
-    // Función para mostrar alerta de error
-    function mostrarAlerta(mensaje) {
-        mensajeValidacion.text(mensaje);
-        alertaValidacion.removeClass('d-none');
-        alertaValidacion[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    // Función para ocultar alerta
-    function ocultarAlerta() {
-        alertaValidacion.addClass('d-none');
-    }
-
-    // Validación al enviar el formulario
-    formAgendar.on('submit', function(e) {
-        let esValido = true;
-        let mensaje = '';
-
-        // Limpiar validaciones previas
-        fechaInput.removeClass('is-invalid');
-        pacienteSelect.removeClass('is-invalid');
-        odontologoSelect.removeClass('is-invalid');
-        ocultarAlerta();
-
-        // Validar fecha
-        if (!fechaInput.val()) {
-            fechaInput.addClass('is-invalid');
-            mensaje = 'Por favor seleccione una fecha y hora de inicio';
-            esValido = false;
-        } else if (!validarFecha()) {
-            mensaje = 'La fecha y hora no puede ser en el pasado';
-            esValido = false;
-        }
-
-        // Validar paciente
-        if (!validarSelect(pacienteSelect)) {
-            mensaje = mensaje || 'Por favor seleccione un paciente';
-            esValido = false;
-        }
-
-        // Validar odontólogo
-        if (!validarSelect(odontologoSelect)) {
-            mensaje = mensaje || 'Por favor seleccione un odontólogo';
-            esValido = false;
-        }
-
-        // Si no es válido, prevenir envío y mostrar mensaje
-        if (!esValido) {
-            e.preventDefault();
-            mostrarAlerta(mensaje);
-            return false;
-        }
-
-        return true;
-    });
-
-    // Limpiar validaciones al cerrar el modal
-    $('#modalAgendarCita').on('hidden.bs.modal', function() {
-        fechaInput.removeClass('is-invalid');
-        pacienteSelect.removeClass('is-invalid');
-        odontologoSelect.removeClass('is-invalid');
-        ocultarAlerta();
-        formAgendar[0].reset();
-    });
-
-    // ============ SCRIPT PARA MODAL DE TRATAMIENTO ============
-
-    // Autocompletar fecha/hora actual al abrir el modal
-    $('#modalRegistrarTratamiento').on('show.bs.modal', function() {
-        const ahora = new Date();
-        const fechaFormateada = ahora.toISOString().slice(0, 16); // Formato YYYY-MM-DDTHH:mm
-        $('#tratamientoFechaRealizacion').val(fechaFormateada);
-    });
-
-    // Mapeo de insumos con su stock (se carga desde Thymeleaf)
-    const insumosStock = {};
-
-    // Al cambiar el insumo seleccionado, mostrar stock disponible
-    $('#tratamientoInsumoId').on('change', function() {
-        const insumoId = $(this).val();
-        const stockWarning = $('#stockWarning');
-        const stockText = $('#stockDisponibleText');
-
-        if (!insumoId) {
-            stockWarning.addClass('d-none');
-            stockText.text('');
-            $('#tratamientoCantidadAjustada').val('').prop('disabled', true);
-            return;
-        }
-
-        // Habilitar campo de cantidad
-        $('#tratamientoCantidadAjustada').prop('disabled', false);
-
-        // Extraer stock del texto del option seleccionado
-        const selectedOption = $(this).find('option:selected').text();
-        const stockMatch = selectedOption.match(/Stock:\s*([\d.]+)\s*(\w+)/);
-
-        if (stockMatch) {
-            const stockDisponible = parseFloat(stockMatch[1]);
-            const unidad = stockMatch[2];
-            insumosStock[insumoId] = { stock: stockDisponible, unidad: unidad };
-            stockText.html(`<i class="fas fa-box mr-1"></i>Stock disponible: <strong>${stockDisponible} ${unidad}</strong>`);
-
-            // Advertencia si stock bajo
-            if (stockDisponible < 10) {
-                stockWarning.removeClass('d-none');
-                $('#stockWarningText').text(`Stock bajo: solo quedan ${stockDisponible} ${unidad}`);
-            } else {
-                stockWarning.addClass('d-none');
+            // Función para validar select
+            function validarSelect(selectElement) {
+                if (!selectElement.val() || selectElement.val() === '') {
+                    selectElement.addClass('is-invalid');
+                    return false;
+                } else {
+                    selectElement.removeClass('is-invalid');
+                    return true;
+                }
             }
-        }
-    });
 
-    // Validar cantidad al escribir
-    $('#tratamientoCantidadAjustada').on('input', function() {
-        const insumoId = $('#tratamientoInsumoId').val();
-        const cantidad = parseFloat($(this).val());
-        const stockWarning = $('#stockWarning');
+            // Validación en tiempo real al cambiar fecha
+            fechaInput.on('change', function () {
+                validarFecha();
+                ocultarAlerta();
+            });
 
-        if (insumoId && insumosStock[insumoId] && cantidad) {
-            const stockDisponible = insumosStock[insumoId].stock;
-            const unidad = insumosStock[insumoId].unidad;
+            // Validación en tiempo real al cambiar selects
+            pacienteSelect.on('change', function () {
+                validarSelect($(this));
+                ocultarAlerta();
+            });
 
-            if (cantidad > stockDisponible) {
-                stockWarning.removeClass('d-none').removeClass('alert-warning').addClass('alert-danger');
-                $('#stockWarningText').text(`¡CANTIDAD EXCEDE EL STOCK! Disponible: ${stockDisponible} ${unidad}, Solicitado: ${cantidad} ${unidad}`);
-                $(this).addClass('is-invalid');
-            } else {
-                stockWarning.removeClass('alert-danger').addClass('alert-warning').addClass('d-none');
-                $(this).removeClass('is-invalid');
+            odontologoSelect.on('change', function () {
+                validarSelect($(this));
+                ocultarAlerta();
+            });
+
+            // Función para mostrar alerta de error
+            function mostrarAlerta(mensaje) {
+                mensajeValidacion.text(mensaje);
+                alertaValidacion.removeClass('d-none');
+                alertaValidacion[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
-        }
-    });
 
-    // Limpiar al cerrar modal de tratamiento
-    $('#modalRegistrarTratamiento').on('hidden.bs.modal', function() {
-        $('#stockWarning').addClass('d-none');
-        $('#stockDisponibleText').text('');
-        $('#tratamientoCantidadAjustada').prop('disabled', true).removeClass('is-invalid');
+            // Función para ocultar alerta
+            function ocultarAlerta() {
+                alertaValidacion.addClass('d-none');
+            }
 
-        // Resetear formulario si existe
-        const formulario = $(this).find('form')[0];
-        if (formulario) {
-            formulario.reset();
-        }
+            // Validación al enviar el formulario
+            formAgendar.on('submit', function (e) {
+                let esValido = true;
+                let mensaje = '';
 
-        // Limpiar campos manualmente
-        $('#tratamientoProcedimientoId').val('');
-        $('#tratamientoPiezasDentales').val('');
-        $('#tratamientoDescripcion').val('');
-    });
+                // Limpiar validaciones previas
+                fechaInput.removeClass('is-invalid');
+                pacienteSelect.removeClass('is-invalid');
+                odontologoSelect.removeClass('is-invalid');
+                ocultarAlerta();
 
-    // ============ SCRIPT PARA MODAL PLANIFICAR TRATAMIENTO ============
+                // Validar fecha
+                if (!fechaInput.val()) {
+                    fechaInput.addClass('is-invalid');
+                    mensaje = 'Por favor seleccione una fecha y hora de inicio';
+                    esValido = false;
+                } else if (!validarFecha()) {
+                    mensaje = 'La fecha y hora no puede ser en el pasado';
+                    esValido = false;
+                }
 
-    // Al abrir el modal, establecer fecha mínima a hoy
-    $('#modalPlanificarTratamiento').on('show.bs.modal', function() {
-        const hoy = new Date().toISOString().split('T')[0];
-        $('#fechaCitaPlanificar').attr('min', hoy);
+                // Validar paciente
+                if (!validarSelect(pacienteSelect)) {
+                    mensaje = mensaje || 'Por favor seleccione un paciente';
+                    esValido = false;
+                }
 
-        // Pre-seleccionar el odontólogo original si está disponible
-        const odontologoIdOriginal = $('#planificarOdontologoId').val();
-        if (odontologoIdOriginal) {
-            $('#planificarOdontologoIdSelect').val(odontologoIdOriginal);
-        }
-    });
+                // Validar odontólogo
+                if (!validarSelect(odontologoSelect)) {
+                    mensaje = mensaje || 'Por favor seleccione un odontólogo';
+                    esValido = false;
+                }
 
-    // Cuando cambia el odontólogo, actualizar el campo hidden y limpiar horarios
-    $('#planificarOdontologoIdSelect').on('change', function() {
-        const odontologoId = $(this).val();
-        $('#planificarOdontologoId').val(odontologoId);
+                // Si no es válido, prevenir envío y mostrar mensaje
+                if (!esValido) {
+                    e.preventDefault();
+                    mostrarAlerta(mensaje);
+                    return false;
+                }
 
-        // Limpiar horarios disponibles
-        $('#grilla-horarios-disponibles-planificar').html(
-            '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios del odontólogo elegido</div>'
-        );
+                return true;
+            });
 
-        // Limpiar horario seleccionado
-        $('#horario-seleccionado-info-planificar').hide();
-        $('#nuevaFechaHoraInicioPlanificar').val('');
+            // Limpiar validaciones al cerrar el modal
+            $('#modalAgendarCita').on('hidden.bs.modal', function () {
+                fechaInput.removeClass('is-invalid');
+                pacienteSelect.removeClass('is-invalid');
+                odontologoSelect.removeClass('is-invalid');
+                ocultarAlerta();
+                formAgendar[0].reset();
+            });
 
-        // Si hay una fecha seleccionada, recargar horarios
-        const fecha = $('#fechaCitaPlanificar').val();
-        if (fecha && odontologoId) {
-            $('#fechaCitaPlanificar').trigger('change');
-        }
-    });
+            // ============ SCRIPT PARA MODAL DE TRATAMIENTO ============
 
-    // Manejar cambio de fecha en modal planificar
-    $('#fechaCitaPlanificar').on('change', function() {
-        const fecha = $(this).val();
-        const odontologoId = $('#planificarOdontologoIdSelect').val(); // Usar el select en lugar del hidden
-        const procedimientoId = $('#planificarProcedimientoId').val();
+            // Autocompletar fecha/hora actual al abrir el modal
+            $('#modalRegistrarTratamiento').on('show.bs.modal', function () {
+                const ahora = new Date();
+                const fechaFormateada = ahora.toISOString().slice(0, 16); // Formato YYYY-MM-DDTHH:mm
+                $('#tratamientoFechaRealizacion').val(fechaFormateada);
+            });
 
-        if (!fecha || !odontologoId) {
-            $('#grilla-horarios-disponibles-planificar').html(
-                '<div class="alert alert-warning">Por favor seleccione un odontólogo y una fecha válida</div>'
-            );
-            return;
-        }
+            // Mapeo de insumos con su stock (se carga desde Thymeleaf)
+            const insumosStock = {};
 
-        // Validar que la fecha no sea pasada
-        const fechaSeleccionada = new Date(fecha + 'T00:00:00');
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
+            // Al cambiar el insumo seleccionado, mostrar stock disponible
+            $('#tratamientoInsumoId').on('change', function () {
+                const insumoId = $(this).val();
+                const stockWarning = $('#stockWarning');
+                const stockText = $('#stockDisponibleText');
 
-        if (fechaSeleccionada < hoy) {
-            $('#grilla-horarios-disponibles-planificar').html(
-                '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-2"></i>No se pueden seleccionar fechas pasadas</div>'
-            );
-            return;
-        }
+                if (!insumoId) {
+                    stockWarning.addClass('d-none');
+                    stockText.text('');
+                    $('#tratamientoCantidadAjustada').val('').prop('disabled', true);
+                    return;
+                }
 
-        // Obtener duración del procedimiento
-        let duracion = 30;
-        if (procedimientoId) {
-            const option = $(`#tratamientoProcedimientoId option[value="${procedimientoId}"]`);
-            duracion = option.data('duracion') || 30;
-        }
+                // Habilitar campo de cantidad
+                $('#tratamientoCantidadAjustada').prop('disabled', false);
 
-        // Mostrar loading
-        $('#grilla-horarios-disponibles-planificar').html(
-            '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Cargando horarios...</p></div>'
-        );
+                // Extraer stock del texto del option seleccionado
+                const selectedOption = $(this).find('option:selected').text();
+                const stockMatch = selectedOption.match(/Stock:\s*([\d.]+)\s*(\w+)/);
 
-        // Consultar horarios disponibles
-        $.ajax({
-            url: '/citas/api/horarios-disponibles',
-            method: 'GET',
-            data: {
-                odontologoId: odontologoId,
-                fecha: fecha,
-                duracion: duracion
-            },
-            success: function(response) {
-                if (!response.disponible) {
+                if (stockMatch) {
+                    const stockDisponible = parseFloat(stockMatch[1]);
+                    const unidad = stockMatch[2];
+                    insumosStock[insumoId] = { stock: stockDisponible, unidad: unidad };
+                    stockText.html(`<i class="fas fa-box mr-1"></i>Stock disponible: <strong>${stockDisponible} ${unidad}</strong>`);
+
+                    // Advertencia si stock bajo
+                    if (stockDisponible < 10) {
+                        stockWarning.removeClass('d-none');
+                        $('#stockWarningText').text(`Stock bajo: solo quedan ${stockDisponible} ${unidad}`);
+                    } else {
+                        stockWarning.addClass('d-none');
+                    }
+                }
+            });
+
+            // Validar cantidad al escribir
+            $('#tratamientoCantidadAjustada').on('input', function () {
+                const insumoId = $('#tratamientoInsumoId').val();
+                const cantidad = parseFloat($(this).val());
+                const stockWarning = $('#stockWarning');
+
+                if (insumoId && insumosStock[insumoId] && cantidad) {
+                    const stockDisponible = insumosStock[insumoId].stock;
+                    const unidad = insumosStock[insumoId].unidad;
+
+                    if (cantidad > stockDisponible) {
+                        stockWarning.removeClass('d-none').removeClass('alert-warning').addClass('alert-danger');
+                        $('#stockWarningText').text(`¡CANTIDAD EXCEDE EL STOCK! Disponible: ${stockDisponible} ${unidad}, Solicitado: ${cantidad} ${unidad}`);
+                        $(this).addClass('is-invalid');
+                    } else {
+                        stockWarning.removeClass('alert-danger').addClass('alert-warning').addClass('d-none');
+                        $(this).removeClass('is-invalid');
+                    }
+                }
+            });
+
+            // Limpiar al cerrar modal de tratamiento
+            $('#modalRegistrarTratamiento').on('hidden.bs.modal', function () {
+                $('#stockWarning').addClass('d-none');
+                $('#stockDisponibleText').text('');
+                $('#tratamientoCantidadAjustada').prop('disabled', true).removeClass('is-invalid');
+
+                // Resetear formulario si existe
+                const formulario = $(this).find('form')[0];
+                if (formulario) {
+                    formulario.reset();
+                }
+
+                // Limpiar campos manualmente
+                $('#tratamientoProcedimientoId').val('');
+                $('#tratamientoPiezasDentales').val('');
+                $('#tratamientoDescripcion').val('');
+            });
+
+            // ============ SCRIPT PARA MODAL PLANIFICAR TRATAMIENTO ============
+
+            // Al abrir el modal, establecer fecha mínima a hoy
+            $('#modalPlanificarTratamiento').on('show.bs.modal', function () {
+                const hoy = new Date().toISOString().split('T')[0];
+                $('#fechaCitaPlanificar').attr('min', hoy);
+
+                // Pre-seleccionar el odontólogo original si está disponible
+                const odontologoIdOriginal = $('#planificarOdontologoId').val();
+                if (odontologoIdOriginal) {
+                    $('#planificarOdontologoIdSelect').val(odontologoIdOriginal);
+                }
+            });
+
+            // Cuando cambia el odontólogo, actualizar el campo hidden y limpiar horarios
+            $('#planificarOdontologoIdSelect').on('change', function () {
+                const odontologoId = $(this).val();
+                $('#planificarOdontologoId').val(odontologoId);
+
+                // Limpiar horarios disponibles
+                $('#grilla-horarios-disponibles-planificar').html(
+                    '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios del odontólogo elegido</div>'
+                );
+
+                // Limpiar horario seleccionado
+                $('#horario-seleccionado-info-planificar').hide();
+                $('#nuevaFechaHoraInicioPlanificar').val('');
+
+                // Si hay una fecha seleccionada, recargar horarios
+                const fecha = $('#fechaCitaPlanificar').val();
+                if (fecha && odontologoId) {
+                    $('#fechaCitaPlanificar').trigger('change');
+                }
+            });
+
+            // Manejar cambio de fecha en modal planificar
+            $('#fechaCitaPlanificar').on('change', function () {
+                const fecha = $(this).val();
+                const odontologoId = $('#planificarOdontologoIdSelect').val(); // Usar el select en lugar del hidden
+                const procedimientoId = $('#planificarProcedimientoId').val();
+
+                if (!fecha || !odontologoId) {
                     $('#grilla-horarios-disponibles-planificar').html(
-                        `<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i>${response.motivo || 'No hay disponibilidad en esta fecha'}</div>`
+                        '<div class="alert alert-warning">Por favor seleccione un odontólogo y una fecha válida</div>'
                     );
                     return;
                 }
 
-                const horarios = response.horariosDisponibles || [];
-                if (horarios.length === 0) {
+                // Validar que la fecha no sea pasada
+                const fechaSeleccionada = new Date(fecha + 'T00:00:00');
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+
+                if (fechaSeleccionada < hoy) {
                     $('#grilla-horarios-disponibles-planificar').html(
-                        '<div class="alert alert-info">No hay horarios disponibles en esta fecha</div>'
+                        '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-2"></i>No se pueden seleccionar fechas pasadas</div>'
                     );
                     return;
                 }
 
-                // Generar grilla de horarios
-                let html = '<div class="row">';
-                horarios.forEach(function(slot) {
-                    if (slot.disponible) {
-                        const fechaHora = fecha + 'T' + slot.inicio;
-                        html += `
+                // Obtener duración del procedimiento
+                let duracion = 30;
+                if (procedimientoId) {
+                    const option = $(`#tratamientoProcedimientoId option[value="${procedimientoId}"]`);
+                    duracion = option.data('duracion') || 30;
+                }
+
+                // Mostrar loading
+                $('#grilla-horarios-disponibles-planificar').html(
+                    '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Cargando horarios...</p></div>'
+                );
+
+                // Consultar horarios disponibles
+                $.ajax({
+                    url: '/citas/api/horarios-disponibles',
+                    method: 'GET',
+                    data: {
+                        odontologoId: odontologoId,
+                        fecha: fecha,
+                        duracion: duracion
+                    },
+                    success: function (response) {
+                        if (!response.disponible) {
+                            $('#grilla-horarios-disponibles-planificar').html(
+                                `<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i>${response.motivo || 'No hay disponibilidad en esta fecha'}</div>`
+                            );
+                            return;
+                        }
+
+                        const horarios = response.horariosDisponibles || [];
+                        if (horarios.length === 0) {
+                            $('#grilla-horarios-disponibles-planificar').html(
+                                '<div class="alert alert-info">No hay horarios disponibles en esta fecha</div>'
+                            );
+                            return;
+                        }
+
+                        // Generar grilla de horarios
+                        let html = '<div class="row">';
+                        horarios.forEach(function (slot) {
+                            if (slot.disponible) {
+                                const fechaHora = fecha + 'T' + slot.inicio;
+                                html += `
                             <div class="col-6 col-md-4 mb-2">
                                 <button type="button" class="btn btn-outline-primary btn-block btn-sm horario-slot-planificar"
                                         data-fecha-hora="${fechaHora}">
@@ -956,483 +1009,498 @@ $(document).ready(function() {
                                 </button>
                             </div>
                         `;
+                            }
+                        });
+                        html += '</div>';
+
+                        $('#grilla-horarios-disponibles-planificar').html(html);
+                    },
+                    error: function () {
+                        $('#grilla-horarios-disponibles-planificar').html(
+                            '<div class="alert alert-danger">Error al cargar los horarios</div>'
+                        );
                     }
                 });
-                html += '</div>';
+            });
 
-                $('#grilla-horarios-disponibles-planificar').html(html);
-            },
-            error: function() {
-                $('#grilla-horarios-disponibles-planificar').html(
-                    '<div class="alert alert-danger">Error al cargar los horarios</div>'
-                );
-            }
-        });
-    });
+            // Seleccionar horario
+            $(document).on('click', '.horario-slot-planificar', function () {
+                $('.horario-slot-planificar').removeClass('btn-primary').addClass('btn-outline-primary');
+                $(this).removeClass('btn-outline-primary').addClass('btn-primary');
 
-    // Seleccionar horario
-    $(document).on('click', '.horario-slot-planificar', function() {
-        $('.horario-slot-planificar').removeClass('btn-primary').addClass('btn-outline-primary');
-        $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+                const fechaHora = $(this).data('fecha-hora');
+                $('#nuevaFechaHoraInicioPlanificar').val(fechaHora);
 
-        const fechaHora = $(this).data('fecha-hora');
-        $('#nuevaFechaHoraInicioPlanificar').val(fechaHora);
+                const fechaObj = new Date(fechaHora);
 
-        const fechaObj = new Date(fechaHora);
-        const textoHorario = fechaObj.toLocaleString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+                // Obtener duración del procedimiento seleccionado
+                const duracionMinutos = parseInt($('#procedimientoIdPlanificar').find(':selected').data('duracion')) || 30;
+                const fechaFin = new Date(fechaObj.getTime() + duracionMinutos * 60000);
 
-        $('#horario-seleccionado-texto-planificar').text(textoHorario);
-        $('#horario-seleccionado-info-planificar').show();
-    });
+                // Formatear con rango de horas
+                const fechaFormateada = fechaObj.toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                const horaInicio = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const horaFin = fechaFin.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const textoHorario = `${fechaFormateada} de ${horaInicio} a ${horaFin} (${duracionMinutos} min)`;
 
-    // Confirmar planificación
-    $('#btnConfirmarPlanificar').on('click', function() {
-        const fechaHoraInicio = $('#nuevaFechaHoraInicioPlanificar').val();
+                $('#horario-seleccionado-texto-planificar').text(textoHorario);
+                $('#horario-seleccionado-info-planificar').show();
+            });
 
-        if (!fechaHoraInicio) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire('Advertencia', 'Debe seleccionar un horario', 'warning');
-            } else {
-                alert('Debe seleccionar un horario');
-            }
-            return;
-        }
+            // Confirmar planificación
+            $('#btnConfirmarPlanificar').on('click', function () {
+                const fechaHoraInicio = $('#nuevaFechaHoraInicioPlanificar').val();
 
-        const $btn = $(this);
-        const originalText = $btn.html();
-        const loadingText = $btn.data('loading-text') || 'Planificando...';
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>' + loadingText);
+                if (!fechaHoraInicio) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('Advertencia', 'Debe seleccionar un horario', 'warning');
+                    } else {
+                        alert('Debe seleccionar un horario');
+                    }
+                    return;
+                }
 
-        // Obtener datos guardados del tratamiento
-        const datosTratamiento = window.datosTratamientoPlanificar || {};
-        const procedimientoId = $('#planificarProcedimientoId').val();
-        const odontologoId = $('#planificarOdontologoIdSelect').val(); // Usar el select
-        const pacienteId = $('#planificarPacienteId').val();
-        const citaId = $('#planificarCitaId').val(); // Cita original
+                const $btn = $(this);
+                const originalText = $btn.html();
+                const loadingText = $btn.data('loading-text') || 'Planificando...';
+                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>' + loadingText);
 
-        console.log('Datos para planificar tratamiento:', { citaId, procedimientoId, datosTratamiento }); // Debug
+                // Obtener datos guardados del tratamiento
+                const datosTratamiento = window.datosTratamientoPlanificar || {};
+                const procedimientoId = $('#planificarProcedimientoId').val();
+                const odontologoId = $('#planificarOdontologoIdSelect').val(); // Usar el select
+                const pacienteId = $('#planificarPacienteId').val();
+                const citaId = $('#planificarCitaId').val(); // Cita original
 
-        // Validar que tengamos los datos necesarios
-        if (!citaId || !procedimientoId) {
-            $btn.prop('disabled', false).html(originalText);
-            if (typeof Swal !== 'undefined') {
-                Swal.fire('Error', 'Faltan datos necesarios para planificar el tratamiento. Por favor, inténtelo nuevamente.', 'error');
-            } else {
-                alert('Faltan datos necesarios para planificar el tratamiento');
-            }
-            return;
-        }
+                console.log('Datos para planificar tratamiento:', { citaId, procedimientoId, datosTratamiento }); // Debug
 
-        // Primero crear el TratamientoPlanificado con los datos del tratamiento
-        const tratamientoData = {
-            citaId: citaId,
-            procedimientoId: procedimientoId,
-            piezasDentales: datosTratamiento.piezasDentales || '',
-            descripcion: datosTratamiento.descripcion || '',
-            camposDinamicos: datosTratamiento.camposDinamicos || [],
-            insumosTotales: datosTratamiento.insumosTotales || [], // ← AGREGAR LOS INSUMOS
-            tipo: 'PLANIFICADO'
-        };
+                // Validar que tengamos los datos necesarios
+                if (!citaId || !procedimientoId) {
+                    $btn.prop('disabled', false).html(originalText);
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('Error', 'Faltan datos necesarios para planificar el tratamiento. Por favor, inténtelo nuevamente.', 'error');
+                    } else {
+                        alert('Faltan datos necesarios para planificar el tratamiento');
+                    }
+                    return;
+                }
 
-        console.log('📤 Enviando tratamiento planificado:', tratamientoData); // Debug
+                // Primero crear el TratamientoPlanificado con los datos del tratamiento
+                const tratamientoData = {
+                    citaId: citaId,
+                    procedimientoId: procedimientoId,
+                    piezasDentales: datosTratamiento.piezasDentales || '',
+                    descripcion: datosTratamiento.descripcion || '',
+                    camposDinamicos: datosTratamiento.camposDinamicos || [],
+                    insumosTotales: datosTratamiento.insumosTotales || [], // ← AGREGAR LOS INSUMOS
+                    tipo: 'PLANIFICADO'
+                };
 
-        $.ajax({
-            url: '/tratamientos/planificar',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(tratamientoData),
-            success: function(response) {
-                console.log('Tratamiento planificado creado:', response); // Debug
+                console.log('📤 Enviando tratamiento planificado:', tratamientoData); // Debug
 
-                // Ahora agendar la cita si se seleccionó un horario
-                if (fechaHoraInicio && pacienteId && odontologoId) {
-                    const citaData = {
-                        pacienteUsuarioId: pacienteId,
-                        odontologoUsuarioId: odontologoId,
-                        procedimientoId: procedimientoId,
-                        fechaHoraInicio: fechaHoraInicio,
-                        motivoConsulta: datosTratamiento.descripcion || 'Tratamiento planificado',
-                        notasInternas: 'Cita generada desde planificación de tratamiento. Tratamiento planificado ID: ' + response.tratamientoId
-                    };
+                $.ajax({
+                    url: '/tratamientos/planificar',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(tratamientoData),
+                    success: function (response) {
+                        console.log('Tratamiento planificado creado:', response); // Debug
 
-                    $.ajax({
-                        url: '/citas/agendar',
-                        method: 'POST',
-                        data: citaData,
-                        success: function() {
+                        // Ahora agendar la cita si se seleccionó un horario
+                        if (fechaHoraInicio && pacienteId && odontologoId) {
+                            const citaData = {
+                                pacienteUsuarioId: pacienteId,
+                                odontologoUsuarioId: odontologoId,
+                                procedimientoId: procedimientoId,
+                                fechaHoraInicio: fechaHoraInicio,
+                                motivoConsulta: datosTratamiento.descripcion || 'Tratamiento planificado',
+                                notasInternas: 'Cita generada desde planificación de tratamiento. Tratamiento planificado ID: ' + response.tratamientoId
+                            };
+
+                            $.ajax({
+                                url: '/citas/agendar',
+                                method: 'POST',
+                                data: citaData,
+                                success: function () {
+                                    if (typeof Swal !== 'undefined') {
+                                        Swal.fire('Éxito', 'Tratamiento planificado correctamente. La cita ha sido agendada.', 'success');
+                                    } else {
+                                        alert('Tratamiento planificado correctamente. La cita ha sido agendada.');
+                                    }
+                                    $('#modalPlanificarTratamiento').modal('hide');
+                                    location.reload();
+                                },
+                                error: function (xhr) {
+                                    $btn.prop('disabled', false).html(originalText);
+                                    const mensaje = xhr.responseJSON?.mensaje || 'Tratamiento guardado, pero no se pudo agendar la cita';
+                                    if (typeof Swal !== 'undefined') {
+                                        Swal.fire('Advertencia', mensaje, 'warning');
+                                    } else {
+                                        alert('Advertencia: ' + mensaje);
+                                    }
+                                    location.reload(); // Recargar de todas formas porque el tratamiento sí se guardó
+                                }
+                            });
+                        } else {
+                            // Si no se seleccionó horario, solo mostrar mensaje de éxito
                             if (typeof Swal !== 'undefined') {
-                                Swal.fire('Éxito', 'Tratamiento planificado correctamente. La cita ha sido agendada.', 'success');
+                                Swal.fire('Éxito', 'Tratamiento planificado correctamente.', 'success');
                             } else {
-                                alert('Tratamiento planificado correctamente. La cita ha sido agendada.');
+                                alert('Tratamiento planificado correctamente.');
                             }
                             $('#modalPlanificarTratamiento').modal('hide');
                             location.reload();
-                        },
-                        error: function(xhr) {
-                            $btn.prop('disabled', false).html(originalText);
-                            const mensaje = xhr.responseJSON?.mensaje || 'Tratamiento guardado, pero no se pudo agendar la cita';
-                            if (typeof Swal !== 'undefined') {
-                                Swal.fire('Advertencia', mensaje, 'warning');
-                            } else {
-                                alert('Advertencia: ' + mensaje);
-                            }
-                            location.reload(); // Recargar de todas formas porque el tratamiento sí se guardó
                         }
-                    });
-                } else {
-                    // Si no se seleccionó horario, solo mostrar mensaje de éxito
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire('Éxito', 'Tratamiento planificado correctamente.', 'success');
-                    } else {
-                        alert('Tratamiento planificado correctamente.');
+                    },
+                    error: function (xhr) {
+                        $btn.prop('disabled', false).html(originalText);
+                        const mensaje = xhr.responseJSON?.mensaje || 'No se pudo planificar el tratamiento';
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire('Error', mensaje, 'error');
+                        } else {
+                            alert('Error: ' + mensaje);
+                        }
                     }
-                    $('#modalPlanificarTratamiento').modal('hide');
-                    location.reload();
-                }
-            },
-            error: function(xhr) {
-                $btn.prop('disabled', false).html(originalText);
-                const mensaje = xhr.responseJSON?.mensaje || 'No se pudo planificar el tratamiento';
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire('Error', mensaje, 'error');
+                });
+            });
+
+            // Limpiar modal al cerrar
+            $('#modalPlanificarTratamiento').on('hidden.bs.modal', function () {
+                $('#fechaCitaPlanificar').val('');
+                $('#nuevaFechaHoraInicioPlanificar').val('');
+                $('#horario-seleccionado-info-planificar').hide();
+                $('#grilla-horarios-disponibles-planificar').html(
+                    '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
+                );
+                $('.horario-slot-planificar').removeClass('btn-primary').addClass('btn-outline-primary');
+            });
+
+            // ============ SCRIPT PARA MODAL REPROGRAMAR CITA ============
+
+            // Al abrir el modal, copiar datos del modal de detalle y configurar
+            $('#modalReprogramarCita').on('show.bs.modal', function () {
+                console.log('=== ABRIENDO MODAL REPROGRAMAR ===');
+
+                // Copiar datos del modal de detalle (igual que en horarios-citas.js)
+                const citaId = $('#detalleCitaId').val();
+                const paciente = $('#detallePaciente').text();
+                const odontologo = $('#detalleOdontologo').text();
+                const odontologoId = $('#detalleOdontologoId').val();
+                const fechaHoraInicio = $('#detalleFechaHoraInicio').text();
+
+                $('#reprogramarCitaId').val(citaId);
+                $('#reprogramarPaciente').text(paciente);
+                $('#reprogramarOdontologo').text(odontologo);
+                $('#reprogramarFechaActual').text(fechaHoraInicio);
+                $('#reprogramarOdontologoId').val(odontologoId);
+
+                console.log('Datos copiados - Cita ID:', citaId, 'Odontólogo ID:', odontologoId);
+
+                // Configurar fecha mínima
+                const hoy = new Date().toISOString().split('T')[0];
+                $('#fechaCitaReprogramar').attr('min', hoy);
+
+                const odontologoIdOriginal = odontologoId;
+
+                // PRE-SELECCIONAR Y VALIDAR
+                if (odontologoIdOriginal && odontologoIdOriginal !== '') {
+                    $('#reprogramarOdontologoIdSelect').val(odontologoIdOriginal);
+
+                    // Validar que se seleccionó correctamente
+                    const valorSeleccionado = $('#reprogramarOdontologoIdSelect').val();
+                    if (valorSeleccionado !== odontologoIdOriginal) {
+                        console.error('❌ ERROR: El odontólogo no existe en el select');
+                        console.error('Esperado:', odontologoIdOriginal);
+                        console.error('Obtenido:', valorSeleccionado);
+                        console.error('Opciones disponibles:', $('#reprogramarOdontologoIdSelect option').map(function () {
+                            return $(this).val() + ': ' + $(this).text();
+                        }).get());
+
+                        // Mostrar advertencia al usuario
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Atención',
+                                text: 'El odontólogo original no está disponible. Por favor seleccione uno de la lista.',
+                                confirmButtonText: 'Entendido'
+                            });
+                        }
+                    } else {
+                        console.log('✅ Odontólogo pre-seleccionado correctamente:', valorSeleccionado);
+                    }
                 } else {
-                    alert('Error: ' + mensaje);
+                    console.warn('⚠️ No hay odontólogo en el hidden - usuario debe seleccionar');
+                    $('#reprogramarOdontologoIdSelect').val('');
                 }
-            }
-        });
-    });
 
-    // Limpiar modal al cerrar
-    $('#modalPlanificarTratamiento').on('hidden.bs.modal', function() {
-        $('#fechaCitaPlanificar').val('');
-        $('#nuevaFechaHoraInicioPlanificar').val('');
-        $('#horario-seleccionado-info-planificar').hide();
-        $('#grilla-horarios-disponibles-planificar').html(
-            '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
-        );
-        $('.horario-slot-planificar').removeClass('btn-primary').addClass('btn-outline-primary');
-    });
+                // Limpiar selección previa de horarios
+                $('#nuevaFechaHoraInicioReprogramar').val('');
+                $('#fechaCitaReprogramar').val('');
+                $('#horario-seleccionado-info-reprogramar').hide();
+                $('#grilla-horarios-disponibles-reprogramar').html(
+                    '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
+                );
+                console.log('=== MODAL LISTO ===');
+            });
 
-    // ============ SCRIPT PARA MODAL REPROGRAMAR CITA ============
+            // Cuando cambia el odontólogo, actualizar el campo hidden y limpiar horarios
+            $('#reprogramarOdontologoIdSelect').off('change').on('change', function () {
+                const odontologoId = $(this).val();
+                $('#reprogramarOdontologoId').val(odontologoId);
 
-    // Al abrir el modal, copiar datos del modal de detalle y configurar
-    $('#modalReprogramarCita').on('show.bs.modal', function() {
-        console.log('=== ABRIENDO MODAL REPROGRAMAR ===');
+                // Limpiar horarios disponibles
+                $('#grilla-horarios-disponibles-reprogramar').html(
+                    '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios del odontólogo elegido</div>'
+                );
 
-        // Copiar datos del modal de detalle (igual que en horarios-citas.js)
-        const citaId = $('#detalleCitaId').val();
-        const paciente = $('#detallePaciente').text();
-        const odontologo = $('#detalleOdontologo').text();
-        const odontologoId = $('#detalleOdontologoId').val();
-        const fechaHoraInicio = $('#detalleFechaHoraInicio').text();
+                // Limpiar horario seleccionado
+                $('#horario-seleccionado-info-reprogramar').hide();
+                $('#nuevaFechaHoraInicioReprogramar').val('');
 
-        $('#reprogramarCitaId').val(citaId);
-        $('#reprogramarPaciente').text(paciente);
-        $('#reprogramarOdontologo').text(odontologo);
-        $('#reprogramarFechaActual').text(fechaHoraInicio);
-        $('#reprogramarOdontologoId').val(odontologoId);
-
-        console.log('Datos copiados - Cita ID:', citaId, 'Odontólogo ID:', odontologoId);
-
-        // Configurar fecha mínima
-        const hoy = new Date().toISOString().split('T')[0];
-        $('#fechaCitaReprogramar').attr('min', hoy);
-
-        const odontologoIdOriginal = odontologoId;
-
-        // PRE-SELECCIONAR Y VALIDAR
-        if (odontologoIdOriginal && odontologoIdOriginal !== '') {
-            $('#reprogramarOdontologoIdSelect').val(odontologoIdOriginal);
-
-            // Validar que se seleccionó correctamente
-            const valorSeleccionado = $('#reprogramarOdontologoIdSelect').val();
-            if (valorSeleccionado !== odontologoIdOriginal) {
-                console.error('❌ ERROR: El odontólogo no existe en el select');
-                console.error('Esperado:', odontologoIdOriginal);
-                console.error('Obtenido:', valorSeleccionado);
-                console.error('Opciones disponibles:', $('#reprogramarOdontologoIdSelect option').map(function() {
-                    return $(this).val() + ': ' + $(this).text();
-                }).get());
-
-                // Mostrar advertencia al usuario
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Atención',
-                        text: 'El odontólogo original no está disponible. Por favor seleccione uno de la lista.',
-                        confirmButtonText: 'Entendido'
-                    });
+                // Si hay una fecha seleccionada, recargar horarios
+                const fecha = $('#fechaCitaReprogramar').val();
+                if (fecha && odontologoId) {
+                    $('#fechaCitaReprogramar').trigger('change');
                 }
-            } else {
-                console.log('✅ Odontólogo pre-seleccionado correctamente:', valorSeleccionado);
-            }
-        } else {
-            console.warn('⚠️ No hay odontólogo en el hidden - usuario debe seleccionar');
-            $('#reprogramarOdontologoIdSelect').val('');
-        }
+            });
 
-        // Limpiar selección previa de horarios
-        $('#nuevaFechaHoraInicioReprogramar').val('');
-        $('#fechaCitaReprogramar').val('');
-        $('#horario-seleccionado-info-reprogramar').hide();
-        $('#grilla-horarios-disponibles-reprogramar').html(
-            '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
-        );
-        console.log('=== MODAL LISTO ===');
-    });
+            // Manejar cambio de fecha en modal reprogramar
+            $('#fechaCitaReprogramar').off('change').on('change', function () {
+                console.log('=== FECHA CAMBIADA ===');
+                const fecha = $(this).val();
+                // ✅ CAMBIO CRÍTICO: Usar el hidden como fuente de verdad
+                const odontologoId = $('#reprogramarOdontologoId').val();
+                const citaId = $('#reprogramarCitaId').val();
 
-    // Cuando cambia el odontólogo, actualizar el campo hidden y limpiar horarios
-    $('#reprogramarOdontologoIdSelect').off('change').on('change', function() {
-        const odontologoId = $(this).val();
-        $('#reprogramarOdontologoId').val(odontologoId);
+                console.log('Fecha seleccionada:', fecha);
+                console.log('Odontólogo ID (del hidden):', odontologoId);
+                console.log('Cita ID a excluir:', citaId);
 
-        // Limpiar horarios disponibles
-        $('#grilla-horarios-disponibles-reprogramar').html(
-            '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios del odontólogo elegido</div>'
-        );
-
-        // Limpiar horario seleccionado
-        $('#horario-seleccionado-info-reprogramar').hide();
-        $('#nuevaFechaHoraInicioReprogramar').val('');
-
-        // Si hay una fecha seleccionada, recargar horarios
-        const fecha = $('#fechaCitaReprogramar').val();
-        if (fecha && odontologoId) {
-            $('#fechaCitaReprogramar').trigger('change');
-        }
-    });
-
-    // Manejar cambio de fecha en modal reprogramar
-    $('#fechaCitaReprogramar').off('change').on('change', function() {
-        console.log('=== FECHA CAMBIADA ===');
-        const fecha = $(this).val();
-        // ✅ CAMBIO CRÍTICO: Usar el hidden como fuente de verdad
-        const odontologoId = $('#reprogramarOdontologoId').val();
-        const citaId = $('#reprogramarCitaId').val();
-
-        console.log('Fecha seleccionada:', fecha);
-        console.log('Odontólogo ID (del hidden):', odontologoId);
-        console.log('Cita ID a excluir:', citaId);
-
-        if (!fecha || !odontologoId || odontologoId.trim() === '') {
-            console.warn('⚠️ Falta fecha u odontólogo');
-            $('#grilla-horarios-disponibles-reprogramar').html(
-                '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i>Por favor seleccione un odontólogo y una fecha válida</div>'
-            );
-            return;
-        }
-
-        // Validar que la fecha no sea pasada
-        const fechaSeleccionada = new Date(fecha + 'T00:00:00');
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-
-        if (fechaSeleccionada < hoy) {
-            $('#grilla-horarios-disponibles-reprogramar').html(
-                '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-2"></i>No se pueden seleccionar fechas pasadas</div>'
-            );
-            return;
-        }
-
-        // Obtener duración de la cita (default 30 minutos si no se encuentra)
-        let duracion = 30;
-
-        // Mostrar loading
-        $('#grilla-horarios-disponibles-reprogramar').html(
-            '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Cargando horarios...</p></div>'
-        );
-
-        // Log de la petición AJAX
-        const requestData = {
-            odontologoId: odontologoId,
-            fecha: fecha,
-            duracion: duracion,
-            citaIdExcluir: citaId
-        };
-        console.log('=== PETICIÓN AJAX ===');
-        console.log('URL:', '/citas/api/horarios-disponibles');
-        console.log('Parámetros:', JSON.stringify(requestData, null, 2));
-
-        // Consultar horarios disponibles
-        $.ajax({
-            url: '/citas/api/horarios-disponibles',
-            method: 'GET',
-            data: requestData,
-            success: function(response) {
-                console.log('Respuesta de horarios disponibles:', response);
-
-                if (!response.disponible) {
-                    console.warn('No hay disponibilidad:', response.motivo);
+                if (!fecha || !odontologoId || odontologoId.trim() === '') {
+                    console.warn('⚠️ Falta fecha u odontólogo');
                     $('#grilla-horarios-disponibles-reprogramar').html(
-                        `<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i>${response.motivo || 'No hay disponibilidad en esta fecha'}</div>`
+                        '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i>Por favor seleccione un odontólogo y una fecha válida</div>'
                     );
                     return;
                 }
 
-                const horarios = response.horariosDisponibles || [];
-                console.log('Horarios disponibles encontrados:', horarios.length);
+                // Validar que la fecha no sea pasada
+                const fechaSeleccionada = new Date(fecha + 'T00:00:00');
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
 
-                if (horarios.length === 0) {
-                    console.warn('No hay horarios en esta fecha');
+                if (fechaSeleccionada < hoy) {
                     $('#grilla-horarios-disponibles-reprogramar').html(
-                        '<div class="alert alert-info">No hay horarios disponibles en esta fecha</div>'
+                        '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-2"></i>No se pueden seleccionar fechas pasadas</div>'
                     );
                     return;
                 }
 
-                // Generar grilla compatible con horarios-citas.js
-                let html = '<div class="horarios-grid">';
-                horarios.forEach(function(slot) {
-                    if (slot.disponible) {
-                        html += `
+                // Obtener duración de la cita (default 30 minutos si no se encuentra)
+                let duracion = 30;
+
+                // Mostrar loading
+                $('#grilla-horarios-disponibles-reprogramar').html(
+                    '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Cargando horarios...</p></div>'
+                );
+
+                // Log de la petición AJAX
+                const requestData = {
+                    odontologoId: odontologoId,
+                    fecha: fecha,
+                    duracion: duracion,
+                    citaIdExcluir: citaId
+                };
+                console.log('=== PETICIÓN AJAX ===');
+                console.log('URL:', '/citas/api/horarios-disponibles');
+                console.log('Parámetros:', JSON.stringify(requestData, null, 2));
+
+                // Consultar horarios disponibles
+                $.ajax({
+                    url: '/citas/api/horarios-disponibles',
+                    method: 'GET',
+                    data: requestData,
+                    success: function (response) {
+                        console.log('Respuesta de horarios disponibles:', response);
+
+                        if (!response.disponible) {
+                            console.warn('No hay disponibilidad:', response.motivo);
+                            $('#grilla-horarios-disponibles-reprogramar').html(
+                                `<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i>${response.motivo || 'No hay disponibilidad en esta fecha'}</div>`
+                            );
+                            return;
+                        }
+
+                        const horarios = response.horariosDisponibles || [];
+                        console.log('Horarios disponibles encontrados:', horarios.length);
+
+                        if (horarios.length === 0) {
+                            console.warn('No hay horarios en esta fecha');
+                            $('#grilla-horarios-disponibles-reprogramar').html(
+                                '<div class="alert alert-info">No hay horarios disponibles en esta fecha</div>'
+                            );
+                            return;
+                        }
+
+                        // Generar grilla compatible con horarios-citas.js
+                        let html = '<div class="horarios-grid">';
+                        horarios.forEach(function (slot) {
+                            if (slot.disponible) {
+                                html += `
                             <button type="button" class="btn btn-outline-primary btn-horario-slot-reprogramar"
                                     data-hora="${slot.inicio}">
                                 <i class="far fa-clock mr-1"></i>${slot.inicio}
                             </button>
                         `;
+                            }
+                        });
+                        html += '</div>';
+
+                        $('#grilla-horarios-disponibles-reprogramar').html(html);
+                        console.log('Grilla de horarios generada con', horarios.filter(s => s.disponible).length, 'slots');
+
+                        // Agregar event listeners a los botones
+                        $('.btn-horario-slot-reprogramar').off('click').on('click', function () {
+                            const hora = $(this).data('hora');
+                            const fecha = $('#fechaCitaReprogramar').val();
+
+                            console.log('Horario clickeado:', hora);
+
+                            // Resaltar selección
+                            $('.btn-horario-slot-reprogramar').removeClass('active btn-primary').addClass('btn-outline-primary');
+                            $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+
+                            // Actualizar campos hidden
+                            const fechaHoraCompleta = fecha + 'T' + hora;
+                            $('#nuevaFechaHoraInicioReprogramar').val(fechaHoraCompleta);
+
+                            // Actualizar texto de horario seleccionado
+                            const fechaObj = new Date(fechaHoraCompleta);
+
+                            // Obtener duración del procedimiento (usar la duración de la cita o 30 por defecto)
+                            const duracionMinutos = parseInt(duracion) || 30;
+                            const fechaFin = new Date(fechaObj.getTime() + duracionMinutos * 60000);
+
+                            // Formatear con rango de horas
+                            const fechaFormateada = fechaObj.toLocaleDateString('es-ES', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
+                            const horaInicio = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                            const horaFin = fechaFin.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                            const textoHorario = `${fechaFormateada} de ${horaInicio} a ${horaFin} (${duracionMinutos} min)`;
+
+                            $('#horario-seleccionado-texto-reprogramar').text(textoHorario);
+                            $('#horario-seleccionado-info-reprogramar').show();
+
+                            console.log('✅ Horario seleccionado:', fechaHoraCompleta);
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('=== ERROR EN AJAX ===');
+                        console.error('Status:', status);
+                        console.error('Error:', error);
+                        console.error('Response:', xhr.responseText);
+                        $('#grilla-horarios-disponibles-reprogramar').html(
+                            '<div class="alert alert-danger"><i class="fas fa-times-circle mr-2"></i>Error al cargar los horarios. Ver consola para detalles.</div>'
+                        );
                     }
                 });
-                html += '</div>';
+            });
 
-                $('#grilla-horarios-disponibles-reprogramar').html(html);
-                console.log('Grilla de horarios generada con', horarios.filter(s => s.disponible).length, 'slots');
+            // Validar antes de enviar el formulario
+            $('#modalReprogramarCita form').off('submit').on('submit', function (e) {
+                console.log('=== VALIDACIÓN DE SUBMIT REPROGRAMAR ===');
 
-                // Agregar event listeners a los botones
-                $('.btn-horario-slot-reprogramar').off('click').on('click', function() {
-                    const hora = $(this).data('hora');
-                    const fecha = $('#fechaCitaReprogramar').val();
+                const nuevaFechaHora = $('#nuevaFechaHoraInicioReprogramar').val();
+                const odontologoId = $('#reprogramarOdontologoId').val();
+                const citaId = $('#reprogramarCitaId').val();
 
-                    console.log('Horario clickeado:', hora);
+                console.log('Cita ID:', citaId);
+                console.log('Odontólogo ID:', odontologoId);
+                console.log('Nueva Fecha/Hora:', nuevaFechaHora);
 
-                    // Resaltar selección
-                    $('.btn-horario-slot-reprogramar').removeClass('active btn-primary').addClass('btn-outline-primary');
-                    $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+                const btnSubmit = $('#btnConfirmarReprogramar');
 
-                    // Actualizar campos hidden
-                    const fechaHoraCompleta = fecha + 'T' + hora;
-                    $('#nuevaFechaHoraInicioReprogramar').val(fechaHoraCompleta);
+                // Validar odontólogo
+                if (!odontologoId || odontologoId.trim() === '') {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
 
-                    // Actualizar texto de horario seleccionado
-                    const fechaObj = new Date(fechaHoraCompleta);
-                    const textoHorario = fechaObj.toLocaleString('es-ES', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
+                    btnSubmit.prop('disabled', false);
+                    btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Odontólogo requerido',
+                        text: 'Por favor seleccione un odontólogo para la reprogramación.'
                     });
+                    return false;
+                }
 
-                    $('#horario-seleccionado-texto-reprogramar').text(textoHorario);
-                    $('#horario-seleccionado-info-reprogramar').show();
+                // Validar horario
+                if (!nuevaFechaHora || nuevaFechaHora.trim() === '') {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
 
-                    console.log('✅ Horario seleccionado:', fechaHoraCompleta);
-                });
-            },
-            error: function(xhr, status, error) {
-                console.error('=== ERROR EN AJAX ===');
-                console.error('Status:', status);
-                console.error('Error:', error);
-                console.error('Response:', xhr.responseText);
+                    btnSubmit.prop('disabled', false);
+                    btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Horario requerido',
+                        text: 'Por favor seleccione un horario para la reprogramación.'
+                    });
+                    return false;
+                }
+
+                // Bloquear botón para evitar doble clic
+                if (btnSubmit.prop('disabled')) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                btnSubmit.prop('disabled', true);
+                btnSubmit.html('<i class="fas fa-spinner fa-spin mr-1"></i>Reprogramando...');
+
+                console.log('✅ Validación exitosa - Permitiendo submit');
+                return true;
+            });
+
+            // Limpiar modal de reprogramar al cerrar
+            $('#modalReprogramarCita').on('hidden.bs.modal', function () {
+                console.log('=== LIMPIANDO MODAL ===');
+
+                // Limpiar TODOS los campos (select, inputs y hidden fields)
+                $('#fechaCitaReprogramar').val('');
+                $('#nuevaFechaHoraInicioReprogramar').val('');
+                $('#reprogramarOdontologoIdSelect').val('');
+                $('#reprogramarOdontologoId').val('');  // ✅ AGREGAR: Limpiar hidden
+                $('#reprogramarCitaId').val('');  // ✅ AGREGAR: Limpiar cita ID
+                $('#horario-seleccionado-info-reprogramar').hide();
                 $('#grilla-horarios-disponibles-reprogramar').html(
-                    '<div class="alert alert-danger"><i class="fas fa-times-circle mr-2"></i>Error al cargar los horarios. Ver consola para detalles.</div>'
+                    '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
                 );
-            }
+                $('.btn-horario-slot-reprogramar').removeClass('btn-primary active').addClass('btn-outline-primary');
+                $('#motivoReprogramacion').val('');
+
+                // Resetear botón si quedó en estado loading
+                const $btnSubmit = $('#btnConfirmarReprogramar');
+                $btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
+                $btnSubmit.prop('disabled', false);
+
+                console.log('✅ Modal limpiado completamente');
+            });
         });
-    });
-
-    // Validar antes de enviar el formulario
-    $('#modalReprogramarCita form').off('submit').on('submit', function(e) {
-        console.log('=== VALIDACIÓN DE SUBMIT REPROGRAMAR ===');
-
-        const nuevaFechaHora = $('#nuevaFechaHoraInicioReprogramar').val();
-        const odontologoId = $('#reprogramarOdontologoId').val();
-        const citaId = $('#reprogramarCitaId').val();
-
-        console.log('Cita ID:', citaId);
-        console.log('Odontólogo ID:', odontologoId);
-        console.log('Nueva Fecha/Hora:', nuevaFechaHora);
-
-        const btnSubmit = $('#btnConfirmarReprogramar');
-
-        // Validar odontólogo
-        if (!odontologoId || odontologoId.trim() === '') {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-
-            btnSubmit.prop('disabled', false);
-            btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
-
-            Swal.fire({
-                icon: 'warning',
-                title: 'Odontólogo requerido',
-                text: 'Por favor seleccione un odontólogo para la reprogramación.'
-            });
-            return false;
-        }
-
-        // Validar horario
-        if (!nuevaFechaHora || nuevaFechaHora.trim() === '') {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-
-            btnSubmit.prop('disabled', false);
-            btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
-
-            Swal.fire({
-                icon: 'warning',
-                title: 'Horario requerido',
-                text: 'Por favor seleccione un horario para la reprogramación.'
-            });
-            return false;
-        }
-
-        // Bloquear botón para evitar doble clic
-        if (btnSubmit.prop('disabled')) {
-            e.preventDefault();
-            return false;
-        }
-
-        btnSubmit.prop('disabled', true);
-        btnSubmit.html('<i class="fas fa-spinner fa-spin mr-1"></i>Reprogramando...');
-
-        console.log('✅ Validación exitosa - Permitiendo submit');
-        return true;
-    });
-
-    // Limpiar modal de reprogramar al cerrar
-    $('#modalReprogramarCita').on('hidden.bs.modal', function() {
-        console.log('=== LIMPIANDO MODAL ===');
-
-        // Limpiar TODOS los campos (select, inputs y hidden fields)
-        $('#fechaCitaReprogramar').val('');
-        $('#nuevaFechaHoraInicioReprogramar').val('');
-        $('#reprogramarOdontologoIdSelect').val('');
-        $('#reprogramarOdontologoId').val('');  // ✅ AGREGAR: Limpiar hidden
-        $('#reprogramarCitaId').val('');  // ✅ AGREGAR: Limpiar cita ID
-        $('#horario-seleccionado-info-reprogramar').hide();
-        $('#grilla-horarios-disponibles-reprogramar').html(
-            '<div class="alert alert-secondary text-center"><i class="fas fa-info-circle mr-2"></i>Seleccione una fecha para ver los horarios</div>'
-        );
-        $('.btn-horario-slot-reprogramar').removeClass('btn-primary active').addClass('btn-outline-primary');
-        $('#motivoReprogramacion').val('');
-
-        // Resetear botón si quedó en estado loading
-        const $btnSubmit = $('#btnConfirmarReprogramar');
-        $btnSubmit.html('<i class="fas fa-check mr-1"></i>Reprogramar');
-        $btnSubmit.prop('disabled', false);
-
-        console.log('✅ Modal limpiado completamente');
-    });
-});
-</script>
+    </script>
 
 </body>
+
 </html>
