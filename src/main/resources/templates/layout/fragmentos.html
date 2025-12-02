@@ -60,13 +60,15 @@
                     <img th:src="@{/adminlte/dist/img/avatar5.png}" class="img-circle elevation-2" alt="User Image">
                 </div>
                 <div class="info">
-                    <a href="#" class="d-block dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                    <a href="#" class="d-block dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
+                        aria-expanded="false"
                         th:text="${usuarioLogueado != null ? usuarioLogueado.nombreCompleto : 'Invitado'}"></a>
                     <div class="dropdown-menu">
                         <a th:href="@{/usuarios/cambiar-password}" class="dropdown-item">
                             <i class="fas fa-key mr-2"></i> Cambiar Contraseña
                         </a>
                     </div>
+                    <br>
                 </div>
             </div>
 
