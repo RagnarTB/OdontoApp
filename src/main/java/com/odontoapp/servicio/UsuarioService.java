@@ -13,7 +13,7 @@ import com.odontoapp.entidad.Usuario;
 public interface UsuarioService {
     void guardarUsuario(UsuarioDTO usuarioDTO);
 
-    Page<Usuario> listarTodosLosUsuarios(String keyword, Pageable pageable); // Modificado para paginación
+    Page<Usuario> listarTodosLosUsuarios(String keyword, Pageable pageable);
 
     Optional<Usuario> buscarPorId(Long id);
 
@@ -21,7 +21,6 @@ public interface UsuarioService {
 
     void cambiarEstadoUsuario(Long id);
 
-    // --- NUEVOS MÉTODOS PARA FUERZA BRUTA ---
     void procesarLoginFallido(String email);
 
     void resetearIntentosFallidos(String email);
@@ -32,4 +31,6 @@ public interface UsuarioService {
 
     void promoverPacienteAPersonal(Long pacienteId, List<Long> rolesIds,
             LocalDate fechaContratacion, LocalDate fechaVigencia);
+
+    List<Usuario> listarPorRol(String rol);
 }

@@ -1,4 +1,3 @@
-// Archivo: C:\\proyectos\\nuevo\\odontoapp\\src\\main\\java\\com\\odontoapp\\repositorio\\PacienteRepository.java
 package com.odontoapp.repositorio;
 
 import com.odontoapp.entidad.Paciente;
@@ -7,6 +6,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface PacienteRepository extends JpaRepository<Paciente, Long> {
@@ -127,4 +129,16 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
                                         "                 HAVING COUNT(DISTINCT ur2.rol_id) = 1 " +
                                         "                 AND MAX((SELECT nombre FROM roles WHERE id = ur2.rol_id)) = 'PACIENTE'))", nativeQuery = true)
         Page<Paciente> findEliminados(Pageable pageable);
+
+        // --- Consultas para Reportes ---
+
+        @Query("SELECT new com.odontoapp.dto.ReporteDTO(FUNCTION('DATE_FORMAT', p.fechaCreacion, '%Y-%m'), COUNT(p)) " +
+                        "FROM Paciente p " +
+                        "WHERE p.eliminado = false AND p.fechaCreacion >= :fechaInicio AND p.fechaCreacion <= :fechaFin "
+                        +
+                        "GROUP BY FUNCTION('DATE_FORMAT', p.fechaCreacion, '%Y-%m') " +
+                        "ORDER BY FUNCTION('DATE_FORMAT', p.fechaCreacion, '%Y-%m') ASC")
+        List<com.odontoapp.dto.ReporteDTO> obtenerNuevosPacientesPorMes(
+                        @Param("fechaInicio") LocalDateTime fechaInicio,
+                        @Param("fechaFin") LocalDateTime fechaFin);
 }

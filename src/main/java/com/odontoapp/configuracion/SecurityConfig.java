@@ -61,9 +61,6 @@ public class SecurityConfig {
                                                 .requestMatchers("/seleccionar-rol", "/seleccionar-rol/**")
                                                 .authenticated()
                                                 // PACIENTE: Portal exclusivo para pacientes
-                                                // ✅ CORREGIDO: Usar formato ACCION_MODULO que coincide con
-                                                // CustomUserDetailsService
-                                                // ✅ NUEVO: API de citas para pacientes (horarios disponibles, etc.)
                                                 .requestMatchers("/paciente/citas/api/**").authenticated()
                                                 .requestMatchers("/usuarios/cambiar-password").authenticated()
                                                 .requestMatchers("/paciente/**").hasAnyAuthority(
@@ -93,6 +90,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/insumos/**", "/categorias-insumo/**",
                                                                 "/unidades-medida/**", "/movimientos-inventario/**")
                                                 .authenticated()
+                                                // REPORTES: Solo ADMIN
+                                                .requestMatchers("/reportes/**").hasRole("ADMIN")
                                                 // Cualquier otra petición requiere autenticación
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form

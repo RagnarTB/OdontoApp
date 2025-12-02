@@ -218,6 +218,19 @@
                         </ul>
                     </li>
                 </ul>
+                </li>
+
+                <!-- REPORTES - Solo ADMIN -->
+                <li class="nav-header" sec:authorize="hasRole('ADMIN')">
+                    REPORTES
+                </li>
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/reportes}" class="nav-link">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <p>Reportes y Estadísticas</p>
+                    </a>
+                </li>
+                </ul>
             </nav>
         </div>
     </aside>

@@ -395,6 +395,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    public List<Usuario> listarPorRol(String rol) {
+        return usuarioRepository.findAll().stream()
+                .filter(u -> u.getRoles().stream().anyMatch(r -> r.getNombre().equalsIgnoreCase(rol)))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public Optional<Usuario> buscarPorId(Long id) {
         // Podríamos hacer JOIN FETCH de los horarios si siempre se muestran al editar
         // Optional<Usuario> usuarioOpt = usuarioRepository.findByIdWithSchedules(id);
