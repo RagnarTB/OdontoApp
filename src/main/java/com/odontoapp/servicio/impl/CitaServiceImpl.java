@@ -685,6 +685,14 @@ public class CitaServiceImpl implements CitaService {
         Cita cita = citaRepository.findById(citaId)
                 .orElseThrow(() -> new EntityNotFoundException("Cita no encontrada con ID: " + citaId));
 
+        // ⚠️ VALIDACIÓN: No permitir marcar asistencia si la cita es futura
+        if (cita.getFechaHoraInicio().isAfter(LocalDateTime.now())) {
+            throw new IllegalStateException(
+                    "No se puede marcar asistencia para una cita futura. " +
+                    "La cita está programada para el " + cita.getFechaHoraInicio().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) +
+                    ". Solo puede reprogramar o cancelar citas futuras.");
+        }
+
         // Validar que la cita esté confirmada o pendiente
         String estadoActual = cita.getEstadoCita().getNombre();
         if (!estadoActual.equals(ESTADO_CONFIRMADA) && !estadoActual.equals(ESTADO_PENDIENTE)) {

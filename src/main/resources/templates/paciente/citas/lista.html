@@ -331,7 +331,8 @@
                                     <div class="form-group">
                                         <label for="reprogramarFecha">Fecha <span class="text-danger">*</span></label>
                                         <input type="date" id="reprogramarFecha" name="fecha" class="form-control"
-                                            required>
+                                            required
+                                            th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
                                         <small class="form-text text-muted">
                                             <i class="fas fa-calendar"></i> Seleccione para ver horarios (no se
                                             permiten
@@ -485,7 +486,7 @@
                             });
                             html += '</div>';
 
-                            $('#reprogramarHorariosGrid').html(html);
+                            $('#reprogramarSelectorHorarios').html(html);
                             $('#reprogramarSelectorHorarios').show();
 
                             // Event listener para seleccionar hora

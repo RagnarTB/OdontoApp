@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{layout/base :: layout(titulo='Reportes y Estadísticas', contenido=~{::#contenido-principal}, scripts=~{::#page-scripts})}">
+
+<body>
+    <div id="contenido-principal">
+        <!-- Content Header (Page header) -->
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Reportes y Estadísticas</h1>
+                        <p class="text-muted">Visualiza el rendimiento de tu clínica</p>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a th:href="@{/}">Inicio</a></li>
+                            <li class="breadcrumb-item active">Reportes</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+
+                <!-- Filtros -->
+                <div class="card card-primary card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-filter mr-1"></i> Filtros de Búsqueda</h3>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/reportes}" method="get" class="form-inline">
+                            <div class="form-group mb-2 mr-2">
+                                <label for="fechaInicio" class="mr-2">Desde:</label>
+                                <input type="date" class="form-control" id="fechaInicio" name="fechaInicio"
+                                    th:value="${fechaInicio}">
+                            </div>
+                            <div class="form-group mb-2 mr-2">
+                                <label for="fechaFin" class="mr-2">Hasta:</label>
+                                <input type="date" class="form-control" id="fechaFin" name="fechaFin"
+                                    th:value="${fechaFin}">
+                            </div>
+                            <div class="form-group mb-2 mr-2">
+                                <label for="odontologoId" class="mr-2">Odontólogo:</label>
+                                <select class="form-control" id="odontologoId" name="odontologoId">
+                                    <option value="">-- Todos --</option>
+                                    <option th:each="odo : ${odontologos}" th:value="${odo.id}"
+                                        th:text="${odo.nombreCompleto}" th:selected="${odo.id == odontologoId}">
+                                    </option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary mb-2 mr-2">
+                                <i class="fas fa-search mr-1"></i> Filtrar
+                            </button>
+                            <a th:href="@{/reportes}" class="btn btn-secondary mb-2 mr-2">
+                                <i class="fas fa-sync-alt mr-1"></i> Limpiar
+                            </a>
+
+                            <div class="ml-auto">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-success dropdown-toggle mb-2"
+                                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fas fa-download mr-1"></i> Exportar
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-right">
+                                        <a class="dropdown-item" href="#" onclick="exportarPDF()">
+                                            <i class="fas fa-file-pdf text-danger mr-2"></i> Exportar a PDF
+                                        </a>
+                                        <a class="dropdown-item"
+                                            th:href="@{/reportes/exportar/excel(fechaInicio=${fechaInicio}, fechaFin=${fechaFin}, odontologoId=${odontologoId})}">
+                                            <i class="fas fa-file-excel text-success mr-2"></i> Exportar a Excel
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="reportes-content">
+                    <!-- Reportes Financieros -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title">Ingresos por Mes</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse"><i
+                                                class="fas fa-minus"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartIngresosMes"
+                                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title">Ingresos por Método de Pago</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse"><i
+                                                class="fas fa-minus"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartMetodoPago"
+                                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reportes Operativos -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title">Estado de Citas</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse"><i
+                                                class="fas fa-minus"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartEstadoCitas"
+                                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card card-warning">
+                                <div class="card-header">
+                                    <h3 class="card-title">Top Tratamientos</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse"><i
+                                                class="fas fa-minus"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartTopTratamientos"
+                                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reportes Pacientes -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card card-lightblue">
+                                <div class="card-header">
+                                    <h3 class="card-title">Nuevos Pacientes</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse"><i
+                                                class="fas fa-minus"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartNuevosPacientes"
+                                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <div id="page-scripts" th:fragment="scripts">
+        <!-- Chart.js -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <!-- jsPDF & AutoTable -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            const dataIngresosMes = /*[[${ingresosPorMes}]]*/[];
+            const dataIngresosMetodo = /*[[${ingresosPorMetodo}]]*/[];
+            const dataCitasEstado = /*[[${citasPorEstado}]]*/[];
+            const dataTopTratamientos = /*[[${topTratamientos}]]*/[];
+            const dataNuevosPacientes = /*[[${nuevosPacientes}]]*/[];
+            /*]]>*/
+
+            document.addEventListener('DOMContentLoaded', function () {
+                const commonOptions = {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                };
+
+                // 1. Ingresos por Mes
+                new Chart(document.getElementById('chartIngresosMes'), {
+                    type: 'bar',
+                    data: {
+                        labels: dataIngresosMes.map(d => d.label),
+                        datasets: [{
+                            label: 'Ingresos (S/.)',
+                            backgroundColor: '#007bff',
+                            borderColor: '#007bff',
+                            data: dataIngresosMes.map(d => d.value)
+                        }]
+                    },
+                    options: commonOptions
+                });
+
+                // 2. Ingresos por Método de Pago
+                new Chart(document.getElementById('chartMetodoPago'), {
+                    type: 'pie',
+                    data: {
+                        labels: dataIngresosMetodo.map(d => d.label),
+                        datasets: [{
+                            data: dataIngresosMetodo.map(d => d.value),
+                            backgroundColor: ['#f56954', '#00a65a', '#f39c12', '#00c0ef', '#3c8dbc', '#d2d6de']
+                        }]
+                    },
+                    options: commonOptions
+                });
+
+                // 3. Estado de Citas
+                new Chart(document.getElementById('chartEstadoCitas'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: dataCitasEstado.map(d => d.label),
+                        datasets: [{
+                            data: dataCitasEstado.map(d => d.value),
+                            backgroundColor: ['#f56954', '#00a65a', '#f39c12', '#00c0ef', '#3c8dbc', '#d2d6de']
+                        }]
+                    },
+                    options: commonOptions
+                });
+
+                // 4. Top Tratamientos
+                new Chart(document.getElementById('chartTopTratamientos'), {
+                    type: 'bar',
+                    data: {
+                        labels: dataTopTratamientos.map(d => d.label),
+                        datasets: [{
+                            label: 'Cantidad',
+                            backgroundColor: '#ffc107',
+                            borderColor: '#ffc107',
+                            data: dataTopTratamientos.map(d => d.value)
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        indexAxis: 'y',
+                    }
+                });
+
+                // 5. Nuevos Pacientes
+                new Chart(document.getElementById('chartNuevosPacientes'), {
+                    type: 'line',
+                    data: {
+                        labels: dataNuevosPacientes.map(d => d.label),
+                        datasets: [{
+                            label: 'Nuevos Pacientes',
+                            backgroundColor: 'rgba(60,141,188,0.9)',
+                            borderColor: 'rgba(60,141,188,0.8)',
+                            pointRadius: 4,
+                            pointColor: '#3b8bba',
+                            pointStrokeColor: 'rgba(60,141,188,1)',
+                            pointHighlightFill: '#fff',
+                            pointHighlightStroke: 'rgba(60,141,188,1)',
+                            data: dataNuevosPacientes.map(d => d.value),
+                            fill: false
+                        }]
+                    },
+                    options: commonOptions
+                });
+            });
+
+            // Función para exportar a PDF Tabular
+            window.exportarPDF = function () {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // --- Encabezado ---
+                doc.setFontSize(22);
+                doc.setTextColor(0, 123, 255); // Azul corporativo
+                doc.text("ODONTOAPP", 105, 20, { align: "center" });
+
+                doc.setFontSize(14);
+                doc.setTextColor(100);
+                doc.text("Reporte de Gestión", 105, 30, { align: "center" });
+
+                doc.setFontSize(10);
+                doc.setTextColor(150);
+                doc.text("Generado el: " + new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(), 105, 38, { align: "center" });
+
+                doc.setDrawColor(0, 123, 255);
+                doc.setLineWidth(1);
+                doc.line(14, 45, 196, 45);
+
+                let finalY = 50;
+
+                // Función auxiliar para agregar tablas
+                const addTable = (title, headers, data, startY) => {
+                    doc.setFontSize(12);
+                    doc.setTextColor(0);
+                    doc.text(title, 14, startY);
+
+                    doc.autoTable({
+                        startY: startY + 5,
+                        head: [headers],
+                        body: data.map(item => [item.label, item.value]),
+                        theme: 'grid',
+                        headStyles: { fillColor: [0, 123, 255] },
+                        styles: { fontSize: 10 },
+                        margin: { top: 50 }
+                    });
+
+                    return doc.lastAutoTable.finalY + 15;
+                };
+
+                // 1. Ingresos por Método de Pago
+                finalY = addTable("Ingresos por Método de Pago", ["Método", "Monto (S/.)"], dataIngresosMetodo, finalY);
+
+                // 2. Ingresos por Mes
+                // Verificar si cabe en la página, si no, nueva página
+                if (finalY > 250) { doc.addPage(); finalY = 20; }
+                finalY = addTable("Ingresos por Mes", ["Mes", "Monto (S/.)"], dataIngresosMes, finalY);
+
+                // 3. Estado de Citas
+                if (finalY > 250) { doc.addPage(); finalY = 20; }
+                finalY = addTable("Estado de Citas", ["Estado", "Cantidad"], dataCitasEstado, finalY);
+
+                // 4. Top Tratamientos
+                if (finalY > 250) { doc.addPage(); finalY = 20; }
+                finalY = addTable("Top Tratamientos", ["Tratamiento", "Cantidad"], dataTopTratamientos, finalY);
+
+                // 5. Nuevos Pacientes
+                if (finalY > 250) { doc.addPage(); finalY = 20; }
+                finalY = addTable("Nuevos Pacientes", ["Mes", "Cantidad"], dataNuevosPacientes, finalY);
+
+                // Footer con número de página
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150);
+                    doc.text('Página ' + i + ' de ' + pageCount, 196, 285, { align: 'right' });
+                }
+
+                doc.save("reporte_odontoapp_tabular.pdf");
+
+                Swal.fire('¡Éxito!', 'El reporte PDF se ha descargado.', 'success');
+            }
+        </script>
+    </div>
+</body>
+
+</html>

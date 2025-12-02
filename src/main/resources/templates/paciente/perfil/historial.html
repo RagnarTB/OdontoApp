@@ -420,6 +420,14 @@
                                                     Aún no se ha registrado tu odontograma. Se actualizará cuando
                                                     recibas tratamientos.
                                                 </div>
+
+                                                <!-- Botón para ver el odontograma completo -->
+                                                <div class="mt-4">
+                                                    <a th:href="@{/odontograma/paciente/{id}(id=${usuario.id})}"
+                                                       class="btn btn-primary btn-lg">
+                                                        <i class="fas fa-eye mr-2"></i>Ver Mi Odontograma Completo
+                                                    </a>
+                                                </div>
                                             </div>
                                             <div class="card-footer text-muted">
                                                 <small>

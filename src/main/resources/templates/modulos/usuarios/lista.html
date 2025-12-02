@@ -168,6 +168,14 @@
                                             data-accion-descripcion="gestionar excepciones de horario">
                                             <i class="fas fa-calendar-times"></i>
                                         </button>
+                                        <!-- Botón para ver detalle del paciente (solo si tiene rol PACIENTE) -->
+                                        <a th:if="${usuario.getRoles().![nombre].contains('PACIENTE') && usuario.getPaciente() != null}"
+                                            th:href="@{/pacientes/historial/{id}(id=${usuario.getPaciente().id})}"
+                                            class="btn btn-sm btn-outline-primary" title="Ver Detalle del Paciente"
+                                            data-permiso="VER_LISTA_USUARIOS"
+                                            data-accion-descripcion="ver detalle del paciente">
+                                            <i class="fas fa-user-injured"></i>
+                                        </a>
                                         <!-- Ocultar botón de eliminar para pacientes pendientes -->
                                         <a th:if="${usuario.nombreCompleto != 'Paciente Pendiente'}"
                                             th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"

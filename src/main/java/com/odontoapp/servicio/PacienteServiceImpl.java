@@ -96,6 +96,47 @@ public class PacienteServiceImpl implements PacienteService {
         }
     }
 
+    /**
+     * Valida el formato del teléfono para números celulares peruanos
+     * - Debe tener exactamente 9 dígitos
+     * - Debe empezar con 9
+     * - No puede ser un número repetido (ej: 999999999)
+     * - No puede ser una secuencia ascendente/descendente (ej: 123456789, 987654321)
+     */
+    private void validarFormatoTelefono(String telefono) {
+        if (telefono == null || telefono.trim().isEmpty()) {
+            return; // Campo opcional
+        }
+
+        // Remover espacios y guiones
+        String telefonoLimpio = telefono.replaceAll("[\\s\\-]", "");
+
+        // Validar que solo contenga dígitos
+        if (!telefonoLimpio.matches("\\d+")) {
+            throw new IllegalArgumentException("El teléfono solo debe contener números.");
+        }
+
+        // Validar longitud (9 dígitos para celulares peruanos)
+        if (telefonoLimpio.length() != 9) {
+            throw new IllegalArgumentException("El teléfono debe tener exactamente 9 dígitos.");
+        }
+
+        // Validar que empiece con 9 (celulares peruanos)
+        if (!telefonoLimpio.startsWith("9")) {
+            throw new IllegalArgumentException("El número celular debe empezar con 9.");
+        }
+
+        // Validar que no sea un número repetido (ej: 999999999, 111111111)
+        if (telefonoLimpio.matches("(\\d)\\1{8}")) {
+            throw new IllegalArgumentException("El teléfono no puede tener todos los dígitos iguales.");
+        }
+
+        // Validar que no sea una secuencia ascendente (123456789) o descendente (987654321)
+        if (telefonoLimpio.equals("123456789") || telefonoLimpio.equals("987654321")) {
+            throw new IllegalArgumentException("El teléfono no puede ser una secuencia numérica simple.");
+        }
+    }
+
     @Override
     @Transactional
     public void guardarPaciente(PacienteDTO pacienteDTO) {
@@ -103,6 +144,9 @@ public class PacienteServiceImpl implements PacienteService {
         // 1️⃣ VALIDACIÓN DE DOCUMENTO
         validarUnicidadDocumento(pacienteDTO.getNumeroDocumento(), pacienteDTO.getTipoDocumentoId(),
                 pacienteDTO.getId());
+
+        // 1.5️⃣ VALIDACIÓN DE FORMATO DE TELÉFONO
+        validarFormatoTelefono(pacienteDTO.getTelefono());
 
         // 2️⃣ VALIDACIÓN MEJORADA DE EMAIL
         if (pacienteDTO.getEmail() != null && !pacienteDTO.getEmail().isEmpty()) {
@@ -326,7 +370,9 @@ public class PacienteServiceImpl implements PacienteService {
         if (keyword != null && !keyword.isEmpty()) {
             return pacienteRepository.findByKeyword(keyword, pageable);
         }
-        return pacienteRepository.findAll(pageable);
+        // ⚠️ IMPORTANTE: Solo mostrar pacientes con rol PACIENTE únicamente
+        // Los usuarios con PACIENTE + otros roles aparecen en /usuarios
+        return pacienteRepository.findPacientesConSoloRolPaciente(pageable);
     }
 
     @Override
