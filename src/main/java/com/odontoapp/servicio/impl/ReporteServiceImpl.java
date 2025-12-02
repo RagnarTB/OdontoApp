@@ -62,99 +62,147 @@ public class ReporteServiceImpl implements ReporteService {
     public byte[] generarReporteExcel(LocalDate fechaInicio, LocalDate fechaFin, Long odontologoId) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
-            // Estilos
+            // --- ESTILOS ---
+            // Estilo Título Principal
+            CellStyle titleStyle = workbook.createCellStyle();
+            Font titleFont = workbook.createFont();
+            titleFont.setBold(true);
+            titleFont.setFontHeightInPoints((short) 16);
+            titleFont.setColor(IndexedColors.DARK_BLUE.getIndex());
+            titleStyle.setFont(titleFont);
+            titleStyle.setAlignment(HorizontalAlignment.CENTER);
+
+            // Estilo Subtítulo
+            CellStyle subtitleStyle = workbook.createCellStyle();
+            Font subtitleFont = workbook.createFont();
+            subtitleFont.setBold(true);
+            subtitleFont.setFontHeightInPoints((short) 12);
+            subtitleFont.setColor(IndexedColors.GREY_50_PERCENT.getIndex());
+            subtitleStyle.setFont(subtitleFont);
+            subtitleStyle.setAlignment(HorizontalAlignment.CENTER);
+
+            // Estilo Cabecera de Tabla
             CellStyle headerStyle = workbook.createCellStyle();
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
             headerStyle.setFont(headerFont);
-            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            headerStyle.setFillForegroundColor(IndexedColors.ROYAL_BLUE.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+            headerStyle.setBorderTop(BorderStyle.THIN);
+            headerStyle.setBorderRight(BorderStyle.THIN);
+            headerStyle.setBorderLeft(BorderStyle.THIN);
 
-            // Hoja 1: Resumen Financiero
-            Sheet sheetFinanciero = workbook.createSheet("Financiero");
-            createHeader(sheetFinanciero, headerStyle, "Concepto", "Valor");
+            // Estilo Datos
+            CellStyle dataStyle = workbook.createCellStyle();
+            dataStyle.setBorderBottom(BorderStyle.THIN);
+            dataStyle.setBorderTop(BorderStyle.THIN);
+            dataStyle.setBorderRight(BorderStyle.THIN);
+            dataStyle.setBorderLeft(BorderStyle.THIN);
+            dataStyle.setAlignment(HorizontalAlignment.LEFT);
 
-            int rowNum = 1;
-            Row rowTitle = sheetFinanciero.createRow(rowNum++);
-            rowTitle.createCell(0).setCellValue("Ingresos por Método de Pago");
+            // Estilo Números
+            CellStyle numberStyle = workbook.createCellStyle();
+            numberStyle.cloneStyleFrom(dataStyle);
+            numberStyle.setAlignment(HorizontalAlignment.RIGHT);
 
+            // --- HOJA 1: RESUMEN GENERAL ---
+            Sheet sheet = workbook.createSheet("Resumen General");
+
+            // Encabezado Corporativo
+            Row rowTitle = sheet.createRow(0);
+            Cell cellTitle = rowTitle.createCell(0);
+            cellTitle.setCellValue("ODONTOAPP - REPORTE DE GESTIÓN");
+            cellTitle.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 4));
+
+            Row rowSubtitle = sheet.createRow(1);
+            Cell cellSubtitle = rowSubtitle.createCell(0);
+            cellSubtitle.setCellValue("Generado el: "
+                    + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+            cellSubtitle.setCellStyle(subtitleStyle);
+            sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(1, 1, 0, 4));
+
+            Row rowRange = sheet.createRow(2);
+            Cell cellRange = rowRange.createCell(0);
+            cellRange.setCellValue("Período: " + fechaInicio + " al " + fechaFin);
+            cellRange.setCellStyle(subtitleStyle);
+            sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(2, 2, 0, 4));
+
+            int rowNum = 4;
+
+            // Sección 1: Ingresos
+            rowNum = createSectionHeader(sheet, rowNum, "INGRESOS POR MÉTODO DE PAGO", headerStyle);
             List<ReporteDTO> ingresosMetodo = obtenerIngresosPorMetodoPago(fechaInicio, fechaFin);
-            for (ReporteDTO dato : ingresosMetodo) {
-                Row row = sheetFinanciero.createRow(rowNum++);
-                row.createCell(0).setCellValue(dato.getLabel());
-                row.createCell(1).setCellValue(dato.getValue().doubleValue());
-            }
+            rowNum = createDataTable(sheet, rowNum, ingresosMetodo, dataStyle, numberStyle, "Método", "Monto (S/.)");
 
-            rowNum++;
-            Row rowTitle2 = sheetFinanciero.createRow(rowNum++);
-            rowTitle2.createCell(0).setCellValue("Ingresos por Mes");
-
+            rowNum += 2;
+            rowNum = createSectionHeader(sheet, rowNum, "INGRESOS POR MES", headerStyle);
             List<ReporteDTO> ingresosMes = obtenerIngresosPorMes(fechaInicio, fechaFin);
-            for (ReporteDTO dato : ingresosMes) {
-                Row row = sheetFinanciero.createRow(rowNum++);
-                row.createCell(0).setCellValue(dato.getLabel());
-                row.createCell(1).setCellValue(dato.getValue().doubleValue());
-            }
+            rowNum = createDataTable(sheet, rowNum, ingresosMes, dataStyle, numberStyle, "Mes", "Monto (S/.)");
 
-            sheetFinanciero.autoSizeColumn(0);
-            sheetFinanciero.autoSizeColumn(1);
-
-            // Hoja 2: Operativo
-            Sheet sheetOperativo = workbook.createSheet("Operativo");
-            createHeader(sheetOperativo, headerStyle, "Concepto", "Cantidad");
-
-            rowNum = 1;
-            Row rowTitleOp = sheetOperativo.createRow(rowNum++);
-            rowTitleOp.createCell(0).setCellValue("Estado de Citas");
-
+            // Sección 2: Operativo
+            rowNum += 2;
+            rowNum = createSectionHeader(sheet, rowNum, "ESTADO DE CITAS", headerStyle);
             List<ReporteDTO> citasEstado = obtenerCitasPorEstado(fechaInicio, fechaFin, odontologoId);
-            for (ReporteDTO dato : citasEstado) {
-                Row row = sheetOperativo.createRow(rowNum++);
-                row.createCell(0).setCellValue(dato.getLabel());
-                row.createCell(1).setCellValue(dato.getValue().doubleValue());
-            }
+            rowNum = createDataTable(sheet, rowNum, citasEstado, dataStyle, numberStyle, "Estado", "Cantidad");
 
-            rowNum++;
-            Row rowTitleOp2 = sheetOperativo.createRow(rowNum++);
-            rowTitleOp2.createCell(0).setCellValue("Top Tratamientos");
-
+            rowNum += 2;
+            rowNum = createSectionHeader(sheet, rowNum, "TOP TRATAMIENTOS", headerStyle);
             List<ReporteDTO> topTratamientos = obtenerTopTratamientos(fechaInicio, fechaFin, odontologoId);
-            for (ReporteDTO dato : topTratamientos) {
-                Row row = sheetOperativo.createRow(rowNum++);
-                row.createCell(0).setCellValue(dato.getLabel());
-                row.createCell(1).setCellValue(dato.getValue().doubleValue());
-            }
+            rowNum = createDataTable(sheet, rowNum, topTratamientos, dataStyle, numberStyle, "Tratamiento", "Cantidad");
 
-            sheetOperativo.autoSizeColumn(0);
-            sheetOperativo.autoSizeColumn(1);
-
-            // Hoja 3: Pacientes
-            Sheet sheetPacientes = workbook.createSheet("Pacientes");
-            createHeader(sheetPacientes, headerStyle, "Mes", "Nuevos Pacientes");
-
-            rowNum = 1;
+            // Sección 3: Pacientes
+            rowNum += 2;
+            rowNum = createSectionHeader(sheet, rowNum, "NUEVOS PACIENTES", headerStyle);
             List<ReporteDTO> nuevosPacientes = obtenerNuevosPacientesPorMes(fechaInicio, fechaFin);
-            for (ReporteDTO dato : nuevosPacientes) {
-                Row row = sheetPacientes.createRow(rowNum++);
-                row.createCell(0).setCellValue(dato.getLabel());
-                row.createCell(1).setCellValue(dato.getValue().doubleValue());
-            }
+            rowNum = createDataTable(sheet, rowNum, nuevosPacientes, dataStyle, numberStyle, "Mes", "Cantidad");
 
-            sheetPacientes.autoSizeColumn(0);
-            sheetPacientes.autoSizeColumn(1);
+            // Autoajustar columnas
+            sheet.autoSizeColumn(0);
+            sheet.autoSizeColumn(1);
+            sheet.setColumnWidth(0, 8000); // Ancho fijo para la primera columna para mejor estética
+            sheet.setColumnWidth(1, 4000);
 
             workbook.write(out);
             return out.toByteArray();
         }
     }
 
-    private void createHeader(Sheet sheet, CellStyle style, String... headers) {
-        Row headerRow = sheet.createRow(0);
-        for (int i = 0; i < headers.length; i++) {
-            Cell cell = headerRow.createCell(i);
-            cell.setCellValue(headers[i]);
-            cell.setCellStyle(style);
+    private int createSectionHeader(Sheet sheet, int rowNum, String title, CellStyle style) {
+        Row row = sheet.createRow(rowNum++);
+        Cell cell = row.createCell(0);
+        cell.setCellValue(title);
+        cell.setCellStyle(style);
+        // Fusionar celdas para el título de sección
+        sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(rowNum - 1, rowNum - 1, 0, 1));
+        return rowNum;
+    }
+
+    private int createDataTable(Sheet sheet, int rowNum, List<ReporteDTO> data, CellStyle textStyle, CellStyle numStyle,
+            String col1, String col2) {
+        // Sub-cabeceras
+        Row headerRow = sheet.createRow(rowNum++);
+        Cell h1 = headerRow.createCell(0);
+        h1.setCellValue(col1);
+        h1.setCellStyle(textStyle);
+        Cell h2 = headerRow.createCell(1);
+        h2.setCellValue(col2);
+        h2.setCellStyle(textStyle);
+
+        // Datos
+        for (ReporteDTO dto : data) {
+            Row row = sheet.createRow(rowNum++);
+            Cell c1 = row.createCell(0);
+            c1.setCellValue(dto.getLabel());
+            c1.setCellStyle(textStyle);
+            Cell c2 = row.createCell(1);
+            c2.setCellValue(dto.getValue().doubleValue());
+            c2.setCellStyle(numStyle);
         }
+        return rowNum;
     }
 
     private LocalDateTime atStartOfDay(LocalDate date) {

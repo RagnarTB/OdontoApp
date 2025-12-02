@@ -176,9 +176,10 @@
     <div id="page-scripts" th:fragment="scripts">
         <!-- Chart.js -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <!-- html2canvas & jsPDF -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        <!-- jsPDF & AutoTable -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
         <script th:inline="javascript">
             /*<![CDATA[*/
@@ -276,35 +277,81 @@
                 });
             });
 
+            // Función para exportar a PDF Tabular
             window.exportarPDF = function () {
                 const { jsPDF } = window.jspdf;
-                const element = document.getElementById('reportes-content');
+                const doc = new jsPDF();
 
-                // Mostrar loading o feedback
-                Swal.fire({
-                    title: 'Generando PDF...',
-                    text: 'Por favor espere',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
+                // --- Encabezado ---
+                doc.setFontSize(22);
+                doc.setTextColor(0, 123, 255); // Azul corporativo
+                doc.text("ODONTOAPP", 105, 20, { align: "center" });
 
-                html2canvas(element, { scale: 2 }).then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const pdf = new jsPDF('p', 'mm', 'a4');
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                doc.setFontSize(14);
+                doc.setTextColor(100);
+                doc.text("Reporte de Gestión", 105, 30, { align: "center" });
 
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    pdf.save("reporte_odontoapp.pdf");
+                doc.setFontSize(10);
+                doc.setTextColor(150);
+                doc.text("Generado el: " + new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(), 105, 38, { align: "center" });
 
-                    Swal.close();
-                    Swal.fire('¡Éxito!', 'El reporte PDF se ha descargado.', 'success');
-                }).catch(err => {
-                    console.error(err);
-                    Swal.fire('Error', 'No se pudo generar el PDF.', 'error');
-                });
+                doc.setDrawColor(0, 123, 255);
+                doc.setLineWidth(1);
+                doc.line(14, 45, 196, 45);
+
+                let finalY = 50;
+
+                // Función auxiliar para agregar tablas
+                const addTable = (title, headers, data, startY) => {
+                    doc.setFontSize(12);
+                    doc.setTextColor(0);
+                    doc.text(title, 14, startY);
+
+                    doc.autoTable({
+                        startY: startY + 5,
+                        head: [headers],
+                        body: data.map(item => [item.label, item.value]),
+                        theme: 'grid',
+                        headStyles: { fillColor: [0, 123, 255] },
+                        styles: { fontSize: 10 },
+                        margin: { top: 50 }
+                    });
+
+                    return doc.lastAutoTable.finalY + 15;
+                };
+
+                // 1. Ingresos por Método de Pago
+                finalY = addTable("Ingresos por Método de Pago", ["Método", "Monto (S/.)"], dataIngresosMetodo, finalY);
+
+                // 2. Ingresos por Mes
+                // Verificar si cabe en la página, si no, nueva página
+                if (finalY > 250) { doc.addPage(); finalY = 20; }
+                finalY = addTable("Ingresos por Mes", ["Mes", "Monto (S/.)"], dataIngresosMes, finalY);
+
+                // 3. Estado de Citas
+                if (finalY > 250) { doc.addPage(); finalY = 20; }
+                finalY = addTable("Estado de Citas", ["Estado", "Cantidad"], dataCitasEstado, finalY);
+
+                // 4. Top Tratamientos
+                if (finalY > 250) { doc.addPage(); finalY = 20; }
+                finalY = addTable("Top Tratamientos", ["Tratamiento", "Cantidad"], dataTopTratamientos, finalY);
+
+                // 5. Nuevos Pacientes
+                if (finalY > 250) { doc.addPage(); finalY = 20; }
+                finalY = addTable("Nuevos Pacientes", ["Mes", "Cantidad"], dataNuevosPacientes, finalY);
+
+                // Footer con número de página
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150);
+                    doc.text('Página ' + i + ' de ' + pageCount, 196, 285, { align: 'right' });
+                }
+
+                doc.save("reporte_odontoapp_tabular.pdf");
+
+                Swal.fire('¡Éxito!', 'El reporte PDF se ha descargado.', 'success');
             }
         </script>
     </div>
