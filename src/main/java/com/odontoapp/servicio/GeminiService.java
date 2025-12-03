@@ -77,10 +77,10 @@ public class GeminiService {
             generationConfig.put("maxOutputTokens", 1024);
             requestBody.put("generationConfig", generationConfig);
 
-            // Llamar a la API v1 (versión estable) con gemini-1.5-flash
+            // Llamar a la API v1beta (requerida por Google AI Studio)
             String response = webClient.post()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/v1/models/{model}:generateContent")
+                            .path("/v1beta/models/{model}:generateContent")
                             .build(model))
                     .header("x-goog-api-key", apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
