@@ -44,39 +44,14 @@ public class GeminiService {
 
     /**
      * Genera una respuesta usando Gemini API
-     * 
+     *
      * @param prompt El prompt completo (instrucciones del sistema + pregunta del
      *               usuario)
      * @return La respuesta generada por Gemini
      */
-    /**
-     * Lista los modelos disponibles para debugging
-     */
-    private void listarModelosDisponibles() {
-        try {
-            String response = webClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/v1beta/models")
-                            .queryParam("key", apiKey)
-                            .build())
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(10))
-                    .block();
-
-            log.info("Modelos disponibles: {}", response);
-        } catch (Exception e) {
-            log.error("Error al listar modelos: {}", e.getMessage());
-        }
-    }
-
     public String generarRespuesta(String prompt) {
         try {
             log.info("Iniciando llamada a Gemini API con modelo: {}", model);
-            log.info("API Key (primeros 10 chars): {}...", apiKey.substring(0, Math.min(10, apiKey.length())));
-
-            // Listar modelos disponibles para debugging (solo la primera vez)
-            listarModelosDisponibles();
 
             // Construir el request body según la API de Gemini
             Map<String, Object> requestBody = new HashMap<>();
@@ -102,12 +77,7 @@ public class GeminiService {
             generationConfig.put("maxOutputTokens", 1024);
             requestBody.put("generationConfig", generationConfig);
 
-            // Construir URL completa para debugging
-            String apiUrl = String.format("/v1beta/models/%s:generateContent?key=%s",
-                    model, apiKey);
-            log.info("URL completa (sin key): /v1beta/models/{}:generateContent", model);
-
-            // Llamar a la API v1beta (versión correcta para Google AI Studio)
+            // Llamar a la API v1beta con el modelo gemini-2.5-flash
             String response = webClient.post()
                     .uri(uriBuilder -> uriBuilder
                             .path("/v1beta/models/" + model + ":generateContent")
