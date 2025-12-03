@@ -4,8 +4,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="_csrf" th:content="${_csrf.token}"/>
-    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
     <title th:text="'OdontoApp | ' + ${titulo}">OdontoApp</title>
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"
@@ -21,6 +21,8 @@
     <link rel="stylesheet" th:href="@{/css/selector-horarios.css}">
     <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- Chatbot IA -->
+    <link rel="stylesheet" th:href="@{/css/chatbot.css}">
 
 </head>
 
@@ -68,9 +70,13 @@
     <!-- Sistema de Validación de Permisos Granulares -->
     <script th:src="@{/js/permisos-validator.js}"></script>
 
+    <!-- Chatbot IA (solo para pacientes) -->
+    <script th:if="${#authorization.expression('hasAuthority(''VER_MI_PERFIL_PANEL_PACIENTE'')')}"
+        th:src="@{/js/chatbot.js}"></script>
+
     <!-- Mostrar alertas flash de Spring Boot -->
     <script th:inline="javascript">
-        $(document).ready(function() {
+        $(document).ready(function () {
             const success = /*[[${success}]]*/ null;
             const error = /*[[${error}]]*/ null;
             const warning = /*[[${warning}]]*/ null;

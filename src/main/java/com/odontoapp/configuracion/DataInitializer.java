@@ -594,7 +594,8 @@ public class DataInitializer implements CommandLineRunner {
                                 "FACTURACION",
                                 "INVENTARIO",
                                 "TRATAMIENTOS",
-                                "ODONTOGRAMA");
+                                "ODONTOGRAMA",
+                                "REPORTES");
                 // Módulo especial para el panel de paciente (permisos personalizados)
                 List<String> accionesPanelPaciente = Arrays.asList(
                                 "VER_MIS_CITAS",
@@ -637,6 +638,23 @@ public class DataInitializer implements CommandLineRunner {
                         permiso.setModulo("ADMINISTRACION");
                         permiso.setAccion("VER_REGISTROS_ELIMINADOS");
                         System.out.println("  -> Creando permiso: VER_REGISTROS_ELIMINADOS");
+                        return permisoRepository.save(permiso);
+                });
+
+                // === PERMISOS ESPECIALES DE REPORTES ===
+                permisoRepository.findByModuloAndAccion("REPORTES", "VER_REPORTES").orElseGet(() -> {
+                        Permiso permiso = new Permiso();
+                        permiso.setModulo("REPORTES");
+                        permiso.setAccion("VER_REPORTES");
+                        System.out.println("  -> Creando permiso: VER_REPORTES");
+                        return permisoRepository.save(permiso);
+                });
+
+                permisoRepository.findByModuloAndAccion("REPORTES", "EXPORTAR_REPORTES").orElseGet(() -> {
+                        Permiso permiso = new Permiso();
+                        permiso.setModulo("REPORTES");
+                        permiso.setAccion("EXPORTAR_REPORTES");
+                        System.out.println("  -> Creando permiso: EXPORTAR_REPORTES");
                         return permisoRepository.save(permiso);
                 });
 
