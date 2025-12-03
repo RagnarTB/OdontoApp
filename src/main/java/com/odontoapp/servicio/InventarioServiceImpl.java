@@ -57,6 +57,27 @@ public class InventarioServiceImpl implements InventarioService {
             throw new IllegalStateException("No se puede registrar un movimiento para un insumo eliminado.");
         }
 
+        // ✅ VALIDACIÓN COMPLETA: Verificar coherencia de cantidad según unidad de
+        // medida
+        BigDecimal cantidad = dto.getCantidad();
+        if (insumo.getUnidadMedida() != null) {
+            String unidad = insumo.getUnidadMedida().getNombre().toLowerCase();
+            String abreviatura = insumo.getUnidadMedida().getAbreviatura().toLowerCase();
+
+            // Determinar si la unidad requiere valores enteros
+            boolean requiereEntero = esUnidadEntera(unidad, abreviatura);
+
+            if (requiereEntero) {
+                // Verificar si tiene decimales
+                if (cantidad.stripTrailingZeros().scale() > 0) {
+                    throw new IllegalStateException(
+                            String.format("No se pueden registrar cantidades decimales para '%s'. " +
+                                    "La cantidad debe ser un número entero.",
+                                    insumo.getUnidadMedida().getNombre()));
+                }
+            }
+        }
+
         TipoMovimiento tipo = tipoMovimientoRepository.findById(dto.getTipoMovimientoId())
                 .orElseThrow(() -> new IllegalStateException("Tipo de movimiento no encontrado."));
 
@@ -64,7 +85,6 @@ public class InventarioServiceImpl implements InventarioService {
                 .orElseThrow(() -> new IllegalStateException("Motivo de movimiento no encontrado."));
 
         BigDecimal stockAnterior = insumo.getStockActual();
-        BigDecimal cantidad = dto.getCantidad();
         BigDecimal stockNuevo;
 
         if (tipo.getAfectaStock() == TipoMovimiento.AfectaStock.SUMA) {
@@ -193,5 +213,39 @@ public class InventarioServiceImpl implements InventarioService {
         // Actualizar el stock del insumo
         insumo.setStockActual(stockNuevo);
         insumoRepository.save(insumo);
+    }
+
+    /**
+     * Determina si una unidad de medida requiere valores enteros (no decimales).
+     * 
+     * @param unidad      Nombre de la unidad en minúsculas
+     * @param abreviatura Abreviatura de la unidad en minúsculas
+     * @return true si requiere valores enteros, false si permite decimales
+     */
+    private boolean esUnidadEntera(String unidad, String abreviatura) {
+        // Lista de unidades que SOLO permiten valores enteros
+        String[] unidadesEnteras = {
+                // Unidades básicas
+                "unidad", "und", "u", "pieza", "pza", "pz", "articulo", "art",
+                // Contenedores
+                "caja", "cj", "cja", "paquete", "paq", "frasco", "fco", "fras",
+                "carpule", "carp", "cartucho", "cart",
+                // Recipientes médicos
+                "ampolla", "amp", "vial", "tubo", "tub", "sobre", "sob",
+                // Formatos
+                "rollo", "hoja", "pliego", "lamina", "lam",
+                // Otros
+                "blister", "blist", "kit", "set", "par"
+        };
+
+        // Verificar si la unidad o abreviatura está en la lista de enteros
+        for (String unidadEntera : unidadesEnteras) {
+            if (unidad.contains(unidadEntera) || abreviatura.equals(unidadEntera)) {
+                return true;
+            }
+        }
+
+        // Si no está en la lista de enteros, permite decimales
+        return false;
     }
 }

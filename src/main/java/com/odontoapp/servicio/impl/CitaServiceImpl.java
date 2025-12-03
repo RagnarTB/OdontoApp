@@ -349,6 +349,14 @@ public class CitaServiceImpl implements CitaService {
                 .orElseThrow(
                         () -> new EntityNotFoundException("Procedimiento no encontrado con ID: " + procedimientoId));
 
+        // ✅ VALIDACIÓN: Verificar que el paciente y el odontólogo NO sean la misma
+        // persona
+        if (paciente.getId().equals(odontologo.getId())) {
+            throw new IllegalStateException(
+                    "Un usuario no puede atenderse a sí mismo. " +
+                            "El paciente y el odontólogo deben ser personas diferentes.");
+        }
+
         // Calcular fecha de fin basada en la duración del procedimiento
         LocalDateTime fechaHoraFin = fechaHoraInicio.plusMinutes(procedimiento.getDuracionBaseMinutos());
 
