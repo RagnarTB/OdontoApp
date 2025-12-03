@@ -82,7 +82,6 @@ public class ReporteControlador {
     }
 
     @GetMapping("/exportar/excel")
-    @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).EXPORTAR_REPORTES)")
     public ResponseEntity<byte[]> exportarExcel(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
