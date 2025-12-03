@@ -62,6 +62,8 @@ public class SecurityConfig {
                                                 .authenticated()
                                                 // PACIENTE: Portal exclusivo para pacientes
                                                 .requestMatchers("/paciente/citas/api/**").authenticated()
+                                                // Chatbot IA - solo para pacientes autenticados
+                                                .requestMatchers("/api/chatbot/**").authenticated()
                                                 .requestMatchers("/usuarios/cambiar-password").authenticated()
                                                 .requestMatchers("/paciente/**").hasAnyAuthority(
                                                                 "VER_MIS_CITAS_PANEL_PACIENTE",
