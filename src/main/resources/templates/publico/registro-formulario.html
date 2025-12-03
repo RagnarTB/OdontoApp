@@ -16,8 +16,14 @@
         }
 
         .register-box {
-            width: 640px;
-            margin-top: 40px;
+            width: 95%;
+            /* Ocupa el 95% de la pantalla en móviles */
+            max-width: 640px;
+            /* No crece más de 640px en PC */
+            margin: 40px auto;
+            /* auto centra la caja horizontalmente */
+            padding: 0 10px;
+            /* Un pequeño margen interno de seguridad */
         }
 
         .card {
@@ -151,8 +157,7 @@
                         <div class="col-md-4">
                             <label>Nombre Completo</label>
                             <input type="text" class="form-control" id="nombreCompleto" th:field="*{nombreCompleto}"
-                                readonly
-                                th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
+                                readonly th:classappend="${#fields.hasErrors('nombreCompleto')} ? 'is-invalid' : ''">
                             <div th:if="${#fields.hasErrors('nombreCompleto')}" class="invalid-feedback d-block"
                                 th:errors="*{nombreCompleto}"></div>
                             <small class="form-text text-muted">Busque por DNI para autocompletar</small>
@@ -179,8 +184,8 @@
                     <div class="form-row mt-3">
                         <div class="col-md-6">
                             <label>Teléfono</label>
-                            <input type="text" class="form-control" id="telefono" th:field="*{telefono}"
-                                maxlength="15" placeholder="Ej: 987654321">
+                            <input type="text" class="form-control" id="telefono" th:field="*{telefono}" maxlength="15"
+                                placeholder="Ej: 987654321">
                             <small id="telefono-error" class="form-text text-danger"></small>
                         </div>
                         <div class="col-md-6">
@@ -220,7 +225,7 @@
     <script th:src="@{/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             const $tipoDoc = $('#tipoDocumentoId');
             const $numeroDoc = $('#numeroDocumento');
             const $nombre = $('#nombreCompleto');
@@ -265,7 +270,7 @@
             }
 
             // Solo permitir números en campos numéricos según tipo de documento
-            $numeroDoc.on('input', function() {
+            $numeroDoc.on('input', function () {
                 const tipoDocTexto = $tipoDoc.find('option:selected').text().trim().toUpperCase();
                 let valor = $(this).val();
 
@@ -292,14 +297,14 @@
             });
 
             // Validar al cambiar tipo de documento
-            $tipoDoc.on('change', function() {
+            $tipoDoc.on('change', function () {
                 $numeroDoc.val('');
                 $('#doc-error').text('');
                 validarLongitudDocumento();
             });
 
             // Si quita el número de documento, borrar nombre
-            $numeroDoc.on('blur', function() {
+            $numeroDoc.on('blur', function () {
                 if (!$(this).val().trim()) {
                     $nombre.val('').attr('readonly', true);
                     $('#doc-error').text('');
@@ -309,7 +314,7 @@
             // ========================================
             // TELÉFONO: SOLO NÚMEROS
             // ========================================
-            $telefono.on('input', function() {
+            $telefono.on('input', function () {
                 let valor = $(this).val().replace(/[^0-9]/g, '');
 
                 // Limitar a 15 dígitos (máximo internacional)
@@ -335,7 +340,7 @@
             const hoy = new Date().toISOString().split('T')[0];
             $fechaNac.attr('max', hoy);
 
-            $fechaNac.on('change', function() {
+            $fechaNac.on('change', function () {
                 const fechaInput = $(this).val(); // Formato YYYY-MM-DD
                 const $error = $('#fecha-error');
 
@@ -430,7 +435,7 @@
                         $errorSpan.text(errorMsg).removeClass('text-success').addClass('text-danger');
                         $nombre.attr('readonly', false);
                     },
-                    complete: function() {
+                    complete: function () {
                         $btn.prop('disabled', false).html('Buscar');
                     }
                 });
