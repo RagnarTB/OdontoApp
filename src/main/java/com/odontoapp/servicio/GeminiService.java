@@ -44,14 +44,14 @@ public class GeminiService {
 
     /**
      * Genera una respuesta usando Gemini API
-     * 
+     *
      * @param prompt El prompt completo (instrucciones del sistema + pregunta del
      *               usuario)
      * @return La respuesta generada por Gemini
      */
     public String generarRespuesta(String prompt) {
         try {
-            log.info("Iniciando llamada a Gemini API...");
+            log.info("Iniciando llamada a Gemini API con modelo: {}", model);
 
             // Construir el request body según la API de Gemini
             Map<String, Object> requestBody = new HashMap<>();
@@ -77,12 +77,12 @@ public class GeminiService {
             generationConfig.put("maxOutputTokens", 1024);
             requestBody.put("generationConfig", generationConfig);
 
-            // Llamar a la API con v1beta que SÍ soporta gemini-1.5-flash-latest
+            // Llamar a la API v1beta con el modelo gemini-2.5-flash
             String response = webClient.post()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/v1beta/models/{model}:generateContent")
-                            .build(model))
-                    .header("x-goog-api-key", apiKey)
+                            .path("/v1beta/models/" + model + ":generateContent")
+                            .queryParam("key", apiKey)
+                            .build())
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
