@@ -15,6 +15,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Controller
 @RequestMapping("/inventario")
 public class InventarioController {
@@ -37,7 +40,14 @@ public class InventarioController {
 
         model.addAttribute("movimientoDTO", movimientoDTO);
         model.addAttribute("tiposMovimiento", tipoMovimientoRepository.findAll());
-        model.addAttribute("motivosMovimiento", motivoMovimientoRepository.findAll());
+
+        // ✅ FILTRAR SOLO MOTIVOS MANUALES (esManual = true)
+        // Combinar motivos de entrada y salida manuales
+        List<com.odontoapp.entidad.MotivoMovimiento> motivosManuales = new ArrayList<>();
+        motivosManuales.addAll(motivoMovimientoRepository.findByTipoMovimientoCodigoAndEsManual("ENTRADA", true));
+        motivosManuales.addAll(motivoMovimientoRepository.findByTipoMovimientoCodigoAndEsManual("SALIDA", true));
+
+        model.addAttribute("motivosMovimiento", motivosManuales);
 
         return "modulos/insumos/fragments :: modalMovimiento";
     }
@@ -91,5 +101,3 @@ public class InventarioController {
         return "modulos/insumos/fragments :: historialMovimientos";
     }
 }
-
-

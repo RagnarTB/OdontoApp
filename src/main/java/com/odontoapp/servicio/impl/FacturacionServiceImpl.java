@@ -77,18 +77,18 @@ public class FacturacionServiceImpl implements FacturacionService {
     private final InventarioService inventarioService;
 
     public FacturacionServiceImpl(ComprobanteRepository comprobanteRepository,
-                                 DetalleComprobanteRepository detalleComprobanteRepository,
-                                 PagoRepository pagoRepository,
-                                 UsuarioRepository usuarioRepository,
-                                 CitaRepository citaRepository,
-                                 ProcedimientoRepository procedimientoRepository,
-                                 InsumoRepository insumoRepository,
-                                 EstadoPagoRepository estadoPagoRepository,
-                                 MetodoPagoRepository metodoPagoRepository,
-                                 EstadoCitaRepository estadoCitaRepository,
-                                 TipoMovimientoRepository tipoMovimientoRepository,
-                                 MotivoMovimientoRepository motivoMovimientoRepository,
-                                 InventarioService inventarioService) {
+            DetalleComprobanteRepository detalleComprobanteRepository,
+            PagoRepository pagoRepository,
+            UsuarioRepository usuarioRepository,
+            CitaRepository citaRepository,
+            ProcedimientoRepository procedimientoRepository,
+            InsumoRepository insumoRepository,
+            EstadoPagoRepository estadoPagoRepository,
+            MetodoPagoRepository metodoPagoRepository,
+            EstadoCitaRepository estadoCitaRepository,
+            TipoMovimientoRepository tipoMovimientoRepository,
+            MotivoMovimientoRepository motivoMovimientoRepository,
+            InventarioService inventarioService) {
         this.comprobanteRepository = comprobanteRepository;
         this.detalleComprobanteRepository = detalleComprobanteRepository;
         this.pagoRepository = pagoRepository;
@@ -120,7 +120,7 @@ public class FacturacionServiceImpl implements FacturacionService {
         if (!ESTADO_CITA_ASISTIO.equals(cita.getEstadoCita().getNombre())) {
             throw new IllegalStateException(
                     "La cita no está marcada como 'ASISTIO'. No se puede generar comprobante. " +
-                    "Estado actual: " + cita.getEstadoCita().getNombre());
+                            "Estado actual: " + cita.getEstadoCita().getNombre());
         }
 
         // 3. Verificar que no exista ya un comprobante para esta cita
@@ -128,7 +128,7 @@ public class FacturacionServiceImpl implements FacturacionService {
         if (comprobanteExistente.isPresent()) {
             throw new IllegalStateException(
                     "Ya existe un comprobante generado para esta cita con ID: " +
-                    comprobanteExistente.get().getId());
+                            comprobanteExistente.get().getId());
         }
 
         // 4. Obtener el paciente de la cita
@@ -137,21 +137,24 @@ public class FacturacionServiceImpl implements FacturacionService {
             throw new IllegalStateException("La cita no tiene un paciente asignado");
         }
 
-        // 5. Buscar el estado de pago PENDIENTE
+        // 5. Buscar estados de pago
         EstadoPago estadoPendiente = estadoPagoRepository.findByNombre(ESTADO_PAGO_PENDIENTE)
                 .orElseThrow(() -> new IllegalStateException(
                         "Estado de pago PENDIENTE no encontrado en la base de datos"));
 
+        EstadoPago estadoPagadoTotal = estadoPagoRepository.findByNombre(ESTADO_PAGO_PAGADO_TOTAL)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Estado de pago PAGADO_TOTAL no encontrado en la base de datos"));
+
         // 6. Generar serie y número de comprobante
         String serieNumero = generarSiguienteSerieNumero();
 
-        // 7. Crear la entidad Comprobante
+        // 7. Crear la entidad Comprobante (estado se asignará después según el monto)
         Comprobante comprobante = new Comprobante();
         comprobante.setCita(cita);
         comprobante.setPaciente(paciente);
         comprobante.setFechaEmision(LocalDateTime.now());
         comprobante.setNumeroComprobante(serieNumero);
-        comprobante.setEstadoPago(estadoPendiente);
         comprobante.setTipoComprobante("CITA");
         comprobante.setMontoTotal(BigDecimal.ZERO);
         comprobante.setMontoPagado(BigDecimal.ZERO);
@@ -180,7 +183,7 @@ public class FacturacionServiceImpl implements FacturacionService {
                 if (!"INSUMO".equals(detalleDTO.getTipoItem())) {
                     throw new IllegalArgumentException(
                             "Solo se permiten detalles adicionales de tipo INSUMO. " +
-                            "Tipo recibido: " + detalleDTO.getTipoItem());
+                                    "Tipo recibido: " + detalleDTO.getTipoItem());
                 }
 
                 // Validar campos obligatorios
@@ -201,13 +204,13 @@ public class FacturacionServiceImpl implements FacturacionService {
                 detalleInsumo.setItemId(insumo.getId());
                 detalleInsumo.setDescripcionItem(
                         detalleDTO.getDescripcionItem() != null && !detalleDTO.getDescripcionItem().isEmpty()
-                        ? detalleDTO.getDescripcionItem()
-                        : insumo.getNombre());
+                                ? detalleDTO.getDescripcionItem()
+                                : insumo.getNombre());
                 detalleInsumo.setCantidad(detalleDTO.getCantidad());
                 detalleInsumo.setPrecioUnitario(
                         detalleDTO.getPrecioUnitario() != null
-                        ? detalleDTO.getPrecioUnitario()
-                        : insumo.getPrecioUnitario());
+                                ? detalleDTO.getPrecioUnitario()
+                                : insumo.getPrecioUnitario());
                 detalleInsumo.setSubtotal(
                         detalleInsumo.getCantidad().multiply(detalleInsumo.getPrecioUnitario()));
                 detalleInsumo.setNotas(detalleDTO.getNotas());
@@ -250,7 +253,23 @@ public class FacturacionServiceImpl implements FacturacionService {
         comprobante.setMontoPendiente(total);
         comprobante.setDescripcion("Comprobante generado desde cita ID: " + citaId);
 
-        // 11. Guardar el comprobante (con CascadeType.ALL, los detalles se guardan automáticamente)
+        // 11. Asignar estado según el monto total
+        if (total.compareTo(BigDecimal.ZERO) == 0) {
+            // Si el monto es 0 (procedimientos gratuitos), marcar como PAGADO_TOTAL
+            comprobante.setEstadoPago(estadoPagadoTotal);
+            comprobante.setMontoPagado(BigDecimal.ZERO);
+            comprobante.setMontoPendiente(BigDecimal.ZERO);
+            comprobante.setDescripcion(
+                    comprobante.getDescripcion() + " | Servicio sin costo - Marcado como PAGADO automáticamente");
+            System.out.println("✅ Comprobante con monto S/. 0.00 marcado automáticamente como PAGADO_TOTAL (Cita ID: "
+                    + citaId + ")");
+        } else {
+            // Si el monto es mayor a 0, marcar como PENDIENTE
+            comprobante.setEstadoPago(estadoPendiente);
+        }
+
+        // 12. Guardar el comprobante (con CascadeType.ALL, los detalles se guardan
+        // automáticamente)
         Comprobante comprobanteGuardado = comprobanteRepository.save(comprobante);
 
         return comprobanteGuardado;
@@ -258,7 +277,8 @@ public class FacturacionServiceImpl implements FacturacionService {
 
     /**
      * Genera el siguiente número de comprobante con serie secuencial.
-     * Formato: "B001-0000001" donde B001 es la serie y 0000001 es el correlativo de 7 dígitos.
+     * Formato: "B001-0000001" donde B001 es la serie y 0000001 es el correlativo de
+     * 7 dígitos.
      * Usa sincronización para evitar problemas de concurrencia.
      *
      * @return El número de comprobante generado
@@ -266,8 +286,8 @@ public class FacturacionServiceImpl implements FacturacionService {
     private synchronized String generarSiguienteSerieNumero() {
         try {
             // 1. Buscar el último comprobante de la serie
-            Optional<Comprobante> ultimoComprobante =
-                comprobanteRepository.findTopByNumeroComprobanteStartingWithOrderByNumeroComprobanteDesc(SERIE_DEFAULT);
+            Optional<Comprobante> ultimoComprobante = comprobanteRepository
+                    .findTopByNumeroComprobanteStartingWithOrderByNumeroComprobanteDesc(SERIE_DEFAULT);
 
             // 2. Si no existe ningún comprobante, es el primero
             if (ultimoComprobante.isEmpty()) {
@@ -355,7 +375,8 @@ public class FacturacionServiceImpl implements FacturacionService {
             if (detalleDTO.getCantidad() == null || detalleDTO.getCantidad().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("La cantidad debe ser positiva");
             }
-            if (detalleDTO.getPrecioUnitario() == null || detalleDTO.getPrecioUnitario().compareTo(BigDecimal.ZERO) < 0) {
+            if (detalleDTO.getPrecioUnitario() == null
+                    || detalleDTO.getPrecioUnitario().compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("El precio unitario no puede ser negativo");
             }
 
@@ -378,8 +399,8 @@ public class FacturacionServiceImpl implements FacturacionService {
 
                 detalle.setDescripcionItem(
                         detalleDTO.getDescripcionItem() != null && !detalleDTO.getDescripcionItem().isEmpty()
-                        ? detalleDTO.getDescripcionItem()
-                        : insumo.getNombre());
+                                ? detalleDTO.getDescripcionItem()
+                                : insumo.getNombre());
 
                 // Descontar stock
                 TipoMovimiento tipoSalida = tipoMovimientoRepository.findByCodigo("SALIDA")
@@ -409,12 +430,12 @@ public class FacturacionServiceImpl implements FacturacionService {
 
                 detalle.setDescripcionItem(
                         detalleDTO.getDescripcionItem() != null && !detalleDTO.getDescripcionItem().isEmpty()
-                        ? detalleDTO.getDescripcionItem()
-                        : procedimiento.getNombre());
+                                ? detalleDTO.getDescripcionItem()
+                                : procedimiento.getNombre());
             } else {
                 throw new IllegalArgumentException(
                         "Tipo de ítem no soportado: " + detalleDTO.getTipoItem() +
-                        ". Solo se permiten 'INSUMO' o 'PROCEDIMIENTO'");
+                                ". Solo se permiten 'INSUMO' o 'PROCEDIMIENTO'");
             }
 
             // Añadir detalle al comprobante
@@ -473,14 +494,14 @@ public class FacturacionServiceImpl implements FacturacionService {
         if (ESTADO_PAGO_ANULADO.equals(estadoActual) || ESTADO_PAGO_PAGADO_TOTAL.equals(estadoActual)) {
             throw new IllegalStateException(
                     "No se pueden registrar pagos para un comprobante ANULADO o que ya está PAGADO TOTALMENTE. " +
-                    "Estado actual: " + estadoActual);
+                            "Estado actual: " + estadoActual);
         }
 
         // 4. Validar monto del pago
         if (dto.getMonto().compareTo(comprobante.getMontoPendiente()) > 0) {
             throw new IllegalArgumentException(
                     "El monto del pago (S/ " + dto.getMonto() + ") no puede ser mayor que el saldo pendiente (S/ " +
-                    comprobante.getMontoPendiente() + ")");
+                            comprobante.getMontoPendiente() + ")");
         }
 
         // ✅ 4.1 Validar lógica de pago mixto
@@ -506,7 +527,8 @@ public class FacturacionServiceImpl implements FacturacionService {
             // Tolerancia de 0.01 para errores de redondeo
             if (diferencia.compareTo(new BigDecimal("0.01")) > 0) {
                 throw new IllegalArgumentException(
-                        String.format("La suma de Efectivo (S/ %.2f) + Yape (S/ %.2f) = S/ %.2f debe ser igual al Monto Total (S/ %.2f)",
+                        String.format(
+                                "La suma de Efectivo (S/ %.2f) + Yape (S/ %.2f) = S/ %.2f debe ser igual al Monto Total (S/ %.2f)",
                                 dto.getMontoEfectivo(), dto.getMontoYape(), sumaMontos, dto.getMonto()));
             }
         } else {
@@ -628,7 +650,7 @@ public class FacturacionServiceImpl implements FacturacionService {
         if (pagos != null && !pagos.isEmpty()) {
             throw new IllegalStateException(
                     "No se puede anular un comprobante que ya tiene pagos registrados. " +
-                    "Debe revertir los pagos primero. Pagos encontrados: " + pagos.size());
+                            "Debe revertir los pagos primero. Pagos encontrados: " + pagos.size());
         }
 
         // 5. Revertir stock si se solicitó y tiene insumos
@@ -642,7 +664,7 @@ public class FacturacionServiceImpl implements FacturacionService {
                     .orElse(motivoMovimientoRepository.findByNombre("Anulacion de venta")
                             .orElseThrow(() -> new IllegalStateException(
                                     "Motivo de movimiento 'Anulación de Venta' no encontrado en la base de datos. " +
-                                    "Por favor, cree este motivo con tipo ENTRADA.")));
+                                            "Por favor, cree este motivo con tipo ENTRADA.")));
 
             // Iterar sobre los detalles para revertir insumos
             int insumosRegresados = 0;
@@ -702,8 +724,8 @@ public class FacturacionServiceImpl implements FacturacionService {
      * Anula un comprobante con devolución selectiva de insumos.
      * Permite especificar qué insumos y qué cantidades devolver al inventario.
      *
-     * @param comprobanteId ID del comprobante a anular
-     * @param motivoAnulacion Motivo de la anulación
+     * @param comprobanteId    ID del comprobante a anular
+     * @param motivoAnulacion  Motivo de la anulación
      * @param insumosADevolver Mapa con insumoId → cantidad a devolver
      * @return Comprobante anulado
      */
@@ -741,7 +763,7 @@ public class FacturacionServiceImpl implements FacturacionService {
         if (pagos != null && !pagos.isEmpty()) {
             throw new IllegalStateException(
                     "No se puede anular un comprobante que ya tiene pagos registrados. " +
-                    "Debe revertir los pagos primero. Pagos encontrados: " + pagos.size());
+                            "Debe revertir los pagos primero. Pagos encontrados: " + pagos.size());
         }
 
         // 5. Validar cantidades contra los detalles del comprobante
@@ -766,7 +788,7 @@ public class FacturacionServiceImpl implements FacturacionService {
             if (cantidadADevolver == null || cantidadADevolver.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException(
                         "La cantidad a devolver debe ser mayor a cero para el insumo ID " + insumoId +
-                        ". Cantidad recibida: " + cantidadADevolver);
+                                ". Cantidad recibida: " + cantidadADevolver);
             }
 
             BigDecimal cantidadUsada = cantidadesUsadas.get(insumoId);
@@ -778,8 +800,8 @@ public class FacturacionServiceImpl implements FacturacionService {
             if (cantidadADevolver.compareTo(cantidadUsada) > 0) {
                 throw new IllegalArgumentException(
                         "La cantidad a devolver (" + cantidadADevolver +
-                        ") excede la cantidad usada (" + cantidadUsada +
-                        ") para el insumo ID " + insumoId);
+                                ") excede la cantidad usada (" + cantidadUsada +
+                                ") para el insumo ID " + insumoId);
             }
         }
 
@@ -792,7 +814,7 @@ public class FacturacionServiceImpl implements FacturacionService {
                 .orElse(motivoMovimientoRepository.findByNombre("Anulacion de venta")
                         .orElseThrow(() -> new IllegalStateException(
                                 "Motivo de movimiento 'Anulación de Venta' no encontrado en la base de datos. " +
-                                "Por favor, cree este motivo con tipo ENTRADA.")));
+                                        "Por favor, cree este motivo con tipo ENTRADA.")));
 
         int insumosRegresados = 0;
         StringBuilder detalleInsumos = new StringBuilder();
@@ -818,9 +840,9 @@ public class FacturacionServiceImpl implements FacturacionService {
             Optional<Insumo> insumoOpt = insumoRepository.findById(insumoId);
             if (insumoOpt.isPresent()) {
                 detalleInsumos.append(insumoOpt.get().getNombre())
-                              .append(": ")
-                              .append(cantidad)
-                              .append("; ");
+                        .append(": ")
+                        .append(cantidad)
+                        .append("; ");
             }
         }
 

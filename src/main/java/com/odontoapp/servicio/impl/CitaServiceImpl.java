@@ -349,6 +349,14 @@ public class CitaServiceImpl implements CitaService {
                 .orElseThrow(
                         () -> new EntityNotFoundException("Procedimiento no encontrado con ID: " + procedimientoId));
 
+        // ✅ VALIDACIÓN: Verificar que el paciente y el odontólogo NO sean la misma
+        // persona
+        if (paciente.getId().equals(odontologo.getId())) {
+            throw new IllegalStateException(
+                    "Un usuario no puede atenderse a sí mismo. " +
+                            "El paciente y el odontólogo deben ser personas diferentes.");
+        }
+
         // Calcular fecha de fin basada en la duración del procedimiento
         LocalDateTime fechaHoraFin = fechaHoraInicio.plusMinutes(procedimiento.getDuracionBaseMinutos());
 
@@ -689,8 +697,9 @@ public class CitaServiceImpl implements CitaService {
         if (cita.getFechaHoraInicio().isAfter(LocalDateTime.now())) {
             throw new IllegalStateException(
                     "No se puede marcar asistencia para una cita futura. " +
-                    "La cita está programada para el " + cita.getFechaHoraInicio().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) +
-                    ". Solo puede reprogramar o cancelar citas futuras.");
+                            "La cita está programada para el "
+                            + cita.getFechaHoraInicio().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) +
+                            ". Solo puede reprogramar o cancelar citas futuras.");
         }
 
         // Validar que la cita esté confirmada o pendiente
@@ -739,6 +748,8 @@ public class CitaServiceImpl implements CitaService {
                 // DESCUENTO DE STOCK INMEDIATO
                 try {
                     String referenciaCita = "Cita #" + citaId;
+                    System.out.println("🔄 Intentando descontar stock para procedimiento ID: "
+                            + guardado.getProcedimiento().getId());
                     inventarioService.descontarStockPorProcedimientoRealizado(
                             guardado.getProcedimiento().getId(),
                             null, // cantidadAjustada: null = usar cantidad por defecto
@@ -746,9 +757,15 @@ public class CitaServiceImpl implements CitaService {
                             referenciaCita);
                     System.out.println("✅ Stock descontado automáticamente para procedimiento: " +
                             guardado.getProcedimiento().getNombre() + " (Cita #" + citaId + ")");
+                } catch (IllegalStateException e) {
+                    System.err.println("❌ ERROR AL DESCONTAR STOCK: " + e.getMessage());
+                    e.printStackTrace();
+                    // ⚠️ IMPORTANTE: Lanzar excepción para que el usuario sepa que hubo un problema
+                    throw new IllegalStateException("No se pudo marcar asistencia: " + e.getMessage(), e);
                 } catch (Exception e) {
-                    System.err.println("⚠️ Error al descontar stock: " + e.getMessage());
-                    // Log pero no fallar la cita - el descuento se puede hacer manualmente
+                    System.err.println("❌ ERROR INESPERADO AL DESCONTAR STOCK: " + e.getMessage());
+                    e.printStackTrace();
+                    throw new IllegalStateException("Error al procesar el descuento de insumos: " + e.getMessage(), e);
                 }
             } else {
                 System.out.println("✓ Ya existe TratamientoRealizado para esta cita - ID: " +
@@ -829,60 +846,9 @@ public class CitaServiceImpl implements CitaService {
         return citaActualizada;
     }
 
-    /**
-     * Descuenta los insumos asociados a un procedimiento del inventario.
-     * Se utiliza cuando un paciente asiste a una cita y se consume el
-     * procedimiento.
-     * Registra movimientos de inventario con motivo "Uso en procedimiento".
-     *
-     * @param procedimientoId ID del procedimiento
-     * @param citaId          ID de la cita para referencia
-     */
-    private void descontarInsumosDelProcedimiento(Long procedimientoId, Long citaId) {
-        // Obtener tipo y motivo de movimiento
-        TipoMovimiento tipoSalida = tipoMovimientoRepository.findByCodigo("SALIDA")
-                .orElseThrow(() -> new IllegalStateException("Tipo de movimiento SALIDA no encontrado"));
-        MotivoMovimiento motivoUso = motivoMovimientoRepository.findByNombre("Uso en procedimiento")
-                .orElseThrow(() -> new IllegalStateException("Motivo 'Uso en procedimiento' no encontrado"));
-
-        // Obtener todos los insumos asociados al procedimiento
-        List<ProcedimientoInsumo> procedimientoInsumos = procedimientoInsumoRepository
-                .findByProcedimientoId(procedimientoId);
-
-        for (ProcedimientoInsumo pi : procedimientoInsumos) {
-            Insumo insumo = pi.getInsumo();
-            BigDecimal cantidadADescontar = pi.getCantidadDefecto();
-            BigDecimal stockAnterior = insumo.getStockActual();
-
-            // Verificar que haya suficiente stock
-            if (stockAnterior.compareTo(cantidadADescontar) < 0) {
-                throw new IllegalStateException(
-                        "Stock insuficiente del insumo: " + insumo.getNombre() +
-                                " (Disponible: " + stockAnterior + ", Requerido: " + cantidadADescontar + ")");
-            }
-
-            // Descontar del stock
-            BigDecimal stockNuevo = stockAnterior.subtract(cantidadADescontar);
-            insumo.setStockActual(stockNuevo);
-            insumoRepository.save(insumo);
-
-            // Registrar movimiento de inventario
-            MovimientoInventario movimiento = new MovimientoInventario();
-            movimiento.setInsumo(insumo);
-            movimiento.setTipoMovimiento(tipoSalida);
-            movimiento.setMotivoMovimiento(motivoUso);
-            movimiento.setCantidad(cantidadADescontar);
-            movimiento.setStockAnterior(stockAnterior);
-            movimiento.setStockNuevo(stockNuevo);
-            movimiento.setReferencia("Cita #" + citaId);
-            movimiento.setNotas("Uso de " + cantidadADescontar + " " + insumo.getUnidadMedida().getNombre() +
-                    " de " + insumo.getNombre() + " en procedimiento");
-
-            movimientoInventarioRepository.save(movimiento);
-            System.out.println("✅ Movimiento de inventario registrado: " + insumo.getNombre() +
-                    " - Cantidad: " + cantidadADescontar);
-        }
-    }
+    // MÉTODO ELIMINADO: descontarInsumosDelProcedimiento()
+    // Se usa inventarioService.descontarStockPorProcedimientoRealizado() en su
+    // lugar
 
     @Override
     @Transactional(readOnly = true)

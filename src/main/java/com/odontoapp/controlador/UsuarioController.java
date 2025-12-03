@@ -651,15 +651,18 @@ public class UsuarioController {
     // --- MÉTODO HELPER REFACTORIZADO ---
     /**
      * Carga los roles activos y tipos de documento al modelo.
-     * @param model El modelo de Spring MVC
-     * @param incluirPaciente Si es true, incluye el rol PACIENTE en la lista (para editar).
+     * 
+     * @param model           El modelo de Spring MVC
+     * @param incluirPaciente Si es true, incluye el rol PACIENTE en la lista (para
+     *                        editar).
      *                        Si es false, lo excluye (para crear nuevo usuario).
      */
     private void cargarRolesYTiposDoc(Model model, boolean incluirPaciente) {
         List<Rol> rolesActivos = rolRepository.findAll()
                 .stream()
                 .filter(Rol::isEstaActivo)
-                .filter(rol -> incluirPaciente || !"PACIENTE".equals(rol.getNombre())) // Filtrar PACIENTE solo si incluirPaciente es false
+                .filter(rol -> incluirPaciente || !"PACIENTE".equals(rol.getNombre())) // Filtrar PACIENTE solo si
+                                                                                       // incluirPaciente es false
                 .collect(Collectors.toList());
         model.addAttribute("roles", rolesActivos);
         model.addAttribute("tiposDocumento", tipoDocumentoRepository.findAll());
@@ -675,7 +678,8 @@ public class UsuarioController {
 
     @GetMapping("/api/pacientes-activos")
     @ResponseBody
-    public ResponseEntity<List<Map<String, Object>>> obtenerPacientesActivos() {
+    public ResponseEntity<List<Map<String, Object>>> obtenerPacientesActivos(
+            @RequestParam(required = false) Long odontologoIdExcluir) { // ✅ NUEVO PARÁMETRO
         try {
             // Obtener todos los pacientes no eliminados
             List<Paciente> pacientes = pacienteRepository.findAll()
@@ -692,6 +696,19 @@ public class UsuarioController {
                         return soloTieneRolPaciente;
                     })
                     .collect(Collectors.toList());
+
+            // ✅ NUEVO: Si se especificó un odontólogo a excluir, verificar si ese
+            // odontólogo también es paciente
+            if (odontologoIdExcluir != null) {
+                Usuario odontologoExcluir = usuarioRepository.findById(odontologoIdExcluir).orElse(null);
+                if (odontologoExcluir != null && odontologoExcluir.getPaciente() != null) {
+                    Long pacienteIdExcluir = odontologoExcluir.getPaciente().getId();
+                    // Excluir este paciente de la lista
+                    pacientes = pacientes.stream()
+                            .filter(p -> !p.getId().equals(pacienteIdExcluir))
+                            .collect(Collectors.toList());
+                }
+            }
 
             // Mapear a formato JSON
             List<Map<String, Object>> resultado = pacientes.stream()
@@ -711,6 +728,61 @@ public class UsuarioController {
 
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Obtiene lista de odontólogos activos, excluyendo opcionalmente un paciente
+     * específico
+     * si ese paciente también es odontólogo (para evitar que se atienda a sí mismo)
+     */
+    @GetMapping("/api/odontologos-activos")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> obtenerOdontologosActivos(
+            @RequestParam(required = false) Long pacienteIdExcluir) {
+        try {
+            // Buscar rol ODONTÓLOGO
+            Rol rolOdontologo = rolRepository.findByNombre("ODONTÓLOGO")
+                    .orElseThrow(() -> new IllegalStateException("Rol ODONTÓLOGO no encontrado"));
+
+            // Obtener todos los usuarios con rol ODONTÓLOGO activos
+            List<Usuario> odontologos = usuarioRepository.findAll()
+                    .stream()
+                    .filter(u -> !u.isEliminado())
+                    .filter(Usuario::isEstaActivo)
+                    .filter(u -> u.getRoles().contains(rolOdontologo))
+                    .collect(Collectors.toList());
+
+            // Si se especificó un paciente a excluir, verificar si ese paciente también es
+            // odontólogo
+            if (pacienteIdExcluir != null) {
+                Paciente pacienteExcluir = pacienteRepository.findById(pacienteIdExcluir).orElse(null);
+                if (pacienteExcluir != null && pacienteExcluir.getUsuario() != null) {
+                    Long usuarioIdExcluir = pacienteExcluir.getUsuario().getId();
+                    // Excluir este usuario de la lista de odontólogos
+                    odontologos = odontologos.stream()
+                            .filter(o -> !o.getId().equals(usuarioIdExcluir))
+                            .collect(Collectors.toList());
+                }
+            }
+
+            // Mapear a formato JSON
+            List<Map<String, Object>> resultado = odontologos.stream()
+                    .map(o -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", o.getId());
+                        map.put("nombreCompleto", o.getNombreCompleto());
+                        map.put("email", o.getEmail());
+                        map.put("telefono", o.getTelefono());
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(resultado);
+        } catch (Exception e) {
+            System.err.println("❌ Error al obtener odontólogos activos: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
     }
