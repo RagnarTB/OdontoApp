@@ -57,15 +57,15 @@ public class CitaController {
     private final TratamientoPlanificadoRepository tratamientoPlanificadoRepository;
 
     public CitaController(CitaService citaService,
-                         CitaRepository citaRepository,
-                         FacturacionService facturacionService,
-                         RolRepository rolRepository,
-                         UsuarioRepository usuarioRepository,
-                         PacienteRepository pacienteRepository,
-                         ProcedimientoRepository procedimientoRepository,
-                         InsumoRepository insumoRepository,
-                         EstadoCitaRepository estadoCitaRepository,
-                         TratamientoPlanificadoRepository tratamientoPlanificadoRepository) {
+            CitaRepository citaRepository,
+            FacturacionService facturacionService,
+            RolRepository rolRepository,
+            UsuarioRepository usuarioRepository,
+            PacienteRepository pacienteRepository,
+            ProcedimientoRepository procedimientoRepository,
+            InsumoRepository insumoRepository,
+            EstadoCitaRepository estadoCitaRepository,
+            TratamientoPlanificadoRepository tratamientoPlanificadoRepository) {
         this.citaService = citaService;
         this.citaRepository = citaRepository;
         this.facturacionService = facturacionService;
@@ -99,7 +99,8 @@ public class CitaController {
             // Buscar todos los procedimientos con sus relaciones cargadas
             var listaProcedimientos = procedimientoRepository.findAllWithRelations();
 
-            // Buscar todos los insumos con sus relaciones cargadas (para el modal de registrar tratamiento)
+            // Buscar todos los insumos con sus relaciones cargadas (para el modal de
+            // registrar tratamiento)
             var listaInsumos = insumoRepository.findAllWithRelations();
 
             // Buscar todos los estados de cita (para filtros)
@@ -125,7 +126,8 @@ public class CitaController {
             model.addAttribute("listaInsumos", List.of());
             model.addAttribute("listaEstadosCita", List.of());
             model.addAttribute("citaDTO", new CitaDTO());
-            model.addAttribute("error", "Error al cargar los datos del calendario. Por favor, contacte al administrador.");
+            model.addAttribute("error",
+                    "Error al cargar los datos del calendario. Por favor, contacte al administrador.");
 
             return "modulos/citas/calendario";
         }
@@ -134,31 +136,31 @@ public class CitaController {
     /**
      * Muestra la vista de lista de citas con filtros y paginación.
      *
-     * @param model Modelo de Spring MVC
-     * @param page Número de página (default 0)
-     * @param size Tamaño de página (default 20)
-     * @param estadoId ID del estado para filtrar (opcional)
+     * @param model        Modelo de Spring MVC
+     * @param page         Número de página (default 0)
+     * @param size         Tamaño de página (default 20)
+     * @param estadoId     ID del estado para filtrar (opcional)
      * @param odontologoId ID del odontólogo para filtrar (opcional)
-     * @param fechaDesde Fecha desde para filtrar (opcional)
-     * @param fechaHasta Fecha hasta para filtrar (opcional)
+     * @param fechaDesde   Fecha desde para filtrar (opcional)
+     * @param fechaHasta   Fecha hasta para filtrar (opcional)
      * @return Vista de lista de citas
      */
     @GetMapping("/lista")
     @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_LISTA_CITAS)")
     public String verListaCitas(Model model,
-                               @RequestParam(defaultValue = "0") int page,
-                               @RequestParam(defaultValue = "20") int size,
-                               @RequestParam(required = false) Long estadoId,
-                               @RequestParam(required = false) Long odontologoId,
-                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
-                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Long estadoId,
+            @RequestParam(required = false) Long odontologoId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta) {
 
         // Crear paginación ordenada por fecha descendente
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaHoraInicio").descending());
 
         // Obtener citas según filtros
         Page<Cita> paginaCitas = citaService.listarCitasConFiltros(
-            estadoId, odontologoId, fechaDesde, fechaHasta, pageable);
+                estadoId, odontologoId, fechaDesde, fechaHasta, pageable);
 
         // Cargar listas para los filtros
         var listaEstados = estadoCitaRepository.findAll();
@@ -180,8 +182,8 @@ public class CitaController {
      * API REST para obtener eventos del calendario.
      * Compatible con FullCalendar.js.
      *
-     * @param start Fecha de inicio en formato ISO 8601
-     * @param end Fecha de fin en formato ISO 8601
+     * @param start        Fecha de inicio en formato ISO 8601
+     * @param end          Fecha de fin en formato ISO 8601
      * @param odontologoId ID del odontólogo (opcional)
      * @return Lista de eventos en formato FullCalendar
      */
@@ -210,7 +212,7 @@ public class CitaController {
      * API REST para obtener la disponibilidad de un odontólogo en una fecha.
      *
      * @param odontologoId ID del odontólogo
-     * @param fecha Fecha para verificar disponibilidad
+     * @param fecha        Fecha para verificar disponibilidad
      * @return Mapa con horarios disponibles y ocupados
      */
     @GetMapping("/api/disponibilidad")
@@ -226,7 +228,7 @@ public class CitaController {
     /**
      * Agenda una nueva cita.
      *
-     * @param dto DTO con datos de la cita
+     * @param dto        DTO con datos de la cita
      * @param attributes Atributos para mensajes flash
      * @return Redirección al calendario
      */
@@ -240,8 +242,7 @@ public class CitaController {
                     dto.getProcedimientoId(),
                     dto.getFechaHoraInicio(),
                     dto.getMotivoConsulta(),
-                    dto.getNotasInternas()
-            );
+                    dto.getNotasInternas());
             attributes.addFlashAttribute("success", "Cita agendada con éxito.");
         } catch (IllegalStateException e) {
             attributes.addFlashAttribute("error", "Error al agendar: " + e.getMessage());
@@ -255,11 +256,12 @@ public class CitaController {
     /**
      * Reprograma una cita existente.
      *
-     * @param citaId ID de la cita a reprogramar
-     * @param odontologoUsuarioId ID del nuevo odontólogo (opcional, null mantiene el original)
+     * @param citaId               ID de la cita a reprogramar
+     * @param odontologoUsuarioId  ID del nuevo odontólogo (opcional, null mantiene
+     *                             el original)
      * @param nuevaFechaHoraInicio Nueva fecha y hora de inicio
-     * @param motivo Motivo de la reprogramación
-     * @param attributes Atributos para mensajes flash
+     * @param motivo               Motivo de la reprogramación
+     * @param attributes           Atributos para mensajes flash
      * @return Redirección al calendario
      */
     @PostMapping("/reprogramar")
@@ -297,8 +299,8 @@ public class CitaController {
     /**
      * Cancela una cita.
      *
-     * @param citaId ID de la cita a cancelar
-     * @param motivo Motivo de la cancelación
+     * @param citaId     ID de la cita a cancelar
+     * @param motivo     Motivo de la cancelación
      * @param attributes Atributos para mensajes flash
      * @return Redirección al calendario
      */
@@ -323,9 +325,10 @@ public class CitaController {
 
     /**
      * Confirma una cita pendiente.
-     * Solo el odontólogo asignado, administradores y recepcionistas pueden confirmar citas.
+     * Solo el odontólogo asignado, administradores y recepcionistas pueden
+     * confirmar citas.
      *
-     * @param citaId ID de la cita a confirmar
+     * @param citaId     ID de la cita a confirmar
      * @param attributes Atributos para mensajes flash
      * @return Redirección al calendario
      */
@@ -343,14 +346,15 @@ public class CitaController {
             Cita cita = citaRepository.findById(citaId)
                     .orElseThrow(() -> new IllegalStateException("Cita no encontrada"));
 
-            // Verificar permisos: Solo el odontólogo asignado, admins o recepcionistas pueden confirmar
+            // Verificar permisos: Solo el odontólogo asignado, admins o recepcionistas
+            // pueden confirmar
             boolean esOdontologoAsignado = cita.getOdontologo().getId().equals(usuarioAutenticado.getId());
             boolean esAdminORecepcionista = usuarioAutenticado.getRoles().stream()
                     .anyMatch(rol -> "ADMIN".equals(rol.getNombre()) || "RECEPCIONISTA".equals(rol.getNombre()));
 
             if (!esOdontologoAsignado && !esAdminORecepcionista) {
                 attributes.addFlashAttribute("error",
-                    "Solo el odontólogo asignado, administradores o recepcionistas pueden confirmar esta cita.");
+                        "Solo el odontólogo asignado, administradores o recepcionistas pueden confirmar esta cita.");
                 return "redirect:/citas";
             }
 
@@ -367,10 +371,11 @@ public class CitaController {
 
     /**
      * Marca la asistencia de un paciente a una cita.
-     * El comprobante se genera automáticamente en CitaServiceImpl.marcarAsistencia()
+     * El comprobante se genera automáticamente en
+     * CitaServiceImpl.marcarAsistencia()
      *
-     * @param citaId ID de la cita
-     * @param asistio true si el paciente asistió, false si no asistió
+     * @param citaId     ID de la cita
+     * @param asistio    true si el paciente asistió, false si no asistió
      * @param attributes Atributos para mensajes flash
      * @return Redirección al calendario
      */
@@ -433,17 +438,19 @@ public class CitaController {
                 cita.getFechaHoraFin().toString(),
                 color,
                 color,
-                extendedProps
-        );
+                extendedProps);
     }
 
     /**
-     * API REST: Obtiene los horarios disponibles para un odontólogo en una fecha específica.
-     * Considera el horario del odontólogo, citas existentes, y reglas de agendamiento.
+     * API REST: Obtiene los horarios disponibles para un odontólogo en una fecha
+     * específica.
+     * Considera el horario del odontólogo, citas existentes, y reglas de
+     * agendamiento.
      *
      * @param odontologoId ID del odontólogo
-     * @param fecha Fecha para consultar disponibilidad (formato: yyyy-MM-dd)
-     * @param duracion Duración estimada del procedimiento en minutos (opcional, default: 30)
+     * @param fecha        Fecha para consultar disponibilidad (formato: yyyy-MM-dd)
+     * @param duracion     Duración estimada del procedimiento en minutos (opcional,
+     *                     default: 30)
      * @return JSON con horarios disponibles
      */
     @GetMapping("/api/horarios-disponibles")
@@ -456,16 +463,19 @@ public class CitaController {
             @RequestParam(required = false) Long citaIdExcluir) {
 
         try {
-            // Llamar al servicio para obtener disponibilidad (excluir cita si se proporciona ID)
+            // Llamar al servicio para obtener disponibilidad (excluir cita si se
+            // proporciona ID)
             // Pasar la duración del procedimiento para filtrar horarios adecuadamente
-            Map<String, Object> disponibilidad = citaService.buscarDisponibilidad(odontologoId, fecha, duracion, citaIdExcluir);
+            Map<String, Object> disponibilidad = citaService.buscarDisponibilidad(odontologoId, fecha, duracion,
+                    citaIdExcluir);
 
             // Obtener horarios disponibles
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> horariosDisponibles =
-                    (List<Map<String, Object>>) disponibilidad.get("horariosDisponibles");
+            List<Map<String, Object>> horariosDisponibles = (List<Map<String, Object>>) disponibilidad
+                    .get("horariosDisponibles");
 
-            // Solo aplicar filtro para el día de hoy - mostrar desde el siguiente turno disponible
+            // Solo aplicar filtro para el día de hoy - mostrar desde el siguiente turno
+            // disponible
             if (fecha.equals(LocalDate.now())) {
                 // Permitir reservar desde 30 minutos adelante (un turno de anticipación)
                 LocalDateTime minimoAdelante = LocalDateTime.now().plusMinutes(30);
@@ -477,7 +487,7 @@ public class CitaController {
                                     java.time.LocalTime.parse(horaInicio));
                             // Incluir slots que inician en o después de 30 minutos desde ahora
                             return fechaHoraSlot.isAfter(minimoAdelante) ||
-                                   fechaHoraSlot.equals(minimoAdelante);
+                                    fechaHoraSlot.equals(minimoAdelante);
                         })
                         .collect(Collectors.toList());
 
@@ -494,7 +504,8 @@ public class CitaController {
                     if (horariosDisponiblesOriginales > 0) {
                         // Había horarios pero todos están en el pasado o muy cercanos
                         disponibilidad.put("disponible", false);
-                        disponibilidad.put("motivo", "Los horarios disponibles para hoy requieren al menos 30 minutos de anticipación. Por favor seleccione otro horario u otra fecha.");
+                        disponibilidad.put("motivo",
+                                "Los horarios disponibles para hoy requieren al menos 30 minutos de anticipación. Por favor seleccione otro horario u otra fecha.");
                     }
                     // Si no había horarios disponibles originalmente, mantener la lista vacía
                     horariosDisponibles = horariosFiltrados;
@@ -520,12 +531,12 @@ public class CitaController {
      * API REST para obtener lista de citas con paginación y filtros.
      * Usado por la vista de lista de citas en el calendario.
      *
-     * @param page Número de página (0-indexed)
-     * @param size Cantidad de elementos por página
-     * @param keyword Palabra clave para buscar
-     * @param fechaDesde Fecha desde para filtro de rango (formato: yyyy-MM-dd)
-     * @param fechaHasta Fecha hasta para filtro de rango (formato: yyyy-MM-dd)
-     * @param estadoId ID del estado de cita para filtrar
+     * @param page         Número de página (0-indexed)
+     * @param size         Cantidad de elementos por página
+     * @param keyword      Palabra clave para buscar
+     * @param fechaDesde   Fecha desde para filtro de rango (formato: yyyy-MM-dd)
+     * @param fechaHasta   Fecha hasta para filtro de rango (formato: yyyy-MM-dd)
+     * @param estadoId     ID del estado de cita para filtrar
      * @param odontologoId ID del odontólogo para filtrar
      * @return JSON con citas paginadas
      */
@@ -551,26 +562,27 @@ public class CitaController {
 
             // Convertir a formato para la tabla
             List<Map<String, Object>> citasDTO = paginaCitas.getContent().stream()
-                .map(cita -> {
-                    Map<String, Object> citaMap = new HashMap<>();
-                    citaMap.put("id", cita.getId());
-                    citaMap.put("fechaHoraInicio", cita.getFechaHoraInicio().toString());
-                    citaMap.put("fechaHoraFin", cita.getFechaHoraFin().toString());
-                    citaMap.put("pacienteNombre", cita.getPaciente().getNombreCompleto());
-                    citaMap.put("odontologoNombre", cita.getOdontologo().getNombreCompleto());
-                    citaMap.put("odontologoId", cita.getOdontologo().getId());
-                    citaMap.put("procedimientoNombre", cita.getProcedimiento() != null ?
-                        cita.getProcedimiento().getNombre() : "Sin procedimiento");
-                    citaMap.put("procedimientoId", cita.getProcedimiento() != null ?
-                        cita.getProcedimiento().getId() : null);
-                    citaMap.put("duracion", cita.getDuracionEstimadaMinutos());
-                    citaMap.put("estadoNombre", cita.getEstadoCita().getNombre());
-                    citaMap.put("estadoColor", obtenerColorPorEstado(cita.getEstadoCita()));
-                    citaMap.put("motivoConsulta", cita.getMotivoConsulta());
-                    citaMap.put("notasInternas", cita.getNotas());
-                    return citaMap;
-                })
-                .collect(Collectors.toList());
+                    .map(cita -> {
+                        Map<String, Object> citaMap = new HashMap<>();
+                        citaMap.put("id", cita.getId());
+                        citaMap.put("fechaHoraInicio", cita.getFechaHoraInicio().toString());
+                        citaMap.put("fechaHoraFin", cita.getFechaHoraFin().toString());
+                        citaMap.put("pacienteNombre", cita.getPaciente().getNombreCompleto());
+                        citaMap.put("odontologoNombre", cita.getOdontologo().getNombreCompleto());
+                        citaMap.put("odontologoId", cita.getOdontologo().getId());
+                        citaMap.put("procedimientoNombre",
+                                cita.getProcedimiento() != null ? cita.getProcedimiento().getNombre()
+                                        : "Sin procedimiento");
+                        citaMap.put("procedimientoId",
+                                cita.getProcedimiento() != null ? cita.getProcedimiento().getId() : null);
+                        citaMap.put("duracion", cita.getDuracionEstimadaMinutos());
+                        citaMap.put("estadoNombre", cita.getEstadoCita().getNombre());
+                        citaMap.put("estadoColor", obtenerColorPorEstado(cita.getEstadoCita()));
+                        citaMap.put("motivoConsulta", cita.getMotivoConsulta());
+                        citaMap.put("notasInternas", cita.getNotas());
+                        return citaMap;
+                    })
+                    .collect(Collectors.toList());
 
             Map<String, Object> response = new HashMap<>();
             response.put("citas", citasDTO);
@@ -610,7 +622,8 @@ public class CitaController {
             response.put("existe", true);
             response.put("id", tratamiento.getId());
             response.put("procedimiento", tratamiento.getProcedimiento().getNombre());
-            response.put("piezasDentales", tratamiento.getPiezasDentales() != null ? tratamiento.getPiezasDentales() : "N/A");
+            response.put("piezasDentales",
+                    tratamiento.getPiezasDentales() != null ? tratamiento.getPiezasDentales() : "N/A");
             response.put("descripcion", tratamiento.getDescripcion() != null ? tratamiento.getDescripcion() : "");
             response.put("estado", tratamiento.getEstado());
             response.put("odontologo", tratamiento.getOdontologo().getNombreCompleto());
@@ -624,13 +637,15 @@ public class CitaController {
 
     /**
      * Verifica si una cita puede registrar nuevos tratamientos.
-     * Una cita NO puede registrar tratamientos si ya generó otra cita de tratamiento.
+     * Una cita NO puede registrar tratamientos si ya generó otra cita de
+     * tratamiento.
      * Esto implementa la lógica de cadena de citas:
      * Cita1 → Cita2 (tratamiento) → Cita3 (otro tratamiento)
      * Solo la última cita de la cadena puede registrar tratamientos.
      *
      * @param citaId ID de la cita a verificar
-     * @return ResponseEntity con estado de si puede registrar y datos de cita generada si existe
+     * @return ResponseEntity con estado de si puede registrar y datos de cita
+     *         generada si existe
      */
     @GetMapping("/api/cita/{citaId}/puede-registrar-tratamiento")
     @PreAuthorize("hasAuthority(T(com.odontoapp.util.Permisos).VER_DETALLE_CITAS)")
@@ -642,7 +657,8 @@ public class CitaController {
             System.out.println("🔍 Verificando si Cita #" + citaId + " puede registrar tratamiento...");
 
             // Buscar si esta cita ya generó otra cita de tratamiento
-            Cita citaGenerada = citaRepository.findByCitaGeneradaPorTratamientoId(citaId);
+            List<Cita> citasGeneradas = citaRepository.findByCitaGeneradaPorTratamientoId(citaId);
+            Cita citaGenerada = citasGeneradas.isEmpty() ? null : citasGeneradas.get(0);
 
             boolean puedeRegistrar = (citaGenerada == null);
             Long citaGeneradaId = (citaGenerada != null) ? citaGenerada.getId() : null;
