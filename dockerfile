@@ -20,6 +20,15 @@ FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 
+# Instalar librerías necesarias para Apache POI (generación de Excel)
+# fontconfig: gestión de fuentes del sistema
+# fonts-dejavu: fuentes TrueType para autoSizeColumn de POI
+# libfreetype6: biblioteca de renderizado de fuentes requerida por Java AWT
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends fontconfig fonts-dejavu libfreetype6 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copiar el JAR construido desde la etapa 'builder'
 COPY --from=builder /build/target/*.jar app.jar
 
