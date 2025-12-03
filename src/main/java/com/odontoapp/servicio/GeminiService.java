@@ -51,7 +51,8 @@ public class GeminiService {
      */
     public String generarRespuesta(String prompt) {
         try {
-            log.info("Iniciando llamada a Gemini API...");
+            log.info("Iniciando llamada a Gemini API con modelo: {}", model);
+            log.info("API Key (primeros 10 chars): {}...", apiKey.substring(0, Math.min(10, apiKey.length())));
 
             // Construir el request body según la API de Gemini
             Map<String, Object> requestBody = new HashMap<>();
@@ -77,13 +78,17 @@ public class GeminiService {
             generationConfig.put("maxOutputTokens", 1024);
             requestBody.put("generationConfig", generationConfig);
 
-            // Llamar a la API v1beta (requerida por Google AI Studio)
-            // La API key debe ir como query parameter, no como header
+            // Construir URL completa para debugging
+            String apiUrl = String.format("/v1/models/%s:generateContent?key=%s",
+                    model, apiKey);
+            log.info("URL completa (sin key): /v1/models/{}:generateContent", model);
+
+            // Llamar a la API v1 con Google AI Studio
             String response = webClient.post()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/v1beta/models/{model}:generateContent")
+                            .path("/v1/models/" + model + ":generateContent")
                             .queryParam("key", apiKey)
-                            .build(model))
+                            .build())
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
