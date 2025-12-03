@@ -539,13 +539,22 @@ public class DataInitializer implements CommandLineRunner {
                                         .orElseThrow(() -> new RuntimeException("Tipo SALIDA no encontrado"));
                 }
 
-                // Crear motivos (esto está bien, usa orElseGet)
-                crearMotivoSiNoExiste("Compra a proveedor", entrada);
-                crearMotivoSiNoExiste("Anulación de Venta", entrada);
-                crearMotivoSiNoExiste("Uso en procedimiento", salida);
-                crearMotivoSiNoExiste("Vencimiento o merma", salida);
-                crearMotivoSiNoExiste("Ajuste de inventario", salida);
-                crearMotivoSiNoExiste("Venta Directa", salida);
+                // Crear motivos - REORGANIZADOS según sean manuales o automáticos
+                System.out.println(">>> Creando motivos de movimiento...");
+
+                // ENTRADA - Solo motivos manuales
+                crearMotivoSiNoExiste("Compra a proveedor", entrada, true);
+
+                // SALIDA - Solo motivos manuales
+                crearMotivoSiNoExiste("Vencimiento o merma", salida, true);
+                crearMotivoSiNoExiste("Ajuste de inventario", salida, true);
+
+                // Motivos automáticos (NO se muestran en formularios manuales)
+                crearMotivoSiNoExiste("Uso en procedimiento", salida, false);
+                crearMotivoSiNoExiste("Venta Directa", salida, false);
+                crearMotivoSiNoExiste("Anulación de Venta", entrada, false);
+
+                System.out.println("✅ Motivos creados correctamente");
                 // --- 👆 FIN DE LA CORRECCIÓN 👆 ---
 
                 // --- CREACIÓN DE ESTADOS DE CITA ---
@@ -909,11 +918,12 @@ public class DataInitializer implements CommandLineRunner {
                 return tm;
         }
 
-        private void crearMotivoSiNoExiste(String nombre, TipoMovimiento tipo) {
+        private void crearMotivoSiNoExiste(String nombre, TipoMovimiento tipo, boolean esManual) {
                 motivoMovimientoRepository.findByNombre(nombre).orElseGet(() -> {
                         MotivoMovimiento mm = new MotivoMovimiento();
                         mm.setNombre(nombre);
                         mm.setTipoMovimiento(tipo);
+                        mm.setEsManual(esManual);
                         return motivoMovimientoRepository.save(mm);
                 });
         }

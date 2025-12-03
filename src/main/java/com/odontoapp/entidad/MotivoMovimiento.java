@@ -13,6 +13,9 @@ public class MotivoMovimiento {
 
     private String nombre; // Compra, Uso en Procedimiento, Vencimiento
 
+    @Column(name = "es_manual")
+    private boolean esManual = true; // Por defecto es manual (se puede seleccionar en formularios)
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tipo_movimiento_id")
     private TipoMovimiento tipoMovimiento;

@@ -104,11 +104,17 @@ public class InventarioServiceImpl implements InventarioService {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void descontarStockPorProcedimientoRealizado(Long procedimientoId, BigDecimal cantidadAjustada,
-                                                         Long insumoAjustadoId, String referenciaCita) {
+            Long insumoAjustadoId, String referenciaCita) {
+        System.out.println("🔍 [INVENTARIO] Iniciando descuento de stock...");
+        System.out.println("   - Procedimiento ID: " + procedimientoId);
+        System.out.println("   - Referencia: " + referenciaCita);
+
         // Validar que el procedimiento existe
         Procedimiento procedimiento = procedimientoRepository.findById(procedimientoId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Procedimiento no encontrado con ID: " + procedimientoId));
+
+        System.out.println("   - Procedimiento encontrado: " + procedimiento.getNombre());
 
         // Buscar el tipo de movimiento "SALIDA" por CÓDIGO (más confiable)
         TipoMovimiento tipoSalida = tipoMovimientoRepository.findByCodigo("SALIDA")
@@ -120,7 +126,10 @@ public class InventarioServiceImpl implements InventarioService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Motivo 'Uso en procedimiento' no encontrado en el sistema"));
 
-        // Caso 1: Se especificó un insumo ajustado (se usa solo ese insumo con cantidad ajustada)
+        System.out.println("   - Tipo y motivo encontrados correctamente");
+
+        // Caso 1: Se especificó un insumo ajustado (se usa solo ese insumo con cantidad
+        // ajustada)
         if (insumoAjustadoId != null && cantidadAjustada != null) {
             Insumo insumo = insumoRepository.findById(insumoAjustadoId)
                     .orElseThrow(() -> new EntityNotFoundException(
@@ -128,29 +137,37 @@ public class InventarioServiceImpl implements InventarioService {
 
             descontarInsumo(insumo, cantidadAjustada, tipoSalida, motivoProcedimiento, referenciaCita);
         }
-        // Caso 2: No se especificó insumo ajustado, usar insumos por defecto del procedimiento
+        // Caso 2: No se especificó insumo ajustado, usar insumos por defecto del
+        // procedimiento
         else {
-            List<ProcedimientoInsumo> insumosDelProcedimiento =
-                    procedimientoInsumoRepository.findByProcedimientoId(procedimientoId);
+            List<ProcedimientoInsumo> insumosDelProcedimiento = procedimientoInsumoRepository
+                    .findByProcedimientoId(procedimientoId);
+
+            System.out.println("   - Insumos encontrados para el procedimiento: " + insumosDelProcedimiento.size());
 
             if (insumosDelProcedimiento.isEmpty()) {
+                System.out.println("   ⚠️ No hay insumos configurados para este procedimiento - no se descuenta nada");
                 // No hay insumos configurados para este procedimiento, no se descuenta nada
                 return;
             }
 
             // Descontar cada insumo según la cantidad por defecto configurada
             for (ProcedimientoInsumo pi : insumosDelProcedimiento) {
+                System.out.println("   📦 Procesando insumo: " + pi.getInsumo().getNombre() +
+                        " (Cantidad: " + pi.getCantidadDefecto() + ")");
                 descontarInsumo(pi.getInsumo(), pi.getCantidadDefecto(), tipoSalida, motivoProcedimiento,
                         referenciaCita);
             }
         }
+
+        System.out.println("✅ [INVENTARIO] Descuento de stock completado exitosamente");
     }
 
     /**
      * Método auxiliar para descontar stock de un insumo y registrar el movimiento.
      */
     private void descontarInsumo(Insumo insumo, BigDecimal cantidad, TipoMovimiento tipoMovimiento,
-                                  MotivoMovimiento motivo, String referencia) {
+            MotivoMovimiento motivo, String referencia) {
         BigDecimal stockAnterior = insumo.getStockActual();
         BigDecimal stockNuevo = stockAnterior.subtract(cantidad);
 
@@ -158,7 +175,7 @@ public class InventarioServiceImpl implements InventarioService {
         if (stockNuevo.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalStateException(
                     "Stock insuficiente para el insumo '" + insumo.getNombre() +
-                    "'. Stock actual: " + stockAnterior + ", se requiere: " + cantidad);
+                            "'. Stock actual: " + stockAnterior + ", se requiere: " + cantidad);
         }
 
         // Crear el movimiento de inventario

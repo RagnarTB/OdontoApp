@@ -698,6 +698,22 @@
                 }
             });
 
+            // Inicializar Select2 para odontólogos
+            $('#odontologoIdAgendar').select2({
+                dropdownParent: $('#modalAgendarCita'),
+                placeholder: 'Busque y seleccione un odontólogo',
+                allowClear: true,
+                width: '100%',
+                language: {
+                    noResults: function () {
+                        return "No se encontraron odontólogos";
+                    },
+                    searching: function () {
+                        return "Buscando...";
+                    }
+                }
+            });
+
             // Referencias a elementos del formulario
             const formAgendar = $('#modalAgendarCita form');
             const fechaInput = $('#fechaHoraInicioAgendar');
