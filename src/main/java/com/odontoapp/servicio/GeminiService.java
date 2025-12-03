@@ -49,10 +49,34 @@ public class GeminiService {
      *               usuario)
      * @return La respuesta generada por Gemini
      */
+    /**
+     * Lista los modelos disponibles para debugging
+     */
+    private void listarModelosDisponibles() {
+        try {
+            String response = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/v1beta/models")
+                            .queryParam("key", apiKey)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(10))
+                    .block();
+
+            log.info("Modelos disponibles: {}", response);
+        } catch (Exception e) {
+            log.error("Error al listar modelos: {}", e.getMessage());
+        }
+    }
+
     public String generarRespuesta(String prompt) {
         try {
             log.info("Iniciando llamada a Gemini API con modelo: {}", model);
             log.info("API Key (primeros 10 chars): {}...", apiKey.substring(0, Math.min(10, apiKey.length())));
+
+            // Listar modelos disponibles para debugging (solo la primera vez)
+            listarModelosDisponibles();
 
             // Construir el request body según la API de Gemini
             Map<String, Object> requestBody = new HashMap<>();
@@ -79,14 +103,14 @@ public class GeminiService {
             requestBody.put("generationConfig", generationConfig);
 
             // Construir URL completa para debugging
-            String apiUrl = String.format("/v1/models/%s:generateContent?key=%s",
+            String apiUrl = String.format("/v1beta/models/%s:generateContent?key=%s",
                     model, apiKey);
-            log.info("URL completa (sin key): /v1/models/{}:generateContent", model);
+            log.info("URL completa (sin key): /v1beta/models/{}:generateContent", model);
 
-            // Llamar a la API v1 con Google AI Studio
+            // Llamar a la API v1beta (versión correcta para Google AI Studio)
             String response = webClient.post()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/v1/models/" + model + ":generateContent")
+                            .path("/v1beta/models/" + model + ":generateContent")
                             .queryParam("key", apiKey)
                             .build())
                     .contentType(MediaType.APPLICATION_JSON)
