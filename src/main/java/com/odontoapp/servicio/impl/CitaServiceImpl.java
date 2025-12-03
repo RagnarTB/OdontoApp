@@ -389,20 +389,60 @@ public class CitaServiceImpl implements CitaService {
 
         // Verificar que el PACIENTE no tenga otra cita en el mismo horario (con
         // cualquier odontólogo)
-        List<Cita> citasPaciente = citaRepository.findConflictingCitas(
+        List<Cita> citasPaciente = citaRepository.findConflictingCitasByUsuario(
                 pacienteId, fechaHoraInicio, fechaHoraFin);
 
         List<Cita> citasActivasPaciente = citasPaciente.stream()
                 .filter(c -> {
                     String estado = c.getEstadoCita().getNombre();
-                    return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA");
+                    // Filtrar solo citas donde el usuario es PACIENTE
+                    return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA")
+                            && c.getPaciente().getId().equals(pacienteId);
                 })
                 .collect(Collectors.toList());
 
         if (!citasActivasPaciente.isEmpty()) {
             throw new IllegalStateException(
-                    "El paciente ya tiene una cita agendada en este horario con otro odontólogo. " +
+                    "El paciente ya tiene una cita agendada en este horario. " +
                             "Por favor seleccione otro horario.");
+        }
+
+        // ✅ VALIDACIÓN ADICIONAL: Verificar conflictos de doble rol
+        // (PACIENTE-ODONTÓLOGO)
+        // Si el ODONTÓLOGO también tiene citas como PACIENTE en el mismo horario
+        List<Cita> citasOdontologoComoUsuario = citaRepository.findConflictingCitasByUsuario(
+                odontologoId, fechaHoraInicio, fechaHoraFin);
+
+        List<Cita> citasActivasOdontologoComoPaciente = citasOdontologoComoUsuario.stream()
+                .filter(c -> {
+                    String estado = c.getEstadoCita().getNombre();
+                    // Verificar si está como PACIENTE en otra cita
+                    return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA")
+                            && c.getPaciente().getId().equals(odontologoId);
+                })
+                .collect(Collectors.toList());
+
+        if (!citasActivasOdontologoComoPaciente.isEmpty()) {
+            throw new IllegalStateException(
+                    "El odontólogo seleccionado tiene una cita como paciente en este horario. " +
+                            "No puede atender y ser atendido al mismo tiempo. Por favor seleccione otro horario.");
+        }
+
+        // Si el PACIENTE también tiene citas como ODONTÓLOGO en el mismo horario
+        // (Ya verificado arriba con findConflictingCitasByUsuario, solo filtrar)
+        List<Cita> citasActivasPacienteComoOdontologo = citasPaciente.stream()
+                .filter(c -> {
+                    String estado = c.getEstadoCita().getNombre();
+                    // Verificar si está como ODONTÓLOGO en otra cita
+                    return !estado.startsWith("CANCELADA") && !estado.equals("REPROGRAMADA")
+                            && c.getOdontologo().getId().equals(pacienteId);
+                })
+                .collect(Collectors.toList());
+
+        if (!citasActivasPacienteComoOdontologo.isEmpty()) {
+            throw new IllegalStateException(
+                    "El paciente tiene una cita como odontólogo en este horario. " +
+                            "No puede atender y ser atendido al mismo tiempo. Por favor seleccione otro horario.");
         }
 
         // Verificar que el paciente esté activo

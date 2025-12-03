@@ -2,7 +2,8 @@ package com.odontoapp.util;
 
 /**
  * Clase de constantes para los permisos del sistema.
- * Centraliza todos los permisos para facilitar el mantenimiento y evitar errores de tipeo.
+ * Centraliza todos los permisos para facilitar el mantenimiento y evitar
+ * errores de tipeo.
  */
 public final class Permisos {
 
@@ -77,6 +78,10 @@ public final class Permisos {
     public static final String CREAR_ODONTOGRAMA = "CREAR_ODONTOGRAMA";
     public static final String EDITAR_ODONTOGRAMA = "EDITAR_ODONTOGRAMA";
     public static final String ELIMINAR_ODONTOGRAMA = "ELIMINAR_ODONTOGRAMA";
+
+    // ============== MÓDULO: REPORTES ==============
+    public static final String VER_REPORTES = "VER_REPORTES";
+    public static final String EXPORTAR_REPORTES = "EXPORTAR_REPORTES";
 
     // ============== MÓDULO: ADMINISTRACIÓN ==============
     public static final String VER_REGISTROS_ELIMINADOS = "VER_REGISTROS_ELIMINADOS";
