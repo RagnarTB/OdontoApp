@@ -78,11 +78,12 @@ public class GeminiService {
             requestBody.put("generationConfig", generationConfig);
 
             // Llamar a la API v1beta (requerida por Google AI Studio)
+            // La API key debe ir como query parameter, no como header
             String response = webClient.post()
                     .uri(uriBuilder -> uriBuilder
                             .path("/v1beta/models/{model}:generateContent")
+                            .queryParam("key", apiKey)
                             .build(model))
-                    .header("x-goog-api-key", apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
