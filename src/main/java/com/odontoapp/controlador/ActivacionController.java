@@ -22,14 +22,28 @@ public class ActivacionController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // Este endpoint es para usuarios creados por el administrador (Personal)
+    // Este endpoint es para usuarios creados por el administrador (Personal) o
+    // pacientes auto-registrados
     @GetMapping("/activar-cuenta")
     public String mostrarFormularioActivacion(@RequestParam("token") String token, Model model) {
         Usuario usuario = usuarioRepository.findByVerificationToken(token).orElse(null);
-        if (usuario == null || usuario.isEstaActivo()) {
-            model.addAttribute("mensajeError", "El enlace de activación es inválido o ya ha sido utilizado.");
+
+        // Validar que el usuario existe
+        if (usuario == null) {
+            model.addAttribute("mensajeError", "El enlace de activación es inválido.");
             return "publico/resultado-activacion";
         }
+
+        // Permitir si el usuario tiene un token válido, independientemente del estado
+        // activo
+        // Esto soporta pacientes creados por admin que están activos pero no han
+        // establecido contraseña
+        // Solo rechazar si el usuario está activo Y el token ya fue usado/limpiado
+        if (usuario.isEstaActivo() && usuario.getVerificationToken() == null) {
+            model.addAttribute("mensajeError", "El enlace de activación ya ha sido utilizado.");
+            return "publico/resultado-activacion";
+        }
+
         model.addAttribute("token", token);
         return "publico/establecer-password";
     }
@@ -42,9 +56,19 @@ public class ActivacionController {
             Model model) {
         Usuario usuario = usuarioRepository.findByVerificationToken(token).orElse(null);
 
-        if (usuario == null || usuario.isEstaActivo()) {
+        // Validar que el usuario existe
+        if (usuario == null) {
             redirectAttributes.addFlashAttribute("mensajeError",
-                    "El enlace de activación es inválido o ya ha sido utilizado.");
+                    "El enlace de activación es inválido.");
+            return "redirect:/resultado-activacion?error=true";
+        }
+
+        // Permitir si el usuario tiene un token válido, independientemente del estado
+        // activo
+        // Solo rechazar si el token ya fue usado/limpiado
+        if (usuario.isEstaActivo() && usuario.getVerificationToken() == null) {
+            redirectAttributes.addFlashAttribute("mensajeError",
+                    "El enlace de activación ya ha sido utilizado.");
             return "redirect:/resultado-activacion?error=true";
         }
 
