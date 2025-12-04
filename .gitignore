@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Application Uploads ###
+odontoapp-uploads/
+
+### CRITICAL SECURITY: Never commit sensitive configuration files ###
+# El archivo real con credenciales NO se sube a Git
+# Solo se sube application.properties.example como plantilla
+application.properties
+
+### Environment variables ###
+.env
+.env.local
+.env.*.local

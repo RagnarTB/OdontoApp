@@ -6,7 +6,7 @@ server.port=8080
 # Usa el puerto 3307 porque es el que mapeamos en docker-compose
 spring.datasource.url=jdbc:mysql://localhost:3307/odontoapp_db?useSSL=false&serverTimezone=America/Lima&allowPublicKeyRetrieval=true
 spring.datasource.username=root
-spring.datasource.password=leonardo
+spring.datasource.password=TU_PASSWORD_MYSQL_AQUI
 
 # Configuración de JPA y Hibernate
 spring.jpa.hibernate.ddl-auto=update
@@ -19,7 +19,7 @@ spring.jpa.properties.hibernate.jdbc.time_zone=America/Lima
 spring.thymeleaf.cache=false
 
 # Token para la API de Apidecolecta
-api.decolecta.token=sk_9739.xfKEozZkKVg69oje8RACY8preIWY6nwh
+api.decolecta.token=TU_TOKEN_APIDECOLECTA_AQUI
 
 management.health.db.enabled=true
 
@@ -28,8 +28,8 @@ management.health.db.enabled=true
 # Configuración de Email (Gmail)
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
-spring.mail.username=ldtb2001@gmail.com 
-spring.mail.password=ycjb lrzt hfrs nkjq
+spring.mail.username=TU_EMAIL@gmail.com 
+spring.mail.password=TU_APP_PASSWORD_GMAIL_AQUI
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 
@@ -39,6 +39,6 @@ file.upload-dir=./odontoapp-uploads/
 # Configuración de Google Gemini para Chatbot IA
 # IMPORTANTE: Reemplaza TU_API_KEY_AQUI con tu API key real de Google AI Studio
 # Obtén tu API key gratis en: https://aistudio.google.com/app/apikey
-gemini.api.key=AIzaSyBrW8tHmQbN3zNo_qrknct6hhSG8gZRz88
+gemini.api.key=TU_API_KEY_GEMINI_AQUI
 gemini.model=gemini-2.5-flash
 gemini.enabled=true
