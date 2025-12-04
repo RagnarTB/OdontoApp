@@ -15,11 +15,22 @@ class ChatbotWidget {
     }
 
     init() {
+        // Solo inicializar el chatbot en páginas de paciente
+        if (!this.isPatientPage()) {
+            return;
+        }
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.setup());
         } else {
             this.setup();
         }
+    }
+
+    isPatientPage() {
+        // Verificar si la URL actual comienza con /paciente/
+        const currentPath = window.location.pathname;
+        return currentPath.startsWith('/paciente/');
     }
 
     setup() {
