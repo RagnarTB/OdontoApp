@@ -80,27 +80,4 @@ public class ReporteControlador {
 
         return "modulos/reportes/index";
     }
-
-    @GetMapping("/exportar/excel")
-    public ResponseEntity<byte[]> exportarExcel(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
-            @RequestParam(required = false) Long odontologoId) throws IOException {
-
-        if (fechaInicio == null)
-            fechaInicio = LocalDate.now().minusMonths(1).withDayOfMonth(1);
-        if (fechaFin == null)
-            fechaFin = LocalDate.now();
-
-        byte[] excelContent = reporteService.generarReporteExcel(fechaInicio, fechaFin, odontologoId);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(
-                MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-        headers.setContentDispositionFormData("attachment", "reporte_general.xlsx");
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(excelContent);
-    }
 }
