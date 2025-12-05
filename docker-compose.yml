@@ -5,37 +5,39 @@ services:
     container_name: odontoapp-mysql
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: odontoapp_db
-      MYSQL_ROOT_PASSWORD: leonardo
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
       TZ: America/Lima
     ports:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     command: --default-time-zone='-05:00'
-    # Healthcheck CORREGIDO para verificar que la BD esté lista
     healthcheck:
-      # CORRECCIÓN: Se quitó el espacio después de "-p"
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-pleonardo" ]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD}" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Servicio de la aplicación Spring Boot
   odontoapp-backend:
     container_name: odontoapp-backend
     build: .
     restart: on-failure
     depends_on:
       mysql-db:
-        # Ahora sí esperará a que el healthcheck sea exitoso
         condition: service_healthy
     ports:
       - "8080:8080"
+
+    volumes:
+      - ./backups:/app/backups
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/odontoapp_db?useSSL=false&serverTimezone=America/Lima&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/${DB_NAME}?useSSL=false&serverTimezone=America/Lima&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: leonardo
+      SPRING_DATASOURCE_PASSWORD: ${DB_ROOT_PASSWORD}
+
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
       SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: America/Lima
